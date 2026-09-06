@@ -2,10 +2,12 @@ package com.sena.cold_day.tecnicos.domain;
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sena.cold_day.tecnicos.api.TecnicoCreado;
 import com.sena.cold_day.tecnicos.api.TecnicoRequest;
 
 /**
@@ -17,8 +19,11 @@ public class TecnicosService {
 
 	private final TecnicoRepository repository;
 
-	public TecnicosService(TecnicoRepository repository) {
+	private final ApplicationEventPublisher events;
+
+	public TecnicosService(TecnicoRepository repository, ApplicationEventPublisher events) {
 		this.repository = repository;
+		this.events = events;
 	}
 
 	@Transactional
@@ -27,10 +32,14 @@ public class TecnicosService {
 		tecnico.setEstadoOperativo(EstadoOperativo.DISPONIBLE);
 		tecnico.setActivo(true);
 		try {
-			return repository.saveAndFlush(tecnico);
+			tecnico = repository.saveAndFlush(tecnico);
 		} catch (DataIntegrityViolationException exception) {
 			throw new NumeroIdentificacionDuplicadoException(request.numeroIdentificacion());
 		}
+		// Publication row lands in EVENT_PUBLICATION within this transaction;
+		// listeners run after commit.
+		events.publishEvent(new TecnicoCreado(tecnico.getId()));
+		return tecnico;
 	}
 
 	public List<Tecnico> listar() {
@@ -38,7 +47,11 @@ public class TecnicosService {
 	}
 
 	public Tecnico obtener(Long id) {
+		// activo guard: the persistence context bypasses @SQLRestriction for
+		// instances already loaded in the same session (soft delete in the
+		// current transaction must read as not found).
 		return repository.findById(id)
+				.filter(Tecnico::isActivo)
 				.orElseThrow(() -> new TecnicoNoEncontradoException(id));
 	}
 
@@ -53,6 +66,8 @@ public class TecnicosService {
 	public void eliminar(Long id) {
 		Tecnico tecnico = obtener(id);
 		tecnico.setActivo(false);
-		repository.save(tecnico);
+		// saveAndFlush: the raw-JDBC retention probe and AFTER_COMMIT listeners
+		// observe the update within this transaction.
+		repository.saveAndFlush(tecnico);
 	}
 }

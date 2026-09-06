@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.sena.cold_day.tecnicos.api.TecnicoRequest;
@@ -25,6 +26,9 @@ class TecnicosServiceTest {
 
 	@Mock
 	TecnicoRepository repository;
+
+	@Mock
+	ApplicationEventPublisher events;
 
 	@InjectMocks
 	TecnicosService service;
@@ -81,7 +85,6 @@ class TecnicosServiceTest {
 		existing.setNumeroIdentificacion("123");
 		existing.setNombres("Ana");
 		existing.setEstadoOperativo(EstadoOperativo.OCUPADO);
-		existing.setActivo(false);
 		when(repository.findById(5L)).thenReturn(Optional.of(existing));
 		when(repository.save(any(Tecnico.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -90,7 +93,7 @@ class TecnicosServiceTest {
 		assertThat(updated.getNumeroIdentificacion()).isEqualTo("456");
 		assertThat(updated.getNombres()).isEqualTo("Ana");
 		assertThat(updated.getEstadoOperativo()).isEqualTo(EstadoOperativo.OCUPADO);
-		assertThat(updated.isActivo()).isFalse();
+		assertThat(updated.isActivo()).isTrue();
 		verify(repository).save(existing);
 	}
 
@@ -103,6 +106,6 @@ class TecnicosServiceTest {
 		service.eliminar(5L);
 
 		assertThat(existing.isActivo()).isFalse();
-		verify(repository).save(existing);
+		verify(repository).saveAndFlush(existing);
 	}
 }
