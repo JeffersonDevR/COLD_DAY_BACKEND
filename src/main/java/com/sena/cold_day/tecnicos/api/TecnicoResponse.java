@@ -2,10 +2,10 @@ package com.sena.cold_day.tecnicos.api;
 
 import java.util.Set;
 
-import com.sena.cold_day.tecnicos.domain.CategoriaServicio;
-import com.sena.cold_day.tecnicos.domain.Certificacion;
-import com.sena.cold_day.tecnicos.domain.EstadoOperativo;
-import com.sena.cold_day.tecnicos.domain.Tecnico;
+import com.sena.cold_day.tecnicos.internal.domain.CategoriaServicio;
+import com.sena.cold_day.tecnicos.internal.domain.Certificacion;
+import com.sena.cold_day.tecnicos.internal.domain.EstadoOperativo;
+import com.sena.cold_day.tecnicos.internal.domain.Tecnico;
 
 /**
  * Technician representation returned by the module API.

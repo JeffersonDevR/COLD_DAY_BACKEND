@@ -1,4 +1,4 @@
-package com.sena.cold_day.tecnicos.domain;
+package com.sena.cold_day.tecnicos.internal.domain.exception;
 
 /**
  * Thrown when the numeroIdentificacion is already taken (unique constraint

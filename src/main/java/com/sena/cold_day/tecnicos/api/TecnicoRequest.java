@@ -2,9 +2,9 @@ package com.sena.cold_day.tecnicos.api;
 
 import java.util.Set;
 
-import com.sena.cold_day.tecnicos.domain.CategoriaServicio;
-import com.sena.cold_day.tecnicos.domain.Certificacion;
-import com.sena.cold_day.tecnicos.domain.Tecnico;
+import com.sena.cold_day.tecnicos.internal.domain.CategoriaServicio;
+import com.sena.cold_day.tecnicos.internal.domain.Certificacion;
+import com.sena.cold_day.tecnicos.internal.domain.Tecnico;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

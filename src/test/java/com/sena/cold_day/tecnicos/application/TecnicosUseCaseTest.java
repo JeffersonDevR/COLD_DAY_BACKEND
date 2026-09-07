@@ -1,4 +1,4 @@
-package com.sena.cold_day.tecnicos.domain;
+package com.sena.cold_day.tecnicos.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -20,9 +20,16 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.sena.cold_day.tecnicos.api.TecnicoRequest;
+import com.sena.cold_day.tecnicos.internal.domain.CategoriaServicio;
+import com.sena.cold_day.tecnicos.internal.domain.Certificacion;
+import com.sena.cold_day.tecnicos.internal.domain.EstadoOperativo;
+import com.sena.cold_day.tecnicos.internal.domain.Tecnico;
+import com.sena.cold_day.tecnicos.internal.domain.TecnicoRepository;
+import com.sena.cold_day.tecnicos.internal.domain.exception.NumeroIdentificacionDuplicadoException;
+import com.sena.cold_day.tecnicos.internal.domain.exception.TecnicoNoEncontradoException;
 
 @ExtendWith(MockitoExtension.class)
-class TecnicosServiceTest {
+class TecnicosUseCaseTest {
 
 	@Mock
 	TecnicoRepository repository;
@@ -31,7 +38,19 @@ class TecnicosServiceTest {
 	ApplicationEventPublisher events;
 
 	@InjectMocks
-	TecnicosService service;
+	RegistrarTecnicoUseCase registrar;
+
+	@InjectMocks
+	BuscarTecnicoUseCase buscar;
+
+	@InjectMocks
+	ActualizarTecnicoUseCase actualizar;
+
+	@InjectMocks
+	EliminarTecnicoUseCase eliminar;
+
+	@InjectMocks
+	CambiarDisponibilidadUseCase cambiarDisponibilidad;
 
 	private TecnicoRequest request(String numeroIdentificacion) {
 		return new TecnicoRequest(numeroIdentificacion, "Ana", "Garcia", "3001234567", "ana@example.com", null,
@@ -43,7 +62,7 @@ class TecnicosServiceTest {
 	void crearAppliesDefaultsAndFields() {
 		when(repository.saveAndFlush(any(Tecnico.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-		Tecnico saved = service.crear(request("123"));
+		Tecnico saved = registrar.registrar(request("123"));
 
 		assertThat(saved.getEstadoOperativo()).isEqualTo(EstadoOperativo.DISPONIBLE);
 		assertThat(saved.isActivo()).isTrue();
@@ -59,7 +78,7 @@ class TecnicosServiceTest {
 		when(repository.saveAndFlush(any(Tecnico.class)))
 				.thenThrow(new DataIntegrityViolationException("unique constraint"));
 
-		assertThatThrownBy(() -> service.crear(request("123")))
+		assertThatThrownBy(() -> registrar.registrar(request("123")))
 				.isInstanceOf(NumeroIdentificacionDuplicadoException.class);
 	}
 
@@ -69,14 +88,14 @@ class TecnicosServiceTest {
 		tecnico.setNumeroIdentificacion("123");
 		when(repository.findAll()).thenReturn(List.of(tecnico));
 
-		assertThat(service.listar()).containsExactly(tecnico);
+		assertThat(buscar.listar()).containsExactly(tecnico);
 	}
 
 	@Test
 	void obtenerUnknownIdThrows() {
 		when(repository.findById(999L)).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> service.obtener(999L)).isInstanceOf(TecnicoNoEncontradoException.class);
+		assertThatThrownBy(() -> buscar.obtener(999L)).isInstanceOf(TecnicoNoEncontradoException.class);
 	}
 
 	@Test
@@ -88,7 +107,7 @@ class TecnicosServiceTest {
 		when(repository.findById(5L)).thenReturn(Optional.of(existing));
 		when(repository.save(any(Tecnico.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-		Tecnico updated = service.actualizar(5L, request("456"));
+		Tecnico updated = actualizar.actualizar(5L, request("456"));
 
 		assertThat(updated.getNumeroIdentificacion()).isEqualTo("456");
 		assertThat(updated.getNombres()).isEqualTo("Ana");
@@ -103,9 +122,21 @@ class TecnicosServiceTest {
 		existing.setNumeroIdentificacion("123");
 		when(repository.findById(5L)).thenReturn(Optional.of(existing));
 
-		service.eliminar(5L);
+		eliminar.eliminar(5L);
 
 		assertThat(existing.isActivo()).isFalse();
 		verify(repository).saveAndFlush(existing);
+	}
+
+	@Test
+	void cambiarDisponibilidadUpdatesOperationalState() {
+		Tecnico existing = new Tecnico();
+		existing.setActivo(true);
+		when(repository.findById(5L)).thenReturn(Optional.of(existing));
+		when(repository.save(existing)).thenReturn(existing);
+
+		assertThat(cambiarDisponibilidad.cambiar(5L, EstadoOperativo.OCUPADO).getEstadoOperativo())
+				.isEqualTo(EstadoOperativo.OCUPADO);
+		verify(repository).save(existing);
 	}
 }

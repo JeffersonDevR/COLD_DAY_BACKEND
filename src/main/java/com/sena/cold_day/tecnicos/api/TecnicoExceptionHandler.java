@@ -9,15 +9,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.shared.ApiError;
-import com.sena.cold_day.tecnicos.domain.NumeroIdentificacionDuplicadoException;
-import com.sena.cold_day.tecnicos.domain.TecnicoNoEncontradoException;
+import com.sena.cold_day.tecnicos.internal.domain.exception.NumeroIdentificacionDuplicadoException;
+import com.sena.cold_day.tecnicos.internal.domain.exception.TecnicoNoEncontradoException;
 
 /**
  * Module-scoped error handling for the Técnicos API (never global): keeps
  * module exceptions out of other modules and the shared kernel.
  */
 @RestControllerAdvice(assignableTypes = TecnicoController.class)
-public class TecnicoApiExceptionHandler {
+public class TecnicoExceptionHandler {
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {

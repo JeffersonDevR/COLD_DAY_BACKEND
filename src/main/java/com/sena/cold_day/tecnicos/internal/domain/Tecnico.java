@@ -1,8 +1,9 @@
-package com.sena.cold_day.tecnicos.domain;
+package com.sena.cold_day.tecnicos.internal.domain;
 
 import java.util.HashSet;
 import java.util.Set;
 
+import com.sena.cold_day.tecnicos.internal.domain.exception.TecnicoAsignadoException;
 import org.hibernate.annotations.SQLRestriction;
 
 import jakarta.persistence.Column;
@@ -61,4 +62,15 @@ public class Tecnico {
 
 	@Column(nullable = false)
 	private boolean activo = true;
+
+	public boolean EsActivo(){
+		return this.activo;
+	}
+
+	public void setEstadoOperativo(EstadoOperativo nuevoEstadoOperativo) {
+		if (this.estadoOperativo == EstadoOperativo.OCUPADO){
+			throw new TecnicoAsignadoException(this.numeroIdentificacion);
+		}
+		this.estadoOperativo = nuevoEstadoOperativo;
+	}
 }

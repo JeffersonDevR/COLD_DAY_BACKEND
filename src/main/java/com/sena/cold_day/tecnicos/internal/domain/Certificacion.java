@@ -1,4 +1,4 @@
-package com.sena.cold_day.tecnicos.domain;
+package com.sena.cold_day.tecnicos.internal.domain;
 
 import java.time.LocalDate;
 

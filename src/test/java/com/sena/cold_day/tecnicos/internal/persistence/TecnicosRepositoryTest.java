@@ -1,4 +1,4 @@
-package com.sena.cold_day.tecnicos.domain;
+package com.sena.cold_day.tecnicos.internal.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -9,10 +9,18 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.sena.cold_day.tecnicos.internal.domain.CategoriaServicio;
+import com.sena.cold_day.tecnicos.internal.domain.Certificacion;
+import com.sena.cold_day.tecnicos.internal.domain.EstadoOperativo;
+import com.sena.cold_day.tecnicos.internal.domain.Tecnico;
+import com.sena.cold_day.tecnicos.internal.domain.TecnicoRepository;
+
 @DataJpaTest
+@Import(JpaTecnicoRepository.class)
 class TecnicosRepositoryTest {
 
 	@Autowired
