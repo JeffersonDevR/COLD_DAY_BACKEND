@@ -8,6 +8,6 @@ CREATE TABLE IF NOT EXISTS tecnico (
     foto_url VARCHAR(255),
     estado_operativo VARCHAR(255),
     activo BOOLEAN NOT NULL DEFAULT TRUE,
-    categorias_servicio JSON,
-    certificaciones JSON
+    categorias_servicio VARCHAR(4000),
+    certificaciones VARCHAR(4000)
 );

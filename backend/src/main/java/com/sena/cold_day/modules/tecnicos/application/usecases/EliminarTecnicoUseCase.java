@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 
 import com.sena.cold_day.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
+import com.sena.cold_day.modules.tecnicos.domain.entities.Tecnico;
 
-import reactor.core.publisher.Mono;
 
 @Service
 public class EliminarTecnicoUseCase {
@@ -16,13 +16,10 @@ public class EliminarTecnicoUseCase {
 		this.repository = repository;
 	}
 
-	public Mono<Void> eliminar(Long id) {
-		return repository.findByIdAndActivoTrue(id)
-				.switchIfEmpty(Mono.error(new TecnicoNoEncontradoException(id)))
-				.flatMap(tecnico -> {
-					tecnico.setActivo(false);
-					return repository.save(tecnico);
-				})
-				.then();
+	public void eliminar(Long id) {
+		Tecnico tecnico = repository.findByIdAndActivoTrue(id)
+				.orElseThrow(() -> new TecnicoNoEncontradoException(id));
+		tecnico.setActivo(false);
+		repository.save(tecnico);
 	}
 }

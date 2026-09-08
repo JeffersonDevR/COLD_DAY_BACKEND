@@ -6,8 +6,7 @@ import com.sena.cold_day.modules.tecnicos.domain.entities.Tecnico;
 import com.sena.cold_day.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import java.util.List;
 
 @Service
 public class BuscarTecnicoUseCase {
@@ -18,12 +17,12 @@ public class BuscarTecnicoUseCase {
 		this.repository = repository;
 	}
 
-	public Flux<Tecnico> listar() {
+	public List<Tecnico> listar() {
 		return repository.findByActivoTrue();
 	}
 
-	public Mono<Tecnico> obtener(Long id) {
+	public Tecnico obtener(Long id) {
 		return repository.findByIdAndActivoTrue(id)
-				.switchIfEmpty(Mono.error(new TecnicoNoEncontradoException(id)));
+				.orElseThrow(() -> new TecnicoNoEncontradoException(id));
 	}
 }
