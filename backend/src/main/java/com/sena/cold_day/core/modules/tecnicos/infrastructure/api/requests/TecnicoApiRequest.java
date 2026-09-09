@@ -7,14 +7,15 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServ
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 public record TecnicoApiRequest(
-        @NotBlank String numeroIdentificacion,
-        @NotBlank String nombres,
-        @NotBlank String apellidos,
+        @NotBlank String nombre,
+        @Email String correo,
+        @NotBlank String password,
         String telefono,
-        @Email String email,
+        @NotBlank String numeroIdentificacion,
         String fotoUrl,
-        Set<CategoriaServicio> categoriasServicio,
+        @NotEmpty Set<CategoriaServicio> categoriasServicio,
         Set<Certificacion> certificaciones) {
 }

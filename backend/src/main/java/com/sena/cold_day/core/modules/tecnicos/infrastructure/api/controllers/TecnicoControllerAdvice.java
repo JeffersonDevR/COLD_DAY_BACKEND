@@ -10,8 +10,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.core.shared.errors.ApiError;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 
 @RestControllerAdvice(assignableTypes = TecnicoController.class)
 public class TecnicoControllerAdvice {
@@ -30,6 +34,27 @@ public class TecnicoControllerAdvice {
 
     @ExceptionHandler(NumeroIdentificacionDuplicadoException.class)
     ResponseEntity<ApiError> handleDuplicate(NumeroIdentificacionDuplicadoException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    @ExceptionHandler(CorreoDuplicadoException.class)
+    ResponseEntity<ApiError> handleDuplicateCorreo(CorreoDuplicadoException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    @ExceptionHandler({ UsuarioNoEncontradoException.class })
+    ResponseEntity<ApiError> handleUsuarioNotFound(RuntimeException exception) {
+        return error(HttpStatus.NOT_FOUND, exception);
+    }
+
+    /** Not authenticated-enough-to-operate: 403, semantically distinct from 401. */
+    @ExceptionHandler(TecnicoNoValidadoException.class)
+    ResponseEntity<ApiError> handleNoValidado(TecnicoNoValidadoException exception) {
+        return error(HttpStatus.FORBIDDEN, exception);
+    }
+
+    @ExceptionHandler(DocumentacionIncompletaException.class)
+    ResponseEntity<ApiError> handleDocumentacion(DocumentacionIncompletaException exception) {
         return error(HttpStatus.CONFLICT, exception);
     }
 

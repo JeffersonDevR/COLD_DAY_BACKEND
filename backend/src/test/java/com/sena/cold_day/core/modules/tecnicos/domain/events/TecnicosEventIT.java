@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -20,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
+import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -35,15 +37,22 @@ class TecnicosEventIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired TecnicoRepository repository;
+    @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired ObjectMapper objectMapper;
 
+    @BeforeEach
     @AfterEach
-    void reset() { OBSERVED.clear(); repository.deleteAll(); }
+    void reset() {
+        OBSERVED.clear();
+        repository.deleteAll();
+        usuarioRepository.deleteAll();
+    }
 
     @Test
     void publishesTecnicoCreadoExactlyOnce() throws Exception {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"numeroIdentificacion\":\"123\",\"nombres\":\"Ana\",\"apellidos\":\"Garcia\"}"))
+                        .content("{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto\","
+                                + "\"numeroIdentificacion\":\"123\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         JsonNode response = objectMapper.readTree(body);
         assertThat(OBSERVED).containsExactly(response.get("id").asLong());

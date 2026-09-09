@@ -9,11 +9,11 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record TecnicoRequest(
-        @NotBlank String numeroIdentificacion,
-        @NotBlank String nombres,
-        @NotBlank String apellidos,
+        @NotBlank String nombre,
+        @Email String correo,
+        @NotBlank String password,
         String telefono,
-        @Email String email,
+        @NotBlank String numeroIdentificacion,
         String fotoUrl,
         Set<CategoriaServicio> categoriasServicio,
         Set<Certificacion> certificaciones) {

@@ -6,14 +6,17 @@ import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoResponse;
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 
-public record TecnicoApiResponse(Long id, String numeroIdentificacion, String nombres, String apellidos,
-        String telefono, String email, String fotoUrl, Set<CategoriaServicio> categoriasServicio,
-        EstadoOperativo estadoOperativo, Set<Certificacion> certificaciones, boolean activo) {
+public record TecnicoApiResponse(Long id, Long usuarioId, String nombre, String correo, String telefono,
+        String numeroIdentificacion, String fotoUrl, Set<CategoriaServicio> categoriasServicio,
+        EstadoOperativo estadoOperativo, EstadoValidacion estadoValidacion, String motivoRechazoValidacion,
+        Set<Certificacion> certificaciones, boolean activo) {
 
     public static TecnicoApiResponse from(TecnicoResponse response) {
-        return new TecnicoApiResponse(response.id(), response.numeroIdentificacion(), response.nombres(),
-                response.apellidos(), response.telefono(), response.email(), response.fotoUrl(),
-                response.categoriasServicio(), response.estadoOperativo(), response.certificaciones(), response.activo());
+        return new TecnicoApiResponse(response.id(), response.usuarioId(), response.nombre(), response.correo(),
+                response.telefono(), response.numeroIdentificacion(), response.fotoUrl(),
+                response.categoriasServicio(), response.estadoOperativo(), response.estadoValidacion(),
+                response.motivoRechazoValidacion(), response.certificaciones(), response.activo());
     }
 }

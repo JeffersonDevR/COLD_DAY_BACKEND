@@ -5,26 +5,23 @@ import org.springframework.stereotype.Component;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoRequest;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoResponse;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
+import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 
 @Component
 public class TecnicoMapper {
 
-    public Tecnico toDomain(TecnicoRequest request) {
-        return Tecnico.crear(request.numeroIdentificacion(), request.nombres(), request.apellidos(), request.telefono(),
-                request.email(), request.fotoUrl(), request.categoriasServicio(), request.certificaciones());
-    }
-
-    public void apply(TecnicoRequest request, Tecnico tecnico) {
-        tecnico.actualizarPerfil(request.numeroIdentificacion(), request.nombres(), request.apellidos(),
-                request.telefono(), request.email(), request.fotoUrl());
+    /** Profile-only apply used on updates (identity fields belong to Usuario). */
+    public void apply(TecnicoRequest request, Tecnico tecnico, Usuario usuario) {
+        tecnico.actualizarPerfil(request.numeroIdentificacion(), request.fotoUrl());
         tecnico.reemplazarCategorias(request.categoriasServicio());
         tecnico.reemplazarCertificaciones(request.certificaciones());
+        usuario.actualizarPerfil(request.nombre(), request.telefono(), request.fotoUrl());
     }
 
-    public TecnicoResponse toResponse(Tecnico tecnico) {
-        return new TecnicoResponse(tecnico.getId(), tecnico.getNumeroIdentificacion(), tecnico.getNombres(),
-                tecnico.getApellidos(), tecnico.getTelefono(), tecnico.getEmail(), tecnico.getFotoUrl(),
-                tecnico.getCategoriasServicio(), tecnico.getEstadoOperativo(), tecnico.getCertificaciones(),
-                tecnico.isActivo());
+    public TecnicoResponse toResponse(Usuario usuario, Tecnico tecnico) {
+        return new TecnicoResponse(tecnico.getId(), usuario.getId(), usuario.getNombre(), usuario.getCorreo(),
+                usuario.getTelefono(), tecnico.getNumeroIdentificacion(), tecnico.getFotoUrl(),
+                tecnico.getCategoriasServicio(), tecnico.getEstadoOperativo(), tecnico.getEstadoValidacion(),
+                tecnico.getMotivoRechazoValidacion(), tecnico.getCertificaciones(), tecnico.isActivo());
     }
 }

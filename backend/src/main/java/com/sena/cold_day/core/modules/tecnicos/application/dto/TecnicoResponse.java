@@ -5,17 +5,24 @@ import java.util.Set;
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 
+/**
+ * Flat view exposed to the HTTP client; it combines Usuario (identity) and
+ * Tecnico (profile) even though internally they are two aggregates.
+ */
 public record TecnicoResponse(
         Long id,
-        String numeroIdentificacion,
-        String nombres,
-        String apellidos,
+        Long usuarioId,
+        String nombre,
+        String correo,
         String telefono,
-        String email,
+        String numeroIdentificacion,
         String fotoUrl,
         Set<CategoriaServicio> categoriasServicio,
         EstadoOperativo estadoOperativo,
+        EstadoValidacion estadoValidacion,
+        String motivoRechazoValidacion,
         Set<Certificacion> certificaciones,
         boolean activo) {
 }
