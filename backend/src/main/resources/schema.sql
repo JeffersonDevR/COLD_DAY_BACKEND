@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS usuario (
 CREATE TABLE IF NOT EXISTS tecnico (
     id BIGINT PRIMARY KEY REFERENCES usuario(id),
     numero_identificacion VARCHAR(255) NOT NULL UNIQUE,
-    foto_url VARCHAR(255),
     estado_operativo VARCHAR(30) NOT NULL DEFAULT 'FUERA_DE_SERVICIO',
     estado_validacion VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
     motivo_rechazo_validacion VARCHAR(500),
@@ -29,3 +28,11 @@ CREATE TABLE IF NOT EXISTS documento_tecnico (
     tipo VARCHAR(255) NOT NULL,
     fecha_vencimiento DATE
 );
+
+CREATE TABLE IF NOT EXISTS cliente (
+    id UUID PRIMARY KEY,
+    usuario_id BIGINT NOT NULL UNIQUE REFERENCES usuario(id),
+    tipo VARCHAR(10) NOT NULL,
+    direccion_principal VARCHAR(500),
+    activo BOOLEAN NOT NULL DEFAULT TRUE
+    );

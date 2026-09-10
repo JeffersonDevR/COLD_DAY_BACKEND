@@ -35,7 +35,7 @@ class TecnicosRepositoryTest {
 
     /** Saves the user first: shared primary key requires usuario.id to exist. */
     private Tecnico tecnico(Long usuarioId, String numeroIdentificacion, boolean activo) {
-        Tecnico tecnico = Tecnico.crear(usuarioId, numeroIdentificacion, null,
+        Tecnico tecnico = Tecnico.crear(usuarioId, numeroIdentificacion,
                 Set.of(CategoriaServicio.REFRIGERACION),
                 Set.of(new com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion(
                         "Tecnico", "SENA", LocalDate.of(2027, 1, 31))));

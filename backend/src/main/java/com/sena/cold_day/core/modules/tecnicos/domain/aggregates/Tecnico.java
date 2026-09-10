@@ -10,18 +10,14 @@ import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidad
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
-/**
- * Aggregate root for the technician profile. Identity lives in the Usuario
- * aggregate (referenced by usuarioId, never inherited) while this aggregate
- * owns the business profile and its state machines.
- */
 public class Tecnico {
 
-    private Long id;
+
+    private TecnicoId id;
     private Long usuarioId;
     private String numeroIdentificacion;
-    private String fotoUrl;
     private final Set<CategoriaServicio> categoriasServicio = new HashSet<>();
     private EstadoOperativo estadoOperativo;
     private EstadoValidacion estadoValidacion;
@@ -32,15 +28,13 @@ public class Tecnico {
     private Tecnico() {
     }
 
-    /**
-     * Alta: always born PENDIENTE and FUERA_DE_SERVICIO — cannot operate
-     * until the administrator approves its documents (CU-03).
-     */
-    public static Tecnico crear(Long usuarioId, String numeroIdentificacion, String fotoUrl,
+
+    public static Tecnico crear(Long usuarioId, String numeroIdentificacion,
             Set<CategoriaServicio> categoriasServicio, Set<Certificacion> certificaciones) {
         Tecnico tecnico = new Tecnico();
+        tecnico.id = TecnicoId.nueva();
         tecnico.usuarioId = usuarioId;
-        tecnico.actualizarPerfil(numeroIdentificacion, fotoUrl);
+        tecnico.actualizarPerfil(numeroIdentificacion);
         tecnico.reemplazarCategorias(categoriasServicio);
         tecnico.reemplazarCertificaciones(certificaciones);
         tecnico.estadoOperativo = EstadoOperativo.FUERA_DE_SERVICIO;
@@ -49,11 +43,12 @@ public class Tecnico {
         return tecnico;
     }
 
-    public static Tecnico reconstituir(Long id, Long usuarioId, String numeroIdentificacion, String fotoUrl,
-            Set<CategoriaServicio> categoriasServicio, EstadoOperativo estadoOperativo,
-            EstadoValidacion estadoValidacion, String motivoRechazoValidacion, Set<Certificacion> certificaciones,
-            boolean activo) {
-        Tecnico tecnico = crear(usuarioId, numeroIdentificacion, fotoUrl, categoriasServicio, certificaciones);
+    public static Tecnico reconstituir(TecnicoId id, Long usuarioId, String numeroIdentificacion,
+                                       Set<CategoriaServicio> categoriasServicio, EstadoOperativo estadoOperativo,
+                                       EstadoValidacion estadoValidacion, String motivoRechazoValidacion, Set<Certificacion> certificaciones,
+                                       boolean activo) {
+
+        Tecnico tecnico = crear(usuarioId, numeroIdentificacion, categoriasServicio, certificaciones);
         tecnico.id = id;
         tecnico.estadoOperativo = estadoOperativo;
         tecnico.estadoValidacion = estadoValidacion;
@@ -62,32 +57,27 @@ public class Tecnico {
         return tecnico;
     }
 
-    public void actualizarPerfil(String numeroIdentificacion, String fotoUrl) {
+    public void actualizarPerfil(String numeroIdentificacion) {
         this.numeroIdentificacion = numeroIdentificacion;
-        this.fotoUrl = fotoUrl;
     }
 
-    /**
-     * Invoked by ValidarDocumentacionTecnicoUseCase when the administrator
-     * approves the documents (CU-03, step 3). Remains FUERA_DE_SERVICIO until
-     * the tecnico himself flips the switch (CU-07).
-     */
+
     public void aprobarValidacion() {
         this.estadoValidacion = EstadoValidacion.APROBADO;
         this.motivoRechazoValidacion = null;
     }
 
-    /** Invoked when the administrator rejects the documents (CU-03, 2a). */
+
     public void rechazarValidacion(String motivo) {
         this.estadoValidacion = EstadoValidacion.RECHAZADO;
         this.motivoRechazoValidacion = motivo;
         this.estadoOperativo = EstadoOperativo.FUERA_DE_SERVICIO;
     }
 
-    /** Central guard: no operative transition while validation is not APROBADO (CU-03 + CU-07). */
+
     public void cambiarEstado(EstadoOperativo nuevoEstadoOperativo) {
         if (estadoValidacion != EstadoValidacion.APROBADO) {
-            throw new TecnicoNoValidadoException(id, estadoValidacion);
+            throw new TecnicoNoValidadoException(id,estadoValidacion );
         }
         if (estadoOperativo == EstadoOperativo.OCUPADO) {
             throw new TecnicoAsignadoException(numeroIdentificacion);
@@ -133,10 +123,9 @@ public class Tecnico {
     }
 
     public boolean isActivo() { return activo; }
-    public Long getId() { return id; }
+    public TecnicoId getId() { return id; }
     public Long getUsuarioId() { return usuarioId; }
     public String getNumeroIdentificacion() { return numeroIdentificacion; }
-    public String getFotoUrl() { return fotoUrl; }
     public Set<CategoriaServicio> getCategoriasServicio() { return Collections.unmodifiableSet(categoriasServicio); }
     public EstadoOperativo getEstadoOperativo() { return estadoOperativo; }
     public EstadoValidacion getEstadoValidacion() { return estadoValidacion; }

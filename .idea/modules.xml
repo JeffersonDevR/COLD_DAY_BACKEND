@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/COLD_DAY_BACKEND.iml" filepath="$PROJECT_DIR$/.idea/COLD_DAY_BACKEND.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/cold-day.main.iml" filepath="$PROJECT_DIR$/.idea/modules/cold-day.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/cold-day.test.iml" filepath="$PROJECT_DIR$/.idea/modules/cold-day.test.iml" />
     </modules>
   </component>
 </project>

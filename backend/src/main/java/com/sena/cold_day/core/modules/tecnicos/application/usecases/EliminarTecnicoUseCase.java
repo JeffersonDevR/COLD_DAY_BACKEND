@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.application.usecases;
 
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import org.springframework.stereotype.Service;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
@@ -16,7 +17,7 @@ public class EliminarTecnicoUseCase {
 		this.repository = repository;
 	}
 
-	public void eliminar(Long id) {
+	public void eliminar(TecnicoId id) {
 		Tecnico tecnico = repository.findByIdAndActivoTrue(id)
 				.orElseThrow(() -> new TecnicoNoEncontradoException(id));
 		tecnico.desactivar();

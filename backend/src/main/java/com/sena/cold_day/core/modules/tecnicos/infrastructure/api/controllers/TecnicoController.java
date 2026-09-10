@@ -27,6 +27,7 @@ import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.Tecni
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.ValidacionTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.DocumentoTecnicoApiResponse;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.TecnicoApiResponse;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
 import jakarta.validation.Valid;
 
@@ -66,17 +67,17 @@ public class TecnicoController {
     }
 
     @GetMapping("/{id}")
-    public TecnicoApiResponse obtener(@PathVariable Long id) {
+    public TecnicoApiResponse obtener(@PathVariable TecnicoId id) {
         return TecnicoApiResponse.from(buscar.obtener(id));
     }
 
     @PutMapping("/{id}")
-    public TecnicoApiResponse actualizar(@PathVariable Long id, @Valid @RequestBody TecnicoApiRequest request) {
+    public TecnicoApiResponse actualizar(@PathVariable TecnicoId id, @Valid @RequestBody TecnicoApiRequest request) {
         return TecnicoApiResponse.from(actualizar.actualizar(id, toApplicationRequest(request)));
     }
 
     @PutMapping("/{id}/estado")
-    public TecnicoApiResponse cambiarEstado(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+    public TecnicoApiResponse cambiarEstado(@PathVariable TecnicoId id, @RequestBody java.util.Map<String, String> body) {
         com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo nuevo =
                 com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo
                         .valueOf(body.getOrDefault("estadoOperativo", "FUERA_DE_SERVICIO"));
@@ -92,7 +93,7 @@ public class TecnicoController {
      */
     @PatchMapping("/{id}/validacion")
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<Void> validar(@PathVariable Long id,
+    public ResponseEntity<Void> validar(@PathVariable TecnicoId id,
             @Valid @RequestBody ValidacionTecnicoApiRequest request,
             @org.springframework.security.core.annotation.AuthenticationPrincipal
             com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser admin) {
@@ -105,7 +106,7 @@ public class TecnicoController {
     }
 
     @PostMapping("/{id}/documentos")
-    public ResponseEntity<DocumentoTecnicoApiResponse> registrarDocumento(@PathVariable Long id,
+    public ResponseEntity<DocumentoTecnicoApiResponse> registrarDocumento(@PathVariable  TecnicoId id,
             @Valid @RequestBody DocumentoTecnicoApiRequest request) {
         var documento = validarDocumentacion.registrarDocumento(id, request.tipo(), request.fechaVencimiento());
         return ResponseEntity.created(URI.create("/api/tecnicos/" + id + "/documentos"))
@@ -113,7 +114,7 @@ public class TecnicoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminar(@PathVariable TecnicoId id) {
         eliminar.eliminar(id);
         return ResponseEntity.noContent().build();
     }

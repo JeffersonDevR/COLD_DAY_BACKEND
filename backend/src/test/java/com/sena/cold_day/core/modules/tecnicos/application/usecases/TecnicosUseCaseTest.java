@@ -10,7 +10,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,8 +30,8 @@ import com.sena.cold_day.core.modules.tecnicos.domain.repository.DocumentoTecnic
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
-import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
 
 @ExtendWith(MockitoExtension.class)
 class TecnicosUseCaseTest {
@@ -68,7 +70,7 @@ class TecnicosUseCaseTest {
                         java.time.LocalDateTime.now(), false, true));
         when(repository.save(any(Tecnico.class))).thenAnswer(invocation -> {
             Tecnico toSave = invocation.getArgument(0);
-            return Tecnico.reconstituir(10L, 10L, toSave.getNumeroIdentificacion(), toSave.getFotoUrl(),
+            return Tecnico.reconstituir(com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId.desde(UUID.randomUUID()), 10L, toSave.getNumeroIdentificacion(),
                     toSave.getCategoriasServicio(), toSave.getEstadoOperativo(), toSave.getEstadoValidacion(),
                     toSave.getMotivoRechazoValidacion(), toSave.getCertificaciones(), toSave.isActivo());
         });
@@ -91,7 +93,7 @@ class TecnicosUseCaseTest {
 
     @Test
     void listarCombinesUsuarioAndTecnico() {
-        Tecnico tecnico = Tecnico.reconstituir(10L, 10L, "123", null, Set.of(), null, EstadoValidacion.PENDIENTE,
+        Tecnico tecnico = Tecnico.reconstituir(com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId.desde(UUID.randomUUID()), 10L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
                 null, Set.of(), true);
         when(repository.findByActivoTrue()).thenReturn(List.of(tecnico));
         when(usuarioRepository.buscarPorId(new com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId(10L)))
@@ -105,13 +107,14 @@ class TecnicosUseCaseTest {
 
     @Test
     void obtenerCombinesUsuarioAndTecnico() {
-        Tecnico tecnico = Tecnico.reconstituir(5L, 5L, "123", null, Set.of(), null, EstadoValidacion.PENDIENTE,
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico tecnico = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
                 null, Set.of(), true);
-        when(repository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(tecnico));
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(tecnico));
         when(usuarioRepository.buscarPorId(new com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId(5L)))
                 .thenReturn(Optional.of(usuario(5L)));
 
-        var response = buscar.obtener(5L);
+        var response = buscar.obtener(tecnicoId);
         assertThat(response.nombre()).isEqualTo("Ana");
         assertThat(response.correo()).isEqualTo("ana@example.com");
         assertThat(response.numeroIdentificacion()).isEqualTo("123");
@@ -119,15 +122,17 @@ class TecnicosUseCaseTest {
 
     @Test
     void actualizarUpdatesBothAggregates() {
-        Tecnico existing = Tecnico.reconstituir(5L, 5L, "123", null, Set.of(), null, EstadoValidacion.PENDIENTE,
+        com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId tecnicoId =
+                com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
                 null, Set.of(), true);
-        when(repository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(existing));
-        when(usuarioRepository.buscarPorId(new com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId(5L)))
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
+        when(usuarioRepository.buscarPorId(new UsuarioId(5L)))
                 .thenReturn(Optional.of(usuario(5L)));
         when(repository.save(any(Tecnico.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var updated = actualizar.actualizar(5L, request("456"));
+        var updated = actualizar.actualizar(tecnicoId, request("456"));
 
         assertThat(updated.numeroIdentificacion()).isEqualTo("456");
         assertThat(updated.nombre()).isEqualTo("Ana");
@@ -137,55 +142,59 @@ class TecnicosUseCaseTest {
 
     @Test
     void eliminarSetsActivoFalse() {
-        Tecnico existing = Tecnico.reconstituir(5L, 5L, "123", null, Set.of(), null, EstadoValidacion.PENDIENTE,
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
                 null, Set.of(), true);
-        when(repository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(existing));
-        eliminar.eliminar(5L);
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
+        eliminar.eliminar(tecnicoId);
         assertThat(existing.isActivo()).isFalse();
         verify(repository).save(existing);
     }
 
     @Test
     void aprobarRequiresVigenteDocuments() {
-        Tecnico existing = Tecnico.reconstituir(5L, 5L, "123", null, Set.of(), null, EstadoValidacion.PENDIENTE,
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
                 null, Set.of(), true);
-        when(repository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
 
-        when(documentoRepository.buscarPorTecnico(5L)).thenReturn(List.of(
-                new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, 5L, "IMG",
+        when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
+                new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, tecnicoId, "IMG",
                         LocalDate.of(2027, 1, 31))));
         when(repository.save(existing)).thenReturn(existing);
 
-        validarDocumentacion.aprobar(5L);
+        validarDocumentacion.aprobar(tecnicoId);
         assertThat(existing.getEstadoValidacion()).isEqualTo(EstadoValidacion.APROBADO);
-        verify(events).publishEvent(new com.sena.cold_day.core.modules.tecnicos.domain.events.TecnicoValidado(5L));
+        verify(events).publishEvent(new com.sena.cold_day.core.modules.tecnicos.domain.events.TecnicoValidado(tecnicoId));
     }
 
     @Test
     void aprobarRejectsIncompleteDocuments() {
-        Tecnico existing = Tecnico.reconstituir(5L, 5L, "123", null, Set.of(), null, EstadoValidacion.PENDIENTE,
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
                 null, Set.of(), true);
-        when(repository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(existing));
-        when(documentoRepository.buscarPorTecnico(5L)).thenReturn(List.of(
-                new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, 5L, "IMG",
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
+        when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
+                new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, tecnicoId, "IMG",
                         LocalDate.of(2020, 1, 31))));
 
-        assertThatThrownBy(() -> validarDocumentacion.aprobar(5L))
+        assertThatThrownBy(() -> validarDocumentacion.aprobar(tecnicoId))
                 .isInstanceOf(DocumentacionIncompletaException.class);
     }
 
     @Test
     void rechazarRecordsMotivoAndPublishesEvent() {
-        Tecnico existing = Tecnico.reconstituir(5L, 5L, "123", null, Set.of(), null, EstadoValidacion.PENDIENTE,
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
                 null, Set.of(), true);
-        when(repository.findByIdAndActivoTrue(5L)).thenReturn(Optional.of(existing));
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
         when(repository.save(existing)).thenReturn(existing);
 
-        validarDocumentacion.rechazar(5L, "Docs borrosos");
+        validarDocumentacion.rechazar(tecnicoId, "Docs borrosos");
 
         assertThat(existing.getEstadoValidacion()).isEqualTo(EstadoValidacion.RECHAZADO);
         assertThat(existing.getMotivoRechazoValidacion()).isEqualTo("Docs borrosos");
         verify(events).publishEvent(
-                new com.sena.cold_day.core.modules.tecnicos.domain.events.TecnicoValidacionRechazada(5L, "Docs borrosos"));
+                new com.sena.cold_day.core.modules.tecnicos.domain.events.TecnicoValidacionRechazada(tecnicoId, "Docs borrosos"));
     }
 }

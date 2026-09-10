@@ -3,6 +3,8 @@ package com.sena.cold_day.core.modules.tecnicos.domain.repository;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import java.util.List;
 import java.util.Optional;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface TecnicoRepository {
 
@@ -10,7 +12,8 @@ public interface TecnicoRepository {
 
     List<Tecnico> findByActivoTrue();
 
-    Optional<Tecnico> findByIdAndActivoTrue(Long id);
+    @Transactional(readOnly = true)
+    Optional<Tecnico> findByIdAndActivoTrue(TecnicoId id);
 
     void deleteAll();
 }

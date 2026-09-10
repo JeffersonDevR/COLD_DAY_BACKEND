@@ -8,11 +8,7 @@ import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPo
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
-/**
- * Aggregate root for identity/authentication. It never references business
- * roles (Tecnico, Cliente, ...) — dependency is one way: roles reference
- * UsuarioId. The rol is classification data, not class inheritance.
- */
+
 public class Usuario {
 
     private Long id;
@@ -27,9 +23,8 @@ public class Usuario {
     private boolean activo;
 
     private Usuario() {
-    }
 
-    /** Valid creation transition (alta). Rol is fixed once, immutable afterwards. */
+    }
     public static Usuario registrar(String nombre, String correo, String passwordPlano,
             String telefono, String fotoUrl, Rol rol, PasswordEncoderPort encoder) {
         if (nombre == null || nombre.isBlank()) {

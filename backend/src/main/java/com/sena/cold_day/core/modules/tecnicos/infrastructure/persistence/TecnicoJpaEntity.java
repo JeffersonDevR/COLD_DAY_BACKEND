@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.tecnicos.infrastructure.persistence;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -9,6 +10,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperati
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -37,7 +39,7 @@ import lombok.Setter;
 public class TecnicoJpaEntity {
 
     @Id
-    private Long id;
+    private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
@@ -46,9 +48,6 @@ public class TecnicoJpaEntity {
 
     @Column(name = "numero_identificacion", nullable = false, unique = true)
     private String numeroIdentificacion;
-
-    @Column(name = "foto_url")
-    private String fotoUrl;
 
     @Convert(converter = CategoriaServicioJsonConverter.class)
     @Column(name = "categorias_servicio", length = 4000)
@@ -86,7 +85,6 @@ public class TecnicoJpaEntity {
 
     private void apply(Tecnico source) {
         this.numeroIdentificacion = source.getNumeroIdentificacion();
-        this.fotoUrl = source.getFotoUrl();
         this.categoriasServicio = new HashSet<>(source.getCategoriasServicio());
         this.estadoOperativo = source.getEstadoOperativo();
         this.estadoValidacion = source.getEstadoValidacion();
@@ -96,7 +94,7 @@ public class TecnicoJpaEntity {
     }
 
     public Tecnico toDomain() {
-        return Tecnico.reconstituir(id, usuario.getId(), numeroIdentificacion, fotoUrl,
+        return Tecnico.reconstituir(TecnicoId.desde(id), usuario.getId(), numeroIdentificacion,
                 categoriasServicio == null ? new HashSet<>() : new HashSet<>(categoriasServicio),
                 estadoOperativo,
                 estadoValidacion == null ? EstadoValidacion.PENDIENTE : estadoValidacion,

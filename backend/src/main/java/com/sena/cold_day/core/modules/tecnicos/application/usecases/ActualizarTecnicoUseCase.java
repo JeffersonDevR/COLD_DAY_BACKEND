@@ -12,6 +12,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoReposito
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
 @Service
 public class ActualizarTecnicoUseCase {
@@ -28,7 +29,7 @@ public class ActualizarTecnicoUseCase {
     }
 
     @Transactional
-    public TecnicoResponse actualizar(Long id, TecnicoRequest request) {
+    public TecnicoResponse actualizar(TecnicoId id , TecnicoRequest request) {
         Tecnico tecnico = repository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new TecnicoNoEncontradoException(id));
         Usuario usuario = usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId()))

@@ -19,7 +19,7 @@ class TecnicoTest {
 
     @Test
     void startsPendingAndOutOfServiceUntilApproved() {
-        Tecnico tecnico = Tecnico.crear(7L, "123", null, Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
 
         assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.FUERA_DE_SERVICIO);
         assertThat(tecnico.getEstadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
@@ -31,7 +31,7 @@ class TecnicoTest {
 
     @Test
     void theValidationGateBlocksOperativeChangesBeforeApproval() {
-        Tecnico tecnico = Tecnico.crear(7L, "123", null, Set.of(), Set.of());
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
 
         assertThatThrownBy(() -> tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE))
                 .isInstanceOf(TecnicoNoValidadoException.class);
@@ -42,7 +42,7 @@ class TecnicoTest {
 
     @Test
     void approvalUnblocksTheOperativeStateButKeepsItOutOfService() {
-        Tecnico tecnico = Tecnico.crear(7L, "123", null, Set.of(), Set.of());
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
 
         tecnico.aprobarValidacion();
 
@@ -59,7 +59,7 @@ class TecnicoTest {
 
     @Test
     void rejectionForcesOutOfServiceAndKeepsTheReason() {
-        Tecnico tecnico = Tecnico.crear(7L, "123", null, Set.of(), Set.of());
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
         tecnico.aprobarValidacion();
         tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
 
@@ -74,7 +74,7 @@ class TecnicoTest {
 
     @Test
     void occupiedTechnicianCannotChangeState() {
-        Tecnico tecnico = Tecnico.crear(7L, "123", null, Set.of(), Set.of());
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
         tecnico.aprobarValidacion();
         tecnico.cambiarEstado(EstadoOperativo.OCUPADO);
 
@@ -85,7 +85,7 @@ class TecnicoTest {
     @Test
     void managesCertificationsThroughAggregateBehavior() {
         Certificacion certification = new Certificacion("Tecnico", "SENA", LocalDate.of(2027, 1, 31));
-        Tecnico tecnico = Tecnico.crear(7L, "123", null, Set.of(), Set.of());
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
 
         tecnico.agregarCertificacion(certification);
         tecnico.eliminarCertificacion(certification);

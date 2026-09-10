@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.tecnicos.infrastructure.repository;
 import java.util.List;
 import java.util.Optional;
 
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
-import com.sena.cold_day.core.modules.tecnicos.infrastructure.repository.SpringDataTecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.persistence.TecnicoJpaEntity;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
@@ -54,7 +54,7 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Tecnico> findByIdAndActivoTrue(Long id) {
+    public Optional<Tecnico> findByIdAndActivoTrue(TecnicoId id) {
         return repository.findByIdAndActivoTrue(id).map(TecnicoJpaEntity::toDomain);
     }
 

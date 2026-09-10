@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.tecnicos.infrastructure.repository;
 
 import java.util.List;
 
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,11 +20,14 @@ public class DocumentoTecnicoRepositoryAdapter implements DocumentoTecnicoReposi
         this.repository = repository;
     }
 
-    @Override
+
     @Transactional(readOnly = true)
-    public List<DocumentoTecnico> buscarPorTecnico(Long tecnicoId) {
-        return repository.findByTecnicoId(tecnicoId).stream().map(DocumentoTecnicoJpaEntity::toDomain).toList();
+    @Override
+    public List<DocumentoTecnico> buscarPorTecnico(TecnicoId tecnicoId) {
+        return repository.findByTecnicoId(tecnicoId.valor()).stream().map(DocumentoTecnicoJpaEntity::toDomain).toList();
     }
+
+
 
     @Override
     @Transactional

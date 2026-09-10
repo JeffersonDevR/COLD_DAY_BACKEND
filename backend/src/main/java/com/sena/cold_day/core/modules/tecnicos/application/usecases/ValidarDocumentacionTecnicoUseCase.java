@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.application.usecases;
 
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class ValidarDocumentacionTecnicoUseCase {
     }
 
     @Transactional
-    public void aprobar(Long tecnicoId) {
+    public void aprobar(TecnicoId tecnicoId) {
         Tecnico tecnico = tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
                 .orElseThrow(() -> new TecnicoNoEncontradoException(tecnicoId));
 
@@ -50,7 +51,7 @@ public class ValidarDocumentacionTecnicoUseCase {
     }
 
     @Transactional
-    public void rechazar(Long tecnicoId, String motivo) {
+    public void rechazar(TecnicoId tecnicoId, String motivo) {
         Tecnico tecnico = tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
                 .orElseThrow(() -> new TecnicoNoEncontradoException(tecnicoId));
         tecnico.rechazarValidacion(motivo);
@@ -59,7 +60,7 @@ public class ValidarDocumentacionTecnicoUseCase {
     }
 
     @Transactional
-    public DocumentoTecnico registrarDocumento(Long tecnicoId, String tipo, java.time.LocalDate fechaVencimiento) {
+    public DocumentoTecnico registrarDocumento(TecnicoId tecnicoId, String tipo, java.time.LocalDate fechaVencimiento) {
         tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
                 .orElseThrow(() -> new TecnicoNoEncontradoException(tecnicoId));
         return documentoRepository.save(new DocumentoTecnico(null, tecnicoId, tipo, fechaVencimiento));

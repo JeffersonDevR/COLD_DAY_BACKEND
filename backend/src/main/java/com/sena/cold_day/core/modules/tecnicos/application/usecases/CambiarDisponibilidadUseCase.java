@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.application.usecases;
 
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import org.springframework.stereotype.Service;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
@@ -17,7 +18,7 @@ public class CambiarDisponibilidadUseCase {
 		this.repository = repository;
 	}
 
-	public void cambiarEstado(Long id, EstadoOperativo nuevoEstado) {
+	public void cambiarEstado(TecnicoId id, EstadoOperativo nuevoEstado) {
 		Tecnico tecnico = repository.findByIdAndActivoTrue(id)
 				.orElseThrow(() -> new TecnicoNoEncontradoException(id));
 		tecnico.cambiarEstado(nuevoEstado);

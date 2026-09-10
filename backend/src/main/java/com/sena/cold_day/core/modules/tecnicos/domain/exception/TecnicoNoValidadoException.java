@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.tecnicos.domain.exception;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
 /**
  * Thrown when a tecnico tries to operate while its documentation is not
@@ -8,7 +9,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidac
  */
 public class TecnicoNoValidadoException extends RuntimeException {
 
-	public TecnicoNoValidadoException(Long id, EstadoValidacion estadoActual) {
+	public TecnicoNoValidadoException(TecnicoId id, EstadoValidacion estadoActual) {
 		super("El técnico %d no puede operar: validación documental en estado %s".formatted(id, estadoActual));
 	}
 }

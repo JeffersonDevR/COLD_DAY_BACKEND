@@ -21,13 +21,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 class TecnicosEventIT {
 
-    private static final List<Long> OBSERVED = new CopyOnWriteArrayList<>();
+    private static final List<TecnicoId> OBSERVED = new CopyOnWriteArrayList<>();
 
     @TestConfiguration
     static class EventRecordingConfiguration {
@@ -55,6 +56,6 @@ class TecnicosEventIT {
                                 + "\"numeroIdentificacion\":\"123\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         JsonNode response = objectMapper.readTree(body);
-        assertThat(OBSERVED).containsExactly(response.get("id").asLong());
+        assertThat(OBSERVED).containsExactly(TecnicoId.desde(response.get("id").asText()));
     }
 }

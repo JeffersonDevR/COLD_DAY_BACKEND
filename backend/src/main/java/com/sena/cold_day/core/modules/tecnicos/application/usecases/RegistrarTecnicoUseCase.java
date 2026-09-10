@@ -51,7 +51,7 @@ public class RegistrarTecnicoUseCase {
                         request.fotoUrl(), Rol.TECNICO, passwordEncoder));
 
         Tecnico tecnico = tecnicoRepository.save(Tecnico.crear(
-                usuario.getId(), request.numeroIdentificacion(), request.fotoUrl(),
+                usuario.getId(), request.numeroIdentificacion(),
                 request.categoriasServicio(), request.certificaciones()));
 
         events.publishEvent(new TecnicoCreado(tecnico.getId()));

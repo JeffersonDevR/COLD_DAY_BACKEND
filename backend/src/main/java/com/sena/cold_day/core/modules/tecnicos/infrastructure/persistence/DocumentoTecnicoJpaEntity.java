@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.tecnicos.infrastructure.persistence;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,6 +12,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "documento_tecnico")
@@ -24,7 +27,7 @@ public class DocumentoTecnicoJpaEntity {
     private Long id;
 
     @Column(name = "tecnico_id", nullable = false)
-    private Long tecnicoId;
+    private UUID tecnicoId;
 
     @Column(nullable = false)
     private String tipo;
@@ -35,13 +38,13 @@ public class DocumentoTecnicoJpaEntity {
     public static DocumentoTecnicoJpaEntity fromDomain(DocumentoTecnico documento) {
         DocumentoTecnicoJpaEntity target = new DocumentoTecnicoJpaEntity();
         target.id = documento.getId();
-        target.tecnicoId = documento.getTecnicoId();
+        target.tecnicoId = documento.getTecnicoId().valor();
         target.tipo = documento.getTipo();
         target.fechaVencimiento = documento.getFechaVencimiento();
         return target;
     }
 
     public DocumentoTecnico toDomain() {
-        return new DocumentoTecnico(id, tecnicoId, tipo, fechaVencimiento);
+        return new DocumentoTecnico(id, TecnicoId.desde(tecnicoId), tipo, fechaVencimiento);
     }
 }
