@@ -12,5 +12,6 @@ public record UsuarioRequest(
         @NotBlank String password,
         String telefono,
         String fotoUrl,
-        @NotNull Rol rol) {
+        @NotNull Rol rol,
+        boolean aceptaHabeasData) {
 }

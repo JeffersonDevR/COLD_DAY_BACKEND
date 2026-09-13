@@ -8,6 +8,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServ
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 public record TecnicoApiRequest(
         @NotBlank String nombre,
@@ -17,5 +18,6 @@ public record TecnicoApiRequest(
         @NotBlank String numeroIdentificacion,
         String fotoUrl,
         @NotEmpty Set<CategoriaServicio> categoriasServicio,
-        Set<Certificacion> certificaciones) {
+        Set<Certificacion> certificaciones,
+        @NotNull Boolean aceptaHabeasData) {
 }

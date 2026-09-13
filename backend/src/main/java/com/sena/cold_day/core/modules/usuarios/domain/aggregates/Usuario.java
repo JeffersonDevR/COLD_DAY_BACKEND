@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
@@ -25,8 +26,17 @@ public class Usuario {
     private Usuario() {
 
     }
+    /**
+     * Registration invariant: explicit Habeas Data consent is mandatory and is
+     * persisted atomically with the new account. Absent consent fails before any
+     * state is created.
+     */
     public static Usuario registrar(String nombre, String correo, String passwordPlano,
-            String telefono, String fotoUrl, Rol rol, PasswordEncoderPort encoder) {
+            String telefono, String fotoUrl, Rol rol, boolean aceptaHabeasData,
+            PasswordEncoderPort encoder) {
+        if (!aceptaHabeasData) {
+            throw new HabeasDataRequeridoException();
+        }
         if (nombre == null || nombre.isBlank()) {
             throw new IllegalArgumentException("nombre requerido");
         }
@@ -44,7 +54,7 @@ public class Usuario {
         usuario.fotoUrl = fotoUrl;
         usuario.rol = rol;
         usuario.fechaRegistro = LocalDateTime.now();
-        usuario.habeasDataAceptado = false;
+        usuario.habeasDataAceptado = true;
         usuario.activo = true;
         return usuario;
     }
@@ -84,8 +94,9 @@ public class Usuario {
         }
     }
 
-    public void aceptarHabeasData() {
-        this.habeasDataAceptado = true;
+    /** Replaces the stored hash. Token revocation is handled by the caller (PR2b adds tokenVersion). */
+    public void cambiarPassword(String nuevaPasswordPlano, PasswordEncoderPort encoder) {
+        this.passwordHash = encoder.encode(nuevaPasswordPlano);
     }
 
     public void actualizarPerfil(String nombre, String telefono, String fotoUrl) {

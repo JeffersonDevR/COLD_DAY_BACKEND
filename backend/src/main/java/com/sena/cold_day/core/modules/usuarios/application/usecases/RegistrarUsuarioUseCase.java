@@ -35,7 +35,7 @@ public class RegistrarUsuarioUseCase {
             throw new CorreoDuplicadoException(request.correo());
         }
         Usuario usuario = Usuario.registrar(request.nombre(), request.correo(), request.password(),
-                request.telefono(), request.fotoUrl(), request.rol(), passwordEncoder);
+                request.telefono(), request.fotoUrl(), request.rol(), request.aceptaHabeasData(), passwordEncoder);
         Usuario saved = repository.save(usuario);
         events.publishEvent(new UsuarioRegistrado(saved.getId(), saved.getRol()));
         return mapper.toResponse(saved);

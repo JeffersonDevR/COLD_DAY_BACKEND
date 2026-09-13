@@ -42,7 +42,8 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/usuarios", "/api/usuarios/login",
-                                "/api/usuarios/recuperar-contrasena", "/api/tecnicos").permitAll()
+                                "/api/usuarios/recuperar-contrasena", "/api/usuarios/reset-contrasena",
+                                "/api/tecnicos").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/tecnicos/*/validacion")
                         .hasRole("ADMINISTRADOR")
                         .anyRequest().authenticated())

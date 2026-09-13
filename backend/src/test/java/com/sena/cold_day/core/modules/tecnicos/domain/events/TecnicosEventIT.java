@@ -53,7 +53,8 @@ class TecnicosEventIT {
     void publishesTecnicoCreadoExactlyOnce() throws Exception {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto\","
-                                + "\"numeroIdentificacion\":\"123\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
+                                + "\"numeroIdentificacion\":\"123\",\"categoriasServicio\":[\"REFRIGERACION\"],"
+                                + "\"aceptaHabeasData\":true}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         JsonNode response = objectMapper.readTree(body);
         assertThat(OBSERVED).containsExactly(TecnicoId.desde(response.get("id").asText()));

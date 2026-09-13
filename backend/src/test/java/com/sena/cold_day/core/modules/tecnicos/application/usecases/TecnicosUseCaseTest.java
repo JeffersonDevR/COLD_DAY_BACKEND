@@ -52,7 +52,8 @@ class TecnicosUseCaseTest {
     private TecnicoRequest request(String numeroIdentificacion) {
         return new TecnicoRequest("Ana", "ana@example.com", "secreto", "3001234567", numeroIdentificacion, null,
                 Set.of(CategoriaServicio.REFRIGERACION),
-                Set.of(new Certificacion("Tecnico en refrigeracion", "SENA", LocalDate.of(2027, 1, 31))));
+                Set.of(new Certificacion("Tecnico en refrigeracion", "SENA", LocalDate.of(2027, 1, 31))),
+                true);
     }
 
     private Usuario usuario(Long id) {

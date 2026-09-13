@@ -122,6 +122,6 @@ public class TecnicoController {
     private TecnicoRequest toApplicationRequest(TecnicoApiRequest request) {
         return new TecnicoRequest(request.nombre(), request.correo(), request.password(), request.telefono(),
                 request.numeroIdentificacion(), request.fotoUrl(), request.categoriasServicio(),
-                request.certificaciones());
+                request.certificaciones(), Boolean.TRUE.equals(request.aceptaHabeasData()));
     }
 }

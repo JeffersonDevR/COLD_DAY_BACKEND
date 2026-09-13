@@ -39,7 +39,7 @@ class ClienteRepositoryTest {
             public String encode(String p) { return "fake:" + p; }
             public boolean matches(String p, String h) { return ("fake:" + p).equals(h); }
         };
-        Usuario usuario = Usuario.registrar("Ana", correo, "secreto", null, null, Rol.CLIENTE, encoder);
+        Usuario usuario = Usuario.registrar("Ana", correo, "secreto", null, null, Rol.CLIENTE, true, encoder);
         return usuarioRepository.save(UsuarioJpaEntity.fromDomain(usuario)).getId();
     }
 

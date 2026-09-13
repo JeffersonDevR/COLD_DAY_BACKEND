@@ -12,5 +12,6 @@ public record UsuarioApiRequest(
         @NotBlank String password,
         String telefono,
         String fotoUrl,
-        @NotNull Rol rol) {
+        @NotNull Rol rol,
+        @NotNull Boolean aceptaHabeasData) {
 }

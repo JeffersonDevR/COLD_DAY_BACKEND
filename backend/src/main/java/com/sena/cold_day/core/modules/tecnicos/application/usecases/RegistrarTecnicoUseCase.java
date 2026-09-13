@@ -48,7 +48,7 @@ public class RegistrarTecnicoUseCase {
         Usuario usuario = usuarioRepository.save(
                 com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario.registrar(
                         request.nombre(), request.correo(), request.password(), request.telefono(),
-                        request.fotoUrl(), Rol.TECNICO, passwordEncoder));
+                        request.fotoUrl(), Rol.TECNICO, request.aceptaHabeasData(), passwordEncoder));
 
         Tecnico tecnico = tecnicoRepository.save(Tecnico.crear(
                 usuario.getId(), request.numeroIdentificacion(),

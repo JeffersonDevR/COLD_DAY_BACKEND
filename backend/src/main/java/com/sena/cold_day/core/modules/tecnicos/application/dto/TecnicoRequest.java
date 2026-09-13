@@ -16,5 +16,6 @@ public record TecnicoRequest(
         @NotBlank String numeroIdentificacion,
         String fotoUrl,
         Set<CategoriaServicio> categoriasServicio,
-        Set<Certificacion> certificaciones) {
+        Set<Certificacion> certificaciones,
+        boolean aceptaHabeasData) {
 }

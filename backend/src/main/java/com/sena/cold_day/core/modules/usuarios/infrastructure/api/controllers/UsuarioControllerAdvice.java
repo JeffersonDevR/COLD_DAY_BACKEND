@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.TokenRecuperacionInvalidoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
@@ -31,6 +33,16 @@ public class UsuarioControllerAdvice {
     @ExceptionHandler(CorreoDuplicadoException.class)
     ResponseEntity<ApiError> handleDuplicate(CorreoDuplicadoException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    @ExceptionHandler(HabeasDataRequeridoException.class)
+    ResponseEntity<ApiError> handleHabeasData(HabeasDataRequeridoException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
+    }
+
+    @ExceptionHandler(TokenRecuperacionInvalidoException.class)
+    ResponseEntity<ApiError> handleTokenInvalido(TokenRecuperacionInvalidoException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     @ExceptionHandler(CredencialesInvalidasException.class)

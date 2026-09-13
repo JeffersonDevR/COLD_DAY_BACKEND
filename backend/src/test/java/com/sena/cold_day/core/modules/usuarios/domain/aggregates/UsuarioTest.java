@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
@@ -30,23 +31,43 @@ class UsuarioTest {
     @Test
     void registrarHashesThePasswordAndRejectsInvalidDatos() {
         Usuario usuario = Usuario.registrar("Ana", "ana@example.com", "secreto", "3001234567", null,
-                Rol.TECNICO, fakeEncoder);
+                Rol.TECNICO, true, fakeEncoder);
 
         assertThat(usuario.getCorreo()).isEqualTo("ana@example.com");
         assertThat(usuario.getRol()).isEqualTo(Rol.TECNICO);
-        assertThat(usuario.isHabeasDataAceptado()).isFalse();
+        assertThat(usuario.isHabeasDataAceptado()).isTrue();
         assertThat(usuario.getPasswordHash()).isEqualTo("fake:secreto");
 
         assertThatThrownBy(() -> Usuario.registrar("Ana", "correo-sin-arroba", "x", null, null,
-                Rol.CLIENTE, fakeEncoder)).isInstanceOf(IllegalArgumentException.class);
+                Rol.CLIENTE, true, fakeEncoder)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> Usuario.registrar("Ana", "ana@example.com", "x", null, null, null,
-                fakeEncoder)).isInstanceOf(IllegalArgumentException.class);
+                true, fakeEncoder)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void registrarRequiresHabeasDataConsent() {
+        assertThatThrownBy(() -> Usuario.registrar("Ana", "ana@example.com", "secreto", null, null,
+                Rol.CLIENTE, false, fakeEncoder))
+                .isInstanceOf(HabeasDataRequeridoException.class);
+    }
+
+    @Test
+    void registrarPersistsConsentAtomicallyForEveryRole() {
+        Usuario cliente = Usuario.registrar("Ana", "ana@example.com", "secreto", null, null,
+                Rol.CLIENTE, true, fakeEncoder);
+        Usuario tecnico = Usuario.registrar("Luis", "luis@example.com", "secreto", null, null,
+                Rol.TECNICO, true, fakeEncoder);
+
+        assertThat(cliente.isHabeasDataAceptado()).isTrue();
+        assertThat(tecnico.isHabeasDataAceptado()).isTrue();
+        assertThat(cliente.getPasswordHash()).isEqualTo("fake:secreto");
+        assertThat(tecnico.getPasswordHash()).isEqualTo("fake:secreto");
     }
 
     @Test
     void verificarCredencialesAcceptsValidAndRejectsWrong() {
         Usuario usuario = Usuario.registrar("Ana", "ana@example.com", "secreto", null, null,
-                Rol.CLIENTE, fakeEncoder);
+                Rol.CLIENTE, true, fakeEncoder);
 
         usuario.verificarCredenciales("secreto", fakeEncoder);
 
@@ -55,11 +76,10 @@ class UsuarioTest {
     }
 
     @Test
-    void aceptarHabeasDataAndPerfilUpdates() {
+    void registrarWithConsentThenUpdatePerfil() {
         Usuario usuario = Usuario.registrar("Ana", "ana@example.com", "secreto", null, null,
-                Rol.CONTABLE, fakeEncoder);
+                Rol.CONTABLE, true, fakeEncoder);
 
-        usuario.aceptarHabeasData();
         usuario.actualizarPerfil("Ana Maria", "3100000000", "http://foto");
 
         assertThat(usuario.isHabeasDataAceptado()).isTrue();

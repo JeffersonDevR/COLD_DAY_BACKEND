@@ -150,6 +150,7 @@ class TecnicosApiIT {
     private String validPayload(String numeroIdentificacion, String nombre) {
         return ("{\"numeroIdentificacion\":\"%s\",\"nombre\":\"%s\",\"correo\":\"ana@example.com\","
                 + "\"password\":\"secreto\",\"telefono\":\"3001234567\","
-                + "\"categoriasServicio\":[\"REFRIGERACION\"]}").formatted(numeroIdentificacion, nombre);
+                + "\"categoriasServicio\":[\"REFRIGERACION\"],\"aceptaHabeasData\":true}")
+                .formatted(numeroIdentificacion, nombre);
     }
 }

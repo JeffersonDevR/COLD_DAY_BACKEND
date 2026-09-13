@@ -15,6 +15,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentifica
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 
 @RestControllerAdvice(assignableTypes = TecnicoController.class)
@@ -40,6 +41,11 @@ public class TecnicoControllerAdvice {
     @ExceptionHandler(CorreoDuplicadoException.class)
     ResponseEntity<ApiError> handleDuplicateCorreo(CorreoDuplicadoException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    @ExceptionHandler(HabeasDataRequeridoException.class)
+    ResponseEntity<ApiError> handleHabeasData(HabeasDataRequeridoException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     @ExceptionHandler({ UsuarioNoEncontradoException.class })

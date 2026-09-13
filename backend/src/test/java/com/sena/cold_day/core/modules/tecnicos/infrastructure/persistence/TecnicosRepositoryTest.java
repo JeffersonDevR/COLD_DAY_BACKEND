@@ -52,7 +52,7 @@ class TecnicosRepositoryTest {
                     public boolean matches(String p, String h) { return ("fake:" + p).equals(h); }
                 };
         Usuario usuarioDomain = Usuario.registrar("Ana", correo, "secreto", null, null,
-                com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol.TECNICO, encoder);
+                com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol.TECNICO, true, encoder);
         com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity saved =
                 usuarioRepository.save(com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity
                         .fromDomain(usuarioDomain));

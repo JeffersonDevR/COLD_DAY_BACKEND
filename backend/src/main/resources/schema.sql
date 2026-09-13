@@ -47,3 +47,14 @@ CREATE TABLE IF NOT EXISTS clientes (
     longitud DOUBLE PRECISION,
     activo BOOLEAN NOT NULL DEFAULT TRUE
     );
+
+-- Single-use password reset tokens (design D10). Only the SHA-256 hash is
+-- stored; the plaintext token never reaches the database.
+CREATE TABLE IF NOT EXISTS token_recuperacion (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id BIGINT NOT NULL REFERENCES usuario(id),
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expira_en TIMESTAMP NOT NULL,
+    usado BOOLEAN NOT NULL DEFAULT FALSE,
+    creado_en TIMESTAMP NOT NULL
+);
