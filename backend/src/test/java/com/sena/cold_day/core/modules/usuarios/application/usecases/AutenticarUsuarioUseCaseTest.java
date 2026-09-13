@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.usuarios.application.usecases;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,14 +37,14 @@ class AutenticarUsuarioUseCaseTest {
 
     private Usuario usuario() {
         return Usuario.reconstituir(10L, "Ana", "ana@example.com", "hash", null, null, Rol.TECNICO,
-                Instant.now().atOffset(java.time.ZoneOffset.UTC).toLocalDateTime(), false, true);
+                Instant.now().atOffset(java.time.ZoneOffset.UTC).toLocalDateTime(), false, true, 0);
     }
 
     @Test
     void onlyValidCredentialsReachTheTokenIssuer() {
         when(usuarioRepository.buscarPorCorreo("ana@example.com")).thenReturn(java.util.Optional.of(usuario()));
         when(passwordEncoder.matches("secreto", "hash")).thenReturn(true);
-        when(tokenIssuer.emitir(new UsuarioId(10L), Rol.TECNICO))
+        when(tokenIssuer.emitir(new UsuarioId(10L), Rol.TECNICO, 0))
                 .thenReturn(Token.de("jwt", Instant.now().plusSeconds(60)));
 
         TokenResponse response = autenticar.autenticar("ana@example.com", "secreto");
@@ -51,7 +52,7 @@ class AutenticarUsuarioUseCaseTest {
         assertThat(response.token()).isEqualTo("jwt");
         assertThat(response.rol()).isEqualTo("TECNICO");
         assertThat(response.expiracion()).isNotNull();
-        verify(tokenIssuer).emitir(new UsuarioId(10L), Rol.TECNICO);
+        verify(tokenIssuer).emitir(new UsuarioId(10L), Rol.TECNICO, 0);
     }
 
     @Test
@@ -61,7 +62,7 @@ class AutenticarUsuarioUseCaseTest {
 
         assertThatThrownBy(() -> autenticar.autenticar("ana@example.com", "mal"))
                 .isInstanceOf(CredencialesInvalidasException.class);
-        verify(tokenIssuer, never()).emitir(any(), any());
+        verify(tokenIssuer, never()).emitir(any(), any(), anyInt());
     }
 
     @Test
@@ -70,6 +71,6 @@ class AutenticarUsuarioUseCaseTest {
 
         assertThatThrownBy(() -> autenticar.autenticar("na@example.com", "secreto"))
                 .isInstanceOf(CredencialesInvalidasException.class);
-        verify(tokenIssuer, never()).emitir(any(), any());
+        verify(tokenIssuer, never()).emitir(any(), any(), anyInt());
     }
 }

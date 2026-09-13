@@ -92,13 +92,25 @@ class UsuarioTest {
     void reconstituirKeepsPersistedState() {
         LocalDateTime fecha = LocalDateTime.of(2026, 1, 1, 10, 0);
         Usuario usuario = Usuario.reconstituir(5L, "Ana", "ana@example.com", "fake:hash", "300", null,
-                Rol.ADMINISTRADOR, fecha, true, true);
+                Rol.ADMINISTRADOR, fecha, true, true, 4);
 
         assertThat(usuario.getId()).isEqualTo(5L);
         assertThat(usuario.getUsuarioId()).isEqualTo(new UsuarioId(5L));
         assertThat(usuario.getRol()).isEqualTo(Rol.ADMINISTRADOR);
         assertThat(usuario.getFechaRegistro()).isEqualTo(fecha);
         assertThat(usuario.isHabeasDataAceptado()).isTrue();
+        assertThat(usuario.getTokenVersion()).isEqualTo(4);
         usuario.recuperarContrasena();
+    }
+
+    @Test
+    void tokenVersionStartsAtZeroAndBumpsMonotonically() {
+        Usuario usuario = Usuario.registrar("Ana", "ana@example.com", "secreto", null, null,
+                Rol.CLIENTE, true, fakeEncoder);
+
+        assertThat(usuario.getTokenVersion()).isZero();
+        assertThat(usuario.incrementarTokenVersion()).isEqualTo(1);
+        assertThat(usuario.incrementarTokenVersion()).isEqualTo(2);
+        assertThat(usuario.getTokenVersion()).isEqualTo(2);
     }
 }

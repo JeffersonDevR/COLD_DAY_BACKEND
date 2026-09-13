@@ -59,7 +59,7 @@ class TecnicosUseCaseTest {
     private Usuario usuario(Long id) {
         return Usuario.reconstituir(id, "Ana", "ana@example.com", "hash", "3001234567", null,
                 com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol.TECNICO,
-                java.time.LocalDateTime.now(), false, true);
+                java.time.LocalDateTime.now(), false, true, 0);
     }
 
     @Test
@@ -68,7 +68,7 @@ class TecnicosUseCaseTest {
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(
                 Usuario.reconstituir(10L, "Ana", "ana@example.com", "hash", null, null,
                         com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol.TECNICO,
-                        java.time.LocalDateTime.now(), false, true));
+                        java.time.LocalDateTime.now(), false, true, 0));
         // Own-UUID identity (design D12): the saved technician keeps its own
         // TecnicoId, distinct from the usuario primary key.
         TecnicoId persistedId = TecnicoId.nueva();

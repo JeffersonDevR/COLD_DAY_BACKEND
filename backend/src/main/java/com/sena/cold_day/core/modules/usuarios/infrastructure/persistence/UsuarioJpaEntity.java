@@ -56,6 +56,10 @@ public class UsuarioJpaEntity {
     @Column(nullable = false)
     private boolean activo = true;
 
+    /** Monotonic JWT generation counter (design D11). */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
     public static UsuarioJpaEntity fromDomain(Usuario usuario) {
         UsuarioJpaEntity target = new UsuarioJpaEntity();
         target.id = usuario.getId();
@@ -68,11 +72,12 @@ public class UsuarioJpaEntity {
         target.fechaRegistro = usuario.getFechaRegistro();
         target.habeasDataAceptado = usuario.isHabeasDataAceptado();
         target.activo = usuario.isActivo();
+        target.tokenVersion = usuario.getTokenVersion();
         return target;
     }
 
     public Usuario toDomain() {
         return Usuario.reconstituir(id, nombre, correo, passwordHash, telefono, fotoUrl, rol,
-                fechaRegistro, habeasDataAceptado, activo);
+                fechaRegistro, habeasDataAceptado, activo, tokenVersion);
     }
 }

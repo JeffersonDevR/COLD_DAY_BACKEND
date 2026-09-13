@@ -28,12 +28,13 @@ public class JwtTokenIssuer implements TokenIssuer {
     }
 
     @Override
-    public Token emitir(UsuarioId usuarioId, Rol rol) {
+    public Token emitir(UsuarioId usuarioId, Rol rol, int tokenVersion) {
         Instant ahora = Instant.now();
         Instant expira = ahora.plusMillis(expiracionMs);
         String jwt = Jwts.builder()
                 .subject(usuarioId.valor().toString())
                 .claim("rol", rol.name())
+                .claim("ver", tokenVersion)
                 .issuedAt(Date.from(ahora))
                 .expiration(Date.from(expira))
                 .signWith(key)

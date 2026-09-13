@@ -47,7 +47,7 @@ class RestablecerContrasenaUseCaseTest {
 
     private Usuario usuarioConHash(String hash) {
         return Usuario.reconstituir(10L, "Ana", "ana@example.com", hash, null, null, Rol.CLIENTE,
-                LocalDateTime.now(), true, true);
+                LocalDateTime.now(), true, true, 0);
     }
 
     @Test
@@ -62,6 +62,7 @@ class RestablecerContrasenaUseCaseTest {
         restablecer.restablecer("token-plano", "nueva-clave");
 
         assertThat(usuario.getPasswordHash()).isEqualTo("hash-nueva");
+        assertThat(usuario.getTokenVersion()).isEqualTo(1);
         verify(usuarioRepository).save(usuario);
         verify(tokenRepository).marcarUsado(eq(1L), any(Instant.class));
         verify(tokenRepository).invalidarTodosDe(usuarioId);

@@ -50,6 +50,8 @@ public class RestablecerContrasenaUseCase {
                 .orElseThrow(TokenRecuperacionInvalidoException::new);
 
         usuario.cambiarPassword(nuevaPassword, passwordEncoder);
+        // Revoke every token issued before the reset (design D11).
+        usuario.incrementarTokenVersion();
         usuarioRepository.save(usuario);
         tokenRepository.marcarUsado(token.getId(), ahora);
         tokenRepository.invalidarTodosDe(usuario.getUsuarioId());

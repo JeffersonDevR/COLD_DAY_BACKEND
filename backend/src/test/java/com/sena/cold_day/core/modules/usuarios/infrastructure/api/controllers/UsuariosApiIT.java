@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.usuarios.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -121,6 +122,31 @@ class UsuariosApiIT {
     }
 
     @Test
+    void passwordResetRevokesTheTokenIssuedBeforeItAndNewLoginWorks() throws Exception {
+        mockMvc.perform(post("/api/usuarios").contentType(MediaType.APPLICATION_JSON).content(validPayload(true)))
+                .andExpect(status().isCreated());
+
+        // Token minted before the reset is usable.
+        String preResetToken = loginAndGetToken("secreto");
+        assertThat(protectedStatus(preResetToken)).isEqualTo(200);
+
+        // Request + consume a recovery token (design D10).
+        mockMvc.perform(post("/api/usuarios/recuperar-contrasena").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"correo\":\"ana@example.com\"}")).andExpect(status().isAccepted());
+        assertThat(RECOVERIES).hasSize(1);
+        String resetToken = RECOVERIES.get(0).token();
+        mockMvc.perform(post("/api/usuarios/reset-contrasena").contentType(MediaType.APPLICATION_JSON)
+                .content(resetPayload(resetToken, "nueva-clave"))).andExpect(status().isNoContent());
+
+        // The pre-reset token is now revoked (design D11).
+        assertThat(protectedStatus(preResetToken)).isEqualTo(401);
+
+        // A fresh login with the new password yields a usable token.
+        String newToken = loginAndGetToken("nueva-clave");
+        assertThat(protectedStatus(newToken)).isEqualTo(200);
+    }
+
+    @Test
     void rejectsRegistrationWithoutHabeasDataConsentAndPersistsNothing() throws Exception {
         mockMvc.perform(post("/api/usuarios").contentType(MediaType.APPLICATION_JSON).content(validPayload(false)))
                 .andExpect(status().isBadRequest());
@@ -142,5 +168,18 @@ class UsuariosApiIT {
 
     private String resetPayload(String token, String nuevaPassword) {
         return "{\"token\":\"" + token + "\",\"nuevaPassword\":\"" + nuevaPassword + "\"}";
+    }
+
+    private String loginAndGetToken(String password) throws Exception {
+        String body = mockMvc.perform(post("/api/usuarios/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"correo\":\"ana@example.com\",\"password\":\"" + password + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return com.jayway.jsonpath.JsonPath.read(body, "$.token");
+    }
+
+    private int protectedStatus(String token) throws Exception {
+        return mockMvc.perform(get("/api/tecnicos").header("Authorization", "Bearer " + token))
+                .andReturn().getResponse().getStatus();
     }
 }

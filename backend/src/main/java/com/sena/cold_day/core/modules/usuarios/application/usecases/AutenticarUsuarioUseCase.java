@@ -30,7 +30,7 @@ public class AutenticarUsuarioUseCase {
 
         usuario.verificarCredenciales(passwordPlano, passwordEncoder);
 
-        var token = tokenIssuer.emitir(usuario.getUsuarioId(), usuario.getRol());
+        var token = tokenIssuer.emitir(usuario.getUsuarioId(), usuario.getRol(), usuario.getTokenVersion());
         return new TokenResponse(token.valor(), token.expiracion(), usuario.getRol().name());
     }
 }

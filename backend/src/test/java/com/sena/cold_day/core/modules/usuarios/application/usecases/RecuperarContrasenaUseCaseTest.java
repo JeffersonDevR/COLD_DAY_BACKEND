@@ -39,7 +39,7 @@ class RecuperarContrasenaUseCaseTest {
 
     private Usuario usuario(Long id, String correo, boolean activo) {
         return Usuario.reconstituir(id, "Ana", correo, "hash", null, null, Rol.CLIENTE,
-                LocalDateTime.now(), true, activo);
+                LocalDateTime.now(), true, activo, 0);
     }
 
     @Test

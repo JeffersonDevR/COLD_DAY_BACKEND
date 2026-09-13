@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS usuario (
     rol VARCHAR(20) NOT NULL DEFAULT 'CLIENTE',
     fecha_registro TIMESTAMP NOT NULL,
     habeas_data_aceptado BOOLEAN DEFAULT FALSE,
-    activo BOOLEAN DEFAULT TRUE
+    activo BOOLEAN DEFAULT TRUE,
+    token_version INT NOT NULL DEFAULT 0
 );
 
 -- Own-UUID identity (design D12): the technician has its own UUID primary key

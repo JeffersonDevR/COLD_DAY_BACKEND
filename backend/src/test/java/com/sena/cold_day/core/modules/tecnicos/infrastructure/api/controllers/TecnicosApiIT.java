@@ -144,7 +144,7 @@ class TecnicosApiIT {
     }
 
     private String adminJwt() {
-        return tokenIssuer.emitir(new UsuarioId(999L), Rol.ADMINISTRADOR).valor();
+        return tokenIssuer.emitir(new UsuarioId(999L), Rol.ADMINISTRADOR, 0).valor();
     }
 
     private String validPayload(String numeroIdentificacion, String nombre) {

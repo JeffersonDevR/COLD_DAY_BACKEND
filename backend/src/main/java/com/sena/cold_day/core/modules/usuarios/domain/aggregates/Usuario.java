@@ -22,6 +22,13 @@ public class Usuario {
     private LocalDateTime fechaRegistro;
     private boolean habeasDataAceptado;
     private boolean activo;
+    /**
+     * Monotonic token generation counter (design D11). Issued JWTs carry it as
+     * the {@code ver} claim; the authentication filter rejects tokens whose
+     * version is below the persisted value, so bumping it revokes every token
+     * issued before the bump.
+     */
+    private int tokenVersion;
 
     private Usuario() {
 
@@ -56,13 +63,14 @@ public class Usuario {
         usuario.fechaRegistro = LocalDateTime.now();
         usuario.habeasDataAceptado = true;
         usuario.activo = true;
+        usuario.tokenVersion = 0;
         return usuario;
     }
 
     /** Reconstitution from persistence. */
     public static Usuario reconstituir(Long id, String nombre, String correo, String passwordHash,
             String telefono, String fotoUrl, Rol rol, LocalDateTime fechaRegistro,
-            boolean habeasDataAceptado, boolean activo) {
+            boolean habeasDataAceptado, boolean activo, int tokenVersion) {
         Usuario usuario = new Usuario();
         usuario.id = Objects.requireNonNull(id, "id requerido");
         usuario.nombre = nombre;
@@ -74,6 +82,7 @@ public class Usuario {
         usuario.fechaRegistro = fechaRegistro;
         usuario.habeasDataAceptado = habeasDataAceptado;
         usuario.activo = activo;
+        usuario.tokenVersion = tokenVersion;
         return usuario;
     }
 
@@ -94,9 +103,17 @@ public class Usuario {
         }
     }
 
-    /** Replaces the stored hash. Token revocation is handled by the caller (PR2b adds tokenVersion). */
+    /** Replaces the stored hash. Token revocation is handled by {@link #incrementarTokenVersion()}. */
     public void cambiarPassword(String nuevaPasswordPlano, PasswordEncoderPort encoder) {
         this.passwordHash = encoder.encode(nuevaPasswordPlano);
+    }
+
+    /**
+     * Monotonic bump that revokes every previously issued token for this user
+     * (design D11). Returns the new version so callers and tests can observe it.
+     */
+    public int incrementarTokenVersion() {
+        return ++this.tokenVersion;
     }
 
     public void actualizarPerfil(String nombre, String telefono, String fotoUrl) {
@@ -122,6 +139,7 @@ public class Usuario {
     public boolean isHabeasDataAceptado() { return habeasDataAceptado; }
     public boolean isActivo() { return activo; }
     public String getPasswordHash() { return passwordHash; }
+    public int getTokenVersion() { return tokenVersion; }
 
     public void desactivar() { this.activo = false; }
 }
