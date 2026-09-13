@@ -33,7 +33,7 @@ class TecnicosRepositoryTest {
         usuarioRepository.deleteAll();
     }
 
-    /** Saves the user first: shared primary key requires usuario.id to exist. */
+    /** Saves the user first: tecnico.usuario_id references usuario.id. */
     private Tecnico tecnico(Long usuarioId, String numeroIdentificacion, boolean activo) {
         Tecnico tecnico = Tecnico.crear(usuarioId, numeroIdentificacion,
                 Set.of(CategoriaServicio.REFRIGERACION),
@@ -59,13 +59,23 @@ class TecnicosRepositoryTest {
         return saved.getId();
     }
 
+    /**
+     * Own-UUID identity (design D12): tecnico keeps its own TecnicoId primary key
+     * and references usuario through the scalar usuario_id column. It no longer
+     * shares usuario's primary key.
+     */
     @Test
-    void sharesPrimaryKeyWithUsuario() {
+    void keepsOwnUuidAndReferencesUsuario() {
         Long usuarioId = persistUsuario("ana@example.com");
-        Tecnico saved = repository.save(tecnico(usuarioId, "123", true));
-        assertThat(saved.getId()).isEqualTo(usuarioId);
+        Tecnico toSave = tecnico(usuarioId, "123", true);
+
+        Tecnico saved = repository.save(toSave);
+
+        assertThat(saved.getId()).isEqualTo(toSave.getId());
+        assertThat(saved.getId().valor()).isNotNull();
         assertThat(saved.getUsuarioId()).isEqualTo(usuarioId);
-        assertThat(saved.getEstadoValidacion()).isEqualTo(com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion.PENDIENTE);
+        assertThat(saved.getEstadoValidacion())
+                .isEqualTo(com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion.PENDIENTE);
     }
 
     @Test

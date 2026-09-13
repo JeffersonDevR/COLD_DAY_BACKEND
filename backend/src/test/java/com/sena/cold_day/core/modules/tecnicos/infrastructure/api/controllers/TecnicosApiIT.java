@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,8 +86,24 @@ class TecnicosApiIT {
     void rejectsInvalidAndUnknownRequests() throws Exception {
         mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors").isNotEmpty());
-        mockMvc.perform(get("/api/tecnicos/999").header("Authorization", "Bearer " + adminJwt()))
+        // Own-UUID identity (design D12): an unknown but well-formed UUID path
+        // variable resolves to 404 (a non-UUID segment is a 400 binding error).
+        mockMvc.perform(get("/api/tecnicos/" + UUID.randomUUID()).header("Authorization", "Bearer " + adminJwt()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void resolvesPersistedUuidPathVariableOnGet() throws Exception {
+        String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
+                .content(validPayload("321", "Ana"))).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = objectMapper.readTree(body).get("id").asText();
+
+        mockMvc.perform(get("/api/tecnicos/" + id).header("Authorization", "Bearer " + adminJwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.nombre").value("Ana"))
+                .andExpect(jsonPath("$.numeroIdentificacion").value("321"));
     }
 
     @Test

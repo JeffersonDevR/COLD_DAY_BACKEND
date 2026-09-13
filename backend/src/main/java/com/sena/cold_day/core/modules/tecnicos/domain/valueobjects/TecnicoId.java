@@ -24,6 +24,11 @@ public record TecnicoId(UUID valor) {
 
     }
 
+    /** Spring MVC path-variable binding factory: {@code @PathVariable TecnicoId}. */
+    public static TecnicoId of(String valor){
+        return new TecnicoId(UUID.fromString(valor));
+    }
+
     @Override
     public String toString(){
         return valor.toString();

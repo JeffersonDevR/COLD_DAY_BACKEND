@@ -27,15 +27,16 @@ public class Cliente {
         nuevoCliente.usuarioId = usuarioId;
         nuevoCliente.tipoCliente = tipoCliente;
         nuevoCliente.direccionPrincipal = direccionPrincipal;
+        nuevoCliente.activo = true;
         return nuevoCliente;
 
     }
 
-    public static Cliente reconstruir(ClienteId clienteId, UsuarioId usuarioId, TipoCliente tipoCliente, DireccionPrincipal direccionPrincipal, boolean activo){
+    public static Cliente reconstituir(ClienteId clienteId, UsuarioId usuarioId, TipoCliente tipoCliente, DireccionPrincipal direccionPrincipal, boolean activo){
 
         Cliente cliente = registrar(usuarioId,tipoCliente,direccionPrincipal);
         cliente.id = clienteId;
-        cliente.activo = true;
+        cliente.activo = activo;
         return cliente;
 
 

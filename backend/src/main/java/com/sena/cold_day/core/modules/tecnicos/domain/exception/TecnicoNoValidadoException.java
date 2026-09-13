@@ -10,6 +10,6 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 public class TecnicoNoValidadoException extends RuntimeException {
 
 	public TecnicoNoValidadoException(TecnicoId id, EstadoValidacion estadoActual) {
-		super("El técnico %d no puede operar: validación documental en estado %s".formatted(id, estadoActual));
+		super("El técnico %s no puede operar: validación documental en estado %s".formatted(id, estadoActual));
 	}
 }

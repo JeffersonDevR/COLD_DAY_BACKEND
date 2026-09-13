@@ -8,6 +8,6 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 public class TecnicoNoEncontradoException extends RuntimeException {
 
 	public TecnicoNoEncontradoException(TecnicoId id) {
-		super("Tecnico no encontrado: %d".formatted(id));
+		super("Tecnico no encontrado: %s".formatted(id));
 	}
 }

@@ -1,3 +1,9 @@
+-- Schema authority (design D8): Hibernate `create-drop` is authoritative for the
+-- H2 dev/test schema. This file is the canonical hand-maintained DDL mirror kept
+-- in lockstep with the entity model, and it runs before JPA initialization
+-- (spring.jpa.defer-datasource-initialization=false). `CREATE TABLE IF NOT EXISTS`
+-- is a no-op for entity tables, which Hibernate (re)creates.
+
 CREATE TABLE IF NOT EXISTS usuario (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
@@ -11,8 +17,11 @@ CREATE TABLE IF NOT EXISTS usuario (
     activo BOOLEAN DEFAULT TRUE
 );
 
+-- Own-UUID identity (design D12): the technician has its own UUID primary key
+-- and references usuario through a scalar usuario_id foreign key.
 CREATE TABLE IF NOT EXISTS tecnico (
-    id BIGINT PRIMARY KEY REFERENCES usuario(id),
+    id UUID PRIMARY KEY,
+    usuario_id BIGINT NOT NULL UNIQUE REFERENCES usuario(id),
     numero_identificacion VARCHAR(255) NOT NULL UNIQUE,
     estado_operativo VARCHAR(30) NOT NULL DEFAULT 'FUERA_DE_SERVICIO',
     estado_validacion VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
@@ -24,15 +33,17 @@ CREATE TABLE IF NOT EXISTS tecnico (
 
 CREATE TABLE IF NOT EXISTS documento_tecnico (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    tecnico_id BIGINT NOT NULL REFERENCES tecnico(id),
+    tecnico_id UUID NOT NULL REFERENCES tecnico(id),
     tipo VARCHAR(255) NOT NULL,
     fecha_vencimiento DATE
 );
 
-CREATE TABLE IF NOT EXISTS cliente (
+CREATE TABLE IF NOT EXISTS clientes (
     id UUID PRIMARY KEY,
     usuario_id BIGINT NOT NULL UNIQUE REFERENCES usuario(id),
     tipo VARCHAR(10) NOT NULL,
     direccion_principal VARCHAR(500),
+    latitud DOUBLE PRECISION,
+    longitud DOUBLE PRECISION,
     activo BOOLEAN NOT NULL DEFAULT TRUE
     );

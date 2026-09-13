@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -46,7 +48,9 @@ class SeguridadIT {
     @Test
     void administradorCanReachValidacion() throws Exception {
         String adminToken = tokenIssuer.emitir(new UsuarioId(999L), Rol.ADMINISTRADOR).valor();
-        mockMvc.perform(patch("/api/tecnicos/999999/validacion")
+        // Own-UUID identity (design D12): a well-formed but unknown UUID reaches
+        // the controller and yields 404 (a non-UUID segment would fail binding).
+        mockMvc.perform(patch("/api/tecnicos/" + UUID.randomUUID() + "/validacion")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"accion\":\"APROBAR\"}"))

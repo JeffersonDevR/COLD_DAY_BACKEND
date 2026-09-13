@@ -12,34 +12,28 @@ import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.persistence.TecnicoJpaEntity;
-import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
-import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
 
 @Repository
 public class TecnicoRepositoryAdapter implements TecnicoRepository {
 
     private final SpringDataTecnicoRepository repository;
-    private final SpringDataUsuarioRepository usuarioRepository;
 
-    public TecnicoRepositoryAdapter(SpringDataTecnicoRepository repository,
-            SpringDataUsuarioRepository usuarioRepository) {
+    public TecnicoRepositoryAdapter(SpringDataTecnicoRepository repository) {
         this.repository = repository;
-        this.usuarioRepository = usuarioRepository;
     }
 
     @Override
     @Transactional
     public Tecnico save(Tecnico tecnico) {
-        UsuarioJpaEntity usuarioRef = usuarioRepository.getReferenceById(tecnico.getUsuarioId());
         try {
             TecnicoJpaEntity entity = tecnico.getId() == null
-                    ? TecnicoJpaEntity.fromDomain(tecnico, usuarioRef)
-                    : repository.findById(tecnico.getId())
+                    ? TecnicoJpaEntity.fromDomain(tecnico)
+                    : repository.findById(tecnico.getId().valor())
                             .map(existing -> {
                                 existing.applyFromDomain(tecnico);
                                 return existing;
                             })
-                            .orElseGet(() -> TecnicoJpaEntity.fromDomain(tecnico, usuarioRef));
+                            .orElseGet(() -> TecnicoJpaEntity.fromDomain(tecnico));
             return repository.saveAndFlush(entity).toDomain();
         } catch (DataIntegrityViolationException e) {
             throw new NumeroIdentificacionDuplicadoException(tecnico.getNumeroIdentificacion());
@@ -55,7 +49,7 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<Tecnico> findByIdAndActivoTrue(TecnicoId id) {
-        return repository.findByIdAndActivoTrue(id).map(TecnicoJpaEntity::toDomain);
+        return repository.findByIdAndActivoTrue(id.valor()).map(TecnicoJpaEntity::toDomain);
     }
 
     @Override

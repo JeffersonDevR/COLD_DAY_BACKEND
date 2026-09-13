@@ -68,16 +68,19 @@ class TecnicosUseCaseTest {
                 Usuario.reconstituir(10L, "Ana", "ana@example.com", "hash", null, null,
                         com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol.TECNICO,
                         java.time.LocalDateTime.now(), false, true));
+        // Own-UUID identity (design D12): the saved technician keeps its own
+        // TecnicoId, distinct from the usuario primary key.
+        TecnicoId persistedId = TecnicoId.nueva();
         when(repository.save(any(Tecnico.class))).thenAnswer(invocation -> {
             Tecnico toSave = invocation.getArgument(0);
-            return Tecnico.reconstituir(com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId.desde(UUID.randomUUID()), 10L, toSave.getNumeroIdentificacion(),
+            return Tecnico.reconstituir(persistedId, 10L, toSave.getNumeroIdentificacion(),
                     toSave.getCategoriasServicio(), toSave.getEstadoOperativo(), toSave.getEstadoValidacion(),
                     toSave.getMotivoRechazoValidacion(), toSave.getCertificaciones(), toSave.isActivo());
         });
 
         var response = registrar.registrar(request("123"));
 
-        assertThat(response.id()).isEqualTo(10L);
+        assertThat(response.id()).isEqualTo(persistedId);
         assertThat(response.usuarioId()).isEqualTo(10L);
         assertThat(response.estadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
         assertThat(response.categoriasServicio()).contains(CategoriaServicio.REFRIGERACION);

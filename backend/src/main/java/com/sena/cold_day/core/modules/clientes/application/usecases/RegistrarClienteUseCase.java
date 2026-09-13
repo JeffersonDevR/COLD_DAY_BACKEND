@@ -6,7 +6,7 @@ import com.sena.cold_day.core.modules.clientes.application.dto.ClienteResponse;
 import com.sena.cold_day.core.modules.clientes.application.mappers.ClienteMapper;
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
-import com.sena.cold_day.core.modules.clientes.infraestructure.repository.ClienteRespository;
+import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
@@ -18,12 +18,12 @@ import java.util.Optional;
 
 @Service
 public class RegistrarClienteUseCase {
-    private final ClienteRespository clienteRespository;
+    private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
     private final ClienteMapper clienteMapper;
 
-    public RegistrarClienteUseCase(ClienteRespository clienteRespository, UsuarioRepository usuarioRepository, ClienteMapper clienteMapper) {
-        this.clienteRespository = clienteRespository;
+    public RegistrarClienteUseCase(ClienteRepository clienteRepository, UsuarioRepository usuarioRepository, ClienteMapper clienteMapper) {
+        this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
         this.clienteMapper = clienteMapper;
     }
@@ -35,7 +35,7 @@ public class RegistrarClienteUseCase {
                 .orElseThrow(() -> new UsuarioNoEncontradoException(usuarioId.valor()));
 
 
-        Cliente cliente = clienteRespository.save(Cliente.registrar(
+        Cliente cliente = clienteRepository.save(Cliente.registrar(
                 usuario.getUsuarioId(), request.tipoCliente(), DireccionPrincipal.con(request.calle(),request.ciudad(),request.barrio(),request.ubicacion())
         ));
 

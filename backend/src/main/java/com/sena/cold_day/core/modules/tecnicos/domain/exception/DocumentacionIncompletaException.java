@@ -9,6 +9,6 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 public class DocumentacionIncompletaException extends RuntimeException {
 
     public DocumentacionIncompletaException(TecnicoId tecnicoId) {
-        super("Documentacion incompleta o vencida del técnico %d".formatted(tecnicoId));
+        super("Documentacion incompleta o vencida del técnico %s".formatted(tecnicoId));
     }
 }
