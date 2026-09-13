@@ -5,6 +5,7 @@ import com.sena.cold_day.core.modules.clientes.application.dto.ClienteRequest;
 import com.sena.cold_day.core.modules.clientes.application.dto.ClienteResponse;
 import com.sena.cold_day.core.modules.clientes.application.mappers.ClienteMapper;
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
+import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteDuplicadoException;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
@@ -13,8 +14,6 @@ import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioReposito
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 public class RegistrarClienteUseCase {
@@ -31,9 +30,12 @@ public class RegistrarClienteUseCase {
     @Transactional
     public ClienteResponse registrar(ClienteRequest request , UsuarioId usuarioId){
 
-        Usuario usuario = usuarioRepository.buscarPorId(new UsuarioId(usuarioId.valor()))
+        Usuario usuario = usuarioRepository.buscarPorId(usuarioId)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(usuarioId.valor()));
 
+        if (clienteRepository.findByUsuarioId(usuarioId).isPresent()) {
+            throw new ClienteDuplicadoException(usuarioId);
+        }
 
         Cliente cliente = clienteRepository.save(Cliente.registrar(
                 usuario.getUsuarioId(), request.tipoCliente(), DireccionPrincipal.con(request.calle(),request.ciudad(),request.barrio(),request.ubicacion())
