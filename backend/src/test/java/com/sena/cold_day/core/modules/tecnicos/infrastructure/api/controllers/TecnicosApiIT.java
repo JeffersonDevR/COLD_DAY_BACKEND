@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.sena.cold_day.core.modules.tecnicos.application.usecases.VerificarVigenciaDocumentalUseCase;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
@@ -37,6 +38,7 @@ class TecnicosApiIT {
     @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired JwtTokenIssuer tokenIssuer;
     @Autowired ObjectMapper objectMapper;
+    @Autowired VerificarVigenciaDocumentalUseCase verificarVigencia;
 
     @BeforeEach
     @AfterEach
@@ -141,6 +143,31 @@ class TecnicosApiIT {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"DISPONIBLE\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.estadoOperativo").value("DISPONIBLE"))
                 .andExpect(jsonPath("$.estadoValidacion").value("APROBADO"));
+    }
+
+    @Test
+    void suspendsAnApprovedTechnicianWhenADocumentExpires() throws Exception {
+        String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
+                .content(validPayload("789", "Ana"))).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = objectMapper.readTree(body).get("id").asText();
+        String adminToken = adminJwt();
+
+        mockMvc.perform(post("/api/tecnicos/" + id + "/documentos")
+                .header("Authorization", "Bearer " + adminToken).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"tipo\":\"Cedula\",\"fechaVencimiento\":\"2029-01-01\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(patch("/api/tecnicos/" + id + "/validacion")
+                .header("Authorization", "Bearer " + adminToken).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"accion\":\"APROBAR\"}")).andExpect(status().isNoContent());
+
+        // The daily vigencia sweep runs with a fixed "today" past the expiry date.
+        verificarVigencia.ejecutar(java.time.LocalDate.of(2030, 1, 1));
+
+        mockMvc.perform(get("/api/tecnicos/" + id).header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estadoValidacion").value("SUSPENDIDO"))
+                .andExpect(jsonPath("$.estadoOperativo").value("FUERA_DE_SERVICIO"));
     }
 
     private String adminJwt() {

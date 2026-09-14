@@ -20,7 +20,7 @@ public class DocumentoTecnico {
 	private String tipo;
 	private LocalDate fechaVencimiento;
 
-	public boolean estaVigente() {
-		return fechaVencimiento != null && !fechaVencimiento.isBefore(LocalDate.now());
+	public boolean estaVigente(LocalDate hoy) {
+		return fechaVencimiento != null && !fechaVencimiento.isBefore(hoy);
 	}
 }

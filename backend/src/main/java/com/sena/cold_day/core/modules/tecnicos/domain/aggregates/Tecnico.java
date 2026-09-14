@@ -1,10 +1,12 @@
 package com.sena.cold_day.core.modules.tecnicos.domain.aggregates;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -62,9 +64,25 @@ public class Tecnico {
     }
 
 
-    public void aprobarValidacion() {
+    /**
+     * Approves documentary validation only when every certification is still
+     * vigente (RF-F1-03). Document vigencia is enforced by the use case, which
+     * owns the document repository.
+     */
+    public void aprobarValidacion(LocalDate hoy) {
+        boolean certificacionesVigentes = certificaciones.stream()
+                .allMatch(certificacion -> certificacion.estaVigente(hoy));
+        if (!certificacionesVigentes) {
+            throw new DocumentacionIncompletaException(id);
+        }
         this.estadoValidacion = EstadoValidacion.APROBADO;
         this.motivoRechazoValidacion = null;
+    }
+
+    /** A document expired unrenewed: habilitation is suspended and the technician leaves service. */
+    public void suspenderPorVencimiento() {
+        this.estadoValidacion = EstadoValidacion.SUSPENDIDO;
+        this.estadoOperativo = EstadoOperativo.FUERA_DE_SERVICIO;
     }
 
 

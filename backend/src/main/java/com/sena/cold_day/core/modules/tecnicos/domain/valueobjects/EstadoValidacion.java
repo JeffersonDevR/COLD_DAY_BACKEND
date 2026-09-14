@@ -5,5 +5,5 @@ package com.sena.cold_day.core.modules.tecnicos.domain.valueobjects;
  * the tecnico cannot reach operative states while not APROBADO.
  */
 public enum EstadoValidacion {
-	PENDIENTE, APROBADO, RECHAZADO
+	PENDIENTE, APROBADO, RECHAZADO, SUSPENDIDO
 }

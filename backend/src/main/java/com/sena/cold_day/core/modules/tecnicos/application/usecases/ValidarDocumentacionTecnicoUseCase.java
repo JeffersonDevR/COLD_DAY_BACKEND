@@ -39,13 +39,14 @@ public class ValidarDocumentacionTecnicoUseCase {
                 .orElseThrow(() -> new TecnicoNoEncontradoException(tecnicoId));
 
         // Business rule: only approve if EVERY document is vigente.
+        java.time.LocalDate hoy = java.time.LocalDate.now();
         boolean todosVigentes = documentoRepository.buscarPorTecnico(tecnicoId).stream()
-                .allMatch(DocumentoTecnico::estaVigente);
+                .allMatch(documento -> documento.estaVigente(hoy));
         if (!todosVigentes) {
             throw new DocumentacionIncompletaException(tecnicoId);
         }
 
-        tecnico.aprobarValidacion();
+        tecnico.aprobarValidacion(hoy);
         tecnicoRepository.save(tecnico);
         events.publishEvent(new TecnicoValidado(tecnicoId));
     }

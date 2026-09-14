@@ -8,6 +8,6 @@ public record DocumentoTecnicoApiResponse(Long id, TecnicoId tecnicoId, String t
 
     public static DocumentoTecnicoApiResponse from(DocumentoTecnico documento) {
         return new DocumentoTecnicoApiResponse(documento.getId(), documento.getTecnicoId(), documento.getTipo(),
-                documento.getFechaVencimiento(), documento.estaVigente());
+                documento.getFechaVencimiento(), documento.estaVigente(java.time.LocalDate.now()));
     }
 }

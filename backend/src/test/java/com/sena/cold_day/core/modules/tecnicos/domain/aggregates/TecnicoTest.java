@@ -9,6 +9,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -44,7 +45,7 @@ class TecnicoTest {
     void approvalUnblocksTheOperativeStateButKeepsItOutOfService() {
         Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
 
-        tecnico.aprobarValidacion();
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
 
         assertThat(tecnico.getEstadoValidacion()).isEqualTo(EstadoValidacion.APROBADO);
         assertThat(tecnico.getMotivoRechazoValidacion()).isNull();
@@ -60,7 +61,7 @@ class TecnicoTest {
     @Test
     void rejectionForcesOutOfServiceAndKeepsTheReason() {
         Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
-        tecnico.aprobarValidacion();
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
         tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
 
         tecnico.rechazarValidacion("Documentos vencidos");
@@ -75,7 +76,7 @@ class TecnicoTest {
     @Test
     void occupiedTechnicianCannotChangeState() {
         Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
-        tecnico.aprobarValidacion();
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
         tecnico.cambiarEstado(EstadoOperativo.OCUPADO);
 
         assertThatThrownBy(() -> tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE))
@@ -91,5 +92,41 @@ class TecnicoTest {
         tecnico.eliminarCertificacion(certification);
 
         assertThat(tecnico.getCertificaciones()).isEmpty();
+    }
+
+    @Test
+    void approvalIsDeniedWhenACertificationIsExpired() {
+        Certificacion expired = new Certificacion("Tecnico", "SENA",
+                LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31));
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of(expired));
+
+        assertThatThrownBy(() -> tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1)))
+                .isInstanceOf(DocumentacionIncompletaException.class);
+        assertThat(tecnico.getEstadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
+    }
+
+    @Test
+    void approvalSucceedsWhenEveryCertificationIsVigente() {
+        Certificacion vigente = new Certificacion("Tecnico", "SENA",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2027, 1, 1));
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of(vigente));
+
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
+
+        assertThat(tecnico.getEstadoValidacion()).isEqualTo(EstadoValidacion.APROBADO);
+    }
+
+    @Test
+    void suspenderPorVencimientoSuspendsAndForcesOutOfService() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
+        tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
+
+        tecnico.suspenderPorVencimiento();
+
+        assertThat(tecnico.getEstadoValidacion()).isEqualTo(EstadoValidacion.SUSPENDIDO);
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.FUERA_DE_SERVICIO);
+        assertThatThrownBy(() -> tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE))
+                .isInstanceOf(TecnicoNoValidadoException.class);
     }
 }

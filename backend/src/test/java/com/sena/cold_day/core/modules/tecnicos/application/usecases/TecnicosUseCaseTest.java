@@ -201,4 +201,19 @@ class TecnicosUseCaseTest {
         verify(events).publishEvent(
                 new com.sena.cold_day.core.modules.tecnicos.domain.events.TecnicoValidacionRechazada(tecnicoId, "Docs borrosos"));
     }
+
+    @Test
+    void aprobarRejectsExpiredCertification() {
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Certificacion expired = new Certificacion("Tecnico", "SENA",
+                LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31));
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null,
+                EstadoValidacion.PENDIENTE, null, Set.of(expired), true);
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
+        when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> validarDocumentacion.aprobar(tecnicoId))
+                .isInstanceOf(DocumentacionIncompletaException.class);
+        assertThat(existing.getEstadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
+    }
 }
