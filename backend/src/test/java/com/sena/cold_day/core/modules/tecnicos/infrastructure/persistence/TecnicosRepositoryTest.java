@@ -19,6 +19,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServ
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.repository.TecnicoRepositoryAdapter;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
+import com.sena.cold_day.core.shared.domain.Point;
 
 @DataJpaTest
 @Import(TecnicoRepositoryAdapter.class)
@@ -100,5 +101,30 @@ class TecnicosRepositoryTest {
     void retainsSoftDeletedRow() {
         Tecnico deleted = repository.save(tecnico(persistUsuario("m@example.com"), "300", false));
         assertThat(repository.findByIdAndActivoTrue(deleted.getId())).isEmpty();
+    }
+
+    @Test
+    void roundTripsLocationAndTrackingFlag() {
+        Long usuarioId = persistUsuario("geo@example.com");
+        Tecnico tecnico = tecnico(usuarioId, "400", true);
+        java.time.Instant ahora = java.time.Instant.parse("2026-02-01T12:00:00Z");
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), ahora);
+
+        Tecnico saved = repository.save(tecnico);
+
+        assertThat(repository.findByIdAndActivoTrue(saved.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getUbicacion()).isEqualTo(new Point(4.6, -74.0));
+            assertThat(found.isTrackingActivo()).isTrue();
+            assertThat(found.getUbicacionActualizadaEn()).isEqualTo(ahora);
+        });
+
+        // Deactivation keeps the final coordinates (RF-F1-27).
+        saved.desactivarTracking();
+        repository.save(saved);
+
+        assertThat(repository.findByIdAndActivoTrue(saved.getId())).hasValueSatisfying(found -> {
+            assertThat(found.isTrackingActivo()).isFalse();
+            assertThat(found.getUbicacion()).isEqualTo(new Point(4.6, -74.0));
+        });
     }
 }

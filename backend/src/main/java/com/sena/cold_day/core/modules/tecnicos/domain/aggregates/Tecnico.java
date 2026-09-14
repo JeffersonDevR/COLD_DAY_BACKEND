@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.domain.aggregates;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServ
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 public class Tecnico {
 
@@ -26,6 +28,9 @@ public class Tecnico {
     private String motivoRechazoValidacion;
     private final Set<Certificacion> certificaciones = new HashSet<>();
     private boolean activo = true;
+    private Point ubicacion;
+    private boolean trackingActivo;
+    private Instant ubicacionActualizadaEn;
 
     private Tecnico() {
     }
@@ -48,7 +53,7 @@ public class Tecnico {
     public static Tecnico reconstituir(TecnicoId id, Long usuarioId, String numeroIdentificacion,
                                        Set<CategoriaServicio> categoriasServicio, EstadoOperativo estadoOperativo,
                                        EstadoValidacion estadoValidacion, String motivoRechazoValidacion, Set<Certificacion> certificaciones,
-                                       boolean activo) {
+                                       boolean activo, Point ubicacion, boolean trackingActivo, Instant ubicacionActualizadaEn) {
 
         Tecnico tecnico = crear(usuarioId, numeroIdentificacion, categoriasServicio, certificaciones);
         tecnico.id = id;
@@ -56,6 +61,9 @@ public class Tecnico {
         tecnico.estadoValidacion = estadoValidacion;
         tecnico.motivoRechazoValidacion = motivoRechazoValidacion;
         tecnico.activo = activo;
+        tecnico.ubicacion = ubicacion;
+        tecnico.trackingActivo = trackingActivo;
+        tecnico.ubicacionActualizadaEn = ubicacionActualizadaEn;
         return tecnico;
     }
 
@@ -140,7 +148,38 @@ public class Tecnico {
         activo = false;
     }
 
+    /**
+     * Captures a new coordinate and (re)activates real-time tracking (RF-F1-06).
+     * Range validation lives in {@link Point}.
+     */
+    public void actualizarUbicacion(Point ubicacion, Instant ahora) {
+        if (ubicacion == null) {
+            throw new IllegalArgumentException("La ubicacion es requerida");
+        }
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento de actualizacion es requerido");
+        }
+        this.ubicacion = ubicacion;
+        this.ubicacionActualizadaEn = ahora;
+        this.trackingActivo = true;
+    }
+
+    /**
+     * Terminal OT states stop real-time tracking while the final coordinates
+     * remain persisted for audit (RF-F1-27, design D9).
+     */
+    public void desactivarTracking() {
+        this.trackingActivo = false;
+    }
+
+    public void activarTracking() {
+        this.trackingActivo = true;
+    }
+
     public boolean isActivo() { return activo; }
+    public Point getUbicacion() { return ubicacion; }
+    public boolean isTrackingActivo() { return trackingActivo; }
+    public Instant getUbicacionActualizadaEn() { return ubicacionActualizadaEn; }
     public TecnicoId getId() { return id; }
     public Long getUsuarioId() { return usuarioId; }
     public String getNumeroIdentificacion() { return numeroIdentificacion; }

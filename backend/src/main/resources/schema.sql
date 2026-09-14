@@ -29,7 +29,11 @@ CREATE TABLE IF NOT EXISTS tecnico (
     motivo_rechazo_validacion VARCHAR(500),
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     categorias_servicio VARCHAR(4000),
-    certificaciones VARCHAR(4000)
+    certificaciones VARCHAR(4000),
+    latitud DOUBLE PRECISION,
+    longitud DOUBLE PRECISION,
+    tracking_activo BOOLEAN NOT NULL DEFAULT FALSE,
+    ubicacion_actualizada_en TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS documento_tecnico (

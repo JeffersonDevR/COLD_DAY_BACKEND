@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.sena.cold_day.core.shared.errors.ApiError;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
@@ -30,6 +31,12 @@ public class TecnicoControllerAdvice {
 
     @ExceptionHandler(TecnicoNoEncontradoException.class)
     ResponseEntity<ApiError> handleNotFound(TecnicoNoEncontradoException exception) {
+        return error(HttpStatus.NOT_FOUND, exception);
+    }
+
+    /** The principal has no active technician profile (location endpoint). */
+    @ExceptionHandler(PerfilTecnicoNoEncontradoException.class)
+    ResponseEntity<ApiError> handlePerfilNotFound(PerfilTecnicoNoEncontradoException exception) {
         return error(HttpStatus.NOT_FOUND, exception);
     }
 

@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.infrastructure.persistence;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -10,6 +11,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperati
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -65,6 +67,18 @@ public class TecnicoJpaEntity {
     @Column(nullable = false)
     private boolean activo = true;
 
+    @Column(name = "latitud")
+    private Double latitud;
+
+    @Column(name = "longitud")
+    private Double longitud;
+
+    @Column(name = "tracking_activo", nullable = false)
+    private boolean trackingActivo = false;
+
+    @Column(name = "ubicacion_actualizada_en")
+    private Instant ubicacionActualizadaEn;
+
     public static TecnicoJpaEntity fromDomain(Tecnico source) {
         TecnicoJpaEntity target = new TecnicoJpaEntity();
         target.id = source.getId() == null ? null : source.getId().valor();
@@ -86,14 +100,21 @@ public class TecnicoJpaEntity {
         this.motivoRechazoValidacion = source.getMotivoRechazoValidacion();
         this.certificaciones = new HashSet<>(source.getCertificaciones());
         this.activo = source.isActivo();
+        Point ubicacion = source.getUbicacion();
+        this.latitud = ubicacion == null ? null : ubicacion.latitud();
+        this.longitud = ubicacion == null ? null : ubicacion.longitud();
+        this.trackingActivo = source.isTrackingActivo();
+        this.ubicacionActualizadaEn = source.getUbicacionActualizadaEn();
     }
 
     public Tecnico toDomain() {
+        Point ubicacion = latitud == null || longitud == null ? null : new Point(latitud, longitud);
         return Tecnico.reconstituir(TecnicoId.desde(id), usuarioId, numeroIdentificacion,
                 categoriasServicio == null ? new HashSet<>() : new HashSet<>(categoriasServicio),
                 estadoOperativo,
                 estadoValidacion == null ? EstadoValidacion.PENDIENTE : estadoValidacion,
                 motivoRechazoValidacion,
-                certificaciones == null ? new HashSet<>() : new HashSet<>(certificaciones), activo);
+                certificaciones == null ? new HashSet<>() : new HashSet<>(certificaciones), activo,
+                ubicacion, trackingActivo, ubicacionActualizadaEn);
     }
 }

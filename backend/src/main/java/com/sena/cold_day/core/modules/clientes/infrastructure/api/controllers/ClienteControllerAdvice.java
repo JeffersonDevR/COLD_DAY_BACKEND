@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteDuplicadoException;
+import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
@@ -33,6 +34,12 @@ public class ClienteControllerAdvice {
     @ExceptionHandler(ClienteDuplicadoException.class)
     ResponseEntity<ApiError> handleDuplicate(ClienteDuplicadoException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** The authenticated principal has no client profile (location endpoint). */
+    @ExceptionHandler(ClienteNoEncontradoException.class)
+    ResponseEntity<ApiError> handleClienteNotFound(ClienteNoEncontradoException exception) {
+        return error(HttpStatus.NOT_FOUND, exception);
     }
 
     /** Race safety net: unique {@code usuario_id} violation maps to 409. */

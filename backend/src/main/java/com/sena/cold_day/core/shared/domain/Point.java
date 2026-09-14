@@ -6,7 +6,7 @@ public record Point(double latitud, double longitud) {
         if (latitud < -90 || latitud > 90){
             throw new IllegalArgumentException("latitud fuera de rango");
         }
-        if (longitud < -90 || longitud > 90){
+        if (longitud < -180 || longitud > 180){
             throw new IllegalArgumentException("longitud fuera de rango");
         }
     }

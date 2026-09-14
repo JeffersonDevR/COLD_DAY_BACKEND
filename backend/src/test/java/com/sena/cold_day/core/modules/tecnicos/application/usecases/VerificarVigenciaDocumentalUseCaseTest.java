@@ -50,7 +50,7 @@ class VerificarVigenciaDocumentalUseCaseTest {
 
     private Tecnico aprobado(Set<Certificacion> certificaciones) {
         return Tecnico.reconstituir(TECNICO_ID, 5L, "123", Set.of(), EstadoOperativo.FUERA_DE_SERVICIO,
-                EstadoValidacion.APROBADO, null, certificaciones, true);
+                EstadoValidacion.APROBADO, null, certificaciones, true, null, false, null);
     }
 
     @Test
@@ -120,7 +120,7 @@ class VerificarVigenciaDocumentalUseCaseTest {
     @Test
     void ignoresTechniciansThatAreNotApproved() {
         Tecnico pendiente = Tecnico.reconstituir(TECNICO_ID, 5L, "123", Set.of(), EstadoOperativo.FUERA_DE_SERVICIO,
-                EstadoValidacion.PENDIENTE, null, Set.of(), true);
+                EstadoValidacion.PENDIENTE, null, Set.of(), true, null, false, null);
         when(tecnicoRepository.findByActivoTrue()).thenReturn(List.of(pendiente));
 
         useCase.ejecutar(hoy);

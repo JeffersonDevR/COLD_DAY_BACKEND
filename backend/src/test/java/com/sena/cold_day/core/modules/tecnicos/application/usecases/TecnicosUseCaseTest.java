@@ -76,7 +76,8 @@ class TecnicosUseCaseTest {
             Tecnico toSave = invocation.getArgument(0);
             return Tecnico.reconstituir(persistedId, 10L, toSave.getNumeroIdentificacion(),
                     toSave.getCategoriasServicio(), toSave.getEstadoOperativo(), toSave.getEstadoValidacion(),
-                    toSave.getMotivoRechazoValidacion(), toSave.getCertificaciones(), toSave.isActivo());
+                    toSave.getMotivoRechazoValidacion(), toSave.getCertificaciones(), toSave.isActivo(),
+                    toSave.getUbicacion(), toSave.isTrackingActivo(), toSave.getUbicacionActualizadaEn());
         });
 
         var response = registrar.registrar(request("123"));
@@ -98,7 +99,7 @@ class TecnicosUseCaseTest {
     @Test
     void listarCombinesUsuarioAndTecnico() {
         Tecnico tecnico = Tecnico.reconstituir(com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId.desde(UUID.randomUUID()), 10L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
-                null, Set.of(), true);
+                null, Set.of(), true, null, false, null);
         when(repository.findByActivoTrue()).thenReturn(List.of(tecnico));
         when(usuarioRepository.buscarPorId(new com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId(10L)))
                 .thenReturn(Optional.of(usuario(10L)));
@@ -113,7 +114,7 @@ class TecnicosUseCaseTest {
     void obtenerCombinesUsuarioAndTecnico() {
         TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
         Tecnico tecnico = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
-                null, Set.of(), true);
+                null, Set.of(), true, null, false, null);
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(tecnico));
         when(usuarioRepository.buscarPorId(new com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId(5L)))
                 .thenReturn(Optional.of(usuario(5L)));
@@ -129,7 +130,7 @@ class TecnicosUseCaseTest {
         com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId tecnicoId =
                 com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId.desde(UUID.randomUUID());
         Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
-                null, Set.of(), true);
+                null, Set.of(), true, null, false, null);
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
         when(usuarioRepository.buscarPorId(new UsuarioId(5L)))
                 .thenReturn(Optional.of(usuario(5L)));
@@ -148,7 +149,7 @@ class TecnicosUseCaseTest {
     void eliminarSetsActivoFalse() {
         TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
         Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
-                null, Set.of(), true);
+                null, Set.of(), true, null, false, null);
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
         eliminar.eliminar(tecnicoId);
         assertThat(existing.isActivo()).isFalse();
@@ -159,7 +160,7 @@ class TecnicosUseCaseTest {
     void aprobarRequiresVigenteDocuments() {
         TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
         Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
-                null, Set.of(), true);
+                null, Set.of(), true, null, false, null);
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
 
         when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
@@ -176,7 +177,7 @@ class TecnicosUseCaseTest {
     void aprobarRejectsIncompleteDocuments() {
         TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
         Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
-                null, Set.of(), true);
+                null, Set.of(), true, null, false, null);
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
         when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
                 new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, tecnicoId, "IMG",
@@ -190,7 +191,7 @@ class TecnicosUseCaseTest {
     void rechazarRecordsMotivoAndPublishesEvent() {
         TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
         Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
-                null, Set.of(), true);
+                null, Set.of(), true, null, false, null);
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
         when(repository.save(existing)).thenReturn(existing);
 
@@ -208,7 +209,7 @@ class TecnicosUseCaseTest {
         Certificacion expired = new Certificacion("Tecnico", "SENA",
                 LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31));
         Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null,
-                EstadoValidacion.PENDIENTE, null, Set.of(expired), true);
+                EstadoValidacion.PENDIENTE, null, Set.of(expired), true, null, false, null);
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
         when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of());
 

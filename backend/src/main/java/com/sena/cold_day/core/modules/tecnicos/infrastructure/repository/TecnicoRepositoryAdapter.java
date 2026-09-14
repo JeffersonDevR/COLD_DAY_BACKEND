@@ -53,6 +53,12 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<Tecnico> findByUsuarioIdAndActivoTrue(Long usuarioId) {
+        return repository.findByUsuarioIdAndActivoTrue(usuarioId).map(TecnicoJpaEntity::toDomain);
+    }
+
+    @Override
     @Transactional
     public void deleteAll() {
         repository.deleteAll();

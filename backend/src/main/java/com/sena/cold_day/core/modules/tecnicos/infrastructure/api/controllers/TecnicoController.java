@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,6 +29,9 @@ import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.Valid
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.DocumentoTecnicoApiResponse;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.TecnicoApiResponse;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.ActualizarUbicacionTecnicoUseCase;
+import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
+import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
 import jakarta.validation.Valid;
 
@@ -41,17 +45,20 @@ public class TecnicoController {
     private final EliminarTecnicoUseCase eliminar;
     private final CambiarDisponibilidadUseCase cambiarDisponibilidad;
     private final ValidarDocumentacionTecnicoUseCase validarDocumentacion;
+    private final ActualizarUbicacionTecnicoUseCase actualizarUbicacion;
 
     public TecnicoController(RegistrarTecnicoUseCase registrar, ActualizarTecnicoUseCase actualizar,
             BuscarTecnicoUseCase buscar, EliminarTecnicoUseCase eliminar,
             CambiarDisponibilidadUseCase cambiarDisponibilidad,
-            ValidarDocumentacionTecnicoUseCase validarDocumentacion) {
+            ValidarDocumentacionTecnicoUseCase validarDocumentacion,
+            ActualizarUbicacionTecnicoUseCase actualizarUbicacion) {
         this.registrar = registrar;
         this.actualizar = actualizar;
         this.buscar = buscar;
         this.eliminar = eliminar;
         this.cambiarDisponibilidad = cambiarDisponibilidad;
         this.validarDocumentacion = validarDocumentacion;
+        this.actualizarUbicacion = actualizarUbicacion;
     }
 
     @PostMapping
@@ -83,6 +90,17 @@ public class TecnicoController {
                         .valueOf(body.getOrDefault("estadoOperativo", "FUERA_DE_SERVICIO"));
         cambiarDisponibilidad.cambiarEstado(id, nuevo);
         return obtener(id);
+    }
+
+    /**
+     * RF-F1-06: the authenticated technician captures its own coordinates. The
+     * profile is resolved from the principal (no id in the path or body).
+     */
+    @PutMapping("/me/ubicacion")
+    public ResponseEntity<Void> actualizarUbicacion(@AuthenticationPrincipal AuthenticatedUser principal,
+            @Valid @RequestBody UbicacionApiRequest request) {
+        actualizarUbicacion.actualizar(principal.usuarioId(), request.toPoint());
+        return ResponseEntity.noContent().build();
     }
 
     /**

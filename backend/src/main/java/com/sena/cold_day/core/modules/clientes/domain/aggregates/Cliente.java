@@ -46,6 +46,21 @@ public class Cliente {
         this.direccionPrincipal  = nuevaDireccion;
 
     }
+
+    /**
+     * Captures a new coordinate while preserving the textual address
+     * (RF-F1-06). Range validation lives in {@link Point}.
+     */
+    public void actualizarUbicacion(Point ubicacion) {
+        if (ubicacion == null) {
+            throw new IllegalArgumentException("La ubicacion es requerida");
+        }
+        if (direccionPrincipal == null) {
+            throw new ClienteSinDireccionException();
+        }
+        this.direccionPrincipal = DireccionPrincipal.con(direccionPrincipal.getCalle(),
+                direccionPrincipal.getCiudad(), direccionPrincipal.getBarrio(), ubicacion);
+    }
     public String direccionTextoCompleto() {
         if (direccionPrincipal == null) throw new ClienteSinDireccionException();
         return direccionPrincipal.textoCompleto();

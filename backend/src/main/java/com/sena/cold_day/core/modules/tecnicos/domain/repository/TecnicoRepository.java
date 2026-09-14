@@ -15,5 +15,7 @@ public interface TecnicoRepository {
     @Transactional(readOnly = true)
     Optional<Tecnico> findByIdAndActivoTrue(TecnicoId id);
 
+    Optional<Tecnico> findByUsuarioIdAndActivoTrue(Long usuarioId);
+
     void deleteAll();
 }

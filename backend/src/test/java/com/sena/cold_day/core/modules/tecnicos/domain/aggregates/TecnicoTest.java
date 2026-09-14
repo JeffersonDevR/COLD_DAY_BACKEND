@@ -3,12 +3,14 @@ package com.sena.cold_day.core.modules.tecnicos.domain.aggregates;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
+import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
@@ -128,5 +130,64 @@ class TecnicoTest {
         assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.FUERA_DE_SERVICIO);
         assertThatThrownBy(() -> tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE))
                 .isInstanceOf(TecnicoNoValidadoException.class);
+    }
+
+    @Test
+    void capturesLocationAndStartsTracking() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        Point bogota = new Point(4.6, -74.0);
+        Instant ahora = Instant.parse("2026-01-01T10:15:30Z");
+
+        tecnico.actualizarUbicacion(bogota, ahora);
+
+        assertThat(tecnico.getUbicacion()).isEqualTo(bogota);
+        assertThat(tecnico.isTrackingActivo()).isTrue();
+        assertThat(tecnico.getUbicacionActualizadaEn()).isEqualTo(ahora);
+    }
+
+    @Test
+    void deactivatingTrackingRetainsTheFinalCoordinates() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        Point bogota = new Point(4.6, -74.0);
+        Instant ahora = Instant.parse("2026-01-01T10:15:30Z");
+        tecnico.actualizarUbicacion(bogota, ahora);
+
+        tecnico.desactivarTracking();
+
+        assertThat(tecnico.isTrackingActivo()).isFalse();
+        assertThat(tecnico.getUbicacion()).isEqualTo(bogota);
+        assertThat(tecnico.getUbicacionActualizadaEn()).isEqualTo(ahora);
+    }
+
+    @Test
+    void updatingLocationWhileTrackingWasOffReactivatesTracking() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), Instant.parse("2026-01-01T10:00:00Z"));
+        tecnico.desactivarTracking();
+
+        Point medellin = new Point(6.24, -75.58);
+        Instant segunda = Instant.parse("2026-01-02T08:00:00Z");
+        tecnico.actualizarUbicacion(medellin, segunda);
+
+        assertThat(tecnico.isTrackingActivo()).isTrue();
+        assertThat(tecnico.getUbicacion()).isEqualTo(medellin);
+        assertThat(tecnico.getUbicacionActualizadaEn()).isEqualTo(segunda);
+    }
+
+    @Test
+    void rejectsANullLocationCapture() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+
+        assertThatThrownBy(() -> tecnico.actualizarUbicacion(null, Instant.parse("2026-01-01T10:00:00Z")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void aFreshTechnicianHasNoLocationAndTrackingOff() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+
+        assertThat(tecnico.getUbicacion()).isNull();
+        assertThat(tecnico.isTrackingActivo()).isFalse();
+        assertThat(tecnico.getUbicacionActualizadaEn()).isNull();
     }
 }
