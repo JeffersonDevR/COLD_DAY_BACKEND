@@ -170,6 +170,56 @@ class TecnicosApiIT {
                 .andExpect(jsonPath("$.estadoOperativo").value("FUERA_DE_SERVICIO"));
     }
 
+    @Test
+    void approvedTechnicianCanToggleOccupied() throws Exception {
+        String id = registrarYAprobar("OCUPADO-1", "Ana");
+
+        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminJwt())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"OCUPADO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estadoOperativo").value("OCUPADO"))
+                .andExpect(jsonPath("$.estadoValidacion").value("APROBADO"));
+    }
+
+    @Test
+    void approvedTechnicianCanToggleOutOfService() throws Exception {
+        String id = registrarYAprobar("FUERA-1", "Ana");
+
+        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminJwt())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"FUERA_DE_SERVICIO\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estadoOperativo").value("FUERA_DE_SERVICIO"))
+                .andExpect(jsonPath("$.estadoValidacion").value("APROBADO"));
+    }
+
+    @Test
+    void pendingTechnicianCannotToggleOccupiedEither() throws Exception {
+        String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
+                .content(validPayload("PENDIENTE-1", "Ana"))).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = objectMapper.readTree(body).get("id").asText();
+
+        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminJwt())
+                .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"OCUPADO\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    private String registrarYAprobar(String numeroIdentificacion, String nombre) throws Exception {
+        String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
+                .content(validPayload(numeroIdentificacion, nombre))).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = objectMapper.readTree(body).get("id").asText();
+        String adminToken = adminJwt();
+        mockMvc.perform(post("/api/tecnicos/" + id + "/documentos").header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"tipo\":\"Cedula\",\"fechaVencimiento\":\"2030-01-01\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(patch("/api/tecnicos/" + id + "/validacion").header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"accion\":\"APROBAR\"}"))
+                .andExpect(status().isNoContent());
+        return id;
+    }
+
     private String adminJwt() {
         return tokenIssuer.emitir(new UsuarioId(999L), Rol.ADMINISTRADOR, 0).valor();
     }

@@ -22,6 +22,11 @@ public record OfertaOtId(UUID valor) {
         return new OfertaOtId(UUID.fromString(valor));
     }
 
+    /** Spring MVC path-variable binding factory: {@code @PathVariable OfertaOtId}. */
+    public static OfertaOtId of(String valor) {
+        return new OfertaOtId(UUID.fromString(valor));
+    }
+
     @Override
     public String toString() {
         return valor.toString();
