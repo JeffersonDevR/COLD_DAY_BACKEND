@@ -9,12 +9,10 @@ import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
-import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class BuscarTecnicoUseCase {

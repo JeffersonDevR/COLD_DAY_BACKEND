@@ -7,6 +7,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sena.cold_day.core.modules.ot.application.usecases.AceptarOfertaUseCase;
@@ -21,6 +22,7 @@ import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
  * (RF-F1-09) and polls its own vigente offers. Both actions resolve the
  * technician from the authenticated principal, never from the body.
  */
+@RequestMapping("/api")
 @RestController
 public class OfertaOtController {
 
@@ -33,7 +35,7 @@ public class OfertaOtController {
     }
 
     /** Atomic acceptance: exactly one simultaneous accept wins; the rest get a 409. */
-    @PostMapping("/api/ofertas/{id}/aceptar")
+    @PostMapping("/ofertas/{id}/aceptar")
     @PreAuthorize("hasRole('TECNICO')")
     public OtApiResponse aceptar(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OfertaOtId id) {
@@ -41,7 +43,7 @@ public class OfertaOtController {
     }
 
     /** The authenticated technician's pending, still-vigente offers (RF-F1-09). */
-    @GetMapping("/api/tecnicos/me/ofertas")
+    @GetMapping("/tecnicos/me/ofertas")
     @PreAuthorize("hasRole('TECNICO')")
     public List<OfertaOtApiResponse> misOfertas(@AuthenticationPrincipal AuthenticatedUser principal) {
         return listar.listar(principal.usuarioId()).stream().map(OfertaOtApiResponse::from).toList();

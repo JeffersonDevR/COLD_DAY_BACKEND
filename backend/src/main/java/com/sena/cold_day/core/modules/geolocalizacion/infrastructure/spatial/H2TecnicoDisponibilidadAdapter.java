@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +22,11 @@ import com.sena.cold_day.core.shared.domain.Point;
  * H2/Haversine implementation of the spatial availability port (design D9):
  * a cheap bounding-box pre-filter in SQL, then an exact great-circle filter in
  * memory. No PostGIS dependency; longitudes near ±180 are not wrapped because
- * the MVP operates over Colombia.
+ * the MVP operates over Colombia. Default adapter for dev/test; replaced by
+ * {@code PostgisTecnicoDisponibilidadAdapter} under the {@code postgres} profile.
  */
 @Repository
+@Profile("!postgres")
 public class H2TecnicoDisponibilidadAdapter implements TecnicoDisponibilidadRepository {
 
     private static final double RADIO_TIERRA_KM = 6371.0;

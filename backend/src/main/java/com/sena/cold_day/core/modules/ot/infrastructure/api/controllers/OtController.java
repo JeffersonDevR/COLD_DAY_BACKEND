@@ -54,6 +54,7 @@ public class OtController {
     private final RechazarPresupuestoUseCase rechazarPresupuesto;
     private final FinalizarOtUseCase finalizar;
 
+    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (8 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 8 params a otro ctor.
     public OtController(CrearOtUseCase crear, ConsultarOtUseCase consultar, CancelarOtUseCase cancelar,
             IniciarDesplazamientoUseCase iniciarDesplazamiento,
             RegistrarDiagnosticoUseCase registrarDiagnostico,

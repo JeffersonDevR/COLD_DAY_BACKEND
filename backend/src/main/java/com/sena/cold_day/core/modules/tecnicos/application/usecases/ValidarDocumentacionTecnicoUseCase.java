@@ -38,8 +38,8 @@ public class ValidarDocumentacionTecnicoUseCase {
         Tecnico tecnico = tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
                 .orElseThrow(() -> new TecnicoNoEncontradoException(tecnicoId));
 
-        // Business rule: only approve if EVERY document is vigente.
-        java.time.LocalDate hoy = java.time.LocalDate.now();
+        
+        java.time.LocalDate hoy = java.time.LocalDate.now(java.time.ZoneId.systemDefault());
         boolean todosVigentes = documentoRepository.buscarPorTecnico(tecnicoId).stream()
                 .allMatch(documento -> documento.estaVigente(hoy));
         if (!todosVigentes) {

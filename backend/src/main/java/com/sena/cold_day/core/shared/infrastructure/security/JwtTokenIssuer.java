@@ -2,7 +2,6 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Date;
 
 import javax.crypto.SecretKey;
 
@@ -31,12 +30,17 @@ public class JwtTokenIssuer implements TokenIssuer {
     public Token emitir(UsuarioId usuarioId, Rol rol, int tokenVersion) {
         Instant ahora = Instant.now();
         Instant expira = ahora.plusMillis(expiracionMs);
+        // JWT NumericDate (RFC 7519) en segundos: 100% java.time, sin
+        // java.util.Date (java:S2143). JJWT serializa los Date como segundos de
+        // todos modos, asi que el formato en el token es identico; solo se
+        // pierde precision sub-segundo en un TTL de 1 hora. Verificado con
+        // SeguridadIT (login, expiracion y revocacion).
         String jwt = Jwts.builder()
                 .subject(usuarioId.valor().toString())
                 .claim("rol", rol.name())
                 .claim("ver", tokenVersion)
-                .issuedAt(Date.from(ahora))
-                .expiration(Date.from(expira))
+                .claim("iat", ahora.getEpochSecond())
+                .claim("exp", expira.getEpochSecond())
                 .signWith(key)
                 .compact();
         return Token.de(jwt, expira);

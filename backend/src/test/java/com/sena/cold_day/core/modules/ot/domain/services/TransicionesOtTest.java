@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -35,7 +34,11 @@ class TransicionesOtTest {
                 Arguments.of(EstadoOt.EN_CAMINO, EstadoOt.CANCELADA),
                 Arguments.of(EstadoOt.EN_DIAGNOSTICO, EstadoOt.EN_REPARACION),
                 Arguments.of(EstadoOt.EN_DIAGNOSTICO, EstadoOt.CANCELADA),
-                Arguments.of(EstadoOt.EN_REPARACION, EstadoOt.FINALIZADA));
+                Arguments.of(EstadoOt.EN_DIAGNOSTICO, EstadoOt.DISPUTADA),
+                Arguments.of(EstadoOt.EN_REPARACION, EstadoOt.FINALIZADA),
+                Arguments.of(EstadoOt.EN_REPARACION, EstadoOt.DISPUTADA),
+                Arguments.of(EstadoOt.DISPUTADA, EstadoOt.FINALIZADA),
+                Arguments.of(EstadoOt.DISPUTADA, EstadoOt.CANCELADA));
     }
 
     @ParameterizedTest(name = "{0} -> {1} is legal")
@@ -73,8 +76,14 @@ class TransicionesOtTest {
     }
 
     @Test
-    void disputedStateIsIntentionallyAbsent() {
-        assertThat(Arrays.stream(EstadoOt.values()).map(Enum::name)).doesNotContain("DISPUTADA");
+    void disputaResuelveHaciaFinalizadaOCancelada() {
+        // RF-F1-25 (SRS §5.2/§5.3): la disputa nace desde EN_DIAGNOSTICO o
+        // EN_REPARACION y el administrador la cierra con o sin acuerdo.
+        assertThat(EstadoOt.DISPUTADA.esTerminal()).isFalse();
+        assertThatCode(() -> TransicionesOt.validar(EstadoOt.EN_DIAGNOSTICO, EstadoOt.DISPUTADA))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> TransicionesOt.validar(EstadoOt.EN_REPARACION, EstadoOt.DISPUTADA))
+                .doesNotThrowAnyException();
     }
 
     @Test

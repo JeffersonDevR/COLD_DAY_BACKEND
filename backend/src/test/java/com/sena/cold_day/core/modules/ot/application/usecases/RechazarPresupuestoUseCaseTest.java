@@ -102,8 +102,9 @@ class RechazarPresupuestoUseCaseTest {
         Ot ot = otEnDiagnostico(ClienteId.nueva(), TecnicoId.nueva());
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
+        var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.rechazar(PRINCIPAL, ot.getId(), "No me sirve"))
+        assertThatThrownBy(() -> useCase.rechazar(PRINCIPAL, otId, "No me sirve"))
                 .isInstanceOf(OtAccesoNoPermitidoException.class);
 
         verify(otRepository, never()).save(any());

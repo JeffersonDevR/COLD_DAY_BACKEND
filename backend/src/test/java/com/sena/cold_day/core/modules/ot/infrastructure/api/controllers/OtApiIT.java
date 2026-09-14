@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
-import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
@@ -70,7 +69,7 @@ class OtApiIT {
     @Test
     void createsTheOrderAndRecordsTheInitialStateTransition() throws Exception {
         Long usuarioId = crearUsuario("cliente-ot@example.com", Rol.CLIENTE);
-        Cliente cliente = crearCliente(usuarioId, "cliente-ot@example.com");
+        Cliente cliente = crearCliente(usuarioId);
 
         String body = mockMvc.perform(post("/api/ot")
                         .header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE))
@@ -101,7 +100,7 @@ class OtApiIT {
     @Test
     void returnsNotFoundForAnUnknownOrder() throws Exception {
         Long usuarioId = crearUsuario("sin-ot@example.com", Rol.CLIENTE);
-        crearCliente(usuarioId, "sin-ot@example.com");
+        crearCliente(usuarioId);
 
         mockMvc.perform(get("/api/ot/" + UUID.randomUUID())
                         .header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE)))
@@ -122,7 +121,7 @@ class OtApiIT {
     @Test
     void rejectsAnIllegalTransitionWithConflict() throws Exception {
         Long usuarioId = crearUsuario("conflicto-ot@example.com", Rol.CLIENTE);
-        Cliente cliente = crearCliente(usuarioId, "conflicto-ot@example.com");
+        Cliente cliente = crearCliente(usuarioId);
         Instant ahora = Instant.parse("2026-09-14T10:00:00Z");
         Ot terminal = Ot.crear(cliente.getId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
                 "Calle 1", new Point(4.6, -74.0), ahora);
@@ -143,7 +142,7 @@ class OtApiIT {
     @Test
     void cancelsAnOrderBeforeRepairThroughTheGuard() throws Exception {
         Long usuarioId = crearUsuario("cancelar-ot@example.com", Rol.CLIENTE);
-        Cliente cliente = crearCliente(usuarioId, "cancelar-ot@example.com");
+        Cliente cliente = crearCliente(usuarioId);
         Instant ahora = Instant.parse("2026-09-14T10:00:00Z");
         Ot buscando = Ot.crear(cliente.getId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
                 "Calle 1", new Point(4.6, -74.0), ahora);
@@ -162,7 +161,7 @@ class OtApiIT {
                 .hasValueSatisfying(found -> assertThat(found.getEstado()).isEqualTo(EstadoOt.CANCELADA));
     }
 
-    private Cliente crearCliente(Long usuarioId, String correo) {
+    private Cliente crearCliente(Long usuarioId) {
         return clienteRepository.save(Cliente.registrar(new UsuarioId(usuarioId), TipoCliente.B2C,
                 DireccionPrincipal.sinUbicacion("Calle 1", "Bogota", "Centro")));
     }

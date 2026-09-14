@@ -5,5 +5,5 @@ package com.sena.cold_day.core.modules.ot.domain.valueobjects;
  * Cancellation stores this in {@code canceladaPor}.
  */
 public enum ActorOt {
-    CLIENTE, TECNICO, SISTEMA
+    CLIENTE, TECNICO, SISTEMA, ADMINISTRADOR
 }

@@ -128,9 +128,9 @@ class AceptacionConcurrenteIT {
             Object resultadoSegundo = corridaSegundo.get(15, TimeUnit.SECONDS);
 
             long ganadores = java.util.stream.Stream.of(resultadoPrimero, resultadoSegundo)
-                    .filter(resultado -> resultado instanceof OtResponse).count();
+                    .filter(OtResponse.class::isInstance).count();
             long conflictos = java.util.stream.Stream.of(resultadoPrimero, resultadoSegundo)
-                    .filter(resultado -> resultado instanceof OfertaNoDisponibleException).count();
+                    .filter(OfertaNoDisponibleException.class::isInstance).count();
             assertThat(ganadores).isEqualTo(1);
             assertThat(conflictos).isEqualTo(1);
         } finally {

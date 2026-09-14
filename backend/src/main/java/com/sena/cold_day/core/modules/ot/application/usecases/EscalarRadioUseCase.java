@@ -92,7 +92,7 @@ public class EscalarRadioUseCase {
 
     private void escalar(Ot ot, Instant ahora) {
         double nuevoRadio = Math.min(ot.getRadioKm() + INCREMENTO_KM, RADIO_MAXIMO_KM);
-        ot.escalarRadio(nuevoRadio, ahora.plus(VENTANA_BUSQUEDA), ahora);
+        ot.escalarRadio(nuevoRadio, ahora.plus(VENTANA_BUSQUEDA));
         otRepository.save(ot);
         iniciarBusqueda.ofrecer(ot, nuevoRadio, ahora);
     }

@@ -111,8 +111,9 @@ class CancelarOtUseCaseTest {
         Ot ot = otAsignada(cliente.getId(), tecnico.getId(), AHORA);
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
+        var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.CLIENTE, ot.getId(), "  "))
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.CLIENTE, otId, "  "))
                 .isInstanceOf(MotivoRequeridoException.class);
 
         verify(otRepository, never()).save(any());
@@ -126,8 +127,9 @@ class CancelarOtUseCaseTest {
                 EstadoOt.EN_REPARACION, 10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null,
                 null, null);
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.CLIENTE, ot.getId(), "Ya no"))
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.CLIENTE, otId, "Ya no"))
                 .isInstanceOf(TransicionOtInvalidaException.class);
 
         verify(otRepository, never()).save(any());
@@ -161,8 +163,9 @@ class CancelarOtUseCaseTest {
         Ot ot = otAsignada(ClienteId.nueva(), TecnicoId.nueva(), AHORA);
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.TECNICO, ot.getId(), "No puedo"))
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.TECNICO, otId, "No puedo"))
                 .isInstanceOf(TecnicoNoAsignadoException.class);
 
         verify(otRepository, never()).save(any());

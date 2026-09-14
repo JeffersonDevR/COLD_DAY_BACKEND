@@ -36,22 +36,32 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-            tools.jackson.databind.ObjectMapper objectMapper) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
+            tools.jackson.databind.ObjectMapper objectMapper) {
+        try {
+            http
+                    // Stateless JWT API sin cookies ni sesiones: CSRF no aplica.
+                    // Seguro deshabilitarlo aqui porque la autenticacion viaja en
+                    // el header Authorization Bearer y SessionCreationPolicy.STATELESS.
+                    .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
+                        .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios", "/api/usuarios/login",
                                 "/api/usuarios/recuperar-contrasena", "/api/usuarios/reset-contrasena",
                                 "/api/tecnicos").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/tecnicos/*/validacion")
                         .hasRole("ADMINISTRADOR")
+                        .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(noAutenticado(objectMapper))
                         .accessDeniedHandler(sinPermiso(objectMapper)));
-        return http.build();
+            return http.build();
+        } catch (Exception ex) {
+            throw new IllegalStateException("No se pudo construir la cadena de filtros de seguridad", ex);
+        }
     }
 
     private AuthenticationEntryPoint noAutenticado(tools.jackson.databind.ObjectMapper objectMapper) {

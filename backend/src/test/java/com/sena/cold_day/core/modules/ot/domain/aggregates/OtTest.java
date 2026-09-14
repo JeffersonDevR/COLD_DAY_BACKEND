@@ -127,7 +127,7 @@ class OtTest {
         Ot ot = crearConBusqueda();
         ot.drenarCambiosPendientes();
 
-        ot.escalarRadio(15.0, AHORA.plusSeconds(120), AHORA.plusSeconds(60));
+        ot.escalarRadio(15.0, AHORA.plusSeconds(120));
 
         assertThat(ot.getEstado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
         assertThat(ot.getRadioKm()).isEqualTo(15.0);
@@ -151,14 +151,15 @@ class OtTest {
 
     @Test
     void creationRequiresMandatoryData() {
+        Point ubicacion = new Point(4.6, -74.0);
         assertThatThrownBy(() -> Ot.crear(null, CategoriaServicio.REFRIGERACION, "falla", List.of(),
-                "Calle 1", new Point(4.6, -74.0), AHORA))
+                "Calle 1", ubicacion, AHORA))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> Ot.crear(CLIENTE, null, "falla", List.of(),
-                "Calle 1", new Point(4.6, -74.0), AHORA))
+                "Calle 1", ubicacion, AHORA))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> Ot.crear(CLIENTE, CategoriaServicio.REFRIGERACION, " ",
-                List.of(), "Calle 1", new Point(4.6, -74.0), AHORA))
+                List.of(), "Calle 1", ubicacion, AHORA))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> Ot.crear(CLIENTE, CategoriaServicio.REFRIGERACION, "falla",
                 List.of(), "Calle 1", null, AHORA))

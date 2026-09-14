@@ -35,7 +35,7 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
                             })
                             .orElseGet(() -> TecnicoJpaEntity.fromDomain(tecnico));
             return repository.saveAndFlush(entity).toDomain();
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException _) {
             throw new NumeroIdentificacionDuplicadoException(tecnico.getNumeroIdentificacion());
         }
     }

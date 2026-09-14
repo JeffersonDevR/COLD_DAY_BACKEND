@@ -98,6 +98,8 @@ public class Ot {
         return ot;
     }
 
+    /** Reconstitution from persistence. */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado (19 campos). Un Builder ocultaria el mapeo 1:1 con la entidad JPA.
     public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
             CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
             String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
@@ -145,7 +147,7 @@ public class Ot {
      * Widens the search radius without changing the state (RF-F1-09); not a
      * state change, so it produces no history entry.
      */
-    public void escalarRadio(double radioKm, Instant ventanaExpiraEn, Instant ahora) {
+    public void escalarRadio(double radioKm, Instant ventanaExpiraEn) {
         if (estado != EstadoOt.BUSCANDO_TECNICO) {
             throw new IllegalStateException(
                     "Solo se puede escalar el radio en BUSCANDO_TECNICO, estado actual: " + estado);
@@ -247,6 +249,50 @@ public class Ot {
         this.estado = EstadoOt.FINALIZADA;
         this.finalizadaEn = ahora;
         registrarCambio(origen, EstadoOt.FINALIZADA, actor, ahora, null);
+    }
+
+    /**
+     * RF-F1-25: el cliente objeta el diagnostico o el trabajo entregado y la OT
+     * pasa a mediacion del administrador. Solo legal desde EN_DIAGNOSTICO o
+     * EN_REPARACION (SRS §5.2); el motivo queda auditado en el historial.
+     */
+    public void abrirDisputa(ActorOt actor, String motivo, Instant ahora) {
+        if (motivo == null || motivo.isBlank()) {
+            throw new IllegalArgumentException("El motivo de la disputa es requerido");
+        }
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.DISPUTADA);
+        this.estado = EstadoOt.DISPUTADA;
+        registrarCambio(origen, EstadoOt.DISPUTADA, actor, ahora, motivo);
+    }
+
+    /**
+     * RF-F1-25: el administrador cierra la disputa con acuerdo; la orden se
+     * cierra como FINALIZADA y dispara calificacion (RF-F1-15).
+     */
+    public void resolverDisputaConAcuerdo(ActorOt actor, Instant ahora) {
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.FINALIZADA);
+        this.estado = EstadoOt.FINALIZADA;
+        this.finalizadaEn = ahora;
+        registrarCambio(origen, EstadoOt.FINALIZADA, actor, ahora, "Disputa resuelta con acuerdo");
+    }
+
+    /**
+     * RF-F1-25: el administrador cierra la disputa sin acuerdo; la orden se
+     * cierra como CANCELADA sin cobro, registrando el motivo para auditoria.
+     */
+    public void resolverDisputaSinAcuerdo(ActorOt actor, String motivo, Instant ahora) {
+        if (motivo == null || motivo.isBlank()) {
+            throw new IllegalArgumentException("El motivo de la resolucion es requerido");
+        }
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.CANCELADA);
+        this.estado = EstadoOt.CANCELADA;
+        this.canceladaPor = ActorOt.ADMINISTRADOR;
+        this.motivoCancelacion = MotivoCancelacion.RESOLUCION_DISPUTA_SIN_ACUERDO;
+        this.tarifaVisita = null;
+        registrarCambio(origen, EstadoOt.CANCELADA, actor, ahora, motivo);
     }
 
     public boolean esTerminal() {

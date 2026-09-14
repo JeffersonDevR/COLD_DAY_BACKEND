@@ -58,25 +58,29 @@ class OfertaOtTest {
     void expirarRejectsAnAlreadyResolvedOffer() {
         OfertaOt oferta = crear();
         oferta.expirar(EXPIRA);
+        Instant despues = EXPIRA.plusSeconds(1);
 
-        assertThatThrownBy(() -> oferta.expirar(EXPIRA.plusSeconds(1)))
+        assertThatThrownBy(() -> oferta.expirar(despues))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(oferta.getEstado()).isEqualTo(OfertaEstado.EXPIRADA);
     }
 
     @Test
     void creationRequiresMandatoryData() {
-        assertThatThrownBy(() -> OfertaOt.crear(null, TecnicoId.nueva(), 10.0, AHORA, EXPIRA))
+        OtId otId = OtId.nueva();
+        TecnicoId tecnicoId = TecnicoId.nueva();
+
+        assertThatThrownBy(() -> OfertaOt.crear(null, tecnicoId, 10.0, AHORA, EXPIRA))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> OfertaOt.crear(OtId.nueva(), null, 10.0, AHORA, EXPIRA))
+        assertThatThrownBy(() -> OfertaOt.crear(otId, null, 10.0, AHORA, EXPIRA))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> OfertaOt.crear(OtId.nueva(), TecnicoId.nueva(), 0.0, AHORA, EXPIRA))
+        assertThatThrownBy(() -> OfertaOt.crear(otId, tecnicoId, 0.0, AHORA, EXPIRA))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> OfertaOt.crear(OtId.nueva(), TecnicoId.nueva(), 10.0, null, EXPIRA))
+        assertThatThrownBy(() -> OfertaOt.crear(otId, tecnicoId, 10.0, null, EXPIRA))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> OfertaOt.crear(OtId.nueva(), TecnicoId.nueva(), 10.0, AHORA, null))
+        assertThatThrownBy(() -> OfertaOt.crear(otId, tecnicoId, 10.0, AHORA, null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> OfertaOt.crear(OtId.nueva(), TecnicoId.nueva(), 10.0, AHORA, AHORA))
+        assertThatThrownBy(() -> OfertaOt.crear(otId, tecnicoId, 10.0, AHORA, AHORA))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

@@ -121,3 +121,31 @@ CREATE TABLE IF NOT EXISTS oferta_ot (
     resuelta_en TIMESTAMP
 );
 
+-- Liquidacion operativa (RF-F1-23/24/26, CU-12/13): un cobro en
+-- efectivo/transferencia por OT con su comision y el ciclo del comprobante.
+CREATE TABLE IF NOT EXISTS liquidacion (
+    id UUID PRIMARY KEY,
+    ot_id UUID NOT NULL UNIQUE REFERENCES ot(id),
+    tecnico_id UUID NOT NULL REFERENCES tecnico(id),
+    monto_cobrado DECIMAL(12,2) NOT NULL,
+    medio_pago VARCHAR(20) NOT NULL,
+    porcentaje_comision DECIMAL(5,4) NOT NULL,
+    valor_comision DECIMAL(12,2) NOT NULL,
+    estado VARCHAR(30) NOT NULL,
+    comprobante_url VARCHAR(1000),
+    motivo_rechazo VARCHAR(500),
+    creada_en TIMESTAMP,
+    verificada_en TIMESTAMP
+);
+
+-- Mediacion administrativa de disputas (RF-F1-25, SRS §5.3).
+CREATE TABLE IF NOT EXISTS disputa (
+    id UUID PRIMARY KEY,
+    ot_id UUID NOT NULL REFERENCES ot(id),
+    motivo VARCHAR(1000) NOT NULL,
+    estado VARCHAR(30) NOT NULL,
+    resolucion VARCHAR(1000),
+    creada_en TIMESTAMP,
+    resuelta_en TIMESTAMP
+);
+

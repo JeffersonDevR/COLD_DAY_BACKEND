@@ -3,7 +3,6 @@ package com.sena.cold_day.core.modules.clientes.domain.aggregates;
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteSinDireccionException;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
-import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;

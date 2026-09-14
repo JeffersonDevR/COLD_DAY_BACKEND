@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.usuarios.domain.aggregates;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
@@ -38,6 +39,7 @@ public class Usuario {
      * persisted atomically with the new account. Absent consent fails before any
      * state is created.
      */
+    @SuppressWarnings("java:S107") // Invariante de registro: los 7 datos + encoder y consentimiento son obligatorios y atomicos. Un comando introduciria una capa sin valor aqui; el caso de uso ya agrupa via UsuarioRequest.
     public static Usuario registrar(String nombre, String correo, String passwordPlano,
             String telefono, String fotoUrl, Rol rol, boolean aceptaHabeasData,
             PasswordEncoderPort encoder) {
@@ -60,7 +62,7 @@ public class Usuario {
         usuario.telefono = telefono;
         usuario.fotoUrl = fotoUrl;
         usuario.rol = rol;
-        usuario.fechaRegistro = LocalDateTime.now();
+        usuario.fechaRegistro = LocalDateTime.now(ZoneId.systemDefault());
         usuario.habeasDataAceptado = true;
         usuario.activo = true;
         usuario.tokenVersion = 0;
@@ -68,6 +70,7 @@ public class Usuario {
     }
 
     /** Reconstitution from persistence. */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo. Ver UsuarioJpaEntity.toDomain para el mapeo 1:1.
     public static Usuario reconstituir(Long id, String nombre, String correo, String passwordHash,
             String telefono, String fotoUrl, Rol rol, LocalDateTime fechaRegistro,
             boolean habeasDataAceptado, boolean activo, int tokenVersion) {

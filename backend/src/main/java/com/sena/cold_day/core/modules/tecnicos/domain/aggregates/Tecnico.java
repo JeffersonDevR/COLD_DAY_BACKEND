@@ -50,6 +50,7 @@ public class Tecnico {
         return tecnico;
     }
 
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado. Un objeto parametro ocultaria el mapeo con TecnicoJpaEntity.
     public static Tecnico reconstituir(TecnicoId id, Long usuarioId, String numeroIdentificacion,
                                        Set<CategoriaServicio> categoriasServicio, EstadoOperativo estadoOperativo,
                                        EstadoValidacion estadoValidacion, String motivoRechazoValidacion, Set<Certificacion> certificaciones,
@@ -105,7 +106,14 @@ public class Tecnico {
         if (estadoValidacion != EstadoValidacion.APROBADO) {
             throw new TecnicoNoValidadoException(id,estadoValidacion );
         }
+        if (nuevoEstadoOperativo == EstadoOperativo.DISPONIBLE && estaBloqueadoPorLiquidacion()) {
+            throw new TecnicoAsignadoException(numeroIdentificacion);
+        }
         if (estadoOperativo == EstadoOperativo.OCUPADO) {
+            throw new TecnicoAsignadoException(numeroIdentificacion);
+        }
+        if (estadoOperativo == EstadoOperativo.BLOQUEADO_POR_LIQUIDACION
+                && nuevoEstadoOperativo != EstadoOperativo.FUERA_DE_SERVICIO) {
             throw new TecnicoAsignadoException(numeroIdentificacion);
         }
         this.estadoOperativo = nuevoEstadoOperativo;
@@ -120,6 +128,34 @@ public class Tecnico {
             throw new TecnicoAsignadoException(numeroIdentificacion);
         }
         this.estadoOperativo = EstadoOperativo.OCUPADO;
+    }
+
+    /**
+     * RF-F1-23 (CU-12): al cerrar un servicio en efectivo se calcula la comision
+     * y el tecnico queda inmovilizado hasta consignar (CU-13). Solo un tecnico
+     * validado puede bloquearse; el bloqueo es idempotente.
+     */
+    public void bloquearPorLiquidacion() {
+        if (estadoValidacion != EstadoValidacion.APROBADO) {
+            throw new TecnicoNoValidadoException(id, estadoValidacion);
+        }
+        this.estadoOperativo = EstadoOperativo.BLOQUEADO_POR_LIQUIDACION;
+    }
+
+    /**
+     * CU-13 / RF-F1-24: tras la aprobacion del comprobante por el administrador,
+     * se reactiva la habilitacion operativa de forma inmediata. El tecnico
+     * vuelve a FUERA_DE_SERVICIO y debe conmutar a DISPONIBLE (RF-F1-05).
+     */
+    public void desbloquearTrasConsignacion() {
+        if (estadoOperativo != EstadoOperativo.BLOQUEADO_POR_LIQUIDACION) {
+            throw new IllegalStateException("El tecnico no esta bloqueado por liquidacion");
+        }
+        this.estadoOperativo = EstadoOperativo.FUERA_DE_SERVICIO;
+    }
+
+    public boolean estaBloqueadoPorLiquidacion() {
+        return estadoOperativo == EstadoOperativo.BLOQUEADO_POR_LIQUIDACION;
     }
 
     /**

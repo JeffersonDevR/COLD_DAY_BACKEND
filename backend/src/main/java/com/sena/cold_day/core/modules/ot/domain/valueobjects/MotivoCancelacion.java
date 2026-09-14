@@ -5,5 +5,5 @@ package com.sena.cold_day.core.modules.ot.domain.valueobjects;
  * Client budget rejection maps to {@link #RECHAZO_PRESUPUESTO} (RF-F1-20).
  */
 public enum MotivoCancelacion {
-    CANCELACION_CLIENTE, CANCELACION_TECNICO, RECHAZO_PRESUPUESTO
+    CANCELACION_CLIENTE, CANCELACION_TECNICO, RECHAZO_PRESUPUESTO, RESOLUCION_DISPUTA_SIN_ACUERDO
 }

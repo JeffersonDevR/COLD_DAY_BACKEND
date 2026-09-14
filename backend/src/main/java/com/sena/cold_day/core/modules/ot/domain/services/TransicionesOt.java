@@ -19,8 +19,10 @@ public final class TransicionesOt {
                     Set.of(EstadoOt.ASIGNADA, EstadoOt.SIN_TECNICOS_DISPONIBLES, EstadoOt.CANCELADA)),
             Map.entry(EstadoOt.ASIGNADA, Set.of(EstadoOt.EN_CAMINO, EstadoOt.CANCELADA)),
             Map.entry(EstadoOt.EN_CAMINO, Set.of(EstadoOt.EN_DIAGNOSTICO, EstadoOt.CANCELADA)),
-            Map.entry(EstadoOt.EN_DIAGNOSTICO, Set.of(EstadoOt.EN_REPARACION, EstadoOt.CANCELADA)),
-            Map.entry(EstadoOt.EN_REPARACION, Set.of(EstadoOt.FINALIZADA)),
+            Map.entry(EstadoOt.EN_DIAGNOSTICO,
+                    Set.of(EstadoOt.EN_REPARACION, EstadoOt.CANCELADA, EstadoOt.DISPUTADA)),
+            Map.entry(EstadoOt.EN_REPARACION, Set.of(EstadoOt.FINALIZADA, EstadoOt.DISPUTADA)),
+            Map.entry(EstadoOt.DISPUTADA, Set.of(EstadoOt.FINALIZADA, EstadoOt.CANCELADA)),
             Map.entry(EstadoOt.FINALIZADA, Set.of()),
             Map.entry(EstadoOt.CANCELADA, Set.of()),
             Map.entry(EstadoOt.SIN_TECNICOS_DISPONIBLES, Set.of()));

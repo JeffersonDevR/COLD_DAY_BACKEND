@@ -2,6 +2,8 @@ package com.sena.cold_day.core.modules.ot.application.usecases;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.assertj.core.api.SoftAssertions;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -89,12 +91,14 @@ class DespachoOtIT {
 
         Ot resultado = iniciarBusqueda.iniciar(ot);
 
-        assertThat(resultado.getEstado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
-        assertThat(resultado.getRadioKm()).isEqualTo(10.0);
-        assertThat(resultado.getVentanaExpiraEn()).isEqualTo(AHORA.plusSeconds(60));
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(resultado.getEstado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
+            softly.assertThat(resultado.getRadioKm()).isEqualTo(10.0);
+            softly.assertThat(resultado.getVentanaExpiraEn()).isEqualTo(AHORA.plusSeconds(60));
+            softly.assertThat(ofertaRepository.listarPendientesPorOt(resultado.getId())).hasSize(2);
+        });
         List<OfertaOt> ofertas = ofertaRepository.listarPendientesPorOt(resultado.getId());
-        assertThat(ofertas).hasSize(2);
-        assertThat(ofertas).allSatisfy(oferta -> {
+        assertThat(ofertas).isNotEmpty().allSatisfy(oferta -> {
             assertThat(oferta.getEstado()).isEqualTo(OfertaEstado.PENDIENTE);
             assertThat(oferta.getRadioKm()).isEqualTo(10.0);
             assertThat(oferta.getExpiraEn()).isEqualTo(AHORA.plusSeconds(60));

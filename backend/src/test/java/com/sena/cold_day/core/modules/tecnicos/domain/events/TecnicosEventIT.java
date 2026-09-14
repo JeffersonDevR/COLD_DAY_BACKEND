@@ -57,6 +57,8 @@ class TecnicosEventIT {
                                 + "\"aceptaHabeasData\":true}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         JsonNode response = objectMapper.readTree(body);
-        assertThat(OBSERVED).containsExactly(TecnicoId.desde(response.get("id").asText()));
+        TecnicoId esperado = TecnicoId.desde(response.get("id").asText());
+        assertThat(OBSERVED).hasSize(1);
+        assertThat(OBSERVED.getFirst()).isEqualTo(esperado);
     }
 }

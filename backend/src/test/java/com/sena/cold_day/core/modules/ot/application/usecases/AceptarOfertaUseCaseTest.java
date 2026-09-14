@@ -122,8 +122,9 @@ class AceptarOfertaUseCaseTest {
                 AHORA.minusSeconds(120), AHORA.minusSeconds(60));
         cuandoElTecnicoSeResuelve(tecnico);
         cuandoLaOfertaExiste(expirada);
+        var expiradaId = expirada.getId();
 
-        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, expirada.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, expiradaId))
                 .isInstanceOf(OfertaExpiradaException.class);
 
         verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble());
@@ -138,8 +139,9 @@ class AceptarOfertaUseCaseTest {
         cuandoElTecnicoSeResuelve(tecnico);
         cuandoLaOfertaExiste(oferta);
         when(otRepository.intentarAsignar(any(), any(), any(), anyDouble())).thenReturn(0);
+        var ofertaId = oferta.getId();
 
-        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, oferta.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ofertaId))
                 .isInstanceOf(OfertaNoDisponibleException.class);
 
         verify(ofertaRepository, never()).intentarAceptar(any(), any());
@@ -155,8 +157,9 @@ class AceptarOfertaUseCaseTest {
                 OtId.nueva(), tecnico.getId(), 10.0, OfertaEstado.ACEPTADA, AHORA.minusSeconds(60), EXPIRA, AHORA);
         cuandoElTecnicoSeResuelve(tecnico);
         cuandoLaOfertaExiste(aceptada);
+        var aceptadaId = aceptada.getId();
 
-        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, aceptada.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, aceptadaId))
                 .isInstanceOf(OfertaNoDisponibleException.class);
 
         verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble());
@@ -168,8 +171,9 @@ class AceptarOfertaUseCaseTest {
         OfertaOt ajena = ofertaPendiente(OtId.nueva(), TecnicoId.nueva());
         cuandoElTecnicoSeResuelve(tecnico);
         cuandoLaOfertaExiste(ajena);
+        var ajenaId = ajena.getId();
 
-        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ajena.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ajenaId))
                 .isInstanceOf(OfertaNoDisponibleException.class);
 
         verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble());
@@ -196,9 +200,10 @@ class AceptarOfertaUseCaseTest {
         cuandoElTecnicoSeResuelve(pendiente);
         cuandoLaOfertaExiste(oferta);
         when(otRepository.intentarAsignar(any(), any(), any(), anyDouble())).thenReturn(1);
-        when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
+        var ofertaId = oferta.getId();
+        when(ofertaRepository.intentarAceptar(ofertaId, AHORA)).thenReturn(1);
 
-        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, oferta.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ofertaId))
                 .isInstanceOf(TecnicoNoValidadoException.class);
 
         verify(tecnicoRepository, never()).save(any());

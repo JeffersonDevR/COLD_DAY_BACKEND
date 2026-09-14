@@ -28,7 +28,7 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
         try {
             UsuarioJpaEntity saved = repository.saveAndFlush(UsuarioJpaEntity.fromDomain(usuario));
             return saved.toDomain();
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException _) {
             throw new CorreoDuplicadoException(usuario.getCorreo());
         }
     }

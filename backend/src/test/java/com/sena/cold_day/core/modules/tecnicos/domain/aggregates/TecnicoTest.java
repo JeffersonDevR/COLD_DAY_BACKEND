@@ -28,7 +28,8 @@ class TecnicoTest {
         assertThat(tecnico.getEstadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
         assertThat(tecnico.getUsuarioId()).isEqualTo(7L);
         assertThat(tecnico.getCategoriasServicio()).containsExactly(CategoriaServicio.REFRIGERACION);
-        assertThatThrownBy(() -> tecnico.getCategoriasServicio().clear())
+        java.util.Set<CategoriaServicio> categorias = tecnico.getCategoriasServicio();
+        assertThatThrownBy(categorias::clear)
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -138,8 +139,9 @@ class TecnicoTest {
         Certificacion expired = new Certificacion("Tecnico", "SENA",
                 LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31));
         Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of(expired));
+        LocalDate hoy = LocalDate.of(2026, 1, 1);
 
-        assertThatThrownBy(() -> tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1)))
+        assertThatThrownBy(() -> tecnico.aprobarValidacion(hoy))
                 .isInstanceOf(DocumentacionIncompletaException.class);
         assertThat(tecnico.getEstadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
     }
@@ -214,8 +216,9 @@ class TecnicoTest {
     @Test
     void rejectsANullLocationCapture() {
         Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        Instant momento = Instant.parse("2026-01-01T10:00:00Z");
 
-        assertThatThrownBy(() -> tecnico.actualizarUbicacion(null, Instant.parse("2026-01-01T10:00:00Z")))
+        assertThatThrownBy(() -> tecnico.actualizarUbicacion(null, momento))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

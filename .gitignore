@@ -23,3 +23,15 @@ docs/diagrams/feature-workflow-tecnicos-template.visual-check.json
 backend/src/main/resources/schema.sql
 backend/src/main/resources/schema.sql
 backend/src/main/resources/application.properties
+Casos de Uso - COLD DAY V3.md
+Especificacion_Requisitos_IEEE830_COLD_DAY_v3.3.docx
+Especificacion_Requisitos_IEEE830_COLD_DAY_v3.3.md
+
+# Env locales (las keys reales nunca se commitean; ver *.env.example)
+.env
+.env.local
+backend/.env
+frontend/.env
+frontend/node_nodules/
+frontend/
+.env.example

@@ -88,8 +88,9 @@ class FinalizarOtUseCaseTest {
         Ot ot = otEnReparacion(TecnicoId.nueva());
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.finalizar(PRINCIPAL, ot.getId()))
+        assertThatThrownBy(() -> useCase.finalizar(PRINCIPAL, otId))
                 .isInstanceOf(TecnicoNoAsignadoException.class);
 
         verify(otRepository, never()).save(any());

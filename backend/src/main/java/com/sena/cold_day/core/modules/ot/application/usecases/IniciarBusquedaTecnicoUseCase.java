@@ -59,7 +59,7 @@ public class IniciarBusquedaTecnicoUseCase {
         Instant ahora = clock.instant();
         ot.iniciarBusqueda(RADIO_INICIAL_KM, ahora.plus(VENTANA_BUSQUEDA), ActorOt.CLIENTE, ahora);
         Ot guardada = otRepository.save(ot);
-        ofrecer(guardada, RADIO_INICIAL_KM, ahora);
+        ejecutarOferta(guardada, RADIO_INICIAL_KM, ahora);
         return guardada;
     }
 
@@ -69,6 +69,10 @@ public class IniciarBusquedaTecnicoUseCase {
      */
     @Transactional
     public int ofrecer(Ot ot, double radioKm, Instant ahora) {
+        return ejecutarOferta(ot, radioKm, ahora);
+    }
+
+    private int ejecutarOferta(Ot ot, double radioKm, Instant ahora) {
         List<TecnicoCercano> disponibles = disponibilidadRepository
                 .buscarDisponiblesEnRadio(ot.getUbicacion(), radioKm, Set.of(ot.getCategoriaServicio()));
         for (TecnicoCercano cercano : disponibles) {

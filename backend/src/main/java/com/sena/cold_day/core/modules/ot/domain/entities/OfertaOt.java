@@ -59,6 +59,7 @@ public class OfertaOt {
         return oferta;
     }
 
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia (8 campos, 1 sobre el umbral). Ver OfertaOtJpaEntity.toDomain para el mapeo 1:1.
     public static OfertaOt reconstituir(OfertaOtId id, OtId otId, TecnicoId tecnicoId, double radioKm,
             OfertaEstado estado, Instant creadaEn, Instant expiraEn, Instant resueltaEn) {
         OfertaOt oferta = new OfertaOt();

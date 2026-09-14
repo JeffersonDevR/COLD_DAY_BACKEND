@@ -43,7 +43,10 @@ class JwtTokenIssuerTest {
 
     @Test
     void tokenVersionTravelsIndependentlyOfRole() {
-        JwtTokenIssuer issuer = new JwtTokenIssuer(new JwtProperties(SECRET, 1_000));
+        // TTL amplio a proposito: el test verifica el claim "ver", no la expiracion.
+        // Con 1 s era flaky porque JJWT trunca exp a segundos y el primer uso
+        // (carga de serializadores) puede tardar mas que el margen.
+        JwtTokenIssuer issuer = new JwtTokenIssuer(new JwtProperties(SECRET, 60_000));
 
         Token token = issuer.emitir(new UsuarioId(1L), Rol.ADMINISTRADOR, 0);
 

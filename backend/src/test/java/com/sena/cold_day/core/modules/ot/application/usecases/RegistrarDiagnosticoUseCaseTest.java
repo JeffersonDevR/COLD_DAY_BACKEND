@@ -88,9 +88,10 @@ class RegistrarDiagnosticoUseCaseTest {
                 EstadoOt.EN_CAMINO);
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        var otId = ot.getId();
+        var request = new DiagnosticoRequest("Falla", null, BigDecimal.ONE, BigDecimal.ONE);
 
-        assertThatThrownBy(() -> useCase.registrar(PRINCIPAL, ot.getId(), new DiagnosticoRequest(
-                "Falla", null, BigDecimal.ONE, BigDecimal.ONE)))
+        assertThatThrownBy(() -> useCase.registrar(PRINCIPAL, otId, request))
                 .isInstanceOf(TecnicoNoAsignadoException.class);
 
         verify(otRepository, never()).save(any());
@@ -101,9 +102,9 @@ class RegistrarDiagnosticoUseCaseTest {
     void registrarRejectsAnUnknownOrder() {
         OtId desconocida = OtId.nueva();
         when(otRepository.buscarPorId(desconocida)).thenReturn(Optional.empty());
+        var request = new DiagnosticoRequest("Falla", null, BigDecimal.ONE, BigDecimal.ONE);
 
-        assertThatThrownBy(() -> useCase.registrar(PRINCIPAL, desconocida, new DiagnosticoRequest(
-                "Falla", null, BigDecimal.ONE, BigDecimal.ONE)))
+        assertThatThrownBy(() -> useCase.registrar(PRINCIPAL, desconocida, request))
                 .isInstanceOf(OtNoEncontradoException.class);
     }
 

@@ -6,7 +6,6 @@ import com.sena.cold_day.core.modules.clientes.application.dto.ClienteResponse;
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
-import com.sena.cold_day.core.shared.domain.Point;
 
 @Component
 public class ClienteMapper {

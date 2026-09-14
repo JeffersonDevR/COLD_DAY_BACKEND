@@ -2,6 +2,7 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -16,10 +17,12 @@ class PasswordEncoderAdapterTest {
     void hashesWithBcryptCostFactorTwelveAndVerifiesThePassword() {
         String hash = encoder.encode("secreto");
 
-        assertThat(hash).startsWith("$2a$12$");
-        assertThat(hash).hasSize(60);
-        assertThat(encoder.matches("secreto", hash)).isTrue();
-        assertThat(encoder.matches("otra", hash)).isFalse();
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(hash).startsWith("$2a$12$");
+            softly.assertThat(hash).hasSize(60);
+            softly.assertThat(encoder.matches("secreto", hash)).isTrue();
+            softly.assertThat(encoder.matches("otra", hash)).isFalse();
+        });
     }
 
     @Test

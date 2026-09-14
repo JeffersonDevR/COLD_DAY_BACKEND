@@ -84,8 +84,9 @@ class AprobarPresupuestoUseCaseTest {
         Ot ot = otEnDiagnostico(ClienteId.nueva());
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
+        var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.aprobar(PRINCIPAL, ot.getId()))
+        assertThatThrownBy(() -> useCase.aprobar(PRINCIPAL, otId))
                 .isInstanceOf(OtAccesoNoPermitidoException.class);
 
         verify(otRepository, never()).save(any());

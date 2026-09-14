@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.tecnicos.infrastructure.scheduling;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,6 @@ public class ProgramadorVigencia {
 
     @Scheduled(cron = "${app.vigencia.cron:0 0 6 * * *}")
     public void verificarVigenciaDocumental() {
-        verificarVigencia.ejecutar(LocalDate.now());
+        verificarVigencia.ejecutar(LocalDate.now(ZoneId.systemDefault()));
     }
 }
