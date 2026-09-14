@@ -63,3 +63,44 @@ CREATE TABLE IF NOT EXISTS token_recuperacion (
     usado BOOLEAN NOT NULL DEFAULT FALSE,
     creado_en TIMESTAMP NOT NULL
 );
+
+-- OT core (design schema delta). Hibernate create-drop is authoritative for H2
+-- (D8); this mirror stays in lockstep with OtJpaEntity. `version` drives
+-- optimistic locking.
+CREATE TABLE IF NOT EXISTS ot (
+    id UUID PRIMARY KEY,
+    cliente_id UUID NOT NULL REFERENCES clientes(id),
+    tecnico_id UUID REFERENCES tecnico(id),
+    categoria_servicio VARCHAR(30),
+    descripcion_falla VARCHAR(1000),
+    evidencia_urls VARCHAR(4000),
+    direccion VARCHAR(500),
+    latitud DOUBLE PRECISION,
+    longitud DOUBLE PRECISION,
+    estado VARCHAR(30) NOT NULL,
+    radio_km DOUBLE PRECISION,
+    ventana_expira_en TIMESTAMP,
+    creada_en TIMESTAMP,
+    asignada_en TIMESTAMP,
+    finalizada_en TIMESTAMP,
+    cancelada_por VARCHAR(20),
+    motivo_cancelacion VARCHAR(30),
+    tarifa_visita DECIMAL(12,2),
+    version BIGINT
+);
+
+-- Append-only OT state history (RNF-09, design D3). The domain port exposes only
+-- append/listarPorOt; the entity is @Immutable. `estado_origen` is null for the
+-- creation entry, which lands directly in SOLICITADA.
+CREATE TABLE IF NOT EXISTS ot_estado_historial (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    ot_id UUID NOT NULL REFERENCES ot(id),
+    estado_origen VARCHAR(30),
+    estado_destino VARCHAR(30) NOT NULL,
+    actor_usuario_id BIGINT,
+    actor_rol VARCHAR(20),
+    actor VARCHAR(20),
+    ocurrido_en TIMESTAMP NOT NULL,
+    motivo VARCHAR(500)
+);
+

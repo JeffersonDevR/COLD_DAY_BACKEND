@@ -1,0 +1,256 @@
+package com.sena.cold_day.core.modules.ot.domain.aggregates;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
+import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.shared.domain.Point;
+
+/**
+ * Root aggregate of the OT lifecycle (design D1/D2/D3).
+ *
+ * <p>Every accepted transition is appended to an in-memory pending list of
+ * {@link CambioEstado}; the persistence adapter drains it on save so no state
+ * change is ever lost (RNF-09). Terminal states have no exits.
+ */
+public class Ot {
+
+    private OtId id;
+    private ClienteId clienteId;
+    private TecnicoId tecnicoId;
+    private CategoriaServicio categoriaServicio;
+    private String descripcionFalla;
+    private List<String> evidenciaUrls = new ArrayList<>();
+    private String direccion;
+    private Point ubicacion;
+    private EstadoOt estado;
+    private double radioKm;
+    private Instant ventanaExpiraEn;
+    private Instant creadaEn;
+    private Instant asignadaEn;
+    private Instant finalizadaEn;
+    private ActorOt canceladaPor;
+    private MotivoCancelacion motivoCancelacion;
+    private BigDecimal tarifaVisita;
+
+    /** Pending state changes not yet persisted to the append-only history. */
+    private final List<CambioEstado> cambiosPendientes = new ArrayList<>();
+
+    private Ot() {
+    }
+
+    /**
+     * Creates an OT as {@code SOLICITADA} (RF-F1-08) and records the initial
+     * {@code ->SOLICITADA} history entry.
+     */
+    public static Ot crear(ClienteId clienteId, CategoriaServicio categoriaServicio, String descripcionFalla,
+            List<String> evidenciaUrls, String direccion, Point ubicacion, Instant ahora) {
+        if (clienteId == null) {
+            throw new IllegalArgumentException("El cliente es requerido");
+        }
+        if (categoriaServicio == null) {
+            throw new IllegalArgumentException("La categoria de servicio es requerida");
+        }
+        if (descripcionFalla == null || descripcionFalla.isBlank()) {
+            throw new IllegalArgumentException("La descripcion de la falla es requerida");
+        }
+        if (ubicacion == null) {
+            throw new IllegalArgumentException("La ubicacion es requerida");
+        }
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento de creacion es requerido");
+        }
+
+        Ot ot = new Ot();
+        ot.id = OtId.nueva();
+        ot.clienteId = clienteId;
+        ot.categoriaServicio = categoriaServicio;
+        ot.descripcionFalla = descripcionFalla;
+        ot.evidenciaUrls = evidenciaUrls == null ? new ArrayList<>() : new ArrayList<>(evidenciaUrls);
+        ot.direccion = direccion;
+        ot.ubicacion = ubicacion;
+        ot.estado = EstadoOt.SOLICITADA;
+        ot.radioKm = 0.0;
+        ot.creadaEn = ahora;
+        ot.cambiosPendientes.add(new CambioEstado(null, EstadoOt.SOLICITADA, ActorOt.CLIENTE, ahora, null));
+        return ot;
+    }
+
+    public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
+            CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
+            String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
+            Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita) {
+        Ot ot = new Ot();
+        ot.id = id;
+        ot.clienteId = clienteId;
+        ot.tecnicoId = tecnicoId;
+        ot.categoriaServicio = categoriaServicio;
+        ot.descripcionFalla = descripcionFalla;
+        ot.evidenciaUrls = evidenciaUrls == null ? new ArrayList<>() : new ArrayList<>(evidenciaUrls);
+        ot.direccion = direccion;
+        ot.ubicacion = ubicacion;
+        ot.estado = estado;
+        ot.radioKm = radioKm;
+        ot.ventanaExpiraEn = ventanaExpiraEn;
+        ot.creadaEn = creadaEn;
+        ot.asignadaEn = asignadaEn;
+        ot.finalizadaEn = finalizadaEn;
+        ot.canceladaPor = canceladaPor;
+        ot.motivoCancelacion = motivoCancelacion;
+        ot.tarifaVisita = tarifaVisita;
+        return ot;
+    }
+
+    /**
+     * All Phase-1 orders are urgent: creation immediately advances
+     * {@code SOLICITADA -> BUSCANDO_TECNICO} and opens the first dispatch
+     * window (RF-F1-08).
+     */
+    public void iniciarBusqueda(double radioKm, Instant ventanaExpiraEn, ActorOt actor, Instant ahora) {
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.BUSCANDO_TECNICO);
+        this.estado = EstadoOt.BUSCANDO_TECNICO;
+        this.radioKm = radioKm;
+        this.ventanaExpiraEn = ventanaExpiraEn;
+        registrarCambio(origen, EstadoOt.BUSCANDO_TECNICO, actor, ahora, null);
+    }
+
+    /**
+     * Widens the search radius without changing the state (RF-F1-09); not a
+     * state change, so it produces no history entry.
+     */
+    public void escalarRadio(double radioKm, Instant ventanaExpiraEn, Instant ahora) {
+        if (estado != EstadoOt.BUSCANDO_TECNICO) {
+            throw new IllegalStateException(
+                    "Solo se puede escalar el radio en BUSCANDO_TECNICO, estado actual: " + estado);
+        }
+        this.radioKm = radioKm;
+        this.ventanaExpiraEn = ventanaExpiraEn;
+    }
+
+    /** Negative terminal state when no technician accepts at the maximum radius. */
+    public void agotarOpciones(ActorOt actor, Instant ahora) {
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.SIN_TECNICOS_DISPONIBLES);
+        this.estado = EstadoOt.SIN_TECNICOS_DISPONIBLES;
+        registrarCambio(origen, EstadoOt.SIN_TECNICOS_DISPONIBLES, actor, ahora, null);
+    }
+
+    /** Cancels the OT before repair, recording actor and motivo (design D2). */
+    public void cancelar(ActorOt canceladaPor, MotivoCancelacion motivo, Instant ahora) {
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.CANCELADA);
+        this.estado = EstadoOt.CANCELADA;
+        this.canceladaPor = canceladaPor;
+        this.motivoCancelacion = motivo;
+        registrarCambio(origen, EstadoOt.CANCELADA, canceladaPor, ahora, motivo == null ? null : motivo.name());
+    }
+
+    /** Completes the repair and lands the OT in its positive terminal state. */
+    public void finalizar(ActorOt actor, Instant ahora) {
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.FINALIZADA);
+        this.estado = EstadoOt.FINALIZADA;
+        this.finalizadaEn = ahora;
+        registrarCambio(origen, EstadoOt.FINALIZADA, actor, ahora, null);
+    }
+
+    public boolean esTerminal() {
+        return estado != null && estado.esTerminal();
+    }
+
+    public boolean tieneTecnicoAsignado() {
+        return tecnicoId != null;
+    }
+
+    /** Returns the pending state changes and clears them (no transition is missed). */
+    public List<CambioEstado> drenarCambiosPendientes() {
+        List<CambioEstado> copia = List.copyOf(cambiosPendientes);
+        cambiosPendientes.clear();
+        return copia;
+    }
+
+    private void registrarCambio(EstadoOt origen, EstadoOt destino, ActorOt actor, Instant ahora, String motivo) {
+        cambiosPendientes.add(new CambioEstado(origen, destino, actor, ahora, motivo));
+    }
+
+    public OtId getId() {
+        return id;
+    }
+
+    public ClienteId getClienteId() {
+        return clienteId;
+    }
+
+    public TecnicoId getTecnicoId() {
+        return tecnicoId;
+    }
+
+    public CategoriaServicio getCategoriaServicio() {
+        return categoriaServicio;
+    }
+
+    public String getDescripcionFalla() {
+        return descripcionFalla;
+    }
+
+    public List<String> getEvidenciaUrls() {
+        return Collections.unmodifiableList(evidenciaUrls);
+    }
+
+    public String getDireccion() {
+        return direccion;
+    }
+
+    public Point getUbicacion() {
+        return ubicacion;
+    }
+
+    public EstadoOt getEstado() {
+        return estado;
+    }
+
+    public double getRadioKm() {
+        return radioKm;
+    }
+
+    public Instant getVentanaExpiraEn() {
+        return ventanaExpiraEn;
+    }
+
+    public Instant getCreadaEn() {
+        return creadaEn;
+    }
+
+    public Instant getAsignadaEn() {
+        return asignadaEn;
+    }
+
+    public Instant getFinalizadaEn() {
+        return finalizadaEn;
+    }
+
+    public ActorOt getCanceladaPor() {
+        return canceladaPor;
+    }
+
+    public MotivoCancelacion getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public BigDecimal getTarifaVisita() {
+        return tarifaVisita;
+    }
+}
