@@ -1,11 +1,14 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.api.responses;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 
 /**
@@ -23,7 +26,10 @@ public record OtApiResponse(
         double radioKm,
         Instant creadaEn,
         ActorOt canceladaPor,
-        MotivoCancelacion motivoCancelacion) {
+        MotivoCancelacion motivoCancelacion,
+        BigDecimal tarifaVisita,
+        Diagnostico diagnostico,
+        Presupuesto presupuesto) {
 
     public static OtApiResponse from(OtResponse response) {
         return new OtApiResponse(
@@ -32,6 +38,7 @@ public record OtApiResponse(
                 response.tecnicoId() == null ? null : response.tecnicoId().valor().toString(),
                 response.estado(), response.categoriaServicio(), response.descripcionFalla(),
                 response.direccion(), response.radioKm(), response.creadaEn(), response.canceladaPor(),
-                response.motivoCancelacion());
+                response.motivoCancelacion(), response.tarifaVisita(), response.diagnostico(),
+                response.presupuesto());
     }
 }

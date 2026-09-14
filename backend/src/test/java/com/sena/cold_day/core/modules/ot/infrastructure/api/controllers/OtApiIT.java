@@ -151,7 +151,9 @@ class OtApiIT {
         Ot persisted = otRepository.save(buscando);
 
         mockMvc.perform(post("/api/ot/" + persisted.getId().valor() + "/cancelar")
-                        .header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE)))
+                        .header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"Ya no la necesito\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("CANCELADA"))
                 .andExpect(jsonPath("$.canceladaPor").value("CLIENTE"));

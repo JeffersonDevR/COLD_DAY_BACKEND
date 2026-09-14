@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.ot.domain.aggregates;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -12,9 +13,13 @@ import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
 
 /**
@@ -25,6 +30,7 @@ import com.sena.cold_day.core.shared.domain.Point;
 class OtTest {
 
     private static final ClienteId CLIENTE = ClienteId.nueva();
+    private static final TecnicoId TECNICO = TecnicoId.nueva();
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
 
     @Test
@@ -159,6 +165,130 @@ class OtTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void iniciarDesplazamientoMovesFromAsignadaToEnCamino() {
+        Ot ot = crearAsignada(AHORA);
+        ot.drenarCambiosPendientes();
+
+        ot.iniciarDesplazamiento(ActorOt.TECNICO, AHORA.plusSeconds(30));
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.EN_CAMINO);
+        assertThat(ot.drenarCambiosPendientes()).singleElement().satisfies(cambio -> {
+            assertThat(cambio.origen()).isEqualTo(EstadoOt.ASIGNADA);
+            assertThat(cambio.destino()).isEqualTo(EstadoOt.EN_CAMINO);
+            assertThat(cambio.actor()).isEqualTo(ActorOt.TECNICO);
+            assertThat(cambio.ocurridoEn()).isEqualTo(AHORA.plusSeconds(30));
+        });
+    }
+
+    @Test
+    void registrarDiagnosticoStoresTheFaultAndTheBudget() {
+        Ot ot = crearEnCamino();
+        ot.drenarCambiosPendientes();
+        Diagnostico diagnostico = new Diagnostico("Compresor averiado", "Revisado en sitio",
+                AHORA.plusSeconds(60));
+        Presupuesto presupuesto = new Presupuesto(new BigDecimal("120000.00"), new BigDecimal("350000.00"),
+                AHORA.plusSeconds(60));
+
+        ot.registrarDiagnostico(diagnostico, ActorOt.TECNICO, AHORA.plusSeconds(60));
+        ot.presupuestar(presupuesto);
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.EN_DIAGNOSTICO);
+        assertThat(ot.getDiagnostico()).isEqualTo(diagnostico);
+        assertThat(ot.getPresupuesto()).isEqualTo(presupuesto);
+        assertThat(ot.drenarCambiosPendientes()).singleElement().satisfies(cambio -> {
+            assertThat(cambio.origen()).isEqualTo(EstadoOt.EN_CAMINO);
+            assertThat(cambio.destino()).isEqualTo(EstadoOt.EN_DIAGNOSTICO);
+            assertThat(cambio.actor()).isEqualTo(ActorOt.TECNICO);
+        });
+    }
+
+    @Test
+    void presupuestarRequiresTheDiagnosisState() {
+        Ot ot = crearEnCamino();
+        Presupuesto presupuesto = new Presupuesto(new BigDecimal("1.00"), new BigDecimal("2.00"), AHORA);
+
+        assertThatThrownBy(() -> ot.presupuestar(presupuesto))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.EN_CAMINO);
+    }
+
+    @Test
+    void registrarDiagnosticoRequiresEnCamino() {
+        Ot ot = crearAsignada(AHORA);
+        Diagnostico diagnostico = new Diagnostico("Falla", null, AHORA);
+
+        assertThatThrownBy(() -> ot.registrarDiagnostico(diagnostico, ActorOt.TECNICO, AHORA))
+                .isInstanceOf(TransicionOtInvalidaException.class);
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.ASIGNADA);
+    }
+
+    @Test
+    void aprobarPresupuestoMovesToEnReparacion() {
+        Ot ot = crearEnDiagnostico();
+        ot.drenarCambiosPendientes();
+
+        ot.aprobarPresupuesto(ActorOt.CLIENTE, AHORA.plusSeconds(120));
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.EN_REPARACION);
+        assertThat(ot.drenarCambiosPendientes()).singleElement().satisfies(cambio -> {
+            assertThat(cambio.origen()).isEqualTo(EstadoOt.EN_DIAGNOSTICO);
+            assertThat(cambio.destino()).isEqualTo(EstadoOt.EN_REPARACION);
+            assertThat(cambio.actor()).isEqualTo(ActorOt.CLIENTE);
+        });
+    }
+
+    @Test
+    void theFreeCancellationWindowLastsTenMinutesFromAssignment() {
+        Ot ot = crearAsignada(AHORA);
+
+        assertThat(ot.dentroDeVentanaGratuita(AHORA.plusSeconds(9 * 60))).isTrue();
+        assertThat(ot.dentroDeVentanaGratuita(AHORA.plusSeconds(600))).isTrue();
+        assertThat(ot.dentroDeVentanaGratuita(AHORA.plusSeconds(601))).isFalse();
+    }
+
+    @Test
+    void cancellationOutsideTheFreeWindowRecordsTheVisitFeeAndReason() {
+        Ot ot = crearAsignada(AHORA);
+        ot.drenarCambiosPendientes();
+
+        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.CANCELACION_CLIENTE, "Ya no la necesito",
+                AHORA.plusSeconds(601), new BigDecimal("50000.00"));
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.CANCELADA);
+        assertThat(ot.getTarifaVisita()).isEqualByComparingTo("50000.00");
+        assertThat(ot.getMotivoCancelacion()).isEqualTo(MotivoCancelacion.CANCELACION_CLIENTE);
+        assertThat(ot.getCanceladaPor()).isEqualTo(ActorOt.CLIENTE);
+        assertThat(ot.drenarCambiosPendientes()).singleElement().satisfies(cambio -> {
+            assertThat(cambio.origen()).isEqualTo(EstadoOt.ASIGNADA);
+            assertThat(cambio.destino()).isEqualTo(EstadoOt.CANCELADA);
+            assertThat(cambio.motivo()).isEqualTo("Ya no la necesito");
+        });
+    }
+
+    @Test
+    void cancellationInsideTheFreeWindowRecordsNoVisitFee() {
+        Ot ot = crearAsignada(AHORA);
+
+        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.CANCELACION_CLIENTE, "Me arrepenti",
+                AHORA.plusSeconds(120), null);
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.CANCELADA);
+        assertThat(ot.getTarifaVisita()).isNull();
+    }
+
+    @Test
+    void rejectionTerminatesAsCanceladaWithTheVisitFee() {
+        Ot ot = crearEnDiagnostico();
+
+        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.RECHAZO_PRESUPUESTO, "Presupuesto muy alto",
+                AHORA.plusSeconds(200), new BigDecimal("50000.00"));
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.CANCELADA);
+        assertThat(ot.getMotivoCancelacion()).isEqualTo(MotivoCancelacion.RECHAZO_PRESUPUESTO);
+        assertThat(ot.getTarifaVisita()).isEqualByComparingTo("50000.00");
+    }
+
     private Ot crear() {
         return Ot.crear(CLIENTE, CategoriaServicio.REFRIGERACION, "No enciende", List.of("http://foto"),
                 "Calle 1", new Point(4.6, -74.0), AHORA);
@@ -168,6 +298,27 @@ class OtTest {
         Ot ot = crear();
         ot.iniciarBusqueda(10.0, AHORA.plusSeconds(60), ActorOt.CLIENTE, AHORA);
         ot.drenarCambiosPendientes();
+        return ot;
+    }
+
+    private Ot crearAsignada(Instant asignadaEn) {
+        return Ot.reconstituir(OtId.nueva(), CLIENTE, TECNICO, CategoriaServicio.REFRIGERACION,
+                "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0), EstadoOt.ASIGNADA, 10.0,
+                AHORA.plusSeconds(60), AHORA, asignadaEn, null, null, null, null, null, null);
+    }
+
+    private Ot crearEnCamino() {
+        Ot ot = crearAsignada(AHORA);
+        ot.iniciarDesplazamiento(ActorOt.TECNICO, AHORA.plusSeconds(30));
+        return ot;
+    }
+
+    private Ot crearEnDiagnostico() {
+        Ot ot = crearEnCamino();
+        ot.registrarDiagnostico(new Diagnostico("Compresor averiado", null, AHORA.plusSeconds(60)),
+                ActorOt.TECNICO, AHORA.plusSeconds(60));
+        ot.presupuestar(new Presupuesto(new BigDecimal("120000.00"), new BigDecimal("350000.00"),
+                AHORA.plusSeconds(60)));
         return ot;
     }
 }

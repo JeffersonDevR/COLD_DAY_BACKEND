@@ -86,6 +86,8 @@ CREATE TABLE IF NOT EXISTS ot (
     cancelada_por VARCHAR(20),
     motivo_cancelacion VARCHAR(30),
     tarifa_visita DECIMAL(12,2),
+    diagnostico VARCHAR(4000),
+    presupuesto VARCHAR(4000),
     version BIGINT
 );
 

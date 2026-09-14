@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.ot.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -14,8 +15,10 @@ import org.springframework.context.annotation.Import;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
 import com.sena.cold_day.core.modules.ot.infrastructure.repository.OtEstadoHistorialRepositoryAdapter;
 import com.sena.cold_day.core.modules.ot.infrastructure.repository.OtRepositoryAdapter;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -115,6 +118,23 @@ class OtRepositoryTest {
                 .containsExactly(EstadoOt.SOLICITADA, EstadoOt.BUSCANDO_TECNICO);
         assertThat(historial.get(0).getEstadoOrigen()).isNull();
         assertThat(historial.get(1).getEstadoOrigen()).isEqualTo(EstadoOt.SOLICITADA);
+    }
+
+    @Test
+    void roundTripsTheDiagnosisAndBudgetJsonColumns() {
+        Diagnostico diagnostico = new Diagnostico("Compresor averiado", "Revisado en sitio", AHORA);
+        Presupuesto presupuesto = new Presupuesto(new BigDecimal("120000.00"), new BigDecimal("350000.00"), AHORA);
+        Ot ot = Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), TecnicoId.nueva(),
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0),
+                EstadoOt.EN_DIAGNOSTICO, 10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null,
+                diagnostico, presupuesto);
+
+        repository.save(ot);
+
+        assertThat(repository.buscarPorId(ot.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getDiagnostico()).isEqualTo(diagnostico);
+            assertThat(found.getPresupuesto()).isEqualTo(presupuesto);
+        });
     }
 
     private Ot crearEnSolicitada() {

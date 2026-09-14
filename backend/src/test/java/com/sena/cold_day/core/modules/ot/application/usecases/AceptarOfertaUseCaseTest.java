@@ -227,6 +227,6 @@ class AceptarOfertaUseCaseTest {
     private Ot otAsignada(OtId otId, ClienteId clienteId, TecnicoId tecnicoId) {
         return Ot.reconstituir(otId, clienteId, tecnicoId, CategoriaServicio.REFRIGERACION, "No enciende",
                 List.of(), "Calle 1", new Point(4.6, -74.0), EstadoOt.ASIGNADA, 10.0, EXPIRA,
-                AHORA, AHORA, null, null, null, null);
+                AHORA, AHORA, null, null, null, null, null, null);
     }
 }

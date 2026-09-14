@@ -9,9 +9,11 @@ import java.util.UUID;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
@@ -99,6 +101,14 @@ public class OtJpaEntity {
     @Column(name = "tarifa_visita", precision = 12, scale = 2)
     private BigDecimal tarifaVisita;
 
+    @Convert(converter = DiagnosticoJsonConverter.class)
+    @Column(name = "diagnostico", length = 4000)
+    private Diagnostico diagnostico;
+
+    @Convert(converter = PresupuestoJsonConverter.class)
+    @Column(name = "presupuesto", length = 4000)
+    private Presupuesto presupuesto;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -130,6 +140,8 @@ public class OtJpaEntity {
         this.canceladaPor = source.getCanceladaPor();
         this.motivoCancelacion = source.getMotivoCancelacion();
         this.tarifaVisita = source.getTarifaVisita();
+        this.diagnostico = source.getDiagnostico();
+        this.presupuesto = source.getPresupuesto();
     }
 
     public Ot toDomain() {
@@ -140,6 +152,6 @@ public class OtJpaEntity {
                 categoriaServicio, descripcionFalla,
                 evidenciaUrls == null ? new ArrayList<>() : new ArrayList<>(evidenciaUrls),
                 direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
-                canceladaPor, motivoCancelacion, tarifaVisita);
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto);
     }
 }

@@ -86,6 +86,43 @@ class TecnicoTest {
     }
 
     @Test
+    void liberarOrdenReturnsAnOccupiedApprovedTechnicianToDisponible() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
+        tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
+        tecnico.aceptarOrden();
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.OCUPADO);
+
+        tecnico.liberarOrden();
+
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.DISPONIBLE);
+    }
+
+    @Test
+    void liberarOrdenDoesNotReviveANonApprovedTechnician() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
+        tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
+        tecnico.aceptarOrden();
+        tecnico.suspenderPorVencimiento();
+
+        tecnico.liberarOrden();
+
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.FUERA_DE_SERVICIO);
+    }
+
+    @Test
+    void liberarOrdenKeepsAnAvailableTechnicianUntouched() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
+        tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
+
+        tecnico.liberarOrden();
+
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.DISPONIBLE);
+    }
+
+    @Test
     void managesCertificationsThroughAggregateBehavior() {
         Certificacion certification = new Certificacion("Tecnico", "SENA", LocalDate.of(2027, 1, 31));
         Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());

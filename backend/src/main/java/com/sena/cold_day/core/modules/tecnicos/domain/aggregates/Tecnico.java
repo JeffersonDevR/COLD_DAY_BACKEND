@@ -122,6 +122,19 @@ public class Tecnico {
         this.estadoOperativo = EstadoOperativo.OCUPADO;
     }
 
+    /**
+     * Releases the assigned order when its OT reaches a terminal state or is
+     * reassigned. An approved technician returns from {@code OCUPADO} to
+     * {@code DISPONIBLE}; a technician whose validation is no longer
+     * {@code APROBADO} (for example, suspended) is deliberately left untouched
+     * so a terminal OT never makes an ineligible technician available.
+     */
+    public void liberarOrden() {
+        if (estadoValidacion == EstadoValidacion.APROBADO && estadoOperativo == EstadoOperativo.OCUPADO) {
+            this.estadoOperativo = EstadoOperativo.DISPONIBLE;
+        }
+    }
+
     public void reemplazarCategorias(Set<CategoriaServicio> categorias) {
         categoriasServicio.clear();
         if (categorias != null) {

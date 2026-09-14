@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.domain.aggregates;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,9 +11,11 @@ import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
@@ -25,6 +28,12 @@ import com.sena.cold_day.core.shared.domain.Point;
  * change is ever lost (RNF-09). Terminal states have no exits.
  */
 public class Ot {
+
+    /** Base visit fee charged when a client cancels outside the free window (RF-F1-20/21). */
+    public static final BigDecimal TARIFA_VISITA_BASE = new BigDecimal("50000.00");
+
+    /** Free client cancellation window measured from assignment (RF-F1-21). */
+    public static final Duration VENTANA_CANCELACION_GRATUITA = Duration.ofMinutes(10);
 
     private OtId id;
     private ClienteId clienteId;
@@ -43,6 +52,8 @@ public class Ot {
     private ActorOt canceladaPor;
     private MotivoCancelacion motivoCancelacion;
     private BigDecimal tarifaVisita;
+    private Diagnostico diagnostico;
+    private Presupuesto presupuesto;
 
     /** Pending state changes not yet persisted to the append-only history. */
     private final List<CambioEstado> cambiosPendientes = new ArrayList<>();
@@ -91,7 +102,8 @@ public class Ot {
             CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
             String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
             Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
-            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita) {
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
+            Presupuesto presupuesto) {
         Ot ot = new Ot();
         ot.id = id;
         ot.clienteId = clienteId;
@@ -110,6 +122,8 @@ public class Ot {
         ot.canceladaPor = canceladaPor;
         ot.motivoCancelacion = motivoCancelacion;
         ot.tarifaVisita = tarifaVisita;
+        ot.diagnostico = diagnostico;
+        ot.presupuesto = presupuesto;
         return ot;
     }
 
@@ -150,12 +164,80 @@ public class Ot {
 
     /** Cancels the OT before repair, recording actor and motivo (design D2). */
     public void cancelar(ActorOt canceladaPor, MotivoCancelacion motivo, Instant ahora) {
+        cancelar(canceladaPor, motivo, motivo == null ? null : motivo.name(), ahora, null);
+    }
+
+    /**
+     * Cancels the OT before repair with the mandatory free-text reason, the
+     * actor attribution and (when applicable) the base visit fee (RF-F1-20/21).
+     * The categorical {@code motivo} lands on the aggregate; the free-text
+     * reason is audited on the history entry.
+     */
+    public void cancelar(ActorOt canceladaPor, MotivoCancelacion motivo, String razon, Instant ahora,
+            BigDecimal tarifaVisita) {
+        if (canceladaPor == null) {
+            throw new IllegalArgumentException("El actor de la cancelacion es requerido");
+        }
         EstadoOt origen = this.estado;
         TransicionesOt.validar(origen, EstadoOt.CANCELADA);
         this.estado = EstadoOt.CANCELADA;
         this.canceladaPor = canceladaPor;
         this.motivoCancelacion = motivo;
-        registrarCambio(origen, EstadoOt.CANCELADA, canceladaPor, ahora, motivo == null ? null : motivo.name());
+        this.tarifaVisita = tarifaVisita;
+        registrarCambio(origen, EstadoOt.CANCELADA, canceladaPor, ahora, razon);
+    }
+
+    /**
+     * True while a client cancellation is still free: the OT was assigned and
+     * no more than {@link #VENTANA_CANCELACION_GRATUITA} has elapsed (RF-F1-21).
+     */
+    public boolean dentroDeVentanaGratuita(Instant ahora) {
+        return asignadaEn != null && ahora != null
+                && !ahora.isAfter(asignadaEn.plus(VENTANA_CANCELACION_GRATUITA));
+    }
+
+    /** Assigned technician starts the displacement ({@code ASIGNADA -> EN_CAMINO}). */
+    public void iniciarDesplazamiento(ActorOt actor, Instant ahora) {
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.EN_CAMINO);
+        this.estado = EstadoOt.EN_CAMINO;
+        registrarCambio(origen, EstadoOt.EN_CAMINO, actor, ahora, null);
+    }
+
+    /**
+     * Records the diagnosis and advances {@code EN_CAMINO -> EN_DIAGNOSTICO}
+     * (RF-F1-11). The budget is attached separately through
+     * {@link #presupuestar(Presupuesto)}.
+     */
+    public void registrarDiagnostico(Diagnostico diagnostico, ActorOt actor, Instant ahora) {
+        if (diagnostico == null) {
+            throw new IllegalArgumentException("El diagnostico es requerido");
+        }
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.EN_DIAGNOSTICO);
+        this.diagnostico = diagnostico;
+        this.estado = EstadoOt.EN_DIAGNOSTICO;
+        registrarCambio(origen, EstadoOt.EN_DIAGNOSTICO, actor, ahora, null);
+    }
+
+    /** Attaches the budget presented to the client; only valid in diagnosis. */
+    public void presupuestar(Presupuesto presupuesto) {
+        if (presupuesto == null) {
+            throw new IllegalArgumentException("El presupuesto es requerido");
+        }
+        if (estado != EstadoOt.EN_DIAGNOSTICO) {
+            throw new IllegalStateException(
+                    "Solo se puede presupuestar en EN_DIAGNOSTICO, estado actual: " + estado);
+        }
+        this.presupuesto = presupuesto;
+    }
+
+    /** Client approval of the presented budget ({@code EN_DIAGNOSTICO -> EN_REPARACION}). */
+    public void aprobarPresupuesto(ActorOt actor, Instant ahora) {
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.EN_REPARACION);
+        this.estado = EstadoOt.EN_REPARACION;
+        registrarCambio(origen, EstadoOt.EN_REPARACION, actor, ahora, null);
     }
 
     /** Completes the repair and lands the OT in its positive terminal state. */
@@ -252,5 +334,13 @@ public class Ot {
 
     public BigDecimal getTarifaVisita() {
         return tarifaVisita;
+    }
+
+    public Diagnostico getDiagnostico() {
+        return diagnostico;
+    }
+
+    public Presupuesto getPresupuesto() {
+        return presupuesto;
     }
 }
