@@ -104,3 +104,18 @@ CREATE TABLE IF NOT EXISTS ot_estado_historial (
     motivo VARCHAR(500)
 );
 
+-- Dispatch offers (design D4/D6, RF-F1-09). One row per notified technician with
+-- a server-authoritative expiry; the offer state is authoritative and pollable.
+-- Hibernate create-drop is authoritative for H2 (D8); this mirror stays in lockstep
+-- with OfertaOtJpaEntity.
+CREATE TABLE IF NOT EXISTS oferta_ot (
+    id UUID PRIMARY KEY,
+    ot_id UUID NOT NULL REFERENCES ot(id),
+    tecnico_id UUID NOT NULL REFERENCES tecnico(id),
+    radio_km DOUBLE PRECISION,
+    estado VARCHAR(20) NOT NULL,
+    creada_en TIMESTAMP,
+    expira_en TIMESTAMP,
+    resuelta_en TIMESTAMP
+);
+
