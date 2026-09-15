@@ -35,3 +35,4 @@ frontend/.env
 frontend/node_nodules/
 frontend/
 .env.example
+/PROTOTIPO_FRONTEND_ANGULAR_AI_STUDIO.md

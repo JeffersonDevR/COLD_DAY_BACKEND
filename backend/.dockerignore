@@ -1,0 +1,12 @@
+.gradle
+build
+bin
+out
+.git
+.idea
+.vscode
+*.iml
+.env
+.env.local
+docs
+HELP.md

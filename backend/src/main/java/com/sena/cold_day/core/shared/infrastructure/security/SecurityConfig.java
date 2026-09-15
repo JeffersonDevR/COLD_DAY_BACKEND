@@ -45,6 +45,9 @@ public class SecurityConfig {
                     .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Health check publico para la plataforma de despliegue (Render).
+                        .requestMatchers("/actuator/health", "/actuator/health/**")
+                        .permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios", "/api/usuarios/login",

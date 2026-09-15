@@ -1,0 +1,31 @@
+# Blueprint de Render para el backend COLD DAY.
+# Uso: Render Dashboard -> New -> Blueprint -> conecta este repo.
+# Los valores marcados con `sync: false` se piden en el dashboard (no van al repo).
+services:
+  - type: web
+    name: cold-day-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod,postgres
+      # Evita el create-drop del perfil postgres en produccion (no borra datos en cada deploy).
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+      - key: JWT_SECRET
+        sync: false
+      # Cadena JDBC completa, ej: jdbc:postgresql://HOST:5432/DBNAME?sslmode=require
+      - key: POSTGRES_URL
+        sync: false
+      - key: POSTGRES_USER
+        sync: false
+      - key: POSTGRES_PASSWORD
+        sync: false
+      - key: GOOGLE_MAPS_ENABLED
+        value: "true"
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
