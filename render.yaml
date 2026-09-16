@@ -18,7 +18,8 @@ services:
         value: update
       - key: JWT_SECRET
         sync: false
-      # Cadena JDBC completa, ej: jdbc:postgresql://HOST:5432/DBNAME?sslmode=require
+      # JDBC puro SIN credenciales embebidas (el driver pgjdbc no acepta user:pass@host).
+      # Ej: jdbc:postgresql://dpg-xxxx-a:5432/cold_day_db_v1  (host interno de Render)
       - key: POSTGRES_URL
         sync: false
       - key: POSTGRES_USER
