@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: coldday-postgis
+    environment:
+      POSTGRES_DB: cold_day
+      POSTGRES_USER: cold_day
+      POSTGRES_PASSWORD: cold_day
+    ports:
+      - "5433:5432"
+    volumes:
+      - coldday-postgis-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cold_day -d cold_day"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: coldday-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod,postgres
+      # create-drop es el default del perfil postgres: recrea el esquema en cada arranque.
+      # Cambia a "update" si quieres conservar datos entre reinicios locales.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-create-drop}
+      POSTGRES_URL: jdbc:postgresql://db:5432/cold_day
+      POSTGRES_USER: cold_day
+      POSTGRES_PASSWORD: cold_day
+      JWT_SECRET: ${JWT_SECRET:-cold-day-local-dev-secret-key-change-me-32bytes!!}
+      GOOGLE_MAPS_ENABLED: ${GOOGLE_MAPS_ENABLED:-false}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    ports:
+      - "8090:8090"
+
+volumes:
+  coldday-postgis-data:

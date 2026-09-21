@@ -25,8 +25,8 @@ COPY --from=build /workspace/app.jar app.jar
 RUN chown app:app app.jar
 USER app
 
-# Render define PORT; application-prod.properties lo respeta (server.port=${PORT:8080}).
-EXPOSE 8080
+# Render define PORT; application-prod.properties lo respeta (server.port=${PORT:8090}).
+EXPOSE 8090
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC"
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
