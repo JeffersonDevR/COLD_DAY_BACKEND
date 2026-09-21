@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { AdminApi } from '../infrastructure/admin-api';
+import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 
@@ -141,18 +141,30 @@ import { TecnicoResponse } from '../../../core/shared/domain/models/common.model
   `
 })
 export class ValidacionTecnicosPage {
-  private readonly mockDb = inject(MockDbService);
   private readonly adminApi = inject(AdminApi);
+  private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
 
-  readonly tecnicos = computed(() => this.mockDb.tecnicos());
+  readonly tecnicos = signal<TecnicoResponse[]>([]);
   readonly tecnicoARechazar = signal<TecnicoResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
+
+  constructor() {
+    this.cargarTecnicos();
+  }
+
+  private cargarTecnicos(): void {
+    this.tecnicosApi.getTecnicos().subscribe({
+      next: (tecnicos) => this.tecnicos.set(tecnicos),
+      error: () => this.tecnicos.set([]),
+    });
+  }
 
   aprobar(tec: TecnicoResponse): void {
     this.adminApi.validarDocumentacionTecnico(tec.id, 'APROBADO').subscribe({
       next: () => {
         this.toast.success('Técnico Aprobado', `${tec.nombreCompleto} ha sido habilitado para tomar servicios en Cúcuta.`);
+        this.cargarTecnicos();
       }
     });
   }
@@ -170,6 +182,7 @@ export class ValidacionTecnicosPage {
         this.toast.warning('Técnico Rechazado', `Se notificó el motivo a ${tec.nombreCompleto}.`);
         this.tecnicoARechazar.set(null);
         this.motivoCtrl.reset();
+        this.cargarTecnicos();
       }
     });
   }

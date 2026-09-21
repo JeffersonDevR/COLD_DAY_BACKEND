@@ -1,9 +1,12 @@
 package com.sena.cold_day.core.modules.clientes.infrastructure.api.controllers;
 
 import java.net.URI;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +20,8 @@ import com.sena.cold_day.core.modules.clientes.infrastructure.api.requests.Clien
 import com.sena.cold_day.core.modules.clientes.infrastructure.api.responses.ClienteApiResponse;
 import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.ActualizarUbicacionClienteUseCase;
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
+import com.sena.cold_day.core.modules.ot.application.usecases.ListarOtUseCase;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
 import jakarta.validation.Valid;
@@ -27,11 +32,13 @@ public class ClienteController {
 
     private final RegistrarClienteUseCase registrar;
     private final ActualizarUbicacionClienteUseCase actualizarUbicacion;
+    private final ListarOtUseCase listarOts;
 
     public ClienteController(RegistrarClienteUseCase registrar,
-            ActualizarUbicacionClienteUseCase actualizarUbicacion) {
+            ActualizarUbicacionClienteUseCase actualizarUbicacion, ListarOtUseCase listarOts) {
         this.registrar = registrar;
         this.actualizarUbicacion = actualizarUbicacion;
+        this.listarOts = listarOts;
     }
 
     /**
@@ -55,6 +62,15 @@ public class ClienteController {
             @Valid @RequestBody UbicacionApiRequest request) {
         actualizarUbicacion.actualizar(principal.usuarioId(), request.toPoint());
         return ResponseEntity.noContent().build();
+    }
+
+    /** Lists the OTs of the authenticated client (RF-F1-25). */
+    @GetMapping("/me/ots")
+    @PreAuthorize("hasRole('CLIENTE')")
+    public List<OtApiResponse> misOts(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return listarOts.listarPorCliente(principal.usuarioId()).stream()
+                .map(resumen -> OtApiResponse.from(resumen.ot(), resumen.clienteNombre(), resumen.tecnicoNombre()))
+                .toList();
     }
 
     private ClienteRequest toApplicationRequest(ClienteApiRequest request) {

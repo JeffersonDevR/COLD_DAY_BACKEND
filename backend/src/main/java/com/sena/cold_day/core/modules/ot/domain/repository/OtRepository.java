@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
@@ -21,6 +22,12 @@ public interface OtRepository {
     Optional<Ot> buscarPorId(OtId id);
 
     List<Ot> buscarPorEstado(EstadoOt estado);
+
+    List<Ot> buscarPorCliente(ClienteId clienteId);
+
+    List<Ot> buscarPorTecnico(TecnicoId tecnicoId);
+
+    List<Ot> listarTodas();
 
     /** Conditional UPDATE: exactly one assignment for the searching order. */
     int intentarAsignar(OtId id, TecnicoId tecnicoId, Instant ahora, double radioKm);

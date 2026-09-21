@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { MatIconModule } from '@angular/material/icon';
 import { EstadoOt, EstadoOperativo, EstadoValidacion, EstadoLiquidacion, EstadoDisputa } from '../../domain/models/common.models';
 
-type AnyEstado = EstadoOt | EstadoOperativo | EstadoValidacion | EstadoLiquidacion | EstadoDisputa | string;
+type AnyEstado = EstadoOt | EstadoOperativo | EstadoValidacion | EstadoLiquidacion | EstadoDisputa;
 
 @Component({
   selector: 'app-estado-badge',

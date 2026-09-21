@@ -14,55 +14,6 @@
         <span>Cobertura: Cúcuta metropolitana, Los Patios, Villa del Rosario</span>
       </div>
 
-      <div class="flex items-center gap-3">
-        <!-- Switcher de Backend Mock/Real -->
-        <button
-          type="button"
-          (click)="toggleModoMock()"
-          class="hover:text-white transition-colors flex items-center gap-1 font-mono text-[10px]"
-          title="Alternar entre Mock en Memoria y Backend REST"
-        >
-          <span class="w-1.5 h-1.5 rounded-full" [class.bg-emerald-400]="apiConfig.useMock()" [class.bg-amber-400]="!apiConfig.useMock()"></span>
-          <span>Fuente: {{ apiConfig.useMock() ? 'Mock Local' : 'API REST' }}</span>
-        </button>
-
-        <!-- Conmutador Rápido de Roles para Pruebas / Demo -->
-        <div class="flex items-center gap-1 text-[10px]">
-          <span class="text-slate-500 font-semibold">Demo:</span>
-          <button
-            type="button"
-            (click)="cambiarRolDemo('CLIENTE')"
-            class="px-1.5 py-0.5 rounded text-[10px] font-bold hover:bg-slate-800 transition-colors"
-            [class.text-sky-400]="usuario()?.rol === 'CLIENTE'"
-          >
-            Cliente
-          </button>
-          <button
-            type="button"
-            (click)="cambiarRolDemo('TECNICO')"
-            class="px-1.5 py-0.5 rounded text-[10px] font-bold hover:bg-slate-800 transition-colors"
-            [class.text-sky-400]="usuario()?.rol === 'TECNICO'"
-          >
-            Técnico
-          </button>
-          <button
-            type="button"
-            (click)="cambiarRolDemo('ADMINISTRADOR')"
-            class="px-1.5 py-0.5 rounded text-[10px] font-bold hover:bg-slate-800 transition-colors"
-            [class.text-sky-400]="usuario()?.rol === 'ADMINISTRADOR'"
-          >
-            Admin
-          </button>
-          <button
-            type="button"
-            (click)="cambiarRolDemo('CONTABLE')"
-            class="px-1.5 py-0.5 rounded text-[10px] font-bold hover:bg-slate-800 transition-colors"
-            [class.text-sky-400]="usuario()?.rol === 'CONTABLE'"
-          >
-            Contador
-          </button>
-        </div>
-      </div>
     </div>
   </aside>
 
@@ -85,15 +36,6 @@
 
       <!-- Desktop Nav Links -->
       <nav class="hidden md:flex items-center gap-1 lg:gap-2">
-        <a
-          routerLink="/"
-          routerLinkActive="bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400"
-          [routerLinkActiveOptions]="{ exact: true }"
-          class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
-        >
-          Servicios & B2B
-        </a>
-
         @if (estaAutenticado()) {
           <!-- Rutas Cliente -->
           @if (usuario()?.rol === 'CLIENTE') {
@@ -250,13 +192,6 @@
     <!-- Mobile Drawer Menu -->
     @if (menuMovilAbierto()) {
       <div class="md:hidden px-4 pt-2 pb-6 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-2">
-        <a
-          routerLink="/"
-          (click)="menuMovilAbierto.set(false)"
-          class="block px-3 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300"
-        >
-          Servicios & B2B
-        </a>
         @if (estaAutenticado()) {
           <a
             routerLink="/panel"
@@ -380,9 +315,10 @@
       <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-400">
         <p>© 2026 COLD DAY S.A.S. Todos los derechos reservados. San José de Cúcuta, Colombia.</p>
         <div class="flex items-center gap-4">
-          <a routerLink="/" class="hover:underline">Términos del Servicio</a>
-          <a routerLink="/" class="hover:underline">Política de Tratamiento de Datos</a>
-          <a routerLink="/" class="hover:underline">Póliza de Garantía</a>
+          <!-- Páginas legales alojadas en la landing (proyecto separado). -->
+          <a href="#" class="hover:underline">Términos del Servicio</a>
+          <a href="#" class="hover:underline">Política de Tratamiento de Datos</a>
+          <a href="#" class="hover:underline">Póliza de Garantía</a>
         </div>
       </div>
     </div>

@@ -1,6 +1,5 @@
 /** Roles soportados por el backend (Rol.java). */
 export type Rol = 'CLIENTE' | 'TECNICO' | 'ADMINISTRADOR' | 'CONTABLE';
-export type RolUsuario = Rol;
 
 export type CategoriaServicio =
   | 'REFRIGERACION'
@@ -59,6 +58,10 @@ export interface Certificacion {
   estadoVigencia?: 'VIGENTE' | 'POR_VENCER' | 'VENCIDO';
 }
 
+/**
+ * Tipos de documento conocidos. El backend serializa `tipo` como string libre,
+ * por eso se mantiene abierto a nuevos valores vía el cast en `backend.mappers`.
+ */
 export type TipoDocumentoTecnico =
   | 'CEDULA'
   | 'ANTECEDENTES'
@@ -67,8 +70,7 @@ export type TipoDocumentoTecnico =
   | 'CERTIFICACION_SENA'
   | 'MATRICULA_CONTE'
   | 'RUT'
-  | 'OTRO'
-  | string;
+  | 'OTRO';
 export type DocumentoTecnicoResponse = DocumentoTecnico;
 
 export interface DocumentoTecnico {
@@ -79,7 +81,7 @@ export interface DocumentoTecnico {
   fechaVencimiento?: string;
   estadoValidacion: EstadoValidacion;
   observaciones?: string;
-  semaforo?: 'VERDE' | 'AMARILLO' | 'ROJO' | string;
+  semaforo?: 'VERDE' | 'AMARILLO' | 'ROJO';
 }
 
 export interface Point {
@@ -172,6 +174,19 @@ export interface TecnicoResponse {
   deudaLiquidacion?: number; // en COP
   deudaComisionCop?: number;
   ubicacionActual?: Point;
+}
+
+/** Técnico disponible dentro de un radio (radar del cliente). */
+export interface TecnicoCercano {
+  id: string;
+  nombre: string;
+  especialidad: string;
+  distanciaKm: number;
+  lat: number;
+  lng: number;
+  disponible: boolean;
+  telefono?: string;
+  fotoUrl?: string;
 }
 
 export interface DiagnosticoRequest {

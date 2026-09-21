@@ -21,6 +21,8 @@ import com.sena.cold_day.core.modules.administracion.infrastructure.api.requests
 import com.sena.cold_day.core.modules.administracion.infrastructure.api.responses.DisputaApiResponse;
 import com.sena.cold_day.core.modules.administracion.infrastructure.api.responses.LiquidacionApiResponse;
 import com.sena.cold_day.core.modules.administracion.infrastructure.api.responses.MetricasAdminApiResponse;
+import com.sena.cold_day.core.modules.ot.application.usecases.ListarOtUseCase;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
 
 import jakarta.validation.Valid;
 
@@ -37,18 +39,29 @@ public class AdminController {
     private final ConsultarMetricasAdminUseCase metricas;
     private final VerificarComprobanteUseCase comprobantes;
     private final GestionarDisputaUseCase disputas;
+    private final ListarOtUseCase listarOts;
 
     public AdminController(ConsultarMetricasAdminUseCase metricas,
-            VerificarComprobanteUseCase comprobantes, GestionarDisputaUseCase disputas) {
+            VerificarComprobanteUseCase comprobantes, GestionarDisputaUseCase disputas,
+            ListarOtUseCase listarOts) {
         this.metricas = metricas;
         this.comprobantes = comprobantes;
         this.disputas = disputas;
+        this.listarOts = listarOts;
     }
 
     /** CU-15 / RF-F1-22: tablero con servicios, tecnicos, tiempos e incidencias. */
     @GetMapping("/metricas")
     public MetricasAdminApiResponse metricas() {
         return MetricasAdminApiResponse.from(metricas.consultar());
+    }
+
+    /** RF-F1-25: listado global de OTs para el monitoreo administrativo. */
+    @GetMapping("/ot")
+    public List<OtApiResponse> ots() {
+        return listarOts.listarTodas().stream()
+                .map(resumen -> OtApiResponse.from(resumen.ot(), resumen.clienteNombre(), resumen.tecnicoNombre()))
+                .toList();
     }
 
     /** CU-13: bandeja de comprobantes pendientes de verificacion. */

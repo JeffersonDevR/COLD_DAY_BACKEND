@@ -14,9 +14,10 @@ export interface ToastMessage {
 export class ToastService {
   private readonly _toasts = signal<ToastMessage[]>([]);
   readonly toasts = this._toasts.asReadonly();
+  private toastSeq = 0;
 
   show(tipo: 'SUCCESS' | 'ERROR' | 'INFO' | 'WARNING', titulo: string, mensaje?: string, duracionMs = 4000): void {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const id = `toast-${Date.now()}-${this.toastSeq++}`;
     const newToast: ToastMessage = { id, tipo, titulo, mensaje, duracionMs };
 
     this._toasts.update(current => [...current, newToast]);

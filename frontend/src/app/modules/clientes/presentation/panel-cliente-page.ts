@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { ClientesApi } from '../infrastructure/clientes-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
+import { OtResponse } from '../../../core/shared/domain/models/common.models';
 
 @Component({
   selector: 'app-panel-cliente-page',
@@ -154,13 +155,11 @@ import { EmptyState } from '../../../core/shared/presentation/components/empty-s
   `
 })
 export class PanelClientePage {
-  readonly mockDb = inject(MockDbService);
+  private readonly clientesApi = inject(ClientesApi);
   readonly authService = inject(AuthService);
 
-  readonly serviciosCliente = computed(() => {
-    const currentId = String(this.authService.currentUser()?.id || 3);
-    return this.mockDb.ordenesTrabajo().filter(o => o.clienteId === currentId || !o.clienteId);
-  });
+  private readonly _ots = signal<OtResponse[]>([]);
+  readonly serviciosCliente = computed(() => this._ots());
 
   readonly serviciosActivos = computed(() => {
     return this.serviciosCliente().filter(o =>
@@ -171,6 +170,14 @@ export class PanelClientePage {
   readonly serviciosFinalizados = computed(() => {
     return this.serviciosCliente().filter(o => o.estado === 'FINALIZADA');
   });
+
+  constructor() {
+    const currentId = String(this.authService.currentUser()?.id ?? '');
+    this.clientesApi.getOtsPorCliente(currentId).subscribe({
+      next: (ots) => this._ots.set(ots),
+      error: () => this._ots.set([]),
+    });
+  }
 
   irASolicitar(): void {
     // routerLink handles this

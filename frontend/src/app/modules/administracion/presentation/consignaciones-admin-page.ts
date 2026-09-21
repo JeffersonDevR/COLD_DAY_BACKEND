@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@a
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
+import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { LiquidacionResponse } from '../../../core/shared/domain/models/common.models';
+import { LiquidacionResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -176,21 +176,22 @@ import { environment } from '../../../../environments/environment';
   `
 })
 export class ConsignacionesAdminPage {
-  private readonly mockDb = inject(MockDbService);
   private readonly liquidacionApi = inject(LiquidacionApi);
+  private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
 
   /** Comisión de la plataforma (15%), alineada al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
 
-  readonly liquidaciones = computed(() => this.mockDb.liquidaciones());
+  readonly liquidaciones = signal<LiquidacionResponse[]>([]);
+  readonly tecnicos = signal<TecnicoResponse[]>([]);
 
   readonly enVerificacion = computed(() =>
     this.liquidaciones().filter(l => l.estado === 'EN_VERIFICACION')
   );
 
   readonly tecnicosBloqueados = computed(() =>
-    this.mockDb.tecnicos().filter(t => t.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION')
+    this.tecnicos().filter(t => t.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION')
   );
 
   readonly totalComisionesAprobadas = computed(() =>
@@ -200,10 +201,26 @@ export class ConsignacionesAdminPage {
   readonly liqARechazar = signal<LiquidacionResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
+  constructor() {
+    this.cargarDatos();
+  }
+
+  private cargarDatos(): void {
+    this.liquidacionApi.getTodasLiquidaciones().subscribe({
+      next: (liquidaciones) => this.liquidaciones.set(liquidaciones),
+      error: () => this.liquidaciones.set([]),
+    });
+    this.tecnicosApi.getTecnicos().subscribe({
+      next: (tecnicos) => this.tecnicos.set(tecnicos),
+      error: () => this.tecnicos.set([]),
+    });
+  }
+
   aprobar(liq: LiquidacionResponse): void {
     this.liquidacionApi.aprobarLiquidacion(liq.id).subscribe({
       next: () => {
-        this.toast.success('Conciliación Aprobada', `Comisión acreditada. El técnico ${liq.tecnicoNombre} ha sido habilitado.`);
+        this.toast.success('Conciliación Aprobada', `Comisión acreditada. El técnico ${liq.tecnicoNombre ?? ''} ha sido habilitado.`);
+        this.cargarDatos();
       }
     });
   }
@@ -221,6 +238,7 @@ export class ConsignacionesAdminPage {
         this.toast.warning('Liquidación Rechazada', 'Se notificó al técnico para que suba un comprobante válido.');
         this.liqARechazar.set(null);
         this.motivoCtrl.reset();
+        this.cargarDatos();
       }
     });
   }

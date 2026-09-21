@@ -59,11 +59,11 @@ export class TokenStorageService {
         return JSON.parse(decoded) as DecodedToken;
       }
       // JWT estándar
-      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payloadBase64 = parts[1].replaceAll('-', '+').replaceAll('_', '/');
       const jsonPayload = decodeURIComponent(
         atob(payloadBase64)
           .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .map((c) => '%' + ('00' + (c.codePointAt(0) ?? 0).toString(16)).slice(-2))
           .join('')
       );
       return JSON.parse(jsonPayload) as DecodedToken;

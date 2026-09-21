@@ -55,6 +55,8 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// Los tests crean sus propios datos; el seed de demo solo aplica a ejecución local.
+	systemProperty 'app.seed.enabled', 'false'
 	filter {
 		// El IT PostGIS necesita el contenedor local (cold_day_db:5432); corre aparte.
 		excludeTestsMatching '*Postgis*'
@@ -76,6 +78,7 @@ tasks.register('testPostgis', Test) {
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
 	useJUnitPlatform()
+	systemProperty 'app.seed.enabled', 'false'
 	filter {
 		includeTestsMatching '*Postgis*'
 	}

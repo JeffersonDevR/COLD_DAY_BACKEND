@@ -1,12 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { TipoDocumentoTecnico, DocumentoTecnicoResponse } from '../../../core/shared/domain/models/common.models';
+import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 
 @Component({
   selector: 'app-perfil-documentos-page',
@@ -142,28 +141,35 @@ import { TipoDocumentoTecnico, DocumentoTecnicoResponse } from '../../../core/sh
   `
 })
 export class PerfilDocumentosPage {
-  private readonly mockDb = inject(MockDbService);
   private readonly authService = inject(AuthService);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
 
   readonly mostrarForm = signal<boolean>(false);
-
-  readonly tecnico = computed(() => {
-    const user = this.authService.currentUser();
-    const tecId = String(user?.id || 1);
-    return this.mockDb.tecnicos().find(t => t.id === tecId || t.correo === user?.correo);
-  });
-
-  readonly documentos = computed<DocumentoTecnicoResponse[]>(() => {
-    return this.tecnico()?.documentos || [];
-  });
+  readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
+  readonly documentos = signal<DocumentoTecnicoResponse[]>([]);
 
   readonly docForm = new FormGroup({
     tipo: new FormControl<TipoDocumentoTecnico>('CERTIFICACION_SENA', { nonNullable: true }),
     fechaVencimiento: new FormControl('2027-12-31', { nonNullable: true, validators: [Validators.required] }),
     archivoUrl: new FormControl('https://coldday.com.co/docs/certificacion.pdf', { nonNullable: true, validators: [Validators.required] })
   });
+
+  constructor() {
+    const usuarioId = Number(this.authService.currentUser()?.id ?? 0);
+    this.tecnicosApi.getTecnicoPorUsuarioId(usuarioId).subscribe({
+      next: (tecnico) => this.tecnico.set(tecnico),
+      error: () => this.tecnico.set(undefined),
+    });
+    this.cargarDocumentos();
+  }
+
+  private cargarDocumentos(): void {
+    this.tecnicosApi.getMisDocumentos().subscribe({
+      next: (documentos) => this.documentos.set(documentos),
+      error: () => this.documentos.set([]),
+    });
+  }
 
   onSubirDoc(): void {
     if (this.docForm.invalid) return;
@@ -175,6 +181,7 @@ export class PerfilDocumentosPage {
       next: () => {
         this.toast.success('Documento Adjuntado', 'El archivo ha sido enviado para verificación del administrador.');
         this.mostrarForm.set(false);
+        this.cargarDocumentos();
       }
     });
   }

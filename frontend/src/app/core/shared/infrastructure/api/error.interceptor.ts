@@ -24,6 +24,16 @@ export class ApiHttpError extends Error {
  * El backend devuelve `{status, message, fieldErrors}`; los handlers de seguridad
  * y el de Maps devuelven un ARRAY con un único ApiError.
  */
+const MENSAJES_POR_STATUS: Record<number, string> = {
+  [HttpStatusCode.Unauthorized]: 'Sesión inválida o expirada. Inicia sesión de nuevo.',
+  [HttpStatusCode.Forbidden]: 'No tienes permisos para realizar esta acción.',
+  0: 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.',
+};
+
+function mensajeFallback(err: HttpErrorResponse): string {
+  return MENSAJES_POR_STATUS[err.status] || err.message || `Error ${err.status}`;
+}
+
 function normalizarError(err: unknown): ApiHttpError | Error {
   if (!(err instanceof HttpErrorResponse)) {
     return err instanceof Error ? err : new Error('Ocurrió un error inesperado');
@@ -42,16 +52,7 @@ function normalizarError(err: unknown): ApiHttpError | Error {
     return new ApiHttpError(body.trim(), err.status);
   }
 
-  const fallback =
-    err.status === HttpStatusCode.Unauthorized
-      ? 'Sesión inválida o expirada. Inicia sesión de nuevo.'
-      : err.status === HttpStatusCode.Forbidden
-        ? 'No tienes permisos para realizar esta acción.'
-        : err.status === 0
-          ? 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.'
-          : err.message || `Error ${err.status}`;
-
-  return new ApiHttpError(fallback, err.status);
+  return new ApiHttpError(mensajeFallback(err), err.status);
 }
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) =>

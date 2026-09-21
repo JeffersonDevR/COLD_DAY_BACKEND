@@ -3,9 +3,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from './core/shared/infrastructure/auth/auth.service';
 import { ToastHost } from './core/shared/presentation/components/toast-host';
-import { ApiConfig } from './core/shared/infrastructure/api/api.config';
 import { ToastService } from './core/shared/presentation/toast.service';
-import { RolUsuario } from './core/shared/domain/models/common.models';
 import { environment } from '../environments/environment';
 
 @Component({
@@ -17,7 +15,6 @@ import { environment } from '../environments/environment';
 })
 export class App {
   readonly auth = inject(AuthService);
-  readonly apiConfig = inject(ApiConfig);
   readonly toast = inject(ToastService);
   readonly router = inject(Router);
 
@@ -31,18 +28,6 @@ export class App {
 
   toggleMenuMovil(): void {
     this.menuMovilAbierto.set(!this.menuMovilAbierto());
-  }
-
-  cambiarRolDemo(rol: RolUsuario): void {
-    this.auth.switchDemoRole(rol);
-    this.toast.info('Modo Demostración', `Sesión cambiada a perfil de ${rol}.`);
-    this.router.navigate(['/panel']);
-  }
-
-  toggleModoMock(): void {
-    this.apiConfig.toggleMock();
-    const modo = this.apiConfig.useMock() ? 'Mock Local (En Memoria)' : 'API REST / Backend Real';
-    this.toast.info('Configuración API', `Fuente de datos alternada a: ${modo}`);
   }
 
   cerrarSesion(): void {

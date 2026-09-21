@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 /**
@@ -15,6 +16,8 @@ public interface ClienteRepository {
     Cliente save(Cliente cliente);
 
     Optional<Cliente> findByUsuarioId(UsuarioId usuarioId);
+
+    Optional<Cliente> buscarPorId(ClienteId id);
 
     List<Cliente> findByActivoTrue();
 

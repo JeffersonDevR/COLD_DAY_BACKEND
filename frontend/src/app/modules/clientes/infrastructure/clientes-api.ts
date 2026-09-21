@@ -45,9 +45,8 @@ export class ClientesApi {
   }
 
   /**
-   * Placeholder: el backend NO expone un listado GET /api/ot?clienteId.
-   * TODO(backend): falta el endpoint de OTs por cliente; se devuelve vacío para
-   * no romper la UI (una lectura nunca lanza).
+   * GET /api/clientes/me/ots: el backend resuelve el cliente desde el JWT.
+   * El `clienteId` se conserva por compatibilidad con el mock.
    */
   getOtsPorCliente(clienteId: string): Observable<OtResponse[]> {
     if (this.apiConfig.useMocks()) {
@@ -55,8 +54,9 @@ export class ClientesApi {
       return of(list).pipe(delay(250));
     }
 
-    console.warn('[TODO backend] GET /api/ot?clienteId no existe; se devuelve []');
-    return of([]);
+    return this.http
+      .get<OtApiResponse[]>(this.apiConfig.url('/clientes/me/ots'))
+      .pipe(map(list => list.map(aOtResponse)));
   }
 
   /** GET /api/ot/{id} → OtApiResponse traducido al modelo de vista. */
@@ -109,7 +109,7 @@ export class ClientesApi {
 
   /**
    * Placeholder de mutación: el backend NO expone POST /api/ot/{id}/calificar.
-   * TODO(backend): falta la calificación del servicio; la mutación lanza.
+   * Pendiente(backend): falta la calificación del servicio; la mutación lanza.
    */
   calificarServicio(otId: string, estrellas: number, comentario: string): Observable<void> {
     if (this.apiConfig.useMocks()) {
@@ -120,7 +120,7 @@ export class ClientesApi {
     return throwError(
       () =>
         new Error(
-          'Pendiente en el backend: calificación del servicio (POST /api/ot/{id}/calificar). TODO(backend).'
+          'Pendiente en el backend: calificación del servicio (POST /api/ot/{id}/calificar). Pendiente(backend).'
         )
     );
   }

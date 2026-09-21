@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { UsuariosApi } from '../infrastructure/usuarios-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+
 import { Rol } from '../../../core/shared/domain/models/common.models';
 
 @Component({
@@ -93,14 +93,14 @@ import { Rol } from '../../../core/shared/domain/models/common.models';
               <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Acceso Rápido para Pruebas Demo
               </span>
-              <span class="text-[11px] px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-semibold">
-                Modo Mock Activo
+              <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold">
+                Backend API · demo1234
               </span>
             </div>
             <div class="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                (click)="quickLogin('maria.gomez@gmail.com', 'CLIENTE')"
+                (click)="quickLogin('cliente1@coldday.com.co', 'CLIENTE')"
                 class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-left transition-colors"
               >
                 <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-900 text-sky-600 flex items-center justify-center shrink-0">
@@ -114,7 +114,7 @@ import { Rol } from '../../../core/shared/domain/models/common.models';
 
               <button
                 type="button"
-                (click)="quickLogin('juan.tecnico@coldday.com.co', 'TECNICO')"
+                (click)="quickLogin('tecnico1@coldday.com.co', 'TECNICO')"
                 class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-sky-50 dark:hover:bg-sky-950/40 text-left transition-colors"
               >
                 <div class="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-600 flex items-center justify-center shrink-0">
@@ -128,21 +128,21 @@ import { Rol } from '../../../core/shared/domain/models/common.models';
 
               <button
                 type="button"
-                (click)="quickLogin('diego.tecnico@coldday.com.co', 'TECNICO')"
+                (click)="quickLogin('tecnico2@coldday.com.co', 'TECNICO')"
                 class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-left transition-colors"
               >
                 <div class="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900 text-amber-600 flex items-center justify-center shrink-0">
-                  <mat-icon class="text-sm">lock</mat-icon>
+                  <mat-icon class="text-sm">handyman</mat-icon>
                 </div>
                 <div class="min-w-0">
-                  <div class="font-bold text-slate-800 dark:text-slate-200 truncate">Téc. Bloqueado</div>
-                  <div class="text-[11px] text-slate-500 truncate">Diego Caicedo</div>
+                  <div class="font-bold text-slate-800 dark:text-slate-200 truncate">Técnico 2</div>
+                  <div class="text-[11px] text-slate-500 truncate">Andrés Suárez</div>
                 </div>
               </button>
 
               <button
                 type="button"
-                (click)="quickLogin('carlos.admin@coldday.com.co', 'ADMINISTRADOR')"
+                (click)="quickLogin('admin@coldday.com.co', 'ADMINISTRADOR')"
                 class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-left transition-colors"
               >
                 <div class="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-900 text-purple-600 flex items-center justify-center shrink-0">
@@ -163,11 +163,6 @@ import { Rol } from '../../../core/shared/domain/models/common.models';
                 Regístrate gratis
               </a>
             </p>
-            <div class="mt-3">
-              <a routerLink="/publico/catalogo" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline">
-                Ver Catálogo de Servicios Público
-              </a>
-            </div>
           </div>
         </div>
       </div>
@@ -177,7 +172,7 @@ import { Rol } from '../../../core/shared/domain/models/common.models';
 export class LoginPage {
   private readonly usuariosApi = inject(UsuariosApi);
   private readonly authService = inject(AuthService);
-  private readonly mockDb = inject(MockDbService);
+
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -218,13 +213,20 @@ export class LoginPage {
     });
   }
 
+  /** Acceso rápido contra la API real usando las credenciales del seed (demo1234). */
   quickLogin(correo: string, rol: Rol): void {
-    const user = this.mockDb.usuarios().find(u => u.correo === correo);
-    if (user) {
-      this.authService.setCurrentUser(user);
-      this.toast.success(`Acceso Demo (${rol})`, `Ingresaste como ${user.nombre}`);
-      const target = this.authService.getDashboardRouteForRole(rol);
-      this.router.navigate([target]);
-    }
+    this.loading.set(true);
+    this.usuariosApi.login(correo, 'demo1234').subscribe({
+      next: (res) => {
+        this.loading.set(false);
+        const usuario = this.authService.establecerSesionDesdeToken(res, correo, res.usuario);
+        this.toast.success(`Acceso Demo (${rol})`, `Ingresaste como ${usuario.nombre}`);
+        this.router.navigate([this.authService.getDashboardRouteForRole(usuario.rol)]);
+      },
+      error: (err: Error) => {
+        this.loading.set(false);
+        this.toast.error('Acceso Demo', err.message || 'No se pudo iniciar sesión demo');
+      },
+    });
   }
 }

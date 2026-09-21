@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { OtApi } from '../../ot/infrastructure/ot-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
@@ -192,7 +192,7 @@ import { environment } from '../../../../environments/environment';
 })
 export class PagoActaPage implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly mockDb = inject(MockDbService);
+  private readonly otApi = inject(OtApi);
   private readonly toast = inject(ToastService);
 
   /** Expuesto al template para derivar comisión y monto líquido. */
@@ -201,9 +201,8 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   @ViewChild('signatureCanvas') canvasRef?: ElementRef<HTMLCanvasElement>;
 
   readonly otId = signal<string>('');
-  readonly ot = computed<OtResponse | undefined>(() => {
-    return this.mockDb.ordenesTrabajo().find(o => o.id === this.otId());
-  });
+  private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
+  readonly ot = computed<OtResponse | undefined>(() => this._otRemoto());
 
   readonly medioPago = signal<MedioPago>('EFECTIVO');
   readonly hasFirma = signal<boolean>(false);
@@ -219,6 +218,9 @@ export class PagoActaPage implements OnInit, AfterViewInit {
       const id = params.get('id');
       if (id) {
         this.otId.set(id);
+        this.otApi.getOtById(id).subscribe({
+          next: (orden) => this._otRemoto.set(orden),
+        });
       }
     });
   }

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.clientes.infrastructure.persistence.ClienteJpaEntity;
 import com.sena.cold_day.core.modules.clientes.infrastructure.persistence.SpringDataClienteRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
@@ -31,6 +32,12 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
     @Transactional(readOnly = true)
     public Optional<Cliente> findByUsuarioId(UsuarioId usuarioId) {
         return repository.findByUsuarioId(usuarioId.valor()).map(ClienteJpaEntity::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Cliente> buscarPorId(ClienteId id) {
+        return repository.findById(id.valor()).map(ClienteJpaEntity::toDomain);
     }
 
     @Override

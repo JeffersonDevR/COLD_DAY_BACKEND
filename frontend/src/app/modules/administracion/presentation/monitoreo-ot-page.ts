@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { AdminApi } from '../infrastructure/admin-api';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
+import { OtResponse } from '../../../core/shared/domain/models/common.models';
 
 @Component({
   selector: 'app-monitoreo-ot-page',
@@ -122,13 +123,20 @@ import { EstadoBadge } from '../../../core/shared/presentation/components/estado
   `
 })
 export class MonitoreoOtPage {
-  private readonly mockDb = inject(MockDbService);
+  private readonly adminApi = inject(AdminApi);
 
   readonly busquedaCtrl = new FormControl('');
   readonly filtroCategoriaCtrl = new FormControl('TODAS');
   readonly filtroEstadoCtrl = new FormControl('TODOS');
 
-  readonly ordenes = computed(() => this.mockDb.ordenesTrabajo());
+  readonly ordenes = signal<OtResponse[]>([]);
+
+  constructor() {
+    this.adminApi.getTodasOts().subscribe({
+      next: (ots) => this.ordenes.set(ots),
+      error: () => this.ordenes.set([]),
+    });
+  }
 
   readonly otsFiltradas = computed(() => {
     let list = this.ordenes();
@@ -139,10 +147,10 @@ export class MonitoreoOtPage {
     if (query) {
       list = list.filter(o =>
         o.id.toLowerCase().includes(query) ||
-        (o.clienteNombre && o.clienteNombre.toLowerCase().includes(query)) ||
-        (o.tecnicoNombre && o.tecnicoNombre.toLowerCase().includes(query)) ||
-        (o.barrio && o.barrio.toLowerCase().includes(query)) ||
-        (o.direccion && o.direccion.toLowerCase().includes(query))
+        o.clienteNombre?.toLowerCase().includes(query) ||
+        o.tecnicoNombre?.toLowerCase().includes(query) ||
+        o.barrio?.toLowerCase().includes(query) ||
+        o.direccion?.toLowerCase().includes(query)
       );
     }
 

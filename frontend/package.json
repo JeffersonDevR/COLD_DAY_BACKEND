@@ -3,11 +3,18 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "maps-key": "node scripts/generate-maps-key.mjs",
+    "postinstall": "node scripts/generate-maps-key.mjs",
+    "prestart": "node scripts/generate-maps-key.mjs",
     "start": "ng serve",
+    "predev": "node scripts/generate-maps-key.mjs",
     "dev": "cross-env ng serve --port=3000 --host=0.0.0.0 --allowed-hosts=true ${DISABLE_HMR:+--live-reload=false}",
+    "prebuild": "node scripts/generate-maps-key.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
+    "pretest": "node scripts/generate-maps-key.mjs",
     "test": "ng test",
+    "prelint": "node scripts/generate-maps-key.mjs",
     "lint": "ng lint"
   },
   "private": true,

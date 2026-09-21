@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OtEstadoHistorial;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtEstadoHistorialRepository;
@@ -64,6 +65,24 @@ public class OtRepositoryAdapter implements OtRepository {
     @Transactional(readOnly = true)
     public List<Ot> buscarPorEstado(EstadoOt estado) {
         return repository.findByEstado(estado).stream().map(OtJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Ot> buscarPorCliente(ClienteId clienteId) {
+        return repository.findByClienteId(clienteId.valor()).stream().map(OtJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Ot> buscarPorTecnico(TecnicoId tecnicoId) {
+        return repository.findByTecnicoId(tecnicoId.valor()).stream().map(OtJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Ot> listarTodas() {
+        return repository.findAll().stream().map(OtJpaEntity::toDomain).toList();
     }
 
     @Override

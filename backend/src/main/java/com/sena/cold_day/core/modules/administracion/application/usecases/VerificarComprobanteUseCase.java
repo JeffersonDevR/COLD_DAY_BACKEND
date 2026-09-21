@@ -1,7 +1,10 @@
 package com.sena.cold_day.core.modules.administracion.application.usecases;
 
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,10 @@ import com.sena.cold_day.core.modules.administracion.domain.valueobjects.Liquida
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 /**
  * CU-13 / RF-F1-24: el administrador audita el comprobante de consignacion y lo
@@ -29,13 +36,16 @@ public class VerificarComprobanteUseCase {
 
     private final LiquidacionRepository liquidacionRepository;
     private final TecnicoRepository tecnicoRepository;
+    private final UsuarioRepository usuarioRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public VerificarComprobanteUseCase(LiquidacionRepository liquidacionRepository,
-            TecnicoRepository tecnicoRepository, ApplicationEventPublisher events, Clock clock) {
+            TecnicoRepository tecnicoRepository, UsuarioRepository usuarioRepository,
+            ApplicationEventPublisher events, Clock clock) {
         this.liquidacionRepository = liquidacionRepository;
         this.tecnicoRepository = tecnicoRepository;
+        this.usuarioRepository = usuarioRepository;
         this.events = events;
         this.clock = clock;
     }
@@ -69,13 +79,28 @@ public class VerificarComprobanteUseCase {
 
     @Transactional(readOnly = true)
     public List<LiquidacionResponse> listarPendientes() {
-        return liquidacionRepository.buscarPorEstado(EstadoLiquidacion.EN_VERIFICACION).stream()
-                .map(LiquidacionResponse::fromDomain).toList();
+        return enriquecer(liquidacionRepository.buscarPorEstado(EstadoLiquidacion.EN_VERIFICACION));
     }
 
     @Transactional(readOnly = true)
     public List<LiquidacionResponse> listarTodas() {
-        return liquidacionRepository.listarTodas().stream()
-                .map(LiquidacionResponse::fromDomain).toList();
+        return enriquecer(liquidacionRepository.listarTodas());
+    }
+
+    private List<LiquidacionResponse> enriquecer(List<Liquidacion> liquidaciones) {
+        Map<UUID, String> nombres = new HashMap<>();
+        return liquidaciones.stream()
+                .map(liquidacion -> LiquidacionResponse.fromDomain(liquidacion).conTecnicoNombre(
+                        liquidacion.getTecnicoId() == null ? null
+                                : nombres.computeIfAbsent(liquidacion.getTecnicoId().valor(),
+                                        this::nombreTecnico)))
+                .toList();
+    }
+
+    private String nombreTecnico(UUID tecnicoId) {
+        return tecnicoRepository.findByIdAndActivoTrue(TecnicoId.desde(tecnicoId))
+                .flatMap(tecnico -> usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId())))
+                .map(Usuario::getNombre)
+                .orElse(null);
     }
 }

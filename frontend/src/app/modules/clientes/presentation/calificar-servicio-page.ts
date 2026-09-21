@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { ClientesApi } from '../infrastructure/clientes-api';
+import { OtApi } from '../../ot/infrastructure/ot-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtResponse } from '../../../core/shared/domain/models/common.models';
 
@@ -133,13 +133,12 @@ export class CalificarServicioPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly clientesApi = inject(ClientesApi);
-  private readonly mockDb = inject(MockDbService);
+  private readonly otApi = inject(OtApi);
   private readonly toast = inject(ToastService);
 
   readonly otId = signal<string>('');
-  readonly ot = computed<OtResponse | undefined>(() => {
-    return this.mockDb.ordenesTrabajo().find(o => o.id === this.otId());
-  });
+  private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
+  readonly ot = computed<OtResponse | undefined>(() => this._otRemoto());
 
   readonly estrellas = signal<number>(5);
   readonly tagsSeleccionados = signal<string[]>(['Puntualidad en llegada', 'Limpieza del área']);
@@ -159,6 +158,9 @@ export class CalificarServicioPage implements OnInit {
       const id = params.get('id');
       if (id) {
         this.otId.set(id);
+        this.otApi.getOtById(id).subscribe({
+          next: (orden) => this._otRemoto.set(orden),
+        });
       }
     });
   }

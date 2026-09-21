@@ -5,12 +5,8 @@ import { roleGuard } from './core/shared/infrastructure/auth/role.guard';
 import { PanelRedirectComponent } from './core/shared/presentation/panel-redirect';
 
 export const routes: Routes = [
-  // Público
-  {
-    path: '',
-    loadComponent: () => import('./modules/publico/presentation/catalogo-page').then(m => m.CatalogoPage),
-    title: 'COLD DAY S.A.S. - Servicios Técnicos en Cúcuta'
-  },
+  // La landing pública vive en un proyecto separado (landing/); la app arranca en login.
+  { path: '', pathMatch: 'full', redirectTo: 'login' },
   {
     path: 'login',
     canActivate: [guestGuard],

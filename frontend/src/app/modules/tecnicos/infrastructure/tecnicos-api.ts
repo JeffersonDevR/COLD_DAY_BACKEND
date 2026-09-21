@@ -1,26 +1,34 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
   TecnicoResponse,
+  TecnicoCercano,
   OfertaTecnicoResponse,
   EstadoOperativo,
   OtResponse,
   DiagnosticoRequest,
+  DocumentoTecnicoResponse,
   MedioPago,
-  TipoDocumentoTecnico
+  TipoDocumentoTecnico,
+  CategoriaServicio,
+  Point
 } from '../../../core/shared/domain/models/common.models';
 import {
   DocumentoTecnicoApiResponse,
   OfertaOtApiResponse,
   OtApiResponse,
   TecnicoApiResponse,
+  TecnicoCercanoApiResponse,
+  UbicacionApiRequest,
 } from '../../../core/shared/infrastructure/api/backend.dto';
 import {
   aDiagnosticoApiRequest,
+  aDocumentoTecnico,
   aOfertaTecnico,
   aOtResponse,
+  aTecnicoCercano,
   aTecnicoResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, forkJoin, of, throwError } from 'rxjs';
@@ -33,6 +41,46 @@ export class TecnicosApi {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
+
+  /** GET /api/tecnicos/me/ots → OTs asignadas al técnico autenticado. */
+  getMisOts(): Observable<OtResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      return of([]).pipe(delay(200));
+    }
+    return this.http
+      .get<OtApiResponse[]>(this.apiConfig.url('/tecnicos/me/ots'))
+      .pipe(map(list => list.map(aOtResponse)));
+  }
+
+  /** GET /api/tecnicos/me/documentos → documentos del técnico autenticado. */
+  getMisDocumentos(): Observable<DocumentoTecnicoResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      return of([]).pipe(delay(200));
+    }
+    return this.http
+      .get<DocumentoTecnicoApiResponse[]>(this.apiConfig.url('/tecnicos/me/documentos'))
+      .pipe(map(list => list.map(aDocumentoTecnico)));
+  }
+
+  /**
+   * GET /api/tecnicos/cercanos?lat&lng&radioKm&categoria → técnicos disponibles
+   * dentro del radio, listos para pintar el radar del cliente.
+   */
+  getTecnicosCercanos(centro: Point, radioKm: number, categoria?: CategoriaServicio): Observable<TecnicoCercano[]> {
+    if (this.apiConfig.useMocks()) {
+      return of([]).pipe(delay(200));
+    }
+    let params = new HttpParams()
+      .set('lat', centro.latitud)
+      .set('lng', centro.longitud)
+      .set('radioKm', radioKm);
+    if (categoria) {
+      params = params.set('categoria', categoria);
+    }
+    return this.http
+      .get<TecnicoCercanoApiResponse[]>(this.apiConfig.url('/tecnicos/cercanos'), { params })
+      .pipe(map((list) => list.map(aTecnicoCercano)));
+  }
 
   /** GET /api/tecnicos → TecnicoApiResponse[] traducido al modelo de vista. */
   getTecnicos(): Observable<TecnicoResponse[]> {
@@ -102,7 +150,7 @@ export class TecnicosApi {
 
   /**
    * Placeholder de mutación: el backend NO expone POST /api/ot/{id}/aceptar.
-   * TODO(backend): la aceptación es exclusiva de POST /api/ofertas/{id}/aceptar.
+   * Pendiente(backend): la aceptación es exclusiva de POST /api/ofertas/{id}/aceptar.
    */
   aceptarOt(otId: string, tecnicoId: string): Observable<OtResponse> {
     if (this.apiConfig.useMocks()) {
@@ -112,7 +160,7 @@ export class TecnicosApi {
     return throwError(
       () =>
         new Error(
-          'Pendiente en el backend: aceptación directa de OT (POST /api/ot/{id}/aceptar). Usar POST /api/ofertas/{id}/aceptar. TODO(backend).'
+          'Pendiente en el backend: aceptación directa de OT (POST /api/ot/{id}/aceptar). Usar POST /api/ofertas/{id}/aceptar. Pendiente(backend).'
         )
     );
   }
@@ -148,7 +196,7 @@ export class TecnicosApi {
 
   /**
    * No-op documentado: el backend NO expone POST /api/ot/{id}/llegada.
-   * TODO(backend): la transición a EN_DIAGNOSTICO se alcanza al llamar a
+   * Pendiente(backend): la transición a EN_DIAGNOSTICO se alcanza al llamar a
    * `registrarDiagnostico` (POST /api/ot/{otId}/diagnostico).
    */
   llegarADomicilio(otId: string): Observable<void> {
@@ -159,7 +207,7 @@ export class TecnicosApi {
     return throwError(
       () =>
         new Error(
-          'Pendiente en el backend: POST /api/ot/{id}/llegada (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico). TODO(backend).'
+          'Pendiente en el backend: POST /api/ot/{id}/llegada (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico). Pendiente(backend).'
         )
     );
   }
@@ -175,7 +223,7 @@ export class TecnicosApi {
 
   /**
    * POST /api/ot/{otId}/finalizar (sin body; el backend lo ignora).
-   * TODO(backend): el cobro real (efectivo/transferencia) se registra en
+   * Pendiente(backend): el cobro real (efectivo/transferencia) se registra en
    * POST /api/liquidaciones/ot/{otId} con {montoCobrado, medioPago} (ver
    * LiquidacionApi.registrarPago); `firmaDataUrl` no tiene soporte en el backend.
    */
@@ -189,7 +237,7 @@ export class TecnicosApi {
 
   /**
    * POST /api/tecnicos/{tecnicoId}/documentos con {tipo, fechaVencimiento}.
-   * TODO(backend): el backend NO acepta `archivoUrl` en DocumentoTecnicoApiRequest,
+   * Pendiente(backend): el backend NO acepta `archivoUrl` en DocumentoTecnicoApiRequest,
    * así que la URL del archivo no se persiste.
    */
   subirDocumento(
@@ -208,5 +256,16 @@ export class TecnicosApi {
         fechaVencimiento,
       })
       .pipe(map(() => undefined));
+  }
+
+  /**
+   * PUT /api/tecnicos/me/ubicacion: el backend resuelve el técnico desde el JWT
+   * (no se envía id). Responde 204 sin cuerpo.
+   */
+  actualizarUbicacion(request: UbicacionApiRequest): Observable<void> {
+    if (this.apiConfig.useMocks()) {
+      return of(undefined).pipe(delay(200));
+    }
+    return this.http.put<void>(this.apiConfig.url('/tecnicos/me/ubicacion'), request);
   }
 }

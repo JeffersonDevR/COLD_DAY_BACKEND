@@ -14,7 +14,7 @@ export class ThemeService {
   private initTheme(): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       const saved = window.localStorage.getItem('coldday.theme');
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
       const isDark = saved ? saved === 'dark' : prefersDark;
       this.setTheme(isDark);
     }

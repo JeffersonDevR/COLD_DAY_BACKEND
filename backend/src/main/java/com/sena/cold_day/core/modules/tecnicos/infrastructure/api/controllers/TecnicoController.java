@@ -2,8 +2,10 @@ package com.sena.cold_day.core.modules.tecnicos.infrastructure.api.controllers;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoRequest;
@@ -21,6 +24,7 @@ import com.sena.cold_day.core.modules.tecnicos.application.usecases.ActualizarTe
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.BuscarTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.CambiarDisponibilidadUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.EliminarTecnicoUseCase;
+import com.sena.cold_day.core.modules.tecnicos.application.usecases.ListarDocumentosTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.RegistrarTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.ValidarDocumentacionTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.DocumentoTecnicoApiRequest;
@@ -28,12 +32,22 @@ import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.Tecni
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.ValidacionTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.DocumentoTecnicoApiResponse;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.TecnicoApiResponse;
+import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.TecnicoCercanoApiResponse;
+import com.sena.cold_day.core.modules.administracion.application.usecases.ListarLiquidacionesTecnicoUseCase;
+import com.sena.cold_day.core.modules.administracion.infrastructure.api.responses.LiquidacionApiResponse;
+import com.sena.cold_day.core.modules.ot.application.usecases.ListarOtUseCase;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.ActualizarUbicacionTecnicoUseCase;
+import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.BuscarTecnicosCercanosUseCase;
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
+import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 
 @RestController
 @RequestMapping("/api/tecnicos")
@@ -46,12 +60,20 @@ public class TecnicoController {
     private final CambiarDisponibilidadUseCase cambiarDisponibilidad;
     private final ValidarDocumentacionTecnicoUseCase validarDocumentacion;
     private final ActualizarUbicacionTecnicoUseCase actualizarUbicacion;
+    private final BuscarTecnicosCercanosUseCase buscarCercanos;
+    private final ListarOtUseCase listarOts;
+    private final ListarLiquidacionesTecnicoUseCase listarLiquidaciones;
+    private final ListarDocumentosTecnicoUseCase listarDocumentos;
 
+    @SuppressWarnings("java:S107") // Superficie REST cohesiva de /api/tecnicos; dividir rompería la cohesión por recurso.
     public TecnicoController(RegistrarTecnicoUseCase registrar, ActualizarTecnicoUseCase actualizar,
             BuscarTecnicoUseCase buscar, EliminarTecnicoUseCase eliminar,
             CambiarDisponibilidadUseCase cambiarDisponibilidad,
             ValidarDocumentacionTecnicoUseCase validarDocumentacion,
-            ActualizarUbicacionTecnicoUseCase actualizarUbicacion) {
+            ActualizarUbicacionTecnicoUseCase actualizarUbicacion,
+            BuscarTecnicosCercanosUseCase buscarCercanos, ListarOtUseCase listarOts,
+            ListarLiquidacionesTecnicoUseCase listarLiquidaciones,
+            ListarDocumentosTecnicoUseCase listarDocumentos) {
         this.registrar = registrar;
         this.actualizar = actualizar;
         this.buscar = buscar;
@@ -59,6 +81,10 @@ public class TecnicoController {
         this.cambiarDisponibilidad = cambiarDisponibilidad;
         this.validarDocumentacion = validarDocumentacion;
         this.actualizarUbicacion = actualizarUbicacion;
+        this.buscarCercanos = buscarCercanos;
+        this.listarOts = listarOts;
+        this.listarLiquidaciones = listarLiquidaciones;
+        this.listarDocumentos = listarDocumentos;
     }
 
     @PostMapping
@@ -71,6 +97,19 @@ public class TecnicoController {
     @GetMapping
     public List<TecnicoApiResponse> listar() {
         return buscar.listar().stream().map(TecnicoApiResponse::from).toList();
+    }
+
+    /** RF-F1-04: técnicos disponibles dentro de un radio desde un punto (radar del cliente). */
+    @GetMapping("/cercanos")
+    public List<TecnicoCercanoApiResponse> cercanos(
+            @RequestParam @DecimalMin("-90.0") @DecimalMax("90.0") double lat,
+            @RequestParam @DecimalMin("-180.0") @DecimalMax("180.0") double lng,
+            @RequestParam(defaultValue = "10.0") @DecimalMin("0.1") @DecimalMax("100.0") double radioKm,
+            @RequestParam(required = false) CategoriaServicio categoria) {
+        Set<CategoriaServicio> categorias = categoria == null ? Set.of() : Set.of(categoria);
+        return buscarCercanos.buscar(new Point(lat, lng), radioKm, categorias).stream()
+                .map(TecnicoCercanoApiResponse::from)
+                .toList();
     }
 
     @GetMapping("/{id}")
@@ -101,6 +140,31 @@ public class TecnicoController {
             @Valid @RequestBody UbicacionApiRequest request) {
         actualizarUbicacion.actualizar(principal.usuarioId(), request.toPoint());
         return ResponseEntity.noContent().build();
+    }
+
+    /** Lists the OTs assigned to the authenticated technician. */
+    @GetMapping("/me/ots")
+    @PreAuthorize("hasRole('TECNICO')")
+    public List<OtApiResponse> misOts(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return listarOts.listarPorTecnico(principal.usuarioId()).stream()
+                .map(resumen -> OtApiResponse.from(resumen.ot(), resumen.clienteNombre(), resumen.tecnicoNombre()))
+                .toList();
+    }
+
+    /** Lists the liquidaciones of the authenticated technician. */
+    @GetMapping("/me/liquidaciones")
+    @PreAuthorize("hasRole('TECNICO')")
+    public List<LiquidacionApiResponse> misLiquidaciones(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return listarLiquidaciones.listar(principal.usuarioId()).stream()
+                .map(LiquidacionApiResponse::from).toList();
+    }
+
+    /** Lists the documentos of the authenticated technician. */
+    @GetMapping("/me/documentos")
+    @PreAuthorize("hasRole('TECNICO')")
+    public List<DocumentoTecnicoApiResponse> misDocumentos(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return listarDocumentos.listar(principal.usuarioId()).stream()
+                .map(DocumentoTecnicoApiResponse::from).toList();
     }
 
     /**

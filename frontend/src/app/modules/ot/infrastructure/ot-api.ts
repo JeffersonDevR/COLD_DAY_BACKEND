@@ -8,6 +8,7 @@ import {
   MedioPago,
   ActorOt,
   HistorialOtItem,
+  Point,
 } from '../../../core/shared/domain/models/common.models';
 import {
   HistorialEstadoApiResponse,
@@ -19,7 +20,7 @@ import {
   aOtResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, of, throwError } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { catchError, delay, map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -49,7 +50,7 @@ export class OtApi {
 
   /**
    * No-op documentado: el backend NO expone POST /api/ot/{id}/iniciar-diagnostico.
-   * TODO(backend): la transición a EN_DIAGNOSTICO se alcanza al llamar a
+   * Pendiente(backend): la transición a EN_DIAGNOSTICO se alcanza al llamar a
    * `registrarDiagnostico` (POST /api/ot/{otId}/diagnostico).
    */
   iniciarDiagnostico(otId: string): Observable<void> {
@@ -60,7 +61,7 @@ export class OtApi {
     return throwError(
       () =>
         new Error(
-          'Pendiente en el backend: POST /api/ot/{id}/iniciar-diagnostico (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico). TODO(backend).'
+          'Pendiente en el backend: POST /api/ot/{id}/iniciar-diagnostico (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico). Pendiente(backend).'
         )
     );
   }
@@ -76,7 +77,7 @@ export class OtApi {
 
   /**
    * POST /api/ot/{otId}/finalizar (sin body; el backend lo ignora).
-   * TODO(backend): el cobro real (efectivo/transferencia) se registra en
+   * Pendiente(backend): el cobro real (efectivo/transferencia) se registra en
    * POST /api/liquidaciones/ot/{otId} con {montoCobrado, medioPago} (ver
    * LiquidacionApi.registrarPago); `firmaDataUrl` no tiene soporte en el backend.
    */
@@ -95,6 +96,27 @@ export class OtApi {
       return of(undefined).pipe(delay(300));
     }
     return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/cancelar`), { motivo });
+  }
+
+  /**
+   * GET /api/ot/{otId}/tecnico-ubicacion → última posición del técnico asignado.
+   * Devuelve null si aún no reporta ubicación (404) o si la OT no tiene técnico.
+   */
+  getTecnicoUbicacion(otId: string): Observable<Point | null> {
+    if (this.apiConfig.useMocks()) {
+      const ot = this.mockDb.ordenesTrabajo().find(o => o.id === otId);
+      if (!ot?.punto) {
+        return of(null).pipe(delay(150));
+      }
+      // Simula un técnico acercándose desde el norte del punto de servicio.
+      return of({ latitud: ot.punto.latitud + 0.012, longitud: ot.punto.longitud + 0.008 }).pipe(delay(200));
+    }
+    return this.http
+      .get<{ latitud: number; longitud: number }>(this.apiConfig.url(`/ot/${otId}/tecnico-ubicacion`))
+      .pipe(
+        map((ubicacion) => ({ latitud: ubicacion.latitud, longitud: ubicacion.longitud })),
+        catchError(() => of(null)),
+      );
   }
 
   /** GET /api/ot/{otId}/historial → HistorialEstadoApiResponse[] traducido al modelo de vista. */

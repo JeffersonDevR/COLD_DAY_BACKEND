@@ -30,9 +30,10 @@ export class LiquidacionApi {
       const list = this.mockDb.liquidaciones().filter(l => l.tecnicoId === tecnicoId);
       return of(list).pipe(delay(200));
     }
-    // TODO(backend): el backend NO expone GET /api/liquidaciones?tecnicoId.
-    console.warn('[TODO backend] GET /api/liquidaciones?tecnicoId no existe; se devuelve []');
-    return of([]);
+    // GET /api/tecnicos/me/liquidaciones: el backend resuelve el técnico del JWT.
+    return this.http
+      .get<LiquidacionApiResponse[]>(this.apiConfig.url('/tecnicos/me/liquidaciones'))
+      .pipe(map(list => list.map(aLiquidacionResponse)));
   }
 
   getLiquidacionesPendientesAdmin(): Observable<LiquidacionResponse[]> {
@@ -61,7 +62,7 @@ export class LiquidacionApi {
       this.mockDb.subirComprobanteLiquidacion(liqId, comprobanteUrl, referencia);
       return of(undefined).pipe(delay(300));
     }
-    // TODO(backend): el backend NO acepta `referencia`; solo persiste `comprobanteUrl`.
+    // Pendiente(backend): el backend NO acepta `referencia`; solo persiste `comprobanteUrl`.
     const body: ComprobanteApiRequest = { comprobanteUrl };
     return this.http.post<void>(this.apiConfig.url(`/liquidaciones/${liqId}/comprobante`), body);
   }

@@ -88,7 +88,7 @@ export class UsuariosApi {
     if (this.apiConfig.useMocks()) {
       return of({
         mensaje: 'Se ha enviado un correo con instrucciones de restablecimiento.',
-        tokenSimulado: 'CD-RESET-' + Math.floor(100000 + Math.random() * 900000)
+        tokenSimulado: 'CD-RESET-' + ((crypto.getRandomValues(new Uint32Array(1))[0] % 900000) + 100000)
       }).pipe(delay(400));
     }
     return this.http

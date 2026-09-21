@@ -1,6 +1,9 @@
 package com.sena.cold_day.core.modules.administracion.application.usecases;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import com.sena.cold_day.core.modules.administracion.domain.valueobjects.EstadoD
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.events.OtCancelada;
 import com.sena.cold_day.core.modules.ot.domain.events.OtFinalizada;
@@ -29,6 +33,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 import java.time.Clock;
@@ -45,16 +51,18 @@ public class GestionarDisputaUseCase {
     private final ClienteRepository clienteRepository;
     private final TecnicoRepository tecnicoRepository;
     private final DisputaRepository disputaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public GestionarDisputaUseCase(OtRepository otRepository, ClienteRepository clienteRepository,
             TecnicoRepository tecnicoRepository, DisputaRepository disputaRepository,
-            ApplicationEventPublisher events, Clock clock) {
+            UsuarioRepository usuarioRepository, ApplicationEventPublisher events, Clock clock) {
         this.otRepository = otRepository;
         this.clienteRepository = clienteRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.disputaRepository = disputaRepository;
+        this.usuarioRepository = usuarioRepository;
         this.events = events;
         this.clock = clock;
     }
@@ -106,14 +114,48 @@ public class GestionarDisputaUseCase {
 
     @Transactional(readOnly = true)
     public List<DisputaResponse> listarAbiertas() {
-        return disputaRepository.buscarPorEstado(EstadoDisputa.ABIERTA).stream()
-                .map(DisputaResponse::fromDomain).toList();
+        return enriquecer(disputaRepository.buscarPorEstado(EstadoDisputa.ABIERTA));
     }
 
     @Transactional(readOnly = true)
     public List<DisputaResponse> listarTodas() {
-        return disputaRepository.listarTodas().stream()
-                .map(DisputaResponse::fromDomain).toList();
+        return enriquecer(disputaRepository.listarTodas());
+    }
+
+    /** Agrega los nombres legibles de cliente y técnico (vía la OT de la disputa). */
+    private List<DisputaResponse> enriquecer(List<Disputa> disputas) {
+        Map<UUID, String> nombresClientes = new HashMap<>();
+        Map<UUID, String> nombresTecnicos = new HashMap<>();
+        return disputas.stream().map(disputa -> {
+            Ot ot = otRepository.buscarPorId(disputa.getOtId()).orElse(null);
+            String clienteNombre = null;
+            String tecnicoNombre = null;
+            if (ot != null) {
+                if (ot.getClienteId() != null) {
+                    clienteNombre = nombresClientes.computeIfAbsent(ot.getClienteId().valor(),
+                            this::nombreCliente);
+                }
+                if (ot.getTecnicoId() != null) {
+                    tecnicoNombre = nombresTecnicos.computeIfAbsent(ot.getTecnicoId().valor(),
+                            this::nombreTecnico);
+                }
+            }
+            return DisputaResponse.fromDomain(disputa).conNombres(clienteNombre, tecnicoNombre);
+        }).toList();
+    }
+
+    private String nombreCliente(UUID clienteId) {
+        return clienteRepository.buscarPorId(new ClienteId(clienteId))
+                .flatMap(cliente -> usuarioRepository.buscarPorId(cliente.getUsuarioId()))
+                .map(Usuario::getNombre)
+                .orElse(null);
+    }
+
+    private String nombreTecnico(UUID tecnicoId) {
+        return tecnicoRepository.findByIdAndActivoTrue(TecnicoId.desde(tecnicoId))
+                .flatMap(tecnico -> usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId())))
+                .map(Usuario::getNombre)
+                .orElse(null);
     }
 
     /** La OT resuelta libera al tecnico asignado (vuelve a DISPONIBLE si aplica). */

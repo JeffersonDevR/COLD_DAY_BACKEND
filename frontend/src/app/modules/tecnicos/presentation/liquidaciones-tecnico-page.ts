@@ -3,11 +3,11 @@ import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { LiquidacionResponse } from '../../../core/shared/domain/models/common.models';
+import { EstadoLiquidacion, LiquidacionResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -215,8 +215,8 @@ import { environment } from '../../../../environments/environment';
   `
 })
 export class LiquidacionesTecnicoPage {
-  private readonly mockDb = inject(MockDbService);
   private readonly authService = inject(AuthService);
+  private readonly tecnicosApi = inject(TecnicosApi);
   private readonly liquidacionApi = inject(LiquidacionApi);
   private readonly toast = inject(ToastService);
 
@@ -224,30 +224,44 @@ export class LiquidacionesTecnicoPage {
   readonly environment = environment;
 
   readonly liqSeleccionada = signal<LiquidacionResponse | null>(null);
+  readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
+  readonly misLiquidaciones = signal<LiquidacionResponse[]>([]);
 
-  readonly tecnico = computed(() => {
-    const user = this.authService.currentUser();
-    const tecId = String(user?.id || 1);
-    return this.mockDb.tecnicos().find(t => t.id === tecId || t.correo === user?.correo);
-  });
+  constructor() {
+    const usuarioId = Number(this.authService.currentUser()?.id ?? 0);
+    this.tecnicosApi.getTecnicoPorUsuarioId(usuarioId).subscribe({
+      next: (tecnico) => this.tecnico.set(tecnico),
+      error: () => this.tecnico.set(undefined),
+    });
+    this.cargarLiquidaciones(usuarioId);
+  }
 
-  readonly estaBloqueado = computed(() => {
-    return this.tecnico()?.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION';
-  });
+  readonly estaBloqueado = computed(() =>
+    this.tecnico()?.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION' || this.deudaTotal() > 0
+  );
 
-  readonly misLiquidaciones = computed<LiquidacionResponse[]>(() => {
-    const t = this.tecnico();
-    if (!t) return [];
-    return this.mockDb.liquidaciones().filter(l => l.tecnicoId === t.id);
-  });
+  private readonly estadosPendientes = new Set<EstadoLiquidacion>([
+    'PENDIENTE_CONSIGNACION',
+    'EN_VERIFICACION',
+    'RECHAZADA',
+  ]);
 
-  readonly deudaTotal = computed(() => {
-    return this.tecnico()?.deudaComisionCop || 0;
-  });
+  readonly deudaTotal = computed(() =>
+    this.misLiquidaciones()
+      .filter(l => this.estadosPendientes.has(l.estado))
+      .reduce((acc, l) => acc + l.comision, 0)
+  );
 
   readonly totalRecaudado = computed(() => {
     return this.misLiquidaciones().reduce((acc, l) => acc + l.montoServicio, 0);
   });
+
+  private cargarLiquidaciones(usuarioId: number): void {
+    this.liquidacionApi.getLiquidacionesPorTecnico(String(usuarioId)).subscribe({
+      next: (liquidaciones) => this.misLiquidaciones.set(liquidaciones),
+      error: () => this.misLiquidaciones.set([]),
+    });
+  }
 
   readonly comprobanteForm = new FormGroup({
     referencia: new FormControl('BCOL-8492048', { nonNullable: true, validators: [Validators.required] }),
@@ -271,6 +285,7 @@ export class LiquidacionesTecnicoPage {
       next: () => {
         this.toast.success('Comprobante Registrado', 'Pasa a cola de conciliación contable de COLD DAY.');
         this.liqSeleccionada.set(null);
+        this.cargarLiquidaciones(Number(this.authService.currentUser()?.id ?? 0));
       }
     });
   }

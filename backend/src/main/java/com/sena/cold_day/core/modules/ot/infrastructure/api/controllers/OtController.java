@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 import java.net.URI;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.sena.cold_day.core.modules.ot.application.dto.DiagnosticoRequest;
 import com.sena.cold_day.core.modules.ot.application.dto.OtRequest;
@@ -31,6 +33,7 @@ import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.OtApiReques
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.RechazoPresupuestoApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.HistorialEstadoApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.TecnicoUbicacionApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
 import jakarta.validation.Valid;
@@ -88,6 +91,15 @@ public class OtController {
     @GetMapping("/{id}/historial")
     public List<HistorialEstadoApiResponse> historial(@PathVariable OtId id) {
         return consultar.historial(id).stream().map(HistorialEstadoApiResponse::from).toList();
+    }
+
+    /** RF-F1-27: última ubicación reportada por el técnico asignado (seguimiento en vivo). */
+    @GetMapping("/{id}/tecnico-ubicacion")
+    public TecnicoUbicacionApiResponse tecnicoUbicacion(@PathVariable OtId id) {
+        return consultar.ubicacionTecnico(id)
+                .map(TecnicoUbicacionApiResponse::de)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "El técnico asignado aún no reporta ubicación"));
     }
 
     /** RF-F1-10: the assigned technician starts the displacement. */

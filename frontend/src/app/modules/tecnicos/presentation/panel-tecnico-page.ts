@@ -1,13 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
-import { EstadoOperativo } from '../../../core/shared/domain/models/common.models';
+import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -231,7 +230,6 @@ import { environment } from '../../../../environments/environment';
   `
 })
 export class PanelTecnicoPage {
-  readonly mockDb = inject(MockDbService);
   readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly tecnicosApi = inject(TecnicosApi);
@@ -240,25 +238,33 @@ export class PanelTecnicoPage {
   /** Porcentaje de comisión de la plataforma (15%), alineado al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
 
-  readonly tecnico = computed(() => {
-    const user = this.authService.currentUser();
-    const tecId = String(user?.id || 1);
-    return this.mockDb.tecnicos().find(t => t.id === tecId || t.correo === user?.correo);
-  });
+  readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
+  readonly misOtsEnCurso = signal<OtResponse[]>([]);
 
-  readonly misOtsEnCurso = computed(() => {
-    const t = this.tecnico();
-    if (!t) return [];
-    return this.mockDb.ordenesTrabajo().filter(o =>
-      o.tecnicoId === t.id && !['FINALIZADA', 'CANCELADA'].includes(o.estado)
-    );
-  });
+  constructor() {
+    const usuarioId = Number(this.authService.currentUser()?.id ?? 0);
+    this.tecnicosApi.getTecnicoPorUsuarioId(usuarioId).subscribe({
+      next: (tecnico) => {
+        this.tecnico.set(tecnico);
+        if (tecnico) {
+          this.tecnicosApi.getMisOts().subscribe({
+            next: (ots) => this.misOtsEnCurso.set(
+              ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado))
+            ),
+            error: () => this.misOtsEnCurso.set([]),
+          });
+        }
+      },
+      error: () => this.tecnico.set(undefined),
+    });
+  }
 
   cambiarEstadoOperativo(nuevo: EstadoOperativo): void {
     const t = this.tecnico();
     if (!t) return;
     this.tecnicosApi.actualizarEstadoOperativo(t.id, nuevo).subscribe({
       next: () => {
+        this.tecnico.set({ ...t, estadoOperativo: nuevo });
         this.toast.info('Estado Actualizado', `Ahora estás ${nuevo}`);
       }
     });

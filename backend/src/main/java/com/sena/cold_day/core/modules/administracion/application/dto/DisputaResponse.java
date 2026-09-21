@@ -15,11 +15,18 @@ public record DisputaResponse(
         EstadoDisputa estado,
         String resolucion,
         Instant creadaEn,
-        Instant resueltaEn) {
+        Instant resueltaEn,
+        String clienteNombre,
+        String tecnicoNombre) {
 
     public static DisputaResponse fromDomain(Disputa disputa) {
         return new DisputaResponse(disputa.getId(), disputa.getOtId(), disputa.getMotivo(),
                 disputa.getEstado(), disputa.getResolucion(), disputa.getCreadaEn(),
-                disputa.getResueltaEn());
+                disputa.getResueltaEn(), null, null);
+    }
+
+    public DisputaResponse conNombres(String cliente, String tecnico) {
+        return new DisputaResponse(id, otId, motivo, estado, resolucion, creadaEn, resueltaEn,
+                cliente, tecnico);
     }
 }

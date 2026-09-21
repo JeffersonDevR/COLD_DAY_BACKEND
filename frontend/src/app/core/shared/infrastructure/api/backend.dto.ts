@@ -131,6 +131,18 @@ export interface TecnicoApiResponse {
   activo: boolean;
 }
 
+export interface TecnicoCercanoApiResponse {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  fotoUrl: string | null;
+  categoriasServicio: CategoriaServicio[];
+  distanciaKm: number;
+  latitud: number;
+  longitud: number;
+  disponible: boolean;
+}
+
 export interface TecnicoApiRequest {
   nombre: string;
   correo: string;
@@ -198,6 +210,10 @@ export interface OtApiResponse {
   tarifaVisita: number | null;
   diagnostico: DiagnosticoApi | null;
   presupuesto: PresupuestoApi | null;
+  latitud: number | null;
+  longitud: number | null;
+  clienteNombre: string | null;
+  tecnicoNombre: string | null;
 }
 
 export interface OtApiRequest {
@@ -259,6 +275,7 @@ export interface LiquidacionApiResponse {
   motivoRechazo: string | null;
   creadaEn: string;
   verificadaEn: string | null;
+  tecnicoNombre: string | null;
 }
 
 export interface RegistrarPagoApiRequest {
@@ -282,6 +299,8 @@ export interface DisputaApiResponse {
   resolucion: string | null;
   creadaEn: string;
   resueltaEn: string | null;
+  clienteNombre: string | null;
+  tecnicoNombre: string | null;
 }
 
 export interface AbrirDisputaApiRequest {
@@ -299,9 +318,14 @@ export interface MetricasAdminApiResponse {
   tecnicosVerificados: number;
   tecnicosTotales: number;
   tecnicosBloqueadosPorLiquidacion: number;
+  tecnicosDisponibles: number;
   tiempoPromedioAsignacionSegundos: number | null;
   disputasAbiertas: number;
   liquidacionesPendientesVerificacion: number;
+  totalRecaudoMesCop: number;
+  comisionesMesCop: number;
+  distribucionCategorias: { categoria: CategoriaServicio; cantidad: number; porcentaje: number }[];
+  historicoSemanal: { dia: string; completadas: number; canceladas: number }[];
 }
 
 /* ------------------------------------------------------------------ */

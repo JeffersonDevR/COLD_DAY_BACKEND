@@ -1,11 +1,16 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { catchError, debounceTime, distinctUntilChanged, forkJoin, of, switchMap, tap } from 'rxjs';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { CategoriaServicio } from '../../../core/shared/domain/models/common.models';
+import { CategoriaServicio, Point } from '../../../core/shared/domain/models/common.models';
+import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
+import { GeolocationService } from '../../../core/shared/infrastructure/geolocation/geolocation.service';
+import { SugerenciaApiResponse } from '../../../core/shared/infrastructure/api/backend.dto';
 
 interface BarrioCucuta {
   nombre: string;
@@ -171,19 +176,55 @@ interface BarrioCucuta {
                 <label for="direccion" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
                   Dirección exacta *
                 </label>
-                <input
-                  id="direccion"
-                  type="text"
-                  formControlName="direccion"
-                  placeholder="Ej. Calle 15 # 3E-28"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-sky-500"
-                />
+                <div class="relative">
+                  <input
+                    id="direccion"
+                    type="text"
+                    formControlName="direccion"
+                    autocomplete="off"
+                    placeholder="Ej. Calle 15 # 3E-28"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  @if (buscandoDireccion()) {
+                    <mat-icon class="absolute right-3 top-2.5 text-slate-400 animate-spin text-base">sync</mat-icon>
+                  }
+                  @if (sugerencias().length) {
+                    <ul class="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-56 overflow-auto">
+                      @for (s of sugerencias(); track s.placeId) {
+                        <li>
+                          <button
+                            type="button"
+                            (click)="seleccionarSugerencia(s)"
+                            class="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-start gap-2"
+                          >
+                            <mat-icon class="text-sky-500 text-sm leading-none">place</mat-icon>
+                            <span>{{ s.descripcion }}</span>
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">
+                  Escribe y selecciona una sugerencia para fijar las coordenadas automáticamente.
+                </p>
               </div>
 
               <div>
-                <span class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Coordenadas GPS Cúcuta (Lat, Lng)
-                </span>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    Coordenadas GPS Cúcuta (Lat, Lng)
+                  </span>
+                  <button
+                    type="button"
+                    (click)="usarMiUbicacion()"
+                    [disabled]="ubicando()"
+                    class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:text-sky-500 disabled:opacity-50"
+                  >
+                    <mat-icon class="text-sm leading-none">{{ ubicando() ? 'sync' : 'my_location' }}</mat-icon>
+                    Usar mi ubicación
+                  </button>
+                </div>
                 <div class="flex items-center gap-2">
                   <input
                     type="number"
@@ -256,10 +297,16 @@ export class SolicitarServicioPage {
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly mapsApi = inject(MapsApi);
+  private readonly geolocation = inject(GeolocationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly categoriaActual = signal<CategoriaServicio>('AIRE_ACONDICIONADO');
   readonly barrioSeleccionado = signal<string>('Los Caobos');
   readonly loading = signal<boolean>(false);
+  readonly sugerencias = signal<SugerenciaApiResponse[]>([]);
+  readonly buscandoDireccion = signal<boolean>(false);
+  readonly ubicando = signal<boolean>(false);
 
   readonly barrios: BarrioCucuta[] = [
     { nombre: 'Los Caobos', lat: 7.8872, lng: -72.4951 },
@@ -284,8 +331,101 @@ export class SolicitarServicioPage {
     evidenciaUrl: new FormControl('')
   });
 
+  constructor() {
+    this.solicitudForm.controls.direccion.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        tap((valor) => {
+          if ((valor ?? '').trim().length < 3) {
+            this.sugerencias.set([]);
+          }
+        }),
+        switchMap((valor) => {
+          const query = (valor ?? '').trim();
+          if (query.length < 3) {
+            return of([]);
+          }
+          this.buscandoDireccion.set(true);
+          return this.mapsApi
+            .autocompletar(query, { latitud: 7.8872, longitud: -72.4951 })
+            .pipe(catchError(() => of([])));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((lista) => {
+        this.buscandoDireccion.set(false);
+        this.sugerencias.set(lista);
+      });
+  }
+
   setCategoria(cat: CategoriaServicio): void {
     this.categoriaActual.set(cat);
+  }
+
+  seleccionarSugerencia(sugerencia: SugerenciaApiResponse): void {
+    this.sugerencias.set([]);
+    this.buscandoDireccion.set(true);
+    this.mapsApi.geocodificar(sugerencia.descripcion).subscribe({
+      next: (direccion) => {
+        this.buscandoDireccion.set(false);
+        this.solicitudForm.patchValue({
+          direccion: direccion.direccionFormateada,
+          latitud: direccion.latitud,
+          longitud: direccion.longitud,
+        });
+        this.barrioSeleccionado.set('');
+      },
+      error: () => {
+        this.buscandoDireccion.set(false);
+        this.toast.error('Sin resultados', 'No se pudo geocodificar la dirección seleccionada.');
+      },
+    });
+  }
+
+  usarMiUbicacion(): void {
+    if (!this.geolocation.disponible) {
+      this.toast.error('No disponible', 'Tu navegador no soporta geolocalización.');
+      return;
+    }
+    this.ubicando.set(true);
+    this.geolocation
+      .obtenerPosicion()
+      .pipe(
+        switchMap((punto) =>
+          forkJoin({
+            punto: of(punto),
+            direccion: this.mapsApi
+              .inversa(punto.latitud, punto.longitud)
+              .pipe(catchError(() => of(null))),
+          }),
+        ),
+      )
+      .subscribe({
+        next: ({ punto, direccion }) => {
+          this.ubicando.set(false);
+          this.solicitudForm.patchValue({
+            direccion: direccion?.direccionFormateada ?? this.solicitudForm.controls.direccion.value,
+            latitud: punto.latitud,
+            longitud: punto.longitud,
+          });
+          this.barrioSeleccionado.set('');
+          this.persistirUbicacionCliente(punto);
+          this.toast.success('Ubicación capturada', 'Se usó la ubicación GPS de tu dispositivo.');
+        },
+        error: (err: Error) => {
+          this.ubicando.set(false);
+          this.toast.error('Ubicación no disponible', err.message);
+        },
+      });
+  }
+
+  private persistirUbicacionCliente(punto: Point): void {
+    this.clientesApi.actualizarUbicacion({ latitud: punto.latitud, longitud: punto.longitud }).subscribe({
+      error: () => {
+        // La captura de ubicación no debe bloquear la creación de la OT.
+      },
+    });
   }
 
   seleccionarBarrio(b: BarrioCucuta): void {

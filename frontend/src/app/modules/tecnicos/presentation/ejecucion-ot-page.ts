@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal, computed, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
+import { TecnicoTrackingService } from '../infrastructure/tecnico-tracking.service';
+import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -66,7 +68,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
               </div>
             }
 
-            @if (orden.estado === 'EN_CAMINO') {
+            @if (orden.estado === 'EN_CAMINO' && !enSitio()) {
               <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
                 <div class="flex items-center gap-3 text-indigo-600">
                   <mat-icon class="text-3xl">pin_drop</mat-icon>
@@ -87,7 +89,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
             }
 
             <!-- 2. Formulario de Diagnóstico y Presupuesto Técnico -->
-            @if (orden.estado === 'EN_DIAGNOSTICO') {
+            @if (orden.estado === 'EN_DIAGNOSTICO' || (orden.estado === 'EN_CAMINO' && enSitio())) {
               <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
                 <div class="flex items-center gap-3 text-amber-500">
                   <mat-icon class="text-3xl">build_circle</mat-icon>
@@ -256,6 +258,12 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
                   <span class="text-slate-500">Barrio:</span>
                   <span class="font-bold">{{ orden.barrio || 'Cúcuta' }}</span>
                 </div>
+                @if (etaMin() !== null) {
+                  <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">ETA al cliente:</span>
+                    <span class="font-bold text-sky-600">{{ etaMin() }} min · {{ distanciaKm() }} km</span>
+                  </div>
+                }
               </div>
 
               <div class="pt-2">
@@ -271,11 +279,13 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
     }
   `
 })
-export class EjecucionOtPage implements OnInit {
+export class EjecucionOtPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly mockDb = inject(MockDbService);
   private readonly apiConfig = inject(ApiConfig);
   private readonly tecnicosApi = inject(TecnicosApi);
+  private readonly tracking = inject(TecnicoTrackingService);
+  private readonly mapsApi = inject(MapsApi);
   private readonly otApi = inject(OtApi);
   private readonly liquidacionApi = inject(LiquidacionApi);
   private readonly toast = inject(ToastService);
@@ -292,6 +302,27 @@ export class EjecucionOtPage implements OnInit {
   });
 
   readonly medioPagoCierre = signal<MedioPago>('EFECTIVO');
+  readonly distanciaKm = signal<number | null>(null);
+  readonly etaMin = signal<number | null>(null);
+  /** Marca local: el técnico confirmó llegada y se habilita el diagnóstico. */
+  readonly enSitio = signal<boolean>(false);
+
+  constructor() {
+    // Recalcula distancia/ETA al cliente cada vez que cambia la posición del técnico.
+    effect(() => {
+      const origen = this.tracking.ultimaPosicion();
+      const destino = this.ot()?.punto;
+      if (!origen || !destino) {
+        return;
+      }
+      this.mapsApi.distancia(origen, destino).subscribe({
+        next: (ruta) => {
+          this.distanciaKm.set(ruta.distanciaKm);
+          this.etaMin.set(ruta.duracionMin);
+        },
+      });
+    });
+  }
 
   readonly diagnosticoForm = new FormGroup({
     diagnostico: new FormControl('Condensador con suciedad severa y capacitor desvalorizado. Requiere lavado químico y reemplazo de capacitor 45uF.', {
@@ -308,31 +339,36 @@ export class EjecucionOtPage implements OnInit {
       const id = params.get('id');
       if (id) {
         this.otId.set(id);
+        this.enSitio.set(false);
         // Carga la OT de la fuente activa (mock o API real) para conocer estado y monto.
-        this.otApi.getOtById(id).subscribe({
-          next: (orden) => this._otRemoto.set(orden),
-        });
+        this.recargarOt();
       }
     });
+    // Empuja la ubicación del técnico mientras ejecuta el servicio.
+    this.tracking.iniciar();
+  }
+
+  ngOnDestroy(): void {
+    this.tracking.detener();
   }
 
   iniciarDesplazamiento(): void {
     this.tecnicosApi.iniciarDesplazamiento(this.otId()).subscribe({
       next: () => {
         this.toast.info('En Camino', 'El cliente puede rastrear tu trayecto en vivo.');
+        this.recargarOt();
       }
     });
   }
 
+  /**
+   * Confirmación de llegada local: habilita el formulario de diagnóstico.
+   * La transición real EN_CAMINO → EN_DIAGNOSTICO la hace el backend al
+   * registrar el diagnóstico (POST /api/ot/{id}/diagnostico).
+   */
   llegarADomicilio(): void {
-    this.tecnicosApi.llegarADomicilio(this.otId()).subscribe({
-      next: () => {
-        this.toast.success('Llegada Registrada', 'Inicia la inspección técnica del equipo.');
-      },
-      error: (err: Error) => {
-        this.toast.error('Acción no disponible', err.message);
-      }
-    });
+    this.enSitio.set(true);
+    this.toast.success('Llegada Registrada', 'Registra el diagnóstico y presupuesto del equipo.');
   }
 
   enviarDiagnostico(): void {
@@ -342,6 +378,7 @@ export class EjecucionOtPage implements OnInit {
     this.tecnicosApi.registrarDiagnostico(this.otId(), val).subscribe({
       next: () => {
         this.toast.success('Presupuesto Notificado', 'El cliente ha recibido la cotización para su aprobación.');
+        this.recargarOt();
       }
     });
   }
@@ -349,8 +386,16 @@ export class EjecucionOtPage implements OnInit {
   finalizarServicio(): void {
     this.tecnicosApi.finalizarServicio(this.otId(), this.medioPagoCierre()).subscribe({
       next: () => {
+        this.tracking.detener();
+        this.recargarOt();
         this.registrarPagoCierre();
       }
+    });
+  }
+
+  private recargarOt(): void {
+    this.otApi.getOtById(this.otId()).subscribe({
+      next: (orden) => this._otRemoto.set(orden),
     });
   }
 

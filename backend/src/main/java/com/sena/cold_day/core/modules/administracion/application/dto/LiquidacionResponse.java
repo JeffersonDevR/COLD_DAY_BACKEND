@@ -23,13 +23,19 @@ public record LiquidacionResponse(
         String comprobanteUrl,
         String motivoRechazo,
         Instant creadaEn,
-        Instant verificadaEn) {
+        Instant verificadaEn,
+        String tecnicoNombre) {
 
     public static LiquidacionResponse fromDomain(Liquidacion liquidacion) {
         return new LiquidacionResponse(liquidacion.getId(), liquidacion.getOtId(),
                 liquidacion.getTecnicoId(), liquidacion.getMontoCobrado(), liquidacion.getMedioPago(),
                 liquidacion.getPorcentajeComision(), liquidacion.getValorComision(), liquidacion.getEstado(),
                 liquidacion.getComprobanteUrl(), liquidacion.getMotivoRechazo(), liquidacion.getCreadaEn(),
-                liquidacion.getVerificadaEn());
+                liquidacion.getVerificadaEn(), null);
+    }
+
+    public LiquidacionResponse conTecnicoNombre(String nombre) {
+        return new LiquidacionResponse(id, otId, tecnicoId, montoCobrado, medioPago, porcentajeComision,
+                valorComision, estado, comprobanteUrl, motivoRechazo, creadaEn, verificadaEn, nombre);
     }
 }

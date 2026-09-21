@@ -4,11 +4,17 @@
 .env*
 !.env.example
 
+# Key de Maps generada en build (nunca se versiona)
+src/environments/maps-key.ts
+
 # Compiled output
 /dist
 /tmp
 /out-tsc
 /bazel-out
+
+.scannerwork/
+.scannerwork
 
 # Node
 node_modules/

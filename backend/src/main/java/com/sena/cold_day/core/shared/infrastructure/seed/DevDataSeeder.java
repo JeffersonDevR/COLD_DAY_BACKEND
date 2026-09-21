@@ -1,0 +1,119 @@
+package com.sena.cold_day.core.shared.infrastructure.seed;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
+import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
+import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
+import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
+import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
+import com.sena.cold_day.core.shared.domain.Point;
+
+/**
+ * Siembra datos de demostración (5 clientes + 5 técnicos) para poder observar el
+ * flujo de mapas/geolocalización contra el backend real.
+ *
+ * Se desactiva con {@code app.seed.enabled=false} (o APP_SEED_ENABLED=false).
+ * Es idempotente: no vuelve a sembrar si ya existen usuarios.
+ */
+@Component
+@ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true", matchIfMissing = true)
+public class DevDataSeeder implements ApplicationRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DevDataSeeder.class);
+    private static final String PASSWORD_DEMO = "demo1234";
+
+    private final UsuarioRepository usuarioRepository;
+    private final TecnicoRepository tecnicoRepository;
+    private final ClienteRepository clienteRepository;
+    private final PasswordEncoderPort encoder;
+
+    public DevDataSeeder(UsuarioRepository usuarioRepository, TecnicoRepository tecnicoRepository,
+            ClienteRepository clienteRepository, PasswordEncoderPort encoder) {
+        this.usuarioRepository = usuarioRepository;
+        this.tecnicoRepository = tecnicoRepository;
+        this.clienteRepository = clienteRepository;
+        this.encoder = encoder;
+    }
+
+    @Override
+    @Transactional
+    public void run(ApplicationArguments args) {
+        if (!clienteRepository.findByActivoTrue().isEmpty()) {
+            log.info("Seed omitido: ya existen clientes activos.");
+            return;
+        }
+
+        List<ClienteSeed> clientes = List.of(
+                new ClienteSeed("María Gómez", "cliente1@coldday.com.co", "3187654321", "Calle 15 # 3E-28", "Los Caobos", new Point(7.8872, -72.4951)),
+                new ClienteSeed("Andrés Ramírez", "cliente2@coldday.com.co", "3104567890", "Avenida 4 # 11-20", "La Riviera", new Point(7.8911, -72.4933)),
+                new ClienteSeed("Laura Peña", "cliente3@coldday.com.co", "3156789012", "Calle 10 # 5-45", "Guaimaral", new Point(7.9045, -72.4977)),
+                new ClienteSeed("Jorge Silva", "cliente4@coldday.com.co", "3203456789", "Carrera 8 # 12-10", "Centro", new Point(7.8928, -72.5052)),
+                new ClienteSeed("Diana Torres", "cliente5@coldday.com.co", "3009876543", "Calle 17 # 8-30", "Quinta Oriental", new Point(7.8971, -72.4915)));
+
+        List<TecnicoSeed> tecnicos = List.of(
+                new TecnicoSeed("Juan Pérez", "tecnico1@coldday.com.co", "3001234567", "1098765001",
+                        Set.of(CategoriaServicio.AIRE_ACONDICIONADO, CategoriaServicio.REFRIGERACION), new Point(7.8860, -72.4980)),
+                new TecnicoSeed("Andrés Suárez", "tecnico2@coldday.com.co", "3012345678", "1098765002",
+                        Set.of(CategoriaServicio.REFRIGERACION), new Point(7.9050, -72.5020)),
+                new TecnicoSeed("Carlos Rojas", "tecnico3@coldday.com.co", "3023456789", "1098765003",
+                        Set.of(CategoriaServicio.ELECTRICIDAD), new Point(7.8750, -72.4850)),
+                new TecnicoSeed("Héctor Mora", "tecnico4@coldday.com.co", "3034567890", "1098765004",
+                        Set.of(CategoriaServicio.ELECTRODOMESTICOS), new Point(7.8420, -72.5080)),
+                new TecnicoSeed("Diego Castillo", "tecnico5@coldday.com.co", "3045678901", "1098765005",
+                        Set.of(CategoriaServicio.AIRE_ACONDICIONADO, CategoriaServicio.ELECTRICIDAD), new Point(7.8915, -72.4885)));
+
+        for (ClienteSeed seed : clientes) {
+            Long usuarioId = crearUsuario(seed.nombre(), seed.correo(), seed.telefono(), Rol.CLIENTE);
+            clienteRepository.save(Cliente.registrar(new UsuarioId(usuarioId), TipoCliente.B2C,
+                    DireccionPrincipal.con(seed.calle(), "Cúcuta", seed.barrio(), seed.ubicacion())));
+        }
+
+        for (TecnicoSeed seed : tecnicos) {
+            Long usuarioId = crearUsuario(seed.nombre(), seed.correo(), seed.telefono(), Rol.TECNICO);
+            tecnicoRepository.save(Tecnico.reconstituir(TecnicoId.nueva(), usuarioId, seed.numeroIdentificacion(),
+                    seed.categorias(), EstadoOperativo.DISPONIBLE, EstadoValidacion.APROBADO, null, Set.of(), true,
+                    seed.ubicacion(), true, Instant.now()));
+        }
+
+        // Roles administrativos para poder observar los paneles de gestión.
+        crearUsuario("Carlos Méndez", "admin@coldday.com.co", "3104567890", Rol.ADMINISTRADOR);
+        crearUsuario("Ana Martínez", "contable@coldday.com.co", "3156789012", Rol.CONTABLE);
+
+        log.info("Seed de demostración listo: {} clientes, {} técnicos, 1 admin y 1 contable (password: {}).",
+                clientes.size(), tecnicos.size(), PASSWORD_DEMO);
+    }
+
+    private Long crearUsuario(String nombre, String correo, String telefono, Rol rol) {
+        Usuario usuario = Usuario.registrar(nombre, correo, PASSWORD_DEMO, telefono, null, rol, true, encoder);
+        return usuarioRepository.save(usuario).getId();
+    }
+
+    private record ClienteSeed(String nombre, String correo, String telefono, String calle, String barrio,
+            Point ubicacion) {
+    }
+
+    private record TecnicoSeed(String nombre, String correo, String telefono, String numeroIdentificacion,
+            Set<CategoriaServicio> categorias, Point ubicacion) {
+    }
+}

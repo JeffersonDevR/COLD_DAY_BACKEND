@@ -1,12 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 
 @Component({
   selector: 'app-ofertas-page',
@@ -116,11 +114,11 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
             </p>
             <button
               type="button"
-              (click)="crearDemandaDemo()"
+              (click)="recargarOfertas()"
               class="mt-4 px-4 py-2 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold text-xs inline-flex items-center gap-1 hover:bg-sky-200 transition-colors"
             >
-              <mat-icon class="text-sm">add_alert</mat-icon>
-              Simular Nueva Solicitud Entrante
+              <mat-icon class="text-sm">refresh</mat-icon>
+              Actualizar Radar
             </button>
           </div>
         }
@@ -129,106 +127,73 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
   `
 })
 export class OfertasPage {
-  private readonly mockDb = inject(MockDbService);
-  private readonly apiConfig = inject(ApiConfig);
   private readonly authService = inject(AuthService);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly loadingOt = signal<string | null>(null);
+  readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
+  readonly ofertas = signal<OfertaTecnicoResponse[]>([]);
 
-  readonly tecnico = computed(() => {
-    const user = this.authService.currentUser();
-    const tecId = String(user?.id || 1);
-    return this.mockDb.tecnicos().find(t => t.id === tecId || t.correo === user?.correo);
-  });
+  readonly solicitudesDisponibles = computed(() => this.ofertas().map(oferta => oferta.ot));
 
-  readonly solicitudesDisponibles = computed(() => {
-    return this.mockDb.ordenesTrabajo().filter(o =>
-      o.estado === 'SOLICITADA' || o.estado === 'BUSCANDO_TECNICO'
-    );
-  });
+  constructor() {
+    const usuarioId = Number(this.authService.currentUser()?.id ?? 0);
+    this.tecnicosApi.getTecnicoPorUsuarioId(usuarioId).subscribe({
+      next: (tecnico) => {
+        this.tecnico.set(tecnico);
+        if (tecnico) {
+          this.cargarOfertas(tecnico.id);
+        }
+      },
+      error: () => this.toast.error('Error', 'No se pudo cargar tu perfil de técnico.'),
+    });
+  }
+
+  private cargarOfertas(tecnicoId: string): void {
+    this.tecnicosApi.getOfertasParaTecnico(tecnicoId).subscribe({
+      next: (ofertas) => this.ofertas.set(ofertas),
+      error: () => this.toast.error('Error de Conexión', 'No se pudieron consultar las ofertas disponibles.'),
+    });
+  }
+
+  recargarOfertas(): void {
+    const tecnico = this.tecnico();
+    if (tecnico) {
+      this.cargarOfertas(tecnico.id);
+    }
+  }
 
   aceptarOferta(ot: OtResponse): void {
-    const t = this.tecnico();
-    if (!t) {
+    const tecnico = this.tecnico();
+    if (!tecnico) {
       this.toast.error('Error', 'No se encontró el perfil de técnico.');
       return;
     }
 
-    if (t.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION') {
+    if (tecnico.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION') {
       this.toast.error('Operación Bloqueada', 'Debes legalizar tus liquidaciones pendientes para tomar servicios.');
       return;
     }
 
-    this.loadingOt.set(ot.id);
-
-    if (this.apiConfig.useMocks()) {
-      this.tecnicosApi.aceptarOt(ot.id, t.id).subscribe({
-        next: (actualizada) => {
-          this.loadingOt.set(null);
-          this.toast.success('¡Servicio Asignado!', `Has tomado la orden ${actualizada.id}. Desplázate al domicilio.`);
-          this.router.navigate(['/tecnico/ejecucion', actualizada.id]);
-        },
-        error: () => {
-          this.loadingOt.set(null);
-          this.toast.error('Error de Concurrencia', 'Esta orden ya fue tomada por otro técnico en el perímetro.');
-        }
-      });
+    const oferta = this.ofertas().find(o => o.otId === ot.id);
+    if (!oferta) {
+      this.toast.error('Sin Oferta Vigente', `No hay una oferta activa para la orden ${ot.id}. Puede que ya haya sido tomada.`);
       return;
     }
 
-    // Modo real: la aceptación es exclusiva de POST /api/ofertas/{id}/aceptar.
-    // Se localiza primero la oferta vigente del técnico para esta OT.
-    this.tecnicosApi.getOfertasParaTecnico(t.id).subscribe({
-      next: (ofertas) => {
-        const oferta = ofertas.find(o => o.otId === ot.id);
-        if (!oferta) {
-          this.loadingOt.set(null);
-          this.toast.error('Sin Oferta Vigente', `No hay una oferta activa para la orden ${ot.id}. Puede que ya haya sido tomada.`);
-          return;
-        }
-        this.tecnicosApi.aceptarOferta(oferta.id, t.id).subscribe({
-          next: () => {
-            this.loadingOt.set(null);
-            this.toast.success('¡Servicio Asignado!', `Has tomado la orden ${ot.id}. Desplázate al domicilio.`);
-            this.router.navigate(['/tecnico/ejecucion', ot.id]);
-          },
-          error: () => {
-            this.loadingOt.set(null);
-            this.toast.error('Error de Concurrencia', 'Esta orden ya fue tomada por otro técnico en el perímetro.');
-          }
-        });
+    this.loadingOt.set(ot.id);
+    this.tecnicosApi.aceptarOferta(oferta.id, tecnico.id).subscribe({
+      next: () => {
+        this.loadingOt.set(null);
+        this.toast.success('¡Servicio Asignado!', `Has tomado la orden ${ot.id}. Desplázate al domicilio.`);
+        this.router.navigate(['/tecnico/ejecucion', ot.id]);
       },
       error: () => {
         this.loadingOt.set(null);
-        this.toast.error('Error de Conexión', 'No se pudieron consultar las ofertas disponibles.');
+        this.toast.error('Error de Concurrencia', 'Esta orden ya fue tomada por otro técnico en el perímetro.');
       }
     });
-  }
-
-  crearDemandaDemo(): void {
-    const id = `OT-88${Math.floor(Math.random() * 80 + 25)}`;
-    this.mockDb.ordenesTrabajo.update(list => [
-      {
-        id,
-        clienteId: '3',
-        clienteNombre: 'Carlos Ramírez',
-        clienteTelefono: '3158901234',
-        categoriaServicio: 'AIRE_ACONDICIONADO',
-        descripcionFalla: 'Mini-split de 18.000 BTU no enfría la sala y bota agua por la carcasa.',
-        direccion: 'Av 4 # 11-20, Barrio La Riviera',
-        barrio: 'La Riviera',
-        latitud: 7.8911,
-        longitud: -72.4933,
-        estado: 'BUSCANDO_TECNICO',
-        fechaCreacion: new Date().toISOString(),
-        radioBusquedaKm: 10,
-        historial: [{ estado: 'BUSCANDO_TECNICO', fecha: new Date().toISOString(), comentario: 'Transmitida por radar' }]
-      },
-      ...list
-    ]);
-    this.toast.info('Solicitud Simulada', 'Nueva OT en broadcast transmitida al radar.');
   }
 }

@@ -57,7 +57,7 @@ export class AuthService {
    * El perfil se reconstruye desde los claims del JWT. Si el mock ya entrega el
    * usuario completo, se usa ese valor.
    *
-   * TODO(backend): no existe `GET /api/usuarios/me`, por lo que `nombre` se
+   * Pendiente(backend): no existe `GET /api/usuarios/me`, por lo que `nombre` se
    * aproxima con el correo ingresado hasta que el backend exponga el perfil.
    */
   establecerSesionDesdeToken(

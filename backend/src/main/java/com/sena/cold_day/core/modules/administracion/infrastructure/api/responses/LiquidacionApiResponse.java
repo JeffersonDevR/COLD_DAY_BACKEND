@@ -20,7 +20,8 @@ public record LiquidacionApiResponse(
         String comprobanteUrl,
         String motivoRechazo,
         Instant creadaEn,
-        Instant verificadaEn) {
+        Instant verificadaEn,
+        String tecnicoNombre) {
 
     public static LiquidacionApiResponse from(LiquidacionResponse response) {
         return new LiquidacionApiResponse(
@@ -29,6 +30,7 @@ public record LiquidacionApiResponse(
                 response.tecnicoId() == null ? null : response.tecnicoId().valor().toString(),
                 response.montoCobrado(), response.medioPago(), response.porcentajeComision(),
                 response.valorComision(), response.estado(), response.comprobanteUrl(),
-                response.motivoRechazo(), response.creadaEn(), response.verificadaEn());
+                response.motivoRechazo(), response.creadaEn(), response.verificadaEn(),
+                response.tecnicoNombre());
     }
 }

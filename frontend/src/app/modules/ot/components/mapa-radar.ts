@@ -30,8 +30,8 @@ export interface RadarTecnicoItem {
   lat: number;
   lng: number;
   disponible: boolean;
-  vehiculo: string;
-  reputacion: number;
+  vehiculo?: string;
+  reputacion?: number;
 }
 
 // Límites geográficos estrictos del Área Metropolitana de Cúcuta
@@ -197,16 +197,20 @@ export const CUCUTA_METRO_BOUNDS: google.maps.LatLngBoundsLiteral = {
                   <div class="p-2 text-slate-900 max-w-[220px]">
                     <div class="flex items-center justify-between gap-2 border-b border-slate-200 pb-1.5 mb-1.5">
                       <span class="font-bold text-xs text-slate-800">{{ t.nombre }}</span>
-                      <span class="text-[11px] font-bold text-amber-500 inline-flex items-center">
-                        ★ {{ t.reputacion }}
-                      </span>
+                      @if (t.reputacion) {
+                        <span class="text-[11px] font-bold text-amber-500 inline-flex items-center">
+                          ★ {{ t.reputacion }}
+                        </span>
+                      }
                     </div>
                     <p class="text-[11px] text-slate-600 mb-1">
                       <strong>Especialidad:</strong> {{ t.especialidad }}
                     </p>
-                    <p class="text-[11px] text-slate-600 mb-1">
-                      <strong>Vehículo:</strong> {{ t.vehiculo }}
-                    </p>
+                    @if (t.vehiculo) {
+                      <p class="text-[11px] text-slate-600 mb-1">
+                        <strong>Vehículo:</strong> {{ t.vehiculo }}
+                      </p>
+                    }
                     <div class="flex items-center justify-between mt-2 pt-1 border-t border-slate-100 text-[10px]">
                       <span class="text-slate-500">Distancia:</span>
                       <span class="font-bold text-sky-700">{{ t.distanciaKm }} km</span>
@@ -448,6 +452,8 @@ export class MapaRadar implements OnInit, OnDestroy {
   readonly clienteUbicacionNombre = input<string>('Tu Domicilio');
   readonly centroLat = input<number>(7.8939);
   readonly centroLng = input<number>(-72.5078);
+  /** Técnicos reales del backend; si es null se usa la lista demo local. */
+  readonly tecnicosExternos = input<RadarTecnicoItem[] | null>(null);
   readonly radioCambiado = output<number>();
 
   readonly radioActualKm = signal<number>(10);
@@ -571,9 +577,9 @@ export class MapaRadar implements OnInit, OnDestroy {
   };
 
   // Opciones del marcador del cliente (punto azul central)
-  readonly clienteMarkerOptions: google.maps.MarkerOptions = {
+  readonly clienteMarkerOptions = {
     icon: {
-      path: 0, // google.maps.SymbolPath.CIRCLE
+      path: 0 as google.maps.SymbolPath, // SymbolPath.CIRCLE (sin tocar google en runtime)
       scale: 8,
       fillColor: '#0284c7',
       fillOpacity: 1,
@@ -582,8 +588,8 @@ export class MapaRadar implements OnInit, OnDestroy {
     }
   };
 
-  // Lista de técnicos cercanos con coordenadas reales en el área metropolitana de Cúcuta
-  readonly tecnicos = signal<RadarTecnicoItem[]>([
+  // Lista demo de respaldo (solo si no llegan técnicos reales del backend).
+  private readonly tecnicosDemo = signal<RadarTecnicoItem[]>([
     {
       id: '1',
       nombre: 'Juan P.',
@@ -630,6 +636,9 @@ export class MapaRadar implements OnInit, OnDestroy {
     }
   ]);
 
+  // Técnicos a pintar: reales del backend si vienen, si no la lista demo.
+  readonly tecnicos = computed<RadarTecnicoItem[]>(() => this.tecnicosExternos() ?? this.tecnicosDemo());
+
   readonly tecnicosEnRango = computed(() => {
     const radio = this.radioActualKm();
     return this.tecnicos().filter(t => t.distanciaKm <= radio);
@@ -651,11 +660,11 @@ export class MapaRadar implements OnInit, OnDestroy {
     return 200 + deltaLat;
   }
 
-  getTecnicoMarkerOptions(tec: RadarTecnicoItem): google.maps.MarkerOptions {
+  getTecnicoMarkerOptions(tec: RadarTecnicoItem) {
     const enRango = tec.distanciaKm <= this.radioActualKm();
     return {
       icon: {
-        path: 0, // SymbolPath.CIRCLE
+        path: 0 as google.maps.SymbolPath, // SymbolPath.CIRCLE
         scale: enRango ? 6.5 : 5,
         fillColor: enRango ? '#10b981' : '#64748b',
         fillOpacity: 1,

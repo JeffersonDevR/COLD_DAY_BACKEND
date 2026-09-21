@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { AdminApi } from '../infrastructure/admin-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -143,14 +142,24 @@ import { DisputaResponse } from '../../../core/shared/domain/models/common.model
   `
 })
 export class DisputasAdminPage {
-  private readonly mockDb = inject(MockDbService);
   private readonly adminApi = inject(AdminApi);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
 
-  readonly disputas = computed(() => this.mockDb.disputas());
+  readonly disputas = signal<DisputaResponse[]>([]);
   readonly disputaSeleccionada = signal<DisputaResponse | null>(null);
   readonly resolucionCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10)] });
+
+  constructor() {
+    this.cargarDisputas();
+  }
+
+  private cargarDisputas(): void {
+    this.adminApi.getTodasDisputas().subscribe({
+      next: (disputas) => this.disputas.set(disputas),
+      error: () => this.disputas.set([]),
+    });
+  }
 
   abrirResolucion(d: DisputaResponse): void {
     this.disputaSeleccionada.set(d);
@@ -166,6 +175,7 @@ export class DisputasAdminPage {
         this.toast.success('Disputa Resuelta', `El caso ${d.id} ha sido conciliado satisfactoriamente.`);
         this.disputaSeleccionada.set(null);
         this.resolucionCtrl.reset();
+        this.cargarDisputas();
       }
     });
   }

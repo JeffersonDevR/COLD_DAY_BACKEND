@@ -10,6 +10,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * API view of an OT: identifiers are plain UUID strings and the state is an
@@ -29,9 +30,19 @@ public record OtApiResponse(
         MotivoCancelacion motivoCancelacion,
         BigDecimal tarifaVisita,
         Diagnostico diagnostico,
-        Presupuesto presupuesto) {
+        Presupuesto presupuesto,
+        Double latitud,
+        Double longitud,
+        String clienteNombre,
+        String tecnicoNombre) {
 
     public static OtApiResponse from(OtResponse response) {
+        return from(response, null, null);
+    }
+
+    /** Listado enriquecido con los nombres legibles de cliente y técnico. */
+    public static OtApiResponse from(OtResponse response, String clienteNombre, String tecnicoNombre) {
+        Point ubicacion = response.ubicacion();
         return new OtApiResponse(
                 response.id() == null ? null : response.id().valor().toString(),
                 response.clienteId() == null ? null : response.clienteId().valor().toString(),
@@ -39,6 +50,9 @@ public record OtApiResponse(
                 response.estado(), response.categoriaServicio(), response.descripcionFalla(),
                 response.direccion(), response.radioKm(), response.creadaEn(), response.canceladaPor(),
                 response.motivoCancelacion(), response.tarifaVisita(), response.diagnostico(),
-                response.presupuesto());
+                response.presupuesto(),
+                ubicacion == null ? null : ubicacion.latitud(),
+                ubicacion == null ? null : ubicacion.longitud(),
+                clienteNombre, tecnicoNombre);
     }
 }

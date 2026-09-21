@@ -15,6 +15,10 @@ public interface SpringDataOtRepository extends JpaRepository<OtJpaEntity, UUID>
 
     List<OtJpaEntity> findByEstado(EstadoOt estado);
 
+    List<OtJpaEntity> findByClienteId(UUID clienteId);
+
+    List<OtJpaEntity> findByTecnicoId(UUID tecnicoId);
+
     List<OtJpaEntity> findByEstadoAndVentanaExpiraEnLessThanEqual(EstadoOt estado, Instant ahora);
 
     /**

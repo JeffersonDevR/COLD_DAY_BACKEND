@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AdminApi } from '../infrastructure/admin-api';
-import { MetricasAdminResponse } from '../../../core/shared/domain/models/common.models';
+import { CategoriaServicio, MetricasAdminResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -180,70 +180,34 @@ import { environment } from '../../../../environments/environment';
                   <!-- Fondo gris -->
                   <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-opacity="0.1" stroke-width="14" />
 
-                  <!-- Aire Acondicionado 45% (dasharray 238.76 total perimeter) -->
-                  <circle
-                    cx="50" cy="50" r="38"
-                    fill="none"
-                    stroke="#0284c7"
-                    stroke-width="14"
-                    stroke-dasharray="107 238"
-                    stroke-dashoffset="0"
-                  />
-
-                  <!-- Refrigeración 30% -->
-                  <circle
-                    cx="50" cy="50" r="38"
-                    fill="none"
-                    stroke="#06b6d4"
-                    stroke-width="14"
-                    stroke-dasharray="71 238"
-                    stroke-dashoffset="-107"
-                  />
-
-                  <!-- Electricidad 15% -->
-                  <circle
-                    cx="50" cy="50" r="38"
-                    fill="none"
-                    stroke="#f59e0b"
-                    stroke-width="14"
-                    stroke-dasharray="36 238"
-                    stroke-dashoffset="-178"
-                  />
-
-                  <!-- Electrodomésticos 10% -->
-                  <circle
-                    cx="50" cy="50" r="38"
-                    fill="none"
-                    stroke="#10b981"
-                    stroke-width="14"
-                    stroke-dasharray="24 238"
-                    stroke-dashoffset="-214"
-                  />
+                  @for (seg of distribucion(); track seg.categoria) {
+                    <circle
+                      cx="50" cy="50" r="38"
+                      fill="none"
+                      [attr.stroke]="seg.color"
+                      stroke-width="14"
+                      [attr.stroke-dasharray]="seg.dasharray"
+                      [attr.stroke-dashoffset]="seg.dashoffset"
+                    />
+                  }
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span class="text-lg font-black text-slate-900 dark:text-slate-100">83</span>
+                  <span class="text-lg font-black text-slate-900 dark:text-slate-100">{{ totalServicios() }}</span>
                   <span class="text-[9px] uppercase tracking-wider font-bold text-slate-400">Servicios</span>
                 </div>
               </div>
 
               <!-- Leyenda -->
               <div class="w-full mt-4 space-y-1.5 text-xs">
-                <div class="flex items-center justify-between">
-                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-600"></span> Aire Acondicionado</span>
-                  <span class="font-bold">45%</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> Refrigeración</span>
-                  <span class="font-bold">30%</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Electricidad</span>
-                  <span class="font-bold">15%</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Electrodomésticos</span>
-                  <span class="font-bold">10%</span>
-                </div>
+                @for (seg of distribucion(); track seg.categoria) {
+                  <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full" [style.background-color]="seg.color"></span>
+                      {{ seg.label }}
+                    </span>
+                    <span class="font-bold">{{ seg.porcentaje }}%</span>
+                  </div>
+                }
               </div>
             </div>
           </div>
@@ -269,6 +233,40 @@ export class DashboardAdminPage implements OnInit {
   /** Comisión de la plataforma (15%), alineada al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
   readonly metricas = signal<MetricasAdminResponse | null>(null);
+
+  private readonly coloresCategoria: Record<CategoriaServicio, string> = {
+    AIRE_ACONDICIONADO: '#0284c7',
+    REFRIGERACION: '#06b6d4',
+    ELECTRICIDAD: '#f59e0b',
+    ELECTRODOMESTICOS: '#10b981',
+  };
+
+  /** Segmentos de la dona calculados a partir de la distribución real. */
+  readonly distribucion = computed(() => {
+    const metricas = this.metricas();
+    if (!metricas) {
+      return [];
+    }
+    const perimetro = 2 * Math.PI * 38;
+    let acumulado = 0;
+    return metricas.distribucionCategorias.map((d) => {
+      const largo = (d.porcentaje / 100) * perimetro;
+      const segmento = {
+        categoria: d.categoria,
+        porcentaje: d.porcentaje,
+        color: this.coloresCategoria[d.categoria] ?? '#64748b',
+        label: d.categoria.replace('_', ' '),
+        dasharray: `${largo} ${perimetro}`,
+        dashoffset: `${-acumulado}`,
+      };
+      acumulado += largo;
+      return segmento;
+    });
+  });
+
+  readonly totalServicios = computed(() =>
+    (this.metricas()?.distribucionCategorias ?? []).reduce((total, d) => total + d.cantidad, 0)
+  );
 
   ngOnInit(): void {
     this.adminApi.getMetricas().subscribe({

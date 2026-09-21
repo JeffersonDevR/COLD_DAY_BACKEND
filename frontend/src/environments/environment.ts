@@ -1,3 +1,5 @@
+import { GOOGLE_MAPS_API_KEY } from './maps-key';
+
 export const environment = {
   production: false,
   /**
@@ -12,13 +14,14 @@ export const environment = {
    */
   backendUrl: 'http://localhost:8080',
   /**
-   * PLACEHOLDER: clave de Google Maps Platform.
-   * Con SSR desactivado el endpoint /api/config/maps deja de existir, así que la
-   * clave se inyecta en build desde acá (o vía variable de entorno del bundler).
-   * Si queda vacía, los mapas intentan cargarse sin clave y fallarán.
+   * Browser key de Google Maps Platform (flujo build-time).
+   * NO se versiona: se inyecta en build desde GOOGLE_MAPS_API_KEY
+   * (frontend/.env o variable de entorno) vía scripts/generate-maps-key.mjs,
+   * que genera src/environments/maps-key.ts (gitignored).
+   * Si queda vacía, el loader intenta /api/config/maps (solo con SSR).
    */
-  googleMapsApiKey: '',
-  useMocks: true, // Conmutable por UI o variable
+  googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  useMocks: false, // Producción: siempre API REST del backend
   appName: 'COLD DAY S.A.S.',
   city: 'Cúcuta, Colombia',
   defaultSearchRadiusKm: 10,

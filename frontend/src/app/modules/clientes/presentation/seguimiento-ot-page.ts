@@ -1,15 +1,21 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { interval, startWith, switchMap } from 'rxjs';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { ClientesApi } from '../infrastructure/clientes-api';
+import { OtApi } from '../../ot/infrastructure/ot-api';
+import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
+import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtTimeline } from '../../ot/components/ot-timeline';
 import { MapaRadar } from '../../ot/components/mapa-radar';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/models/common.models';
 
 @Component({
   selector: 'app-seguimiento-ot-page',
@@ -75,6 +81,18 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
               }
             }
 
+            <!-- Abrir disputa en fases de diagnóstico/reparación -->
+            @if (orden.estado === 'EN_DIAGNOSTICO' || orden.estado === 'EN_REPARACION') {
+              <button
+                type="button"
+                (click)="mostrarModalDisputa.set(true)"
+                class="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-semibold text-xs inline-flex items-center gap-1 transition-colors"
+              >
+                <mat-icon class="text-sm">gavel</mat-icon>
+                Abrir Disputa
+              </button>
+            }
+
             <!-- Botón Cancelar si no está en reparación ni finalizada -->
             @if (puedeCancelar()) {
               <button
@@ -97,6 +115,7 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
             [clienteUbicacionNombre]="orden.barrio || 'Tu Ubicación'"
             [centroLat]="orden.punto?.latitud ?? 7.8939"
             [centroLng]="orden.punto?.longitud ?? -72.5078"
+            [tecnicosExternos]="tecnicosCercanos()"
             (radioCambiado)="actualizarRadio($event)"
           />
         }
@@ -119,7 +138,11 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
                 <p class="text-xs text-slate-500">Técnico Certificado Asignado • Móvil: {{ orden.tecnicoTelefono }}</p>
                 <div class="mt-1 flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400 font-semibold">
                   <mat-icon class="text-xs" style="font-size: 14px; width: 14px; height: 14px;">two_wheeler</mat-icon>
-                  <span>En camino a tu ubicación (Tiempo estimado: ~15 min)</span>
+                  @if (etaMin() !== null) {
+                    <span>En camino a tu ubicación (ETA: ~{{ etaMin() }} min · {{ distanciaKm() }} km)</span>
+                  } @else {
+                    <span>En camino a tu ubicación</span>
+                  }
                 </div>
               </div>
             </div>
@@ -195,6 +218,12 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
                   <span class="text-slate-500">Dirección:</span>
                   <span class="font-bold text-slate-800 dark:text-slate-200 text-right">{{ orden.direccion }}</span>
                 </div>
+                @if (etaMin() !== null) {
+                  <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Llegada estimada:</span>
+                    <span class="font-bold text-sky-600 dark:text-sky-400">{{ etaMin() }} min · {{ distanciaKm() }} km</span>
+                  </div>
+                }
                 <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
                   <span class="text-slate-500">Barrio Cúcuta:</span>
                   <span class="font-bold text-slate-800 dark:text-slate-200">{{ orden.barrio || 'Centro' }}</span>
@@ -270,6 +299,44 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
             </div>
           </div>
         }
+
+        <!-- Modal de Disputa -->
+        @if (mostrarModalDisputa()) {
+          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+            <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div class="flex items-center gap-3 text-purple-600">
+                <mat-icon>gavel</mat-icon>
+                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Abrir Disputa</h3>
+              </div>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Describe la discrepancia (costo, repuestos o calidad). El área administrativa mediará el caso.
+              </p>
+              <textarea
+                rows="3"
+                [formControl]="motivoDisputaControl"
+                placeholder="Explica el motivo de la disputa..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-purple-500"
+              ></textarea>
+              <div class="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="mostrarModalDisputa.set(false)"
+                  class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  [disabled]="motivoDisputaControl.invalid"
+                  (click)="confirmarDisputa()"
+                  class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm"
+                >
+                  Confirmar Disputa
+                </button>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     }
   `
@@ -277,24 +344,100 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
 export class SeguimientoOtPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly clientesApi = inject(ClientesApi);
+  private readonly otApi = inject(OtApi);
+  private readonly tecnicosApi = inject(TecnicosApi);
+  private readonly mapsApi = inject(MapsApi);
+  private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly otId = signal<string>('');
+  private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
+
+  /** En mock lee del MockDb (reactivo); contra el backend usa la OT cargada por API. */
   readonly ot = computed<OtResponse | undefined>(() => {
-    return this.mockDb.ordenesTrabajo().find(o => o.id === this.otId());
+    if (this.apiConfig.useMocks()) {
+      return this.mockDb.ordenesTrabajo().find(o => o.id === this.otId());
+    }
+    return this._otRemoto();
   });
+
+  readonly tecnicoUbicacion = signal<Point | null>(null);
+  readonly distanciaKm = signal<number | null>(null);
+  readonly etaMin = signal<number | null>(null);
+  readonly tecnicosCercanos = signal<TecnicoCercano[]>([]);
 
   readonly mostrarModalCancelar = signal<boolean>(false);
   readonly motivoControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
+  readonly mostrarModalDisputa = signal<boolean>(false);
+  readonly motivoDisputaControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       if (id) {
         this.otId.set(id);
+        this.cargarOt(id);
+        this.iniciarSeguimientoTecnico(id);
       }
+    });
+  }
+
+  private cargarOt(id: string): void {
+    this.otApi.getOtById(id).subscribe({
+      next: (orden) => {
+        this._otRemoto.set(orden);
+        this.recalcularDistancia();
+        this.cargarTecnicosCercanos();
+      },
+      error: () => {
+        // Sin backend disponible se conserva el estado local (mock).
+      },
+    });
+  }
+
+  /** Técnicos disponibles dentro del radio de búsqueda para el radar. */
+  private cargarTecnicosCercanos(): void {
+    const orden = this.ot();
+    if (!orden?.punto) {
+      this.tecnicosCercanos.set([]);
+      return;
+    }
+    this.tecnicosApi
+      .getTecnicosCercanos(orden.punto, orden.radioBusquedaKm || 10, orden.categoriaServicio)
+      .subscribe({
+        next: (tecnicos) => this.tecnicosCercanos.set(tecnicos),
+        error: () => this.tecnicosCercanos.set([]),
+      });
+  }
+
+  /** Sondea la ubicación del técnico asignado y recalcula distancia/ETA. */
+  private iniciarSeguimientoTecnico(id: string): void {
+    interval(15000)
+      .pipe(
+        startWith(0),
+        switchMap(() => this.otApi.getTecnicoUbicacion(id)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((ubicacion) => {
+        this.tecnicoUbicacion.set(ubicacion);
+        this.recalcularDistancia();
+      });
+  }
+
+  private recalcularDistancia(): void {
+    const origen = this.tecnicoUbicacion();
+    const destino = this.ot()?.punto;
+    if (!origen || !destino) {
+      return;
+    }
+    this.mapsApi.distancia(origen, destino).subscribe({
+      next: (ruta) => {
+        this.distanciaKm.set(ruta.distanciaKm);
+        this.etaMin.set(ruta.duracionMin);
+      },
     });
   }
 
@@ -304,10 +447,15 @@ export class SeguimientoOtPage implements OnInit {
   }
 
   actualizarRadio(nuevoRadio: number): void {
-    const id = this.otId();
-    this.mockDb.ordenesTrabajo.update(list =>
-      list.map(o => (o.id === id ? { ...o, radioBusquedaKm: nuevoRadio } : o))
-    );
+    if (this.apiConfig.useMocks()) {
+      const id = this.otId();
+      this.mockDb.ordenesTrabajo.update(list =>
+        list.map(o => (o.id === id ? { ...o, radioBusquedaKm: nuevoRadio } : o))
+      );
+    } else {
+      this._otRemoto.update(orden => (orden ? { ...orden, radioBusquedaKm: nuevoRadio } : orden));
+    }
+    this.cargarTecnicosCercanos();
     this.toast.info('Radio Expandido', `Búsqueda ampliada a ${nuevoRadio} km en Cúcuta.`);
   }
 
@@ -321,6 +469,19 @@ export class SeguimientoOtPage implements OnInit {
         this.toast.warning('Servicio Cancelado', 'La orden de trabajo ha sido cancelada.');
         this.router.navigate(['/panel']);
       }
+    });
+  }
+
+  confirmarDisputa(): void {
+    if (this.motivoDisputaControl.invalid) return;
+
+    this.clientesApi.abrirDisputa(this.otId(), this.motivoDisputaControl.value).subscribe({
+      next: () => {
+        this.mostrarModalDisputa.set(false);
+        this.toast.warning('Disputa Abierta', 'Un administrador revisará tu caso.');
+        this.cargarOt(this.otId());
+      },
+      error: (err: Error) => this.toast.error('No se pudo abrir la disputa', err.message),
     });
   }
 }

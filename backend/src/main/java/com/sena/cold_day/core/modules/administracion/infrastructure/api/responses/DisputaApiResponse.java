@@ -13,13 +13,16 @@ public record DisputaApiResponse(
         EstadoDisputa estado,
         String resolucion,
         Instant creadaEn,
-        Instant resueltaEn) {
+        Instant resueltaEn,
+        String clienteNombre,
+        String tecnicoNombre) {
 
     public static DisputaApiResponse from(DisputaResponse response) {
         return new DisputaApiResponse(
                 response.id() == null ? null : response.id().valor().toString(),
                 response.otId() == null ? null : response.otId().valor().toString(),
                 response.motivo(), response.estado(), response.resolucion(),
-                response.creadaEn(), response.resueltaEn());
+                response.creadaEn(), response.resueltaEn(),
+                response.clienteNombre(), response.tecnicoNombre());
     }
 }

@@ -6,16 +6,19 @@ import {
   MetricasAdminResponse,
   DisputaResponse,
   EstadoValidacion,
+  OtResponse,
 } from '../../../core/shared/domain/models/common.models';
 import {
   DisputaApiResponse,
   MetricasAdminApiResponse,
+  OtApiResponse,
   ResolverDisputaApiRequest,
   ValidacionTecnicoApiRequest,
 } from '../../../core/shared/infrastructure/api/backend.dto';
 import {
   aDisputaResponse,
   aMetricasAdmin,
+  aOtResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
@@ -78,6 +81,16 @@ export class AdminApi {
       .pipe(map(aMetricasAdmin));
   }
 
+  /** GET /api/admin/ot → listado global de OTs para monitoreo. */
+  getTodasOts(): Observable<OtResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.ordenesTrabajo()).pipe(delay(250));
+    }
+    return this.http
+      .get<OtApiResponse[]>(this.apiConfig.url('/admin/ot'))
+      .pipe(map(list => list.map(aOtResponse)));
+  }
+
   getDisputasAbiertas(): Observable<DisputaResponse[]> {
     if (this.apiConfig.useMocks()) {
       return of(this.mockDb.disputas().filter(d => d.estado === 'ABIERTA')).pipe(delay(200));
@@ -101,7 +114,7 @@ export class AdminApi {
       this.mockDb.resolverDisputa(disputaId, resolucion, acuerdo, adminNombre);
       return of(undefined).pipe(delay(300));
     }
-    // TODO(backend): el backend resuelve el admin desde el principal autenticado;
+    // Pendiente(backend): el backend resuelve el admin desde el principal autenticado;
     // la clave del body es `conAcuerdo`, NO `acuerdo`. `adminNombre` no se envía.
     const body: ResolverDisputaApiRequest = { conAcuerdo: acuerdo, resolucion };
     return this.http.post<void>(this.apiConfig.url(`/admin/disputas/${disputaId}/resolver`), body);
@@ -112,7 +125,7 @@ export class AdminApi {
       this.mockDb.validarTecnico(tecnicoId, nuevoEstado, motivo);
       return of(undefined).pipe(delay(300));
     }
-    // TODO(backend): el backend aprueba SOLO con la acción literal "APROBAR";
+    // Pendiente(backend): el backend aprueba SOLO con la acción literal "APROBAR";
     // cualquier otro valor rechaza. `motivo` solo se envía cuando viene informado.
     const body: ValidacionTecnicoApiRequest = {
       accion: nuevoEstado === 'APROBADO' ? 'APROBAR' : 'RECHAZAR',

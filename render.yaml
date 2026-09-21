@@ -30,3 +30,13 @@ services:
         value: "true"
       - key: GOOGLE_MAPS_API_KEY
         sync: false
+
+  # Landing pública (proyecto separado, estático). Ver landing/README.md.
+  - type: web
+    name: cold-day-landing
+    runtime: static
+    plan: free
+    rootDir: landing
+    buildCommand: ""
+    staticPublishPath: .
+    autoDeploy: true
