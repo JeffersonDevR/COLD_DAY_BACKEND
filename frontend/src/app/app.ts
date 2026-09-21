@@ -1,10 +1,53 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from './core/shared/infrastructure/auth/auth.service';
+import { ToastHost } from './core/shared/presentation/components/toast-host';
+import { ApiConfig } from './core/shared/infrastructure/api/api.config';
+import { ToastService } from './core/shared/presentation/toast.service';
+import { RolUsuario } from './core/shared/domain/models/common.models';
+import { environment } from '../environments/environment';
 
 @Component({
-  imports: [RouterOutlet, RouterLink],
   selector: 'app-root',
-  styleUrl: './app.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, ToastHost],
   templateUrl: './app.html',
+  styleUrl: './app.css',
 })
-export class App {}
+export class App {
+  readonly auth = inject(AuthService);
+  readonly apiConfig = inject(ApiConfig);
+  readonly toast = inject(ToastService);
+  readonly router = inject(Router);
+
+  /** Comisión de la plataforma (15%), alineada al backend. */
+  readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
+
+  readonly menuMovilAbierto = signal<boolean>(false);
+
+  readonly usuario = computed(() => this.auth.currentUser());
+  readonly estaAutenticado = computed(() => this.auth.isAuthenticated());
+
+  toggleMenuMovil(): void {
+    this.menuMovilAbierto.set(!this.menuMovilAbierto());
+  }
+
+  cambiarRolDemo(rol: RolUsuario): void {
+    this.auth.switchDemoRole(rol);
+    this.toast.info('Modo Demostración', `Sesión cambiada a perfil de ${rol}.`);
+    this.router.navigate(['/panel']);
+  }
+
+  toggleModoMock(): void {
+    this.apiConfig.toggleMock();
+    const modo = this.apiConfig.useMock() ? 'Mock Local (En Memoria)' : 'API REST / Backend Real';
+    this.toast.info('Configuración API', `Fuente de datos alternada a: ${modo}`);
+  }
+
+  cerrarSesion(): void {
+    this.auth.logout();
+    this.toast.success('Sesión Finalizada', 'Has cerrado sesión en COLD DAY S.A.S.');
+    this.router.navigate(['/login']);
+  }
+}

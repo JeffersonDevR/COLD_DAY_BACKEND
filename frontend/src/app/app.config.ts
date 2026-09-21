@@ -1,17 +1,19 @@
-import { registerLocaleData } from '@angular/common';
-import localeEsCo from '@angular/common/locales/es-CO';
-import { provideHttpClient } from '@angular/common/http';
-import { LOCALE_ID, ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { routes } from './app.routes';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
+import {provideRouter} from '@angular/router';
+import {provideHttpClient, withFetch, withInterceptors} from '@angular/common/http';
 
-registerLocaleData(localeEsCo);
+import {routes} from './app.routes';
+import {authInterceptor} from './core/shared/infrastructure/auth/auth.interceptor';
+import {errorInterceptor} from './core/shared/infrastructure/api/error.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(),
-    { provide: LOCALE_ID, useValue: 'es-CO' },
+    // authInterceptor adjunta el JWT del backend; errorInterceptor traduce ApiError.
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, errorInterceptor])),
   ],
 };

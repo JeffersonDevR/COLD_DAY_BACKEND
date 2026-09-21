@@ -1,0 +1,335 @@
+/**
+ * Contratos EXACTOS del backend Spring Boot (ColdDayApplication).
+ *
+ * Estos tipos reflejan los DTOs reales devueltos/aceptados por los controllers.
+ * NO deben usarse directamente en las páginas: la traducción hacia los modelos de
+ * vista del front vive en `backend.mappers.ts`.
+ *
+ * Fuente: backend/src/main/java/com/sena/cold_day/core/modules/**\/infrastructure/api.
+ */
+import {
+  ActorOt,
+  CategoriaServicio,
+  EstadoDisputa,
+  EstadoLiquidacion,
+  EstadoOperativo,
+  EstadoOt,
+  EstadoValidacion,
+  MedioPago,
+  OfertaEstado,
+  Point,
+  Rol,
+  TipoCliente,
+} from '../../domain/models/common.models';
+
+/* ------------------------------------------------------------------ */
+/* usuarios                                                            */
+/* ------------------------------------------------------------------ */
+
+export interface UsuarioApiResponse {
+  id: number;
+  nombre: string;
+  correo: string;
+  telefono: string | null;
+  fotoUrl: string | null;
+  rol: Rol;
+  fechaRegistro: string; // LocalDateTime (sin zona)
+  habeasDataAceptado: boolean;
+  activo: boolean;
+}
+
+export interface TokenApiResponse {
+  token: string;
+  expiracion: string;
+  rol: Rol;
+}
+
+export interface UsuarioApiRequest {
+  nombre: string;
+  correo: string;
+  password: string;
+  telefono?: string;
+  fotoUrl?: string;
+  rol: Rol;
+  aceptaHabeasData: boolean;
+}
+
+export interface CredencialesApiRequest {
+  correo: string;
+  password: string;
+}
+
+export interface RecuperarContrasenaApiRequest {
+  correo: string;
+}
+
+export interface RestablecerContrasenaApiRequest {
+  token: string;
+  nuevaPassword: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* clientes                                                            */
+/* ------------------------------------------------------------------ */
+
+export interface DireccionPrincipalApi {
+  calle: string;
+  ciudad: string;
+  barrio: string | null;
+  ubicacion: Point | null;
+}
+
+export interface ClienteApiResponse {
+  id: string;
+  usuarioId: number;
+  nombre: string;
+  correo: string;
+  telefono: string | null;
+  fotoUrl: string | null;
+  tipoCliente: TipoCliente;
+  direccion: DireccionPrincipalApi;
+  activo: boolean;
+}
+
+export interface ClienteApiRequest {
+  tipoCliente: TipoCliente;
+  calle: string;
+  ciudad: string;
+  barrio?: string;
+  ubicacion?: Point;
+}
+
+export interface UbicacionApiRequest {
+  latitud: number;
+  longitud: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* tecnicos                                                            */
+/* ------------------------------------------------------------------ */
+
+export interface CertificacionApi {
+  nombre: string;
+  institucion: string | null;
+  fechaObtencion: string | null;
+  fechaVencimiento: string | null;
+}
+
+export interface TecnicoApiResponse {
+  id: string;
+  usuarioId: number;
+  nombre: string;
+  correo: string;
+  telefono: string | null;
+  numeroIdentificacion: string;
+  fotoUrl: string | null;
+  categoriasServicio: CategoriaServicio[];
+  estadoOperativo: EstadoOperativo;
+  estadoValidacion: EstadoValidacion;
+  motivoRechazoValidacion: string | null;
+  certificaciones: CertificacionApi[];
+  activo: boolean;
+}
+
+export interface TecnicoApiRequest {
+  nombre: string;
+  correo: string;
+  password: string;
+  telefono?: string;
+  numeroIdentificacion: string;
+  fotoUrl?: string;
+  categoriasServicio: CategoriaServicio[];
+  certificaciones?: CertificacionApi[];
+  aceptaHabeasData: boolean;
+}
+
+export interface ValidacionTecnicoApiRequest {
+  /** El backend aprueba SOLO con "APROBAR"; cualquier otro valor rechaza. */
+  accion: 'APROBAR' | 'RECHAZAR';
+  motivo?: string;
+}
+
+export interface EstadoOperativoApiRequest {
+  estadoOperativo: EstadoOperativo;
+}
+
+export interface DocumentoTecnicoApiRequest {
+  tipo: string;
+  fechaVencimiento?: string;
+}
+
+export interface DocumentoTecnicoApiResponse {
+  id: number;
+  /** El backend serializa TecnicoId como {"valor": "<uuid>"}. */
+  tecnicoId: { valor: string } | string;
+  tipo: string;
+  fechaVencimiento: string | null;
+  vigente: boolean;
+}
+
+/* ------------------------------------------------------------------ */
+/* ot                                                                  */
+/* ------------------------------------------------------------------ */
+
+export interface DiagnosticoApi {
+  fallaDetectada: string;
+  observaciones: string | null;
+  registradoEn: string;
+}
+
+export interface PresupuestoApi {
+  costoManoObra: number;
+  costoRepuestos: number;
+  emitidoEn: string;
+}
+
+export interface OtApiResponse {
+  id: string;
+  clienteId: string;
+  tecnicoId: string | null;
+  estado: EstadoOt;
+  categoriaServicio: CategoriaServicio;
+  descripcionFalla: string;
+  direccion: string;
+  radioKm: number;
+  creadaEn: string;
+  canceladaPor: ActorOt | null;
+  motivoCancelacion: string | null;
+  tarifaVisita: number | null;
+  diagnostico: DiagnosticoApi | null;
+  presupuesto: PresupuestoApi | null;
+}
+
+export interface OtApiRequest {
+  categoriaServicio: CategoriaServicio;
+  descripcionFalla: string;
+  evidenciaUrls?: string[];
+  direccion: string;
+  latitud: number;
+  longitud: number;
+}
+
+export interface DiagnosticoApiRequest {
+  fallaDetectada: string;
+  observaciones?: string;
+  costoManoObra: number;
+  costoRepuestos: number;
+}
+
+export interface CancelarOtApiRequest {
+  motivo: string;
+}
+
+export interface RechazoPresupuestoApiRequest {
+  motivo?: string;
+}
+
+export interface HistorialEstadoApiResponse {
+  estadoOrigen: EstadoOt | null;
+  estadoDestino: EstadoOt;
+  actor: ActorOt;
+  ocurridoEn: string;
+  motivo: string | null;
+}
+
+export interface OfertaOtApiResponse {
+  id: string;
+  otId: string;
+  tecnicoId: string;
+  radioKm: number;
+  estado: OfertaEstado;
+  creadaEn: string;
+  expiraEn: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* administracion / liquidaciones / disputas                           */
+/* ------------------------------------------------------------------ */
+
+export interface LiquidacionApiResponse {
+  id: string;
+  otId: string;
+  tecnicoId: string;
+  montoCobrado: number;
+  medioPago: MedioPago;
+  porcentajeComision: number;
+  valorComision: number;
+  estado: EstadoLiquidacion;
+  comprobanteUrl: string | null;
+  motivoRechazo: string | null;
+  creadaEn: string;
+  verificadaEn: string | null;
+}
+
+export interface RegistrarPagoApiRequest {
+  montoCobrado: number;
+  medioPago: MedioPago;
+}
+
+export interface ComprobanteApiRequest {
+  comprobanteUrl: string;
+}
+
+export interface RechazoLiquidacionApiRequest {
+  motivo: string;
+}
+
+export interface DisputaApiResponse {
+  id: string;
+  otId: string;
+  motivo: string;
+  estado: EstadoDisputa;
+  resolucion: string | null;
+  creadaEn: string;
+  resueltaEn: string | null;
+}
+
+export interface AbrirDisputaApiRequest {
+  motivo: string;
+}
+
+export interface ResolverDisputaApiRequest {
+  conAcuerdo: boolean;
+  resolucion: string;
+}
+
+export interface MetricasAdminApiResponse {
+  otsEnEjecucion: number;
+  otsPorEstado: Partial<Record<EstadoOt, number>>;
+  tecnicosVerificados: number;
+  tecnicosTotales: number;
+  tecnicosBloqueadosPorLiquidacion: number;
+  tiempoPromedioAsignacionSegundos: number | null;
+  disputasAbiertas: number;
+  liquidacionesPendientesVerificacion: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* maps                                                               */
+/* ------------------------------------------------------------------ */
+
+export interface EstadoMapsApiResponse {
+  enabled: boolean;
+  configured: boolean;
+  language: string;
+  region: string;
+}
+
+export interface DireccionApiResponse {
+  direccionFormateada: string;
+  latitud: number;
+  longitud: number;
+  placeId: string;
+}
+
+export interface SugerenciaApiResponse {
+  descripcion: string;
+  placeId: string;
+}
+
+export interface DistanciaApiResponse {
+  distanciaKm: number;
+  duracionMin: number;
+  distanciaTexto: string;
+  duracionTexto: string;
+}

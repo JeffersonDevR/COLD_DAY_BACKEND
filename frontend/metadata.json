@@ -1,0 +1,7 @@
+{
+  "name": "COLD DAY S.A.S. - Plataforma Multiservicios",
+  "description": "Plataforma de intermediación de servicios técnicos de refrigeración, aire acondicionado, electricidad y electrodomésticos en Cúcuta, Colombia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

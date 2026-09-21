@@ -32,7 +32,7 @@ Especificacion_Requisitos_IEEE830_COLD_DAY_v3.3.md
 .env.local
 backend/.env
 frontend/.env
-frontend/node_nodules/
+frontend/node_modules/
 .env.example
 /PROTOTIPO_FRONTEND_ANGULAR_AI_STUDIO.md
 
