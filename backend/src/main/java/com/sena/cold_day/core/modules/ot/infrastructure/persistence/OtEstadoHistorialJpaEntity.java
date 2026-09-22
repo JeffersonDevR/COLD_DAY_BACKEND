@@ -18,6 +18,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,7 +30,9 @@ import lombok.Setter;
  * the domain port exposes no such operations either.
  */
 @Entity
-@Table(name = "ot_estado_historial")
+@Table(name = "ot_estado_historial", indexes = {
+        @Index(name = "idx_ot_estado_historial_ot_id", columnList = "ot_id")
+})
 @Immutable
 @Getter
 @Setter

@@ -10,13 +10,16 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "token_recuperacion")
+@Table(name = "token_recuperacion", indexes = {
+        @Index(name = "idx_token_recuperacion_usuario_id", columnList = "usuario_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

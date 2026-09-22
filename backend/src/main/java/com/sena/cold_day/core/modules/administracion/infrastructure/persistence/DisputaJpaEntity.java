@@ -13,6 +13,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +21,10 @@ import lombok.Setter;
 
 /** Mapeo JPA de la mediacion administrativa {@code disputa} (RF-F1-25). */
 @Entity
-@Table(name = "disputa")
+@Table(name = "disputa", indexes = {
+        @Index(name = "idx_disputa_ot_id", columnList = "ot_id"),
+        @Index(name = "idx_disputa_estado", columnList = "estado")
+})
 @Getter
 @Setter
 @NoArgsConstructor

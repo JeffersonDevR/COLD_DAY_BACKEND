@@ -14,6 +14,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +26,10 @@ import lombok.Setter;
  * of JPA types.
  */
 @Entity
-@Table(name = "oferta_ot")
+@Table(name = "oferta_ot", indexes = {
+        @Index(name = "idx_oferta_ot_ot_id", columnList = "ot_id"),
+        @Index(name = "idx_oferta_ot_tecnico_id", columnList = "tecnico_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

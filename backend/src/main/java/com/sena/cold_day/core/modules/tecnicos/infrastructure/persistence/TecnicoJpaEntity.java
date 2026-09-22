@@ -19,6 +19,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,7 +31,9 @@ import lombok.Setter;
  * shared primary key ({@code @MapsId}/{@code @OneToOne}) is intentionally gone.
  */
 @Entity
-@Table(name = "tecnico")
+@Table(name = "tecnico", indexes = {
+        @Index(name = "idx_tecnico_estado_operativo", columnList = "estado_operativo")
+})
 @Getter
 @Setter
 @NoArgsConstructor

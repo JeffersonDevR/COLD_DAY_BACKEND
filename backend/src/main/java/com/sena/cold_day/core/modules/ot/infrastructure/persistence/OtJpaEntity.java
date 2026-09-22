@@ -24,6 +24,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import lombok.Getter;
@@ -36,7 +37,11 @@ import lombok.Setter;
  * of JPA types; {@code version} drives optimistic locking (design D8).
  */
 @Entity
-@Table(name = "ot")
+@Table(name = "ot", indexes = {
+        @Index(name = "idx_ot_cliente_id", columnList = "cliente_id"),
+        @Index(name = "idx_ot_tecnico_id", columnList = "tecnico_id"),
+        @Index(name = "idx_ot_estado", columnList = "estado")
+})
 @Getter
 @Setter
 @NoArgsConstructor

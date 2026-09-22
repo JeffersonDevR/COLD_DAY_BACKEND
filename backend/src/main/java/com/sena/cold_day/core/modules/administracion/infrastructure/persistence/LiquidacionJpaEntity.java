@@ -16,6 +16,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,7 +28,10 @@ import lombok.Setter;
  * el dominio libre de tipos JPA.
  */
 @Entity
-@Table(name = "liquidacion")
+@Table(name = "liquidacion", indexes = {
+        @Index(name = "idx_liquidacion_tecnico_id", columnList = "tecnico_id"),
+        @Index(name = "idx_liquidacion_estado", columnList = "estado")
+})
 @Getter
 @Setter
 @NoArgsConstructor

@@ -24,8 +24,10 @@ import jakarta.persistence.EntityManager;
 /**
  * PostGIS implementation of the spatial availability port (design D9, RF-F1-07,
  * RNF-03): the radius filter and the distance both run inside PostgreSQL with
- * {@code ST_DWithin}/{@code ST_Distance} over geography, backed by the GiST
- * index {@code idx_tecnico_ubicacion_geo} (see {@code schema-postgres.sql}).
+ * {@code ST_DWithin}/{@code ST_Distance} over geography, backed by the partial
+ * GiST index {@code idx_tecnico_disponible_ubicacion_geo} (see
+ * {@code schema-postgres.sql}), scoped to the same {@code activo}/
+ * {@code estado_validacion}/{@code estado_operativo} predicate used below.
  * Active only under the {@code postgres} profile. Plain lat/long columns are
  * kept, so no PostGIS-mapped type crosses the port boundary.
  */
