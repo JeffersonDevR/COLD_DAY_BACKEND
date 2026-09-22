@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
@@ -10,12 +9,12 @@ import { TecnicoResponse } from '../../../core/shared/domain/models/common.model
 @Component({
   selector: 'app-validacion-tecnicos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule],
   template: `
     <div class="space-y-6 max-w-6xl mx-auto">
       <div>
         <a routerLink="/admin/dashboard" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-          <mat-icon class="text-xs">arrow_back</mat-icon> Volver a la Torre de Control
+          <i class="pi pi-arrow-left text-xs"></i> Volver a la Torre de Control
         </a>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
           Auditoría y Validación de Expedientes Técnicos
@@ -103,7 +102,7 @@ import { TecnicoResponse } from '../../../core/shared/domain/models/common.model
                 (click)="aprobar(tec)"
                 class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1"
               >
-                <mat-icon class="text-xs">check</mat-icon>
+                <i class="pi pi-check text-xs"></i>
                 Aprobar y Habilitar
               </button>
             </div>

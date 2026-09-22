@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 
 interface EquipoHistorial {
@@ -20,13 +19,13 @@ interface EquipoHistorial {
 @Component({
   selector: 'app-historial-equipos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink],
   template: `
     <div class="space-y-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between">
         <div>
           <a routerLink="/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-            <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Panel
+            <i class="pi pi-arrow-left text-xs"></i> Volver al Panel
           </a>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
             Historial de Equipos y Garantías
@@ -43,14 +42,12 @@ interface EquipoHistorial {
             <div class="flex items-start justify-between">
               <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
-                  <mat-icon class="text-2xl">
-                    @switch (eq.tipo) {
-                      @case ('Aire Acondicionado') { mode_fan }
-                      @case ('Nevera / Refrigeración') { kitchen }
-                      @case ('Lavadora') { local_laundry_service }
-                      @default { hvac }
-                    }
-                  </mat-icon>
+                  @switch (eq.tipo) {
+                    @case ('Aire Acondicionado') { <i class="pi pi-sparkles text-2xl"></i> }
+                    @case ('Nevera / Refrigeración') { <i class="pi pi-box text-2xl"></i> }
+                    @case ('Lavadora') { <i class="pi pi-box text-2xl"></i> }
+                    @default { <i class="pi pi-box text-2xl"></i> }
+                  }
                 </div>
                 <div>
                   <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ eq.tipo }}</h3>
@@ -60,7 +57,7 @@ interface EquipoHistorial {
 
               @if (eq.garantiaActiva) {
                 <span class="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center gap-1">
-                  <mat-icon class="text-xs" style="font-size:12px; width:12px; height:12px;">verified</mat-icon>
+                  <i class="pi pi-verified text-xs" style="font-size:12px; width:12px; height:12px;"></i>
                   {{ eq.diasGarantiaRestantes }} días garantía
                 </span>
               } @else {
@@ -108,7 +105,7 @@ interface EquipoHistorial {
                 class="text-xs font-bold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1"
               >
                 Solicitar Mantenimiento para este equipo
-                <mat-icon class="text-xs">arrow_forward</mat-icon>
+                <i class="pi pi-arrow-right text-xs"></i>
               </a>
             </div>
           </div>

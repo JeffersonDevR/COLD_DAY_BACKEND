@@ -13,6 +13,7 @@ import com.sena.cold_day.core.shared.errors.ApiError;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
@@ -64,6 +65,16 @@ public class TecnicoControllerAdvice {
     @ExceptionHandler(TecnicoNoValidadoException.class)
     ResponseEntity<ApiError> handleNoValidado(TecnicoNoValidadoException exception) {
         return error(HttpStatus.FORBIDDEN, exception);
+    }
+
+    /**
+     * A technician on an active order cannot change availability (RF-F1-05).
+     * Mapped explicitly so the domain message reaches the client instead of the
+     * exception being re-dispatched to /error and masked as 401.
+     */
+    @ExceptionHandler(TecnicoAsignadoException.class)
+    ResponseEntity<ApiError> handleAsignado(TecnicoAsignadoException exception) {
+        return error(HttpStatus.CONFLICT, exception);
     }
 
     @ExceptionHandler(DocumentacionIncompletaException.class)

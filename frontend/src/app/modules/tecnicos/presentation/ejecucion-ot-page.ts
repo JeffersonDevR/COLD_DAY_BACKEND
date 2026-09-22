@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, computed, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
@@ -16,13 +15,13 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
 @Component({
   selector: 'app-ejecucion-ot-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule, EstadoBadge],
+  imports: [RouterLink, ReactiveFormsModule, EstadoBadge],
   template: `
     @if (ot(); as orden) {
       <div class="space-y-6 max-w-4xl mx-auto">
         <div>
           <a routerLink="/tecnico/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-            <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Panel Técnico
+            <i class="pi pi-arrow-left text-xs"></i> Volver al Panel Técnico
           </a>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -35,7 +34,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
               [href]="'tel:' + orden.clienteTelefono"
               class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors"
             >
-              <mat-icon class="text-sm">call</mat-icon>
+              <i class="pi pi-phone text-sm"></i>
               Llamar al Cliente
             </a>
           </div>
@@ -51,7 +50,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
             @if (orden.estado === 'ASIGNADA') {
               <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
                 <div class="flex items-center gap-3 text-sky-600">
-                  <mat-icon class="text-3xl">two_wheeler</mat-icon>
+                  <i class="pi pi-truck text-3xl"></i>
                   <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Paso 1: Desplazamiento</h3>
                     <p class="text-xs text-slate-500">Inicia tu trayecto hacia el domicilio del cliente</p>
@@ -62,7 +61,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
                   (click)="iniciarDesplazamiento()"
                   class="w-full py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
                 >
-                  <mat-icon>navigation</mat-icon>
+                  <i class="pi pi-directions"></i>
                   Iniciar Desplazamiento (En Camino)
                 </button>
               </div>
@@ -71,7 +70,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
             @if (orden.estado === 'EN_CAMINO' && !enSitio()) {
               <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
                 <div class="flex items-center gap-3 text-indigo-600">
-                  <mat-icon class="text-3xl">pin_drop</mat-icon>
+                  <i class="pi pi-map-marker text-3xl"></i>
                   <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Paso 2: Llegada a Sitio</h3>
                     <p class="text-xs text-slate-500">Confirma que estás en el domicilio para comenzar la inspección física</p>
@@ -82,7 +81,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
                   (click)="llegarADomicilio()"
                   class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
                 >
-                  <mat-icon>check_circle</mat-icon>
+                  <i class="pi pi-check-circle"></i>
                   He llegado al domicilio (Iniciar Diagnóstico)
                 </button>
               </div>
@@ -92,7 +91,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
             @if (orden.estado === 'EN_DIAGNOSTICO' || (orden.estado === 'EN_CAMINO' && enSitio())) {
               <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
                 <div class="flex items-center gap-3 text-amber-500">
-                  <mat-icon class="text-3xl">build_circle</mat-icon>
+                  <i class="pi pi-wrench text-3xl"></i>
                   <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Paso 3: Registrar Diagnóstico y Presupuesto</h3>
                     <p class="text-xs text-slate-500">Especifica la falla y cotización para autorización del cliente</p>
@@ -153,7 +152,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
                     [disabled]="diagnosticoForm.invalid"
                     class="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition-colors flex items-center justify-center gap-2"
                   >
-                    <mat-icon class="text-sm">send</mat-icon>
+                    <i class="pi pi-send text-sm"></i>
                     Enviar Presupuesto al Cliente para Aprobación
                   </button>
                 </form>
@@ -164,7 +163,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
             @if (orden.estado === 'EN_REPARACION') {
               <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
                 <div class="flex items-center gap-3 text-emerald-600">
-                  <mat-icon class="text-3xl">handyman</mat-icon>
+                  <i class="pi pi-wrench text-3xl"></i>
                   <div>
                     <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Paso 4: Ejecución de Reparación</h3>
                     <p class="text-xs text-slate-500">Presupuesto aprobado por el cliente. Realiza la intervención y pruebas técnicas.</p>
@@ -208,7 +207,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
                     (click)="finalizarServicio()"
                     class="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
                   >
-                    <mat-icon>task_alt</mat-icon>
+                    <i class="pi pi-check-circle"></i>
                     Concluir Servicio y Emitir Acta
                   </button>
                 </div>
@@ -219,7 +218,7 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
             @if (orden.estado === 'FINALIZADA') {
               <div class="p-6 rounded-3xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 space-y-3">
                 <div class="flex items-center gap-3">
-                  <mat-icon class="text-3xl text-emerald-600">verified</mat-icon>
+                  <i class="pi pi-verified text-3xl text-emerald-600"></i>
                   <div>
                     <h3 class="text-base font-bold">Servicio Concluido a Satisfacción</h3>
                     <p class="text-xs text-emerald-700 dark:text-emerald-300">Acta de 90 días emitida. Se registró la liquidación correspondiente.</p>

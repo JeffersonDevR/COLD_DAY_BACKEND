@@ -1,23 +1,21 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
+import { Tag } from 'primeng/tag';
 import { EstadoOt, EstadoOperativo, EstadoValidacion, EstadoLiquidacion, EstadoDisputa } from '../../domain/models/common.models';
 
 type AnyEstado = EstadoOt | EstadoOperativo | EstadoValidacion | EstadoLiquidacion | EstadoDisputa;
+type TagSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
 
 @Component({
   selector: 'app-estado-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatIconModule],
+  imports: [Tag],
   template: `
-    <span
-      [class]="badgeClasses()"
-      class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide whitespace-nowrap"
-    >
-      @if (showIcon() && iconName()) {
-        <mat-icon class="text-xs leading-none" style="font-size: 14px; width: 14px; height: 14px;">{{ iconName() }}</mat-icon>
-      }
-      {{ label() }}
-    </span>
+    <p-tag
+      [value]="label()"
+      [severity]="severity()"
+      [icon]="showIcon() ? iconClass() : undefined"
+      [rounded]="true"
+    />
   `
 })
 export class EstadoBadge {
@@ -64,71 +62,67 @@ export class EstadoBadge {
     }
   });
 
-  readonly iconName = computed<string>(() => {
+  readonly iconClass = computed<string>(() => {
     const val = this.estado();
     switch (val) {
       case 'SOLICITADA':
-      case 'BUSCANDO_TECNICO': return 'radar';
-      case 'ASIGNADA': return 'person_pin';
-      case 'EN_CAMINO': return 'two_wheeler';
-      case 'EN_DIAGNOSTICO': return 'build';
-      case 'EN_REPARACION': return 'handyman';
+      case 'BUSCANDO_TECNICO': return 'pi pi-compass';
+      case 'ASIGNADA': return 'pi pi-user';
+      case 'EN_CAMINO': return 'pi pi-truck';
+      case 'EN_DIAGNOSTICO': return 'pi pi-wrench';
+      case 'EN_REPARACION': return 'pi pi-hammer';
       case 'FINALIZADA':
       case 'APROBADO':
-      case 'RESUELTA_CON_ACUERDO': return 'check_circle';
+      case 'RESUELTA_CON_ACUERDO': return 'pi pi-check-circle';
       case 'CANCELADA':
       case 'RECHAZADO':
-      case 'RESUELTA_SIN_ACUERDO': return 'cancel';
+      case 'RESUELTA_SIN_ACUERDO': return 'pi pi-times-circle';
       case 'DISPUTADA':
-      case 'BLOQUEADO_POR_LIQUIDACION': return 'gavel';
-      case 'DISPONIBLE': return 'check';
-      case 'OCUPADO': return 'engineering';
+      case 'BLOQUEADO_POR_LIQUIDACION': return 'pi pi-shield';
+      case 'DISPONIBLE': return 'pi pi-check';
+      case 'OCUPADO': return 'pi pi-wrench';
       case 'PENDIENTE':
       case 'PENDIENTE_CONSIGNACION':
-      case 'EN_VERIFICACION': return 'schedule';
-      default: return 'info';
+      case 'EN_VERIFICACION': return 'pi pi-clock';
+      default: return 'pi pi-info-circle';
     }
   });
 
-  readonly badgeClasses = computed<string>(() => {
+  readonly severity = computed<TagSeverity>(() => {
     const val = this.estado();
     switch (val) {
       case 'FINALIZADA':
       case 'APROBADO':
       case 'DISPONIBLE':
       case 'RESUELTA_CON_ACUERDO':
-        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300/40';
+        return 'success';
 
       case 'BUSCANDO_TECNICO':
       case 'EN_CAMINO':
       case 'ASIGNADA':
-        return 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300/40 animate-pulse';
-
       case 'EN_DIAGNOSTICO':
       case 'EN_REPARACION':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300/40';
+        return 'info';
 
       case 'PENDIENTE':
       case 'PENDIENTE_CONSIGNACION':
       case 'SOLICITADA':
       case 'EN_VERIFICACION':
       case 'OCUPADO':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300/40';
+        return 'warn';
 
       case 'DISPUTADA':
       case 'BLOQUEADO_POR_LIQUIDACION':
       case 'ABIERTA':
-        return 'bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-300 border border-violet-300/40 font-bold';
-
       case 'CANCELADA':
       case 'RECHAZADO':
       case 'SIN_TECNICOS_DISPONIBLES':
       case 'RESUELTA_SIN_ACUERDO':
       case 'FUERA_DE_SERVICIO':
-        return 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300/40';
+        return 'danger';
 
       default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/40';
+        return 'secondary';
     }
   });
 }

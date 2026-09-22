@@ -1,21 +1,24 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
+import { switchMap } from 'rxjs/operators';
 import { UsuariosApi } from '../infrastructure/usuarios-api';
+import { ClientesApi } from '../../clientes/infrastructure/clientes-api';
+import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
+import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { Rol, CategoriaServicio } from '../../../core/shared/domain/models/common.models';
+import { Rol, CategoriaServicio, TokenResponse } from '../../../core/shared/domain/models/common.models';
 
 @Component({
   selector: 'app-registro-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatIconModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `
     <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 transition-colors">
       <div class="sm:mx-auto sm:w-full sm:max-w-xl text-center">
         <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-cyan-400 text-white shadow-lg mb-3">
-          <mat-icon class="text-3xl">person_add</mat-icon>
+          <i class="pi pi-user-plus text-3xl"></i>
         </div>
         <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-50">
           Únete a COLD DAY
@@ -47,7 +50,7 @@ import { Rol, CategoriaServicio } from '../../../core/shared/domain/models/commo
                   [class.dark:border-slate-700]="selectedRol() !== 'CLIENTE'"
                 >
                   <div class="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0">
-                    <mat-icon>home_repair_service</mat-icon>
+                    <i class="pi pi-wrench"></i>
                   </div>
                   <div>
                     <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">Cliente</h4>
@@ -68,7 +71,7 @@ import { Rol, CategoriaServicio } from '../../../core/shared/domain/models/commo
                   [class.dark:border-slate-700]="selectedRol() !== 'TECNICO'"
                 >
                   <div class="w-10 h-10 rounded-xl bg-cyan-600 text-white flex items-center justify-center shrink-0">
-                    <mat-icon>handyman</mat-icon>
+                    <i class="pi pi-wrench"></i>
                   </div>
                   <div>
                     <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">Técnico</h4>
@@ -137,7 +140,7 @@ import { Rol, CategoriaServicio } from '../../../core/shared/domain/models/commo
             @if (selectedRol() === 'TECNICO') {
               <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
                 <div class="flex items-center gap-2">
-                  <mat-icon class="text-sky-600 text-sm">checklist</mat-icon>
+                  <i class="pi pi-list-check text-sky-600 text-sm"></i>
                   <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">Líneas de Especialidad Técnica</h4>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
@@ -157,6 +160,18 @@ import { Rol, CategoriaServicio } from '../../../core/shared/domain/models/commo
                     <input type="checkbox" (change)="toggleEspecialidad('ELECTRODOMESTICOS')" [checked]="hasEspecialidad('ELECTRODOMESTICOS')" class="rounded text-sky-600" />
                     <span>Electrodomésticos</span>
                   </label>
+                </div>
+                <div>
+                  <label for="numeroIdentificacion" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Número de identificación (cédula) *
+                  </label>
+                  <input
+                    id="numeroIdentificacion"
+                    type="text"
+                    formControlName="numeroIdentificacion"
+                    placeholder="Ej. 1098765001"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-sky-500 outline-none"
+                  />
                 </div>
                 <p class="text-[11px] text-slate-500">Nota: Al registrarte como técnico, tus documentos (cédula y certificaciones) pasarán a validación administrativa previa a operar.</p>
               </div>
@@ -185,10 +200,10 @@ import { Rol, CategoriaServicio } from '../../../core/shared/domain/models/commo
               class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50 transition-colors"
             >
               @if (loading()) {
-                <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                <i class="pi pi-sync animate-spin text-sm"></i>
                 Registrando cuenta...
               } @else {
-                <mat-icon class="text-sm">how_to_reg</mat-icon>
+                <i class="pi pi-id-card text-sm"></i>
                 Crear Mi Cuenta
               }
             </button>
@@ -207,6 +222,9 @@ import { Rol, CategoriaServicio } from '../../../core/shared/domain/models/commo
 })
 export class RegistroPage {
   private readonly usuariosApi = inject(UsuariosApi);
+  private readonly clientesApi = inject(ClientesApi);
+  private readonly tecnicosApi = inject(TecnicosApi);
+  private readonly apiConfig = inject(ApiConfig);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -220,6 +238,7 @@ export class RegistroPage {
     correo: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     telefono: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(7)] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] }),
+    numeroIdentificacion: new FormControl('', { nonNullable: true }),
     aceptaHabeasData: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] })
   });
 
@@ -239,28 +258,86 @@ export class RegistroPage {
   onSubmit(): void {
     if (this.registroForm.invalid) return;
 
-    this.loading.set(true);
     const formVal = this.registroForm.getRawValue();
+    const rol = this.selectedRol();
 
-    this.usuariosApi.registro({
+    if (rol === 'TECNICO' && !formVal.numeroIdentificacion.trim()) {
+      this.toast.error('Falta la cédula', 'Ingresa tu número de identificación para registrarte como técnico.');
+      return;
+    }
+
+    this.loading.set(true);
+
+    // Modo mock: alta en memoria + sesión simulada (comportamiento previo).
+    if (this.apiConfig.useMocks()) {
+      this.usuariosApi.registro({
+        nombre: formVal.nombre,
+        correo: formVal.correo,
+        telefono: formVal.telefono,
+        password: formVal.password,
+        rol,
+        aceptaHabeasData: formVal.aceptaHabeasData
+      }).subscribe({
+        next: (user) => {
+          this.loading.set(false);
+          this.authService.setCurrentUser(user);
+          this.toast.success('Cuenta Creada Exitosamente', `Bienvenido a COLD DAY, ${user.nombre}`);
+          this.router.navigate([this.authService.getDashboardRouteForRole(user.rol)]);
+        },
+        error: (err: Error) => this.errorAlta(err),
+      });
+      return;
+    }
+
+    // TÉCNICO: /api/tecnicos crea Usuario + perfil en una sola llamada (endpoint público).
+    if (rol === 'TECNICO') {
+      this.tecnicosApi.registrar({
+        nombre: formVal.nombre,
+        correo: formVal.correo,
+        password: formVal.password,
+        telefono: formVal.telefono,
+        numeroIdentificacion: formVal.numeroIdentificacion,
+        categoriasServicio: this.especialidades(),
+        certificaciones: [],
+        aceptaHabeasData: formVal.aceptaHabeasData,
+      }).pipe(
+        switchMap(() => this.usuariosApi.login(formVal.correo, formVal.password)),
+      ).subscribe({
+        next: (res) => this.completarAlta(res, formVal.correo),
+        error: (err: Error) => this.errorAlta(err),
+      });
+      return;
+    }
+
+    // CLIENTE: alta atómica en /api/clientes (Usuario + perfil) → login real.
+    // Ya no se hacen dos pasos ni se usa el token mock.
+    this.clientesApi.registrarCliente({
       nombre: formVal.nombre,
       correo: formVal.correo,
-      telefono: formVal.telefono,
       password: formVal.password,
-      rol: this.selectedRol(),
-      aceptaHabeasData: formVal.aceptaHabeasData
-    }).subscribe({
-      next: (user) => {
-        this.loading.set(false);
-        this.authService.setCurrentUser(user);
-        this.toast.success('Cuenta Creada Exitosamente', `Bienvenido a COLD DAY, ${user.nombre}`);
-        const target = this.authService.getDashboardRouteForRole(user.rol);
-        this.router.navigate([target]);
-      },
-      error: () => {
-        this.loading.set(false);
-        this.toast.error('Error al registrar', 'Por favor intenta nuevamente.');
-      }
+      telefono: formVal.telefono,
+      tipoCliente: 'B2C',
+      calle: 'Por definir',
+      ciudad: 'Cúcuta',
+      ubicacion: { latitud: 7.8939, longitud: -72.5078 },
+      aceptaHabeasData: formVal.aceptaHabeasData,
+    }).pipe(
+      switchMap(() => this.usuariosApi.login(formVal.correo, formVal.password)),
+    ).subscribe({
+      next: (res) => this.completarAlta(res, formVal.correo),
+      error: (err: Error) => this.errorAlta(err),
     });
+  }
+
+  private completarAlta(res: TokenResponse, correo: string): void {
+    this.loading.set(false);
+    const usuario = this.authService.establecerSesionDesdeToken(res, correo);
+    this.toast.success('Cuenta Creada Exitosamente', `Bienvenido a COLD DAY, ${usuario.nombre}`);
+    this.router.navigate([this.authService.getDashboardRouteForRole(usuario.rol)]);
+  }
+
+  private errorAlta(err: Error): void {
+    this.loading.set(false);
+    this.toast.error('Error al registrar', err.message || 'Por favor intenta nuevamente.');
   }
 }

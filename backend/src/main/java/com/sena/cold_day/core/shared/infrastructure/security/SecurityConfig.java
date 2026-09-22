@@ -52,7 +52,7 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/usuarios", "/api/usuarios/login",
                                 "/api/usuarios/recuperar-contrasena", "/api/usuarios/reset-contrasena",
-                                "/api/tecnicos").permitAll()
+                                "/api/tecnicos", "/api/clientes").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/tecnicos/*/validacion")
                         .hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")

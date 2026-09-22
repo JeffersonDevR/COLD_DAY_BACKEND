@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
@@ -11,12 +10,12 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-consignaciones-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule],
   template: `
     <div class="space-y-6 max-w-6xl mx-auto">
       <div>
         <a routerLink="/admin/dashboard" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-          <mat-icon class="text-xs">arrow_back</mat-icon> Volver a la Torre de Control
+          <i class="pi pi-arrow-left text-xs"></i> Volver a la Torre de Control
         </a>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
           Conciliación Contable de Consignaciones
@@ -132,7 +131,7 @@ import { environment } from '../../../../environments/environment';
                       </div>
                     } @else if (liq.estado === 'APROBADA') {
                       <span class="text-emerald-600 font-bold text-xs inline-flex items-center gap-1">
-                        <mat-icon class="text-xs" style="font-size: 14px; width:14px; height:14px;">check_circle</mat-icon>
+                        <i class="pi pi-check-circle text-xs" style="font-size: 14px; width:14px; height:14px;"></i>
                         Conciliado
                       </span>
                     } @else {

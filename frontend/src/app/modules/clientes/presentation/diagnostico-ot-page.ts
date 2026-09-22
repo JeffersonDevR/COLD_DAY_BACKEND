@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { environment } from '../../../../environments/environment';
 
 interface ChatMensaje {
   emisor: 'CLIENTE' | 'TECNICO';
@@ -17,13 +17,13 @@ interface ChatMensaje {
 @Component({
   selector: 'app-diagnostico-ot-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule],
   template: `
     @if (ot(); as orden) {
       <div class="space-y-6 max-w-4xl mx-auto">
         <div>
           <a [routerLink]="['/cliente/ot', orden.id]" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-            <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Seguimiento de OT
+            <i class="pi pi-arrow-left text-xs"></i> Volver al Seguimiento de OT
           </a>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
             Diagnóstico Técnico y Presupuesto
@@ -40,7 +40,7 @@ interface ChatMensaje {
             <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                  <mat-icon>build_circle</mat-icon>
+                  <i class="pi pi-wrench"></i>
                 </div>
                 <div>
                   <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Dictamen Técnico Oficial</h3>
@@ -58,6 +58,18 @@ interface ChatMensaje {
                   Desglose de Costos de Intervención (COP)
                 </h4>
                 <div class="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden text-xs sm:text-sm">
+                  <div class="flex justify-between p-3.5 bg-sky-50/70 dark:bg-sky-950/25 border-b border-slate-100 dark:border-slate-800">
+                    <div class="space-y-0.5">
+                      <span class="font-bold text-slate-800 dark:text-slate-200">Visita y diagnóstico</span>
+                      <p class="text-[11px] text-slate-400">
+                        Diagnóstico $ {{ diagnosticoPrecio.toLocaleString('es-CO') }} + transporte $ {{ transportePrecio.toLocaleString('es-CO') }}
+                      </p>
+                    </div>
+                    <span class="font-bold text-slate-900 dark:text-slate-100">
+                      $ {{ cargoVisita.toLocaleString('es-CO') }}
+                    </span>
+                  </div>
+
                   <div class="flex justify-between p-3.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                     <div class="space-y-0.5">
                       <span class="font-bold text-slate-800 dark:text-slate-200">Mano de Obra Certificada</span>
@@ -80,9 +92,12 @@ interface ChatMensaje {
 
                   <div class="flex justify-between p-4 bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-100 font-extrabold text-sm sm:text-base">
                     <span>Total a Autorizar</span>
-                    <span>$ {{ (orden.presupuesto?.total || 150000).toLocaleString('es-CO') }} COP</span>
+                    <span>$ {{ totalServicio().toLocaleString('es-CO') }} COP</span>
                   </div>
                 </div>
+                <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                  La visita y el diagnóstico ({{ cargoVisita.toLocaleString('es-CO') }} COP) se cobran aunque no apruebes la reparación.
+                </p>
               </div>
 
               <!-- Botones de Acción -->
@@ -93,7 +108,7 @@ interface ChatMensaje {
                     (click)="mostrarRechazo.set(true)"
                     class="px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-bold text-xs transition-colors inline-flex items-center gap-1.5"
                   >
-                    <mat-icon class="text-sm">thumb_down</mat-icon>
+                    <i class="pi pi-thumbs-down text-sm"></i>
                     Rechazar Presupuesto
                   </button>
 
@@ -102,13 +117,13 @@ interface ChatMensaje {
                     (click)="aprobarPresupuesto()"
                     class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-colors inline-flex items-center gap-1.5"
                   >
-                    <mat-icon class="text-sm">thumb_up</mat-icon>
+                    <i class="pi pi-thumbs-up text-sm"></i>
                     Aprobar e Iniciar Reparación
                   </button>
                 </div>
               } @else {
                 <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                  <mat-icon class="text-sm">check_circle</mat-icon>
+                  <i class="pi pi-check-circle text-sm"></i>
                   <span>Presupuesto gestionado con éxito. Estado actual: <strong>{{ orden.estado }}</strong></span>
                 </div>
               }
@@ -118,7 +133,7 @@ interface ChatMensaje {
             @if (mostrarRechazo()) {
               <div class="p-5 rounded-3xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 space-y-3">
                 <div class="flex items-center gap-2 text-rose-700 dark:text-rose-300 font-bold text-xs uppercase tracking-wider">
-                  <mat-icon class="text-sm">gavel</mat-icon>
+                  <i class="pi pi-shield text-sm"></i>
                   Motivo de Rechazo (Apertura de Disputa / Mediación)
                 </div>
                 <textarea
@@ -195,7 +210,7 @@ interface ChatMensaje {
                 [disabled]="nuevoMensajeCtrl.invalid"
                 class="w-9 h-9 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white flex items-center justify-center shrink-0"
               >
-                <mat-icon class="text-sm">send</mat-icon>
+                <i class="pi pi-send text-sm"></i>
               </button>
             </form>
           </div>
@@ -221,6 +236,16 @@ export class DiagnosticoOtPage implements OnInit {
   readonly mostrarRechazo = signal<boolean>(false);
   readonly motivoRechazoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
   readonly nuevoMensajeCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
+
+  /** Cargo fijo de visita + diagnóstico (diagnóstico estándar + transporte). */
+  readonly diagnosticoPrecio = environment.diagnosticoPrecio;
+  readonly transportePrecio = environment.transportePrecio;
+  readonly cargoVisita = environment.diagnosticoPrecio + environment.transportePrecio;
+
+  /** Presupuesto de reparación + cargo de visita/diagnóstico. */
+  readonly totalServicio = computed<number>(
+    () => (this.ot()?.presupuesto?.total || 150000) + this.cargoVisita
+  );
 
   readonly chatMensajes = signal<ChatMensaje[]>([
     { emisor: 'TECNICO', texto: 'Hola, ya realicé la revisión con manómetro. El capacitor está en 15uF cuando debe ser de 45uF. Adjunté el presupuesto formal.', hora: '10:14 AM' },

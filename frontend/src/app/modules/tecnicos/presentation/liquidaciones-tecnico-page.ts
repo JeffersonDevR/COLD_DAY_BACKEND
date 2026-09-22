@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@a
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
@@ -13,12 +12,12 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-liquidaciones-tecnico-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, DatePipe, MatIconModule, ReactiveFormsModule],
+  imports: [RouterLink, DatePipe, ReactiveFormsModule],
   template: `
     <div class="space-y-6 max-w-5xl mx-auto">
       <div>
         <a routerLink="/tecnico/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-          <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Panel Técnico
+          <i class="pi pi-arrow-left text-xs"></i> Volver al Panel Técnico
         </a>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
           Liquidaciones y Consignaciones
@@ -59,7 +58,7 @@ import { environment } from '../../../../environments/environment';
       <div class="p-5 rounded-3xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 flex flex-wrap items-center justify-between gap-4 text-xs text-sky-900 dark:text-sky-200">
         <div class="space-y-1">
           <div class="flex items-center gap-2 font-bold text-sm">
-            <mat-icon class="text-sky-600">account_balance</mat-icon>
+            <i class="pi pi-building-columns text-sky-600"></i>
             Datos de Consignación Oficial COLD DAY S.A.S.
           </div>
           <p>Bancolombia Cuenta Corriente: <strong># 084-920148-12</strong> • Convenio: <strong># 78492</strong></p>
@@ -79,13 +78,13 @@ import { environment } from '../../../../environments/environment';
         <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-sky-500 shadow-xl space-y-4">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div class="flex items-center gap-2">
-              <mat-icon class="text-sky-600">receipt</mat-icon>
+              <i class="pi pi-receipt text-sky-600"></i>
               <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">
                 Legalizar Liquidación {{ liq.id }} (OT: {{ liq.otId }})
               </h3>
             </div>
             <button type="button" (click)="liqSeleccionada.set(null)" class="text-slate-400 hover:text-slate-600">
-              <mat-icon>close</mat-icon>
+              <i class="pi pi-times"></i>
             </button>
           </div>
 
@@ -202,7 +201,7 @@ import { environment } from '../../../../environments/environment';
                     } @else if (liq.estado === 'EN_VERIFICACION') {
                       <span class="text-amber-600 font-semibold text-[11px]">En auditoría contable</span>
                     } @else {
-                      <mat-icon class="text-emerald-500 text-sm">check_circle</mat-icon>
+                      <i class="pi pi-check-circle text-emerald-500 text-sm"></i>
                     }
                   </td>
                 </tr>

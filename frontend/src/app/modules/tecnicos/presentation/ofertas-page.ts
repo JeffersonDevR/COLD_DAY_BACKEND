@@ -1,21 +1,21 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-ofertas-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink],
   template: `
     <div class="space-y-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between">
         <div>
           <a routerLink="/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-            <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Panel
+            <i class="pi pi-arrow-left text-xs"></i> Volver al Panel
           </a>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
             Radar de Ofertas Broadcast en Vivo
@@ -37,7 +37,7 @@ import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../cor
       @if (tecnico()?.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION') {
         <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <mat-icon class="text-rose-600">lock</mat-icon>
+            <i class="pi pi-lock text-rose-600"></i>
             <span>Tu cuenta está bloqueada por comisiones pendientes de liquidación. No podrás aceptar solicitudes.</span>
           </div>
           <a routerLink="/tecnico/liquidaciones" class="font-bold underline ml-2">Legalizar</a>
@@ -52,7 +52,7 @@ import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../cor
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <span class="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">{{ ot.id }}</span>
               <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-bold">
-                <mat-icon class="text-xs" style="font-size: 14px; width:14px; height:14px;">timer</mat-icon>
+                <i class="pi pi-clock text-xs" style="font-size: 14px; width:14px; height:14px;"></i>
                 <span>42s restantes</span>
               </div>
             </div>
@@ -76,12 +76,16 @@ import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../cor
             <!-- Ubicación del Cliente -->
             <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-xs space-y-1">
               <div class="flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
-                <mat-icon class="text-xs text-sky-600">location_on</mat-icon>
+                <i class="pi pi-map-marker text-xs text-sky-600"></i>
                 <span>{{ ot.direccion }} ({{ ot.barrio || 'Cúcuta' }})</span>
               </div>
               <div class="flex items-center gap-1 text-slate-500">
-                <mat-icon class="text-xs">person</mat-icon>
+                <i class="pi pi-user text-xs"></i>
                 <span>Cliente: {{ ot.clienteNombre }}</span>
+              </div>
+              <div class="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-semibold pt-1 border-t border-slate-200/70 dark:border-slate-700/70 mt-1">
+                <i class="pi pi-wallet text-xs"></i>
+                <span>El cliente pagará visita + diagnóstico: $ {{ cargoVisita.toLocaleString('es-CO') }}</span>
               </div>
             </div>
 
@@ -94,10 +98,10 @@ import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../cor
                 class="w-full py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
               >
                 @if (loadingOt() === ot.id) {
-                  <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                  <i class="pi pi-sync animate-spin text-sm"></i>
                   Confirmando asignación atómica...
                 } @else {
-                  <mat-icon class="text-sm">handshake</mat-icon>
+                  <i class="pi pi-users text-sm"></i>
                   Aceptar Servicio Inmediato
                 }
               </button>
@@ -107,7 +111,7 @@ import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../cor
 
         @if (solicitudesDisponibles().length === 0) {
           <div class="col-span-full p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-            <mat-icon class="text-4xl text-slate-300 dark:text-slate-600 mb-2">radar</mat-icon>
+            <i class="pi pi-compass text-4xl text-slate-300 dark:text-slate-600 mb-2"></i>
             <h3 class="text-base font-bold text-slate-800 dark:text-slate-200">No hay órdenes en broadcast en este momento</h3>
             <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
               El radar monitorea permanentemente las solicitudes de clientes en Cúcuta y te notificará apenas ingrese un requerimiento en tu perímetro.
@@ -117,7 +121,7 @@ import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../cor
               (click)="recargarOfertas()"
               class="mt-4 px-4 py-2 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 font-bold text-xs inline-flex items-center gap-1 hover:bg-sky-200 transition-colors"
             >
-              <mat-icon class="text-sm">refresh</mat-icon>
+              <i class="pi pi-refresh text-sm"></i>
               Actualizar Radar
             </button>
           </div>
@@ -135,6 +139,9 @@ export class OfertasPage {
   readonly loadingOt = signal<string | null>(null);
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
   readonly ofertas = signal<OfertaTecnicoResponse[]>([]);
+
+  /** Cargo de visita + diagnóstico que verá el cliente al aceptar. */
+  readonly cargoVisita = environment.diagnosticoPrecio + environment.transportePrecio;
 
   readonly solicitudesDisponibles = computed(() => this.ofertas().map(oferta => oferta.ot));
 
@@ -187,7 +194,10 @@ export class OfertasPage {
     this.tecnicosApi.aceptarOferta(oferta.id, tecnico.id).subscribe({
       next: () => {
         this.loadingOt.set(null);
-        this.toast.success('¡Servicio Asignado!', `Has tomado la orden ${ot.id}. Desplázate al domicilio.`);
+        this.toast.success(
+          '¡Servicio Asignado!',
+          `Has tomado la orden ${ot.id}. Se notificó al cliente el cargo de visita + diagnóstico ($${this.cargoVisita.toLocaleString('es-CO')}). Desplázate al domicilio.`
+        );
         this.router.navigate(['/tecnico/ejecucion', ot.id]);
       },
       error: () => {

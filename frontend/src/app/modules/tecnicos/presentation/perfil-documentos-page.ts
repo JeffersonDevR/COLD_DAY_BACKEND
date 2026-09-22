@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -10,12 +9,12 @@ import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from 
 @Component({
   selector: 'app-perfil-documentos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule],
   template: `
     <div class="space-y-6 max-w-5xl mx-auto">
       <div>
         <a routerLink="/tecnico/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-          <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Panel Técnico
+          <i class="pi pi-arrow-left text-xs"></i> Volver al Panel Técnico
         </a>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
           Documentación y Acreditaciones
@@ -50,7 +49,7 @@ import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from 
             (click)="mostrarForm.set(!mostrarForm())"
             class="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs inline-flex items-center gap-1 shadow-xs transition-colors"
           >
-            <mat-icon class="text-xs">upload_file</mat-icon>
+            <i class="pi pi-upload text-xs"></i>
             Subir Nuevo Documento
           </button>
         </div>
@@ -100,13 +99,11 @@ import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from 
                   [class.bg-amber-500]="doc.semaforo === 'AMARILLO'"
                   [class.bg-rose-500]="doc.semaforo === 'ROJO'"
                 >
-                  <mat-icon class="text-lg">
-                    @switch (doc.semaforo) {
-                      @case ('VERDE') { verified }
-                      @case ('AMARILLO') { warning }
-                      @case ('ROJO') { error }
-                    }
-                  </mat-icon>
+                  @switch (doc.semaforo) {
+                    @case ('VERDE') { <i class="pi pi-verified text-lg"></i> }
+                    @case ('AMARILLO') { <i class="pi pi-exclamation-triangle text-lg"></i> }
+                    @case ('ROJO') { <i class="pi pi-exclamation-circle text-lg"></i> }
+                  }
                 </div>
                 <div>
                   <h4 class="text-xs font-bold text-slate-900 dark:text-slate-100">{{ doc.tipo.replace('_', ' ') }}</h4>
@@ -130,7 +127,7 @@ import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from 
                 target="_blank"
                 class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-[11px] font-semibold text-slate-700 dark:text-slate-300 inline-flex items-center gap-1"
               >
-                <mat-icon class="text-xs" style="font-size:14px; width:14px; height:14px;">visibility</mat-icon>
+                <i class="pi pi-eye text-xs" style="font-size:14px; width:14px; height:14px;"></i>
                 Ver
               </a>
             </div>

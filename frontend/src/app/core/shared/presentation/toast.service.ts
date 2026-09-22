@@ -1,32 +1,34 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { MessageService } from 'primeng/api';
 
-export interface ToastMessage {
-  id: string;
-  tipo: 'SUCCESS' | 'ERROR' | 'INFO' | 'WARNING';
-  titulo: string;
-  mensaje?: string;
-  duracionMs?: number;
-}
+export type ToastTipo = 'SUCCESS' | 'ERROR' | 'INFO' | 'WARNING';
 
+/**
+ * Fachada sobre el MessageService de PrimeNG para mantener la API que ya
+ * consumían las páginas (success/error/info/warning) y renderizar con <p-toast>.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class ToastService {
-  private readonly _toasts = signal<ToastMessage[]>([]);
-  readonly toasts = this._toasts.asReadonly();
+  private readonly messages = inject(MessageService);
   private toastSeq = 0;
 
-  show(tipo: 'SUCCESS' | 'ERROR' | 'INFO' | 'WARNING', titulo: string, mensaje?: string, duracionMs = 4000): void {
-    const id = `toast-${Date.now()}-${this.toastSeq++}`;
-    const newToast: ToastMessage = { id, tipo, titulo, mensaje, duracionMs };
+  show(tipo: ToastTipo, titulo: string, mensaje?: string, duracionMs = 4000): void {
+    const severity = {
+      SUCCESS: 'success',
+      ERROR: 'error',
+      INFO: 'info',
+      WARNING: 'warn',
+    }[tipo] as 'success' | 'error' | 'info' | 'warn';
 
-    this._toasts.update(current => [...current, newToast]);
-
-    if (duracionMs > 0) {
-      setTimeout(() => {
-        this.dismiss(id);
-      }, duracionMs);
-    }
+    this.messages.add({
+      id: `toast-${Date.now()}-${this.toastSeq++}`,
+      severity,
+      summary: titulo,
+      detail: mensaje,
+      life: duracionMs,
+    });
   }
 
   success(titulo: string, mensaje?: string): void {
@@ -45,7 +47,7 @@ export class ToastService {
     this.show('WARNING', titulo, mensaje, 4500);
   }
 
-  dismiss(id: string): void {
-    this._toasts.update(current => current.filter(t => t.id !== id));
+  clear(): void {
+    this.messages.clear();
   }
 }

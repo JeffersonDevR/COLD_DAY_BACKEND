@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { AdminApi } from '../infrastructure/admin-api';
 import { CategoriaServicio, MetricasAdminResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
@@ -8,7 +7,7 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-dashboard-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink],
   template: `
     <div class="space-y-6 max-w-7xl mx-auto">
       <!-- Header -->
@@ -28,21 +27,21 @@ import { environment } from '../../../../environments/environment';
             routerLink="/admin/consignaciones"
             class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
           >
-            <mat-icon class="text-sm">receipt_long</mat-icon>
+            <i class="pi pi-receipt text-sm"></i>
             Conciliar Consignaciones
           </a>
           <a
             routerLink="/admin/validacion-tecnicos"
             class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
           >
-            <mat-icon class="text-sm">verified_user</mat-icon>
+            <i class="pi pi-shield text-sm"></i>
             Auditoría de Técnicos
           </a>
           <a
             routerLink="/admin/disputas"
             class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
           >
-            <mat-icon class="text-sm">gavel</mat-icon>
+            <i class="pi pi-shield text-sm"></i>
             Bandeja Disputas
           </a>
         </div>
@@ -220,7 +219,7 @@ import { environment } from '../../../../environments/environment';
           routerLink="/admin/monitoreo"
           class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs shadow-md inline-flex items-center gap-2 hover:opacity-90 transition-opacity"
         >
-          <mat-icon class="text-sm">visibility</mat-icon>
+          <i class="pi pi-eye text-sm"></i>
           Ver Todas las Órdenes en Monitoreo Global
         </a>
       </div>

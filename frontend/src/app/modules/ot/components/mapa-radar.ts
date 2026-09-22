@@ -13,7 +13,6 @@ import {
   viewChild
 } from '@angular/core';
 import { isPlatformBrowser, DecimalPipe } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 import {
   GoogleMap,
   MapMarker,
@@ -47,7 +46,6 @@ export const CUCUTA_METRO_BOUNDS: google.maps.LatLngBoundsLiteral = {
   selector: 'app-mapa-radar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    MatIconModule,
     DecimalPipe,
     GoogleMap,
     MapMarker,
@@ -114,7 +112,7 @@ export const CUCUTA_METRO_BOUNDS: google.maps.LatLngBoundsLiteral = {
 
           <!-- Radio actual -->
           <div class="px-3 py-1 rounded-xl bg-slate-800/80 border border-sky-500/30 text-xs flex items-center gap-1.5">
-            <mat-icon class="text-xs text-sky-400" style="font-size: 14px; width: 14px; height: 14px;">radar</mat-icon>
+            <i class="pi pi-compass text-xs text-sky-400" style="font-size: 14px; width: 14px; height: 14px;"></i>
             <span class="text-slate-400">Radio:</span>
             <span class="font-bold text-sky-300">{{ radioActualKm() }} km</span>
           </div>
@@ -122,7 +120,7 @@ export const CUCUTA_METRO_BOUNDS: google.maps.LatLngBoundsLiteral = {
           <!-- Cuenta regresiva 60s -->
           @if (isBuscando()) {
             <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-950/80 border border-sky-400/50 text-xs">
-              <mat-icon class="text-sky-400 text-sm animate-spin" style="font-size: 14px; width: 14px; height: 14px;">sync</mat-icon>
+              <i class="pi pi-sync text-sky-400 text-sm animate-spin" style="font-size: 14px; width: 14px; height: 14px;"></i>
               <span class="text-slate-300 hidden sm:inline">Expande:</span>
               <span class="font-mono font-bold text-sky-300">{{ segundosRestantes() }}s</span>
             </div>
@@ -374,7 +372,7 @@ export const CUCUTA_METRO_BOUNDS: google.maps.LatLngBoundsLiteral = {
           </div>
 
           <div class="hidden md:flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-sky-500/30 text-[10px] text-slate-300 shadow-lg" title="Navegación y zoom bloqueados estrictamente al perímetro metropolitano">
-            <mat-icon class="text-sky-400" style="font-size: 13px; width: 13px; height: 13px;">lock</mat-icon>
+            <i class="pi pi-lock text-sky-400" style="font-size: 13px; width: 13px; height: 13px;"></i>
             <span>Zona fija: Cúcuta y Aledaños</span>
           </div>
         </div>
@@ -411,7 +409,7 @@ export const CUCUTA_METRO_BOUNDS: google.maps.LatLngBoundsLiteral = {
             class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 font-semibold transition-colors flex items-center gap-1"
             title="Incrementar radio de búsqueda perimetral +5 km"
           >
-            <mat-icon class="text-xs" style="font-size: 14px; width: 14px; height: 14px;">zoom_out_map</mat-icon>
+            <i class="pi pi-expand text-xs" style="font-size: 14px; width: 14px; height: 14px;"></i>
             <span>+5 km</span>
           </button>
           <button

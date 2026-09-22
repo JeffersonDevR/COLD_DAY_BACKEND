@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, compute
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { interval, startWith, switchMap } from 'rxjs';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
@@ -14,6 +13,7 @@ import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtTimeline } from '../../ot/components/ot-timeline';
 import { MapaRadar } from '../../ot/components/mapa-radar';
+import { CargoVisitaDiagnostico } from '../../ot/components/cargo-visita';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/models/common.models';
 
@@ -23,10 +23,10 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
   imports: [
     RouterLink,
     DatePipe,
-    MatIconModule,
     ReactiveFormsModule,
     OtTimeline,
     MapaRadar,
+    CargoVisitaDiagnostico,
     EstadoBadge
   ],
   template: `
@@ -36,7 +36,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
             <a routerLink="/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-              <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Panel
+              <i class="pi pi-arrow-left text-xs"></i> Volver al Panel
             </a>
             <div class="flex items-center gap-3">
               <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
@@ -56,7 +56,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
                 [routerLink]="['/cliente/ot', orden.id, 'diagnostico']"
                 class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-colors animate-bounce"
               >
-                <mat-icon class="text-sm">rate_review</mat-icon>
+                <i class="pi pi-comment text-sm"></i>
                 Revisar Presupuesto ($ {{ (orden.presupuesto?.total || 0).toLocaleString('es-CO') }})
               </a>
             }
@@ -66,7 +66,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
                 [routerLink]="['/cliente/ot', orden.id, 'pago-acta']"
                 class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-colors"
               >
-                <mat-icon class="text-sm">verified</mat-icon>
+                <i class="pi pi-verified text-sm"></i>
                 Ver Acta y Pago
               </a>
 
@@ -75,7 +75,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
                   [routerLink]="['/cliente/ot', orden.id, 'calificar']"
                   class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-colors"
                 >
-                  <mat-icon class="text-sm">star</mat-icon>
+                  <i class="pi pi-star text-sm"></i>
                   Calificar Servicio
                 </a>
               }
@@ -88,7 +88,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
                 (click)="mostrarModalDisputa.set(true)"
                 class="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-semibold text-xs inline-flex items-center gap-1 transition-colors"
               >
-                <mat-icon class="text-sm">gavel</mat-icon>
+                <i class="pi pi-shield text-sm"></i>
                 Abrir Disputa
               </button>
             }
@@ -100,7 +100,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
                 (click)="mostrarModalCancelar.set(true)"
                 class="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-semibold text-xs inline-flex items-center gap-1 transition-colors"
               >
-                <mat-icon class="text-sm">cancel</mat-icon>
+                <i class="pi pi-times-circle text-sm"></i>
                 Cancelar Solicitud
               </button>
             }
@@ -131,13 +131,13 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
                 <div class="flex items-center gap-2">
                   <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ orden.tecnicoNombre }}</h3>
                   <span class="inline-flex items-center gap-0.5 text-xs font-bold text-amber-500">
-                    <mat-icon class="text-xs" style="font-size: 14px; width: 14px; height: 14px;">star</mat-icon>
+                    <i class="pi pi-star text-xs" style="font-size: 14px; width: 14px; height: 14px;"></i>
                     {{ orden.tecnicoReputacion || 4.9 }}
                   </span>
                 </div>
                 <p class="text-xs text-slate-500">Técnico Certificado Asignado • Móvil: {{ orden.tecnicoTelefono }}</p>
                 <div class="mt-1 flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400 font-semibold">
-                  <mat-icon class="text-xs" style="font-size: 14px; width: 14px; height: 14px;">two_wheeler</mat-icon>
+                  <i class="pi pi-truck text-xs" style="font-size: 14px; width: 14px; height: 14px;"></i>
                   @if (etaMin() !== null) {
                     <span>En camino a tu ubicación (ETA: ~{{ etaMin() }} min · {{ distanciaKm() }} km)</span>
                   } @else {
@@ -152,18 +152,23 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
                 [href]="'tel:' + orden.tecnicoTelefono"
                 class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-bold text-slate-800 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors"
               >
-                <mat-icon class="text-sm">call</mat-icon>
+                <i class="pi pi-phone text-sm"></i>
                 Llamar
               </a>
               <a
                 [routerLink]="['/cliente/ot', orden.id, 'diagnostico']"
                 class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors"
               >
-                <mat-icon class="text-sm">chat</mat-icon>
+                <i class="pi pi-comments text-sm"></i>
                 Chat / Presupuesto
               </a>
             </div>
           </div>
+        }
+
+        <!-- Notificación del cargo de visita + diagnóstico (al aceptar el técnico) -->
+        @if (mostrarCargoVisita()) {
+          <app-cargo-visita />
         }
 
         <!-- Detalle de la Solicitud y Falla -->
@@ -244,7 +249,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
             <!-- Regla de Cancelación Gratuita 10 min -->
             <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
               <div class="flex items-center gap-1.5 font-bold">
-                <mat-icon class="text-xs">info</mat-icon>
+                <i class="pi pi-info-circle text-xs"></i>
                 Política de Cancelación
               </div>
               <p class="leading-relaxed opacity-90">
@@ -259,7 +264,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
           <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
             <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               <div class="flex items-center gap-3 text-rose-600">
-                <mat-icon>cancel</mat-icon>
+                <i class="pi pi-times-circle"></i>
                 <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Cancelar Solicitud de OT</h3>
               </div>
               <p class="text-xs text-slate-500 leading-relaxed">
@@ -305,7 +310,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
           <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
             <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
               <div class="flex items-center gap-3 text-purple-600">
-                <mat-icon>gavel</mat-icon>
+                <i class="pi pi-shield"></i>
                 <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Abrir Disputa</h3>
               </div>
               <p class="text-xs text-slate-500 leading-relaxed">
@@ -368,6 +373,13 @@ export class SeguimientoOtPage implements OnInit {
   readonly distanciaKm = signal<number | null>(null);
   readonly etaMin = signal<number | null>(null);
   readonly tecnicosCercanos = signal<TecnicoCercano[]>([]);
+
+  /** Muestra el cargo de visita + diagnóstico desde que hay técnico asignado. */
+  readonly mostrarCargoVisita = computed<boolean>(() => {
+    const orden = this.ot();
+    if (!orden?.tecnicoId) return false;
+    return ['ASIGNADA', 'EN_CAMINO', 'EN_DIAGNOSTICO', 'EN_REPARACION'].includes(orden.estado);
+  });
 
   readonly mostrarModalCancelar = signal<boolean>(false);
   readonly motivoControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
@@ -437,6 +449,11 @@ export class SeguimientoOtPage implements OnInit {
       next: (ruta) => {
         this.distanciaKm.set(ruta.distanciaKm);
         this.etaMin.set(ruta.duracionMin);
+      },
+      // El backend puede tener Google Maps deshabilitado (503): no romper la vista.
+      error: () => {
+        this.distanciaKm.set(null);
+        this.etaMin.set(null);
       },
     });
   }

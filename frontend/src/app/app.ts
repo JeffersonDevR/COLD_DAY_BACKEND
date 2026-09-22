@@ -1,38 +1,30 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/shared/infrastructure/auth/auth.service';
 import { ToastHost } from './core/shared/presentation/components/toast-host';
-import { ToastService } from './core/shared/presentation/toast.service';
-import { environment } from '../environments/environment';
+import { AppTopbar } from './layout/components/app-topbar';
+import { AppSidebar } from './layout/components/app-sidebar';
+import { AppFooter } from './layout/components/app-footer';
+import { LayoutService } from './layout/service/layout.service';
 
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatIconModule, ToastHost],
+  imports: [RouterOutlet, ToastHost, AppTopbar, AppSidebar, AppFooter],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
   readonly auth = inject(AuthService);
-  readonly toast = inject(ToastService);
-  readonly router = inject(Router);
+  readonly layout = inject(LayoutService);
 
-  /** Comisión de la plataforma (15%), alineada al backend. */
-  readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
-
-  readonly menuMovilAbierto = signal<boolean>(false);
-
-  readonly usuario = computed(() => this.auth.currentUser());
   readonly estaAutenticado = computed(() => this.auth.isAuthenticated());
 
-  toggleMenuMovil(): void {
-    this.menuMovilAbierto.set(!this.menuMovilAbierto());
-  }
-
-  cerrarSesion(): void {
-    this.auth.logout();
-    this.toast.success('Sesión Finalizada', 'Has cerrado sesión en COLD DAY S.A.S.');
-    this.router.navigate(['/login']);
-  }
+  /** Desplaza el contenido según el layout: estático (sidebar empuja) u overlay. */
+  readonly contenidoClass = computed(() => {
+    if (this.layout.menuMode() === 'overlay') {
+      return 'lg:pl-0';
+    }
+    return this.layout.sidebarCollapsed() ? 'lg:pl-20' : 'lg:pl-72';
+  });
 }

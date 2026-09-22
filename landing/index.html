@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>COLD DAY S.A.S. — Servicios Técnicos a Domicilio en Cúcuta</title>
+  <meta name="description" content="COLD DAY conecta hogares y empresas de Cúcuta con técnicos certificados en aire acondicionado, refrigeración, electricidad y electrodomésticos. Geolocalización en tiempo real y garantía formal de 90 días." />
+  <meta name="theme-color" content="#0284c7" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9D%84%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+  <!-- PrimeIcons: misma librería de iconos que la app Angular (PrimeNG) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons@8.0.1/primeicons.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Barra superior -->
+  <div class="topbar">
+    <div class="container topbar__inner">
+      <span class="topbar__item">
+        <i class="pi pi-map-marker" aria-hidden="true"></i>
+        Cúcuta y área metropolitana
+      </span>
+      <span class="topbar__item">Cobertura: Los Patios · Villa del Rosario · San Cayetano</span>
+      <a class="topbar__cta" href="#" data-app="registro">Solicitar servicio →</a>
+    </div>
+  </div>
+
+  <!-- Navegación -->
+  <header class="nav" id="inicio">
+    <div class="container nav__inner">
+      <a class="brand" href="#inicio" aria-label="COLD DAY inicio">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M11 2h2v6.6l4.7-2.7 1 1.7L14 10.3l4.7 2.7-1 1.7L13 12v6.6h-2V12l-4.7 2.7-1-1.7L10 10.3 5.3 7.6l1-1.7L11 8.6V2Z"/></svg>
+        </span>
+        <span class="brand__text">
+          <strong>COLD DAY</strong>
+          <small>Servicios técnicos</small>
+        </span>
+      </a>
+
+      <nav class="nav__links" id="navLinks">
+        <a href="#servicios">Servicios</a>
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#cobertura">Cobertura</a>
+        <a href="#empresas">Empresas</a>
+        <a class="btn btn--ghost btn--sm" href="#" data-app="login">Iniciar sesión</a>
+        <a class="btn btn--primary btn--sm" href="#" data-app="registro">Solicitar servicio</a>
+      </nav>
+
+      <button class="nav__toggle" id="navToggle" aria-label="Abrir menú" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container hero__grid">
+        <div class="hero__copy">
+          <span class="pill">Red técnica certificada en Norte de Santander</span>
+          <h1>Servicios técnicos a domicilio, <span class="grad">al instante</span>.</h1>
+          <p class="lead">
+            Conectamos hogares y empresas de Cúcuta con técnicos auditados en refrigeración,
+            aire acondicionado, electricidad y electrodomésticos, con geolocalización en tiempo real,
+            precios transparentes y garantía formal de 90 días.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="#" data-app="registro">
+              <i class="pi pi-calendar-plus" aria-hidden="true"></i> Solicitar servicio
+            </a>
+            <a class="btn btn--ghost" href="#" data-app="login">
+              <i class="pi pi-sign-in" aria-hidden="true"></i> Iniciar sesión
+            </a>
+          </div>
+          <ul class="hero__badges">
+            <li><i class="pi pi-check" aria-hidden="true"></i> Técnicos con acreditación SENA y matrícula CONTE</li>
+            <li><i class="pi pi-check" aria-hidden="true"></i> Acta de garantía digital de 90 días</li>
+            <li><i class="pi pi-check" aria-hidden="true"></i> Seguimiento del técnico en el mapa</li>
+          </ul>
+        </div>
+
+        <div class="hero__card" aria-hidden="true">
+          <div class="phone">
+            <div class="phone__top"></div>
+            <div class="phone__screen">
+              <div class="map">
+                <span class="map__pin map__pin--client"></span>
+                <span class="map__pin map__pin--tech"></span>
+                <span class="map__radar"></span>
+              </div>
+              <div class="phone__row">
+                <div>
+                  <small>Técnico asignado</small>
+                  <strong>Juan P. · 4.9 ★</strong>
+                </div>
+                <span class="chip chip--ok">En camino · 12 min</span>
+              </div>
+              <div class="phone__row phone__row--muted">
+                <small>Aire acondicionado · Los Caobos</small>
+                <strong>$150.000 COP</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Servicios -->
+    <section class="section" id="servicios">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Nuestros servicios</span>
+          <h2>Cuatro líneas de servicio especializadas</h2>
+          <p class="muted">Personal con acreditación SENA, matrícula CONTE y protocolos de seguridad.</p>
+        </div>
+
+        <div class="grid grid--4">
+          <article class="card">
+            <span class="card__icon card__icon--sky">
+              <i class="pi pi-sparkles"></i>
+            </span>
+            <h3>Aire Acondicionado</h3>
+            <p>Mantenimiento preventivo, presurización, recarga de refrigerante ecológico R410A/R32 e instalación de minisplits y centrales.</p>
+            <span class="card__foot">Garantía formal de 90 días</span>
+          </article>
+
+          <article class="card">
+            <span class="card__icon card__icon--cyan">
+              <i class="pi pi-box"></i>
+            </span>
+            <h3>Refrigeración</h3>
+            <p>Reparación de neveras no-frost, congeladores comerciales, botelleros, cuartos fríos y vitrinas de exhibición.</p>
+            <span class="card__foot">Repuestos homologados</span>
+          </article>
+
+          <article class="card">
+            <span class="card__icon card__icon--amber">
+              <i class="pi pi-bolt"></i>
+            </span>
+            <h3>Electricidad</h3>
+            <p>Tableros de distribución, breakers, corrección de fugas de corriente, iluminación comercial y redes bajo normativa RETIE.</p>
+            <span class="card__foot">Técnicos matrícula CONTE</span>
+          </article>
+
+          <article class="card">
+            <span class="card__icon card__icon--emerald">
+              <i class="pi pi-cog"></i>
+            </span>
+            <h3>Electrodomésticos</h3>
+            <p>Lavadoras digitales, secadoras a gas y eléctricas, microondas, campanas extractoras y estufas industriales.</p>
+            <span class="card__foot">Diagnóstico en sitio</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cómo funciona -->
+    <section class="section section--alt" id="como-funciona">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Cómo funciona</span>
+          <h2>Del problema al técnico, en 4 pasos</h2>
+          <p class="muted">Asignación por radar: el técnico disponible más cercano recibe tu solicitud.</p>
+        </div>
+
+        <ol class="steps">
+          <li class="step"><span class="step__num">1</span><h3>Solicita el servicio</h3><p>Describe la falla, marca tu ubicación en el mapa y elige la línea de servicio.</p></li>
+          <li class="step"><span class="step__num">2</span><h3>Técnico asignado por radar</h3><p>Difundimos tu solicitud al técnico verificado más cercano dentro del radio de búsqueda.</p></li>
+          <li class="step"><span class="step__num">3</span><h3>Diagnóstico y presupuesto</h3><p>El técnico registra el diagnóstico y te envía el presupuesto para tu aprobación.</p></li>
+          <li class="step"><span class="step__num">4</span><h3>Pago y acta de garantía</h3><p>Pagas en efectivo o transferencia y recibes tu acta digital con 90 días de amparo.</p></li>
+        </ol>
+
+        <div class="grid grid--4 features">
+          <div class="feature"><strong>Radar en vivo</strong><span>Sigue la llegada del técnico en el mapa.</span></div>
+          <div class="feature"><strong>Técnicos auditados</strong><span>Documentos y certificaciones verificadas.</span></div>
+          <div class="feature"><strong>Precios transparentes</strong><span>Mano de obra y repuestos desglosados.</span></div>
+          <div class="feature"><strong>Garantía 90 días</strong><span>Acta digital firmada por ambas partes.</span></div>
+        </div>
+
+        <div class="section__cta">
+          <a class="btn btn--primary" href="#" data-app="registro">Solicitar servicio ahora</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cobertura -->
+    <section class="section" id="cobertura">
+      <div class="container coverage">
+        <div>
+          <span class="eyebrow">Cobertura</span>
+          <h2>Cúcuta y área metropolitana</h2>
+          <p class="muted">
+            Operamos en la zona urbana de Cúcuta y municipios del área metropolitana. Si estás
+            dentro del perímetro, el radar asignará al técnico más cercano.
+          </p>
+          <ul class="zones">
+            <li>Cúcuta (todas las comunas)</li>
+            <li>Los Patios</li>
+            <li>Villa del Rosario</li>
+            <li>San Cayetano</li>
+            <li>El Zulia</li>
+          </ul>
+        </div>
+        <div class="coverage__map" aria-hidden="true">
+          <span class="map__pin map__pin--client"></span>
+          <span class="map__radar"></span>
+          <span class="map__pin map__pin--tech"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonios -->
+    <section class="section section--alt">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Testimonios</span>
+          <h2>Confianza comprobada en Norte de Santander</h2>
+          <p class="muted">Calificaciones reales de clientes y técnicos en Cúcuta.</p>
+        </div>
+
+        <div class="grid grid--3">
+          <blockquote class="quote">
+            <div class="stars">★★★★★</div>
+            <p>“El técnico llegó en menos de 25 minutos al barrio Caobos. Diagnosticó la fuga de agua del aire y me entregó el acta de garantía digital.”</p>
+            <footer><strong>María Gómez</strong><span>Los Caobos</span></footer>
+          </blockquote>
+          <blockquote class="quote">
+            <div class="stars">★★★★★</div>
+            <p>“Excelente plataforma. Como técnico certificado del SENA tengo trabajo constante cerca de mi zona y las liquidaciones son transparentes.”</p>
+            <footer><strong>Andrés Silva</strong><span>Técnico · La Riviera</span></footer>
+          </blockquote>
+          <blockquote class="quote">
+            <div class="stars">★★★★☆</div>
+            <p>“El radar muestra en tiempo real cómo avanza el técnico hacia mi casa. La transparencia en costos da total seguridad.”</p>
+            <footer><strong>Roberto Torres</strong><span>Guaimaral</span></footer>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- Empresas / B2B -->
+    <section class="section" id="empresas">
+      <div class="container">
+        <div class="b2b">
+          <div class="b2b__intro">
+            <span class="eyebrow">Atención corporativa</span>
+            <h2>Solicita una cotización empresarial</h2>
+            <p class="muted">
+              Ideal para clínicas, restaurantes, colegios, conjuntos residenciales y locales
+              comerciales de Cúcuta. Mantenimiento preventivo y correctivo con facturación.
+            </p>
+            <ul class="ticks">
+              <li><i class="pi pi-check" aria-hidden="true"></i> Contratos de mantenimiento programado</li>
+              <li><i class="pi pi-check" aria-hidden="true"></i> Prioridad de atención y técnico asignado</li>
+              <li><i class="pi pi-check" aria-hidden="true"></i> Informes de servicio y actas por intervención</li>
+            </ul>
+          </div>
+
+          <form class="form" id="leadForm" novalidate>
+            <div class="form__row">
+              <label>Nombre de la empresa *
+                <input name="empresa" type="text" required placeholder="Ej. Distribuciones del Norte S.A.S." />
+              </label>
+              <label>Persona de contacto *
+                <input name="contacto" type="text" required placeholder="Ej. Ing. Sofía Valencia" />
+              </label>
+            </div>
+            <div class="form__row">
+              <label>Correo electrónico *
+                <input name="correo" type="email" required placeholder="contacto@empresa.com" />
+              </label>
+              <label>Teléfono móvil *
+                <input name="telefono" type="tel" required placeholder="Ej. 3151234567" />
+              </label>
+            </div>
+            <label>Línea requerida
+              <select name="categoriaServicio">
+                <option value="AIRE_ACONDICIONADO">Aire Acondicionado</option>
+                <option value="REFRIGERACION">Refrigeración</option>
+                <option value="ELECTRICIDAD">Electricidad</option>
+                <option value="ELECTRODOMESTICOS">Electrodomésticos</option>
+              </select>
+            </label>
+            <label>Detalle del requerimiento *
+              <textarea name="descripcion" rows="4" required placeholder="Cantidad de equipos, ubicación y necesidades de mantenimiento..."></textarea>
+            </label>
+            <button class="btn btn--primary btn--block" type="submit">Enviar solicitud de cotización</button>
+            <p class="form__note" id="formNote" role="status"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- App móvil (próximamente) — CTA secundario -->
+    <section class="section appband" id="app">
+      <div class="container appband__inner">
+        <div class="appband__copy">
+          <span class="eyebrow">App móvil</span>
+          <h2>COLD DAY en tu bolsillo</h2>
+          <p class="muted">
+            Muy pronto podrás solicitar y seguir tus servicios desde Android e iOS.
+            Por ahora, todo funciona desde la plataforma web.
+          </p>
+          <a class="btn btn--ghost" href="#" data-app="registro">Solicitar servicio desde la web</a>
+        </div>
+        <div class="stores" aria-label="Próximamente en tiendas">
+          <span class="store store--soon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.3 13.5 12 3.6 21.7A1.7 1.7 0 0 1 3 20.5v-17c0-.5.2-1 .6-1.2Zm11.3 8.3 2.6-2.5 3.6 2a1.3 1.3 0 0 1 0 2.3l-3.6 2-2.6-2.4 0-.1Zm-1.4 1.4L5 21.5l9.4-5.3-0.9-.9v-1.2Zm0-1.4.9-.9L5 2.5l8.5 4.8Z"/></svg>
+            <span><small>Consíguela en</small><strong>Google Play</strong></span>
+            <em>Próximamente</em>
+          </span>
+          <span class="store store--soon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.7c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3-1.6-1.3-.1-2.5.8-3.1.8-.7 0-1.7-.8-2.8-.7-1.4 0-2.7.8-3.5 2.1-1.5 2.6-.4 6.4 1 8.5.7 1 1.5 2.1 2.6 2 1-.1 1.4-.7 2.7-.7 1.2 0 1.6.7 2.7.7 1.1 0 1.8-1 2.5-2 .8-1.2 1.1-2.3 1.1-2.4-.1 0-2.2-.9-2.2-3.5ZM14.3 6c.6-.7 1-1.6.9-2.6-.9 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.5 1 .1 2-.5 2.5-1.2Z"/></svg>
+            <span><small>Descárgala en</small><strong>App Store</strong></span>
+            <em>Próximamente</em>
+          </span>
+          <span class="store store--soon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a1 1 0 0 1 1 1v9.6l3.3-3.3 1.4 1.4L12 17.4l-5.7-5.7 1.4-1.4L11 13.6V3a1 1 0 0 1 1-1ZM5 19h14v2H5v-2Z"/></svg>
+            <span><small>Descarga directa</small><strong>APK Android</strong></span>
+            <em>Próximamente</em>
+          </span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div>
+        <div class="brand brand--light">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M11 2h2v6.6l4.7-2.7 1 1.7L14 10.3l4.7 2.7-1 1.7L13 12v6.6h-2V12l-4.7 2.7-1-1.7L10 10.3 5.3 7.6l1-1.7L11 8.6V2Z"/></svg>
+          </span>
+          <span class="brand__text"><strong>COLD DAY S.A.S.</strong><small>NIT 901.849.201-4 · Cúcuta, N. de S.</small></span>
+        </div>
+        <p class="muted small">Intermediación de servicios técnicos con técnicos certificados y garantía formal.</p>
+      </div>
+      <div>
+        <h4>Servicios</h4>
+        <ul><li><a href="#servicios">Aire Acondicionado</a></li><li><a href="#servicios">Refrigeración</a></li><li><a href="#servicios">Electricidad</a></li><li><a href="#servicios">Electrodomésticos</a></li></ul>
+      </div>
+      <div>
+        <h4>Compañía</h4>
+        <ul>
+          <li><a href="#como-funciona">Cómo funciona</a></li>
+          <li><a href="#cobertura">Cobertura</a></li>
+          <li><a href="#empresas">Empresas</a></li>
+          <li><a href="#" data-app="registro">Solicitar servicio</a></li>
+          <li><a href="#" data-app="login">Iniciar sesión</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contacto</h4>
+        <ul>
+          <li><a href="mailto:contacto@coldday.com.co">contacto@coldday.com.co</a></li>
+          <li><a href="tel:+573108492014">+57 310 849 2014 · WhatsApp</a></li>
+          <li><a href="tel:+576075718920">(607) 571-8920</a></li>
+          <li>Av 0 # 10-45, Barrio La Playa · Cúcuta, N. de S.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer__bottom">
+      <span>© <span id="year">2026</span> COLD DAY S.A.S. Todos los derechos reservados.</span>
+      <span class="footer__legal">
+        <a href="#">Términos del Servicio</a>
+        <a href="#">Política de Tratamiento de Datos</a>
+        <a href="#">Póliza de Garantía</a>
+      </span>
+    </div>
+  </footer>
+
+  <!-- WhatsApp flotante -->
+  <a
+    class="wa-fab"
+    href="https://wa.me/573108492014?text=Hola%20COLD%20DAY%2C%20quiero%20solicitar%20un%20servicio%20t%C3%A9cnico"
+    target="_blank"
+    rel="noopener"
+    aria-label="Escríbenos por WhatsApp"
+  >
+    <i class="pi pi-whatsapp" aria-hidden="true"></i>
+  </a>
+
+  <!-- CTA sticky móvil -->
+  <div class="mobile-cta">
+    <a class="btn btn--primary" href="#" data-app="registro">
+      <i class="pi pi-calendar-plus" aria-hidden="true"></i> Solicitar servicio
+    </a>
+    <a
+      class="btn btn--wa"
+      href="https://wa.me/573108492014?text=Hola%20COLD%20DAY%2C%20quiero%20solicitar%20un%20servicio%20t%C3%A9cnico"
+      target="_blank"
+      rel="noopener"
+    >
+      <i class="pi pi-whatsapp" aria-hidden="true"></i> WhatsApp
+    </a>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

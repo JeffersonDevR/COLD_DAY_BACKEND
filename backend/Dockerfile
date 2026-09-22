@@ -8,7 +8,8 @@ WORKDIR /workspace
 COPY gradlew ./
 COPY gradle ./gradle
 COPY settings.gradle build.gradle ./
-RUN chmod +x gradlew
+# Windows checkouts can leave CRLF on gradlew; strip it so the shebang works in Linux.
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
 # Codigo fuente y build del jar ejecutable (sin tests: el pipeline de Render es de despliegue).
 COPY src ./src

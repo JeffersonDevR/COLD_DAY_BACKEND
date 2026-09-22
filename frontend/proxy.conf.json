@@ -1,54 +1,54 @@
 {
   "/api/usuarios": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/clientes": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/tecnicos": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/ot": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/ofertas": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/admin": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/disputas": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/liquidaciones": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"
   },
   "/api/maps": {
-    "target": "http://localhost:8080",
+    "target": "http://localhost:8090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"

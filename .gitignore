@@ -24,14 +24,21 @@ Casos de Uso - COLD DAY V3.md
 Especificacion_Requisitos_IEEE830_COLD_DAY_v3.3.docx
 Especificacion_Requisitos_IEEE830_COLD_DAY_v3.3.md
 
-# Env locales (las keys reales nunca se commitean; ver *.env.example)
+# Env locales y secretos (las keys reales nunca se commitean; ver *.env.example)
 .env
 .env.local
 backend/.env
 frontend/.env
-frontend/node_nodules/
-frontend/
+frontend/src/environments/maps-key.ts
+
+# Build / dependencias
+out/
+frontend/dist/
+frontend/.angular/
+frontend/node_modules/
+
 /PROTOTIPO_FRONTEND_ANGULAR_AI_STUDIO.md
 
 # IDE (IntelliJ) — config local del desarrollador, incluye datos de conexion a BD
 .idea/
+landing/README.md

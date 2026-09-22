@@ -1,6 +1,9 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpStatusCode } from '@angular/common/http';
+import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { ApiError } from '../../domain/models/common.models';
+import { AuthService } from '../auth/auth.service';
+import { ToastService } from '../../presentation/toast.service';
 
 /**
  * Error normalizado para la UI. Conserva el status HTTP y los `fieldErrors`
@@ -55,5 +58,30 @@ function normalizarError(err: unknown): ApiHttpError | Error {
   return new ApiHttpError(mensajeFallback(err), err.status);
 }
 
-export const errorInterceptor: HttpInterceptorFn = (req, next) =>
-  next(req).pipe(catchError((err) => throwError(() => normalizarError(err))));
+/** Endpoints de autenticación: un 401 aquí significa credenciales inválidas, no sesión expirada. */
+const AUTH_ENDPOINTS = /\/usuarios\/(login|recuperar-contrasena|reset-contrasena)/;
+
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthService);
+  const toast = inject(ToastService);
+
+  return next(req).pipe(
+    catchError((err) => {
+      const normalizado = normalizarError(err);
+
+      // Sesión inválida/expirada: se limpia la sesión y se vuelve al login para
+      // no seguir disparando peticiones que el backend rechaza con 401.
+      if (
+        normalizado instanceof ApiHttpError &&
+        normalizado.status === HttpStatusCode.Unauthorized &&
+        !AUTH_ENDPOINTS.test(req.url) &&
+        auth.isAuthenticated()
+      ) {
+        toast.warning('Sesión expirada', 'Inicia sesión de nuevo para continuar.');
+        auth.logout();
+      }
+
+      return throwError(() => normalizado);
+    }),
+  );
+};

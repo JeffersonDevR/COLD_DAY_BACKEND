@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common.models';
@@ -9,13 +8,13 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-pago-acta-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink],
   template: `
     @if (ot(); as orden) {
       <div class="space-y-6 max-w-4xl mx-auto">
         <div>
           <a [routerLink]="['/cliente/ot', orden.id]" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-            <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Seguimiento
+            <i class="pi pi-arrow-left text-xs"></i> Volver al Seguimiento
           </a>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
             Liquidación, Pago y Acta de Garantía
@@ -33,7 +32,7 @@ import { environment } from '../../../../environments/environment';
               <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold">
-                    <mat-icon>verified</mat-icon>
+                    <i class="pi pi-verified"></i>
                   </div>
                   <div>
                     <h2 class="text-base font-extrabold text-slate-900 dark:text-slate-100">COLD DAY S.A.S.</h2>
@@ -66,7 +65,7 @@ import { environment } from '../../../../environments/environment';
                     (click)="limpiarFirma()"
                     class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 inline-flex items-center gap-1"
                   >
-                    <mat-icon class="text-xs" style="font-size: 14px; width:14px; height:14px;">clear</mat-icon> Limpiar firma
+                    <i class="pi pi-times text-xs" style="font-size: 14px; width:14px; height:14px;"></i> Limpiar firma
                   </button>
                 </div>
 
@@ -100,7 +99,7 @@ import { environment } from '../../../../environments/environment';
                   (click)="guardarYDescargarActa()"
                   class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition-colors inline-flex items-center gap-2"
                 >
-                  <mat-icon class="text-sm">download</mat-icon>
+                  <i class="pi pi-download text-sm"></i>
                   Descargar Acta de Garantía Firmada
                 </button>
                 <span class="text-xs text-slate-400">Código de verificación: CD-SEC-{{ orden.id }}</span>
@@ -116,6 +115,10 @@ import { environment } from '../../../../environments/environment';
               </h3>
 
               <div class="space-y-2 text-xs">
+                <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                  <span class="text-slate-500">Visita y diagnóstico:</span>
+                  <span class="font-bold">$ {{ cargoVisita.toLocaleString('es-CO') }}</span>
+                </div>
                 <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
                   <span class="text-slate-500">Mano de Obra:</span>
                   <span class="font-bold">$ {{ (orden.presupuesto?.manoDeObra || 80000).toLocaleString('es-CO') }}</span>
@@ -147,7 +150,7 @@ import { environment } from '../../../../environments/environment';
                     [class.dark:border-slate-700]="medioPago() !== 'EFECTIVO'"
                   >
                     <div class="flex items-center gap-2">
-                      <mat-icon class="text-emerald-600 text-sm">payments</mat-icon>
+                      <i class="pi pi-money-bill text-emerald-600 text-sm"></i>
                       <span class="font-bold">Efectivo en Sitio</span>
                     </div>
                     <span class="text-[11px] text-slate-400">Entregado al técnico</span>
@@ -164,7 +167,7 @@ import { environment } from '../../../../environments/environment';
                     [class.dark:border-slate-700]="medioPago() !== 'TRANSFERENCIA'"
                   >
                     <div class="flex items-center gap-2">
-                      <mat-icon class="text-sky-600 text-sm">account_balance</mat-icon>
+                      <i class="pi pi-building-columns text-sky-600 text-sm"></i>
                       <span class="font-bold">Transferencia Bancaria</span>
                     </div>
                     <span class="text-[11px] text-slate-400">Bancolombia / Nequi</span>
@@ -209,8 +212,11 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   private isDrawing = false;
   private ctx: CanvasRenderingContext2D | null = null;
 
+  /** Cargo fijo de visita + diagnóstico (diagnóstico estándar + transporte). */
+  readonly cargoVisita = environment.diagnosticoPrecio + environment.transportePrecio;
+
   readonly totalMonto = computed(() => {
-    return this.ot()?.presupuesto?.total || 150000;
+    return (this.ot()?.presupuesto?.total || 150000) + this.cargoVisita;
   });
 
   ngOnInit(): void {

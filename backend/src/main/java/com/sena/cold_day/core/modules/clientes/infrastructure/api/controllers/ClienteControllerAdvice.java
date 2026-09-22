@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteDuplicadoException;
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
@@ -34,6 +36,18 @@ public class ClienteControllerAdvice {
     @ExceptionHandler(ClienteDuplicadoException.class)
     ResponseEntity<ApiError> handleDuplicate(ClienteDuplicadoException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** Alta de cliente con correo ya registrado. */
+    @ExceptionHandler(CorreoDuplicadoException.class)
+    ResponseEntity<ApiError> handleCorreoDuplicate(CorreoDuplicadoException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** Alta de cliente sin aceptar el tratamiento de datos (Ley 1581). */
+    @ExceptionHandler(HabeasDataRequeridoException.class)
+    ResponseEntity<ApiError> handleHabeasData(HabeasDataRequeridoException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     /** The authenticated principal has no client profile (location endpoint). */

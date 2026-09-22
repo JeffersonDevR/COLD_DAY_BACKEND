@@ -126,18 +126,18 @@ export class ClientesApi {
   }
 
   /**
-   * POST /api/clientes: crea el perfil del cliente para el principal autenticado.
-   * El backend NO acepta usuarioId en el body (lo resuelve del JWT).
+   * POST /api/clientes: alta pública y atómica (crea el Usuario rol CLIENTE y su
+   * perfil en una sola transacción, igual que POST /api/tecnicos).
    */
-  crearCliente(request: ClienteApiRequest): Observable<ClienteApiResponse> {
+  registrarCliente(request: ClienteApiRequest): Observable<ClienteApiResponse> {
     if (this.apiConfig.useMocks()) {
       const fake: ClienteApiResponse = {
         id: `cliente-mock-${Date.now()}`,
         usuarioId: 0,
-        nombre: 'Cliente Demo',
-        correo: 'cliente.demo@coldday.com.co',
-        telefono: null,
-        fotoUrl: null,
+        nombre: request.nombre,
+        correo: request.correo,
+        telefono: request.telefono ?? null,
+        fotoUrl: request.fotoUrl ?? null,
         tipoCliente: request.tipoCliente,
         direccion: {
           calle: request.calle,

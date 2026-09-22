@@ -12,7 +12,7 @@ export const environment = {
    * URL del backend Spring Boot. La usa únicamente proxy.conf.json durante `ng serve`.
    * PLACEHOLDER: ajustar si el backend corre en otro host/puerto.
    */
-  backendUrl: 'http://localhost:8080',
+  backendUrl: 'http://localhost:8090',
   /**
    * Browser key de Google Maps Platform (flujo build-time).
    * NO se versiona: se inyecta en build desde GOOGLE_MAPS_API_KEY
@@ -30,4 +30,11 @@ export const environment = {
   broadcastTimeoutSec: 60,
   commissionRate: 0.15, // 15% de comisión plataforma (app.liquidacion.comision-porcentaje=0.15)
   cancellationGraceMinutes: 10,
+  /**
+   * Cargo de visita + diagnóstico que se notifica al cliente cuando el técnico
+   * acepta la orden (antes de iniciar la reparación). Diagnóstico estándar
+   * $40.000 + transporte $20.000 = $60.000 COP.
+   */
+  diagnosticoPrecio: 40000,
+  transportePrecio: 20000,
 };

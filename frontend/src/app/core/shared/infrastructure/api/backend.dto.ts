@@ -92,11 +92,17 @@ export interface ClienteApiResponse {
 }
 
 export interface ClienteApiRequest {
+  nombre: string;
+  correo: string;
+  password: string;
+  telefono?: string;
+  fotoUrl?: string;
   tipoCliente: TipoCliente;
   calle: string;
   ciudad: string;
   barrio?: string;
   ubicacion?: Point;
+  aceptaHabeasData: boolean;
 }
 
 export interface UbicacionApiRequest {

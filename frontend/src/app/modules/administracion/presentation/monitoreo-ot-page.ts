@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
@@ -9,12 +8,12 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
 @Component({
   selector: 'app-monitoreo-ot-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule, EstadoBadge],
+  imports: [RouterLink, ReactiveFormsModule, EstadoBadge],
   template: `
     <div class="space-y-6 max-w-7xl mx-auto">
       <div>
         <a routerLink="/admin/dashboard" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-          <mat-icon class="text-xs">arrow_back</mat-icon> Volver a la Torre de Control
+          <i class="pi pi-arrow-left text-xs"></i> Volver a la Torre de Control
         </a>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
           Monitoreo Global de Órdenes de Trabajo
@@ -109,7 +108,7 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
                       [routerLink]="['/cliente/ot', ot.id]"
                       class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-[11px] font-bold text-slate-700 dark:text-slate-300 inline-flex items-center gap-1"
                     >
-                      <mat-icon class="text-xs" style="font-size:14px; width:14px; height:14px;">visibility</mat-icon>
+                      <i class="pi pi-eye text-xs" style="font-size:14px; width:14px; height:14px;"></i>
                       Detalle
                     </a>
                   </td>

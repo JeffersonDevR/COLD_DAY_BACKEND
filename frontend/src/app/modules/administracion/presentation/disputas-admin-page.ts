@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
@@ -10,12 +9,12 @@ import { DisputaResponse } from '../../../core/shared/domain/models/common.model
 @Component({
   selector: 'app-disputas-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule],
   template: `
     <div class="space-y-6 max-w-6xl mx-auto">
       <div>
         <a routerLink="/admin/dashboard" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-          <mat-icon class="text-xs">arrow_back</mat-icon> Volver a la Torre de Control
+          <i class="pi pi-arrow-left text-xs"></i> Volver a la Torre de Control
         </a>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
           Mesa de Mediación y Disputas Técnicas
@@ -75,7 +74,7 @@ import { DisputaResponse } from '../../../core/shared/domain/models/common.model
                   (click)="abrirResolucion(disp)"
                   class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs inline-flex items-center gap-1.5"
                 >
-                  <mat-icon class="text-sm">gavel</mat-icon>
+                  <i class="pi pi-shield text-sm"></i>
                   Emitir Fallo de Mediación
                 </button>
               </div>
@@ -89,7 +88,7 @@ import { DisputaResponse } from '../../../core/shared/domain/models/common.model
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
           <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 class="text-base font-bold text-purple-600 flex items-center gap-2">
-              <mat-icon>gavel</mat-icon> Mediación Oficial: Caso {{ d.id }}
+              <i class="pi pi-shield"></i> Mediación Oficial: Caso {{ d.id }}
             </h3>
             <p class="text-xs text-slate-500">
               Escucha a ambas partes y emite una solución técnica de común acuerdo o cierre judicial.

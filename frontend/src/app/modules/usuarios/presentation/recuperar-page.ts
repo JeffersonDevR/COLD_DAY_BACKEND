@@ -1,19 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { UsuariosApi } from '../infrastructure/usuarios-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 
 @Component({
   selector: 'app-recuperar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatIconModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `
     <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 transition-colors">
       <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 to-cyan-400 text-white shadow-lg mb-3">
-          <mat-icon class="text-3xl">lock_reset</mat-icon>
+          <i class="pi pi-key text-3xl"></i>
         </div>
         <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-50">
           Recuperar Contraseña
@@ -47,10 +46,10 @@ import { ToastService } from '../../../core/shared/presentation/toast.service';
                 class="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50 transition-colors shadow-md"
               >
                 @if (loading()) {
-                  <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                  <i class="pi pi-sync animate-spin text-sm"></i>
                   Enviando token...
                 } @else {
-                  <mat-icon class="text-sm">send</mat-icon>
+                  <i class="pi pi-send text-sm"></i>
                   Enviar Código de Recuperación
                 }
               </button>
@@ -94,10 +93,10 @@ import { ToastService } from '../../../core/shared/presentation/toast.service';
                 class="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-md"
               >
                 @if (loading()) {
-                  <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                  <i class="pi pi-sync animate-spin text-sm"></i>
                   Actualizando...
                 } @else {
-                  <mat-icon class="text-sm">check_circle</mat-icon>
+                  <i class="pi pi-check-circle text-sm"></i>
                   Establecer Nueva Contraseña
                 }
               </button>
@@ -106,7 +105,7 @@ import { ToastService } from '../../../core/shared/presentation/toast.service';
 
           <div class="mt-6 text-center text-xs text-slate-600 dark:text-slate-400">
             <a routerLink="/login" class="font-bold text-sky-600 hover:text-sky-500 dark:text-sky-400 inline-flex items-center gap-1">
-              <mat-icon class="text-xs">arrow_back</mat-icon>
+              <i class="pi pi-arrow-left text-xs"></i>
               Regresar al inicio de sesión
             </a>
           </div>

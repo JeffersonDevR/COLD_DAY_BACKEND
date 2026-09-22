@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -10,13 +9,13 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
 @Component({
   selector: 'app-calificar-servicio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule],
   template: `
     @if (ot(); as orden) {
       <div class="space-y-6 max-w-xl mx-auto">
         <div>
           <a [routerLink]="['/cliente/ot', orden.id]" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-            <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Seguimiento
+            <i class="pi pi-arrow-left text-xs"></i> Volver al Seguimiento
           </a>
           <h1 class="text-2xl font-black text-slate-900 dark:text-slate-100">
             Calificar Servicio Técnico
@@ -50,14 +49,12 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
                   (click)="estrellas.set(star)"
                   class="p-2 transition-transform hover:scale-110 focus:outline-none"
                 >
-                  <mat-icon
-                    class="text-3xl"
+                  <i
+                    class="pi pi-star-fill text-3xl"
                     [class.text-amber-400]="star <= estrellas()"
                     [class.text-slate-200]="star > estrellas()"
                     [class.dark:text-slate-700]="star > estrellas()"
-                  >
-                    star
-                  </mat-icon>
+                  ></i>
                 </button>
               }
             </div>
@@ -120,7 +117,7 @@ import { OtResponse } from '../../../core/shared/domain/models/common.models';
               (click)="enviarCalificacion()"
               class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow-md transition-colors inline-flex items-center gap-2"
             >
-              <mat-icon class="text-sm">send</mat-icon>
+              <i class="pi pi-send text-sm"></i>
               Guardar Calificación
             </button>
           </div>

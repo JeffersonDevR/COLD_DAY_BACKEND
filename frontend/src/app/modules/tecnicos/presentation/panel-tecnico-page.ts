@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -12,7 +11,7 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-panel-tecnico-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIconModule, EstadoBadge, EmptyState],
+  imports: [RouterLink, EstadoBadge, EmptyState],
   template: `
     <div class="space-y-6 max-w-6xl mx-auto">
       <!-- BLOQUEO POR LIQUIDACIÓN PENDIENTE -->
@@ -20,7 +19,7 @@ import { environment } from '../../../../environments/environment';
         <div class="p-6 rounded-3xl bg-rose-500 text-white shadow-xl flex flex-wrap items-center justify-between gap-4 animate-pulse">
           <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center font-bold text-2xl">
-              <mat-icon class="text-3xl">lock</mat-icon>
+              <i class="pi pi-lock text-3xl"></i>
             </div>
             <div>
               <h2 class="text-lg font-black tracking-tight">CUENTA BLOQUEADA POR LIQUIDACIÓN PENDIENTE</h2>
@@ -34,7 +33,7 @@ import { environment } from '../../../../environments/environment';
             routerLink="/tecnico/liquidaciones"
             class="px-5 py-3 rounded-2xl bg-white text-rose-700 hover:bg-rose-50 font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
           >
-            <mat-icon class="text-sm">receipt_long</mat-icon>
+            <i class="pi pi-receipt text-sm"></i>
             Legalizar Consignación Ahora
           </a>
         </div>
@@ -52,7 +51,7 @@ import { environment } from '../../../../environments/environment';
                 {{ tecnico()?.nombreCompleto || 'Técnico Especialista' }}
               </h1>
               <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-500">
-                <mat-icon class="text-xs" style="font-size:14px; width:14px; height:14px;">star</mat-icon>
+                <i class="pi pi-star text-xs" style="font-size:14px; width:14px; height:14px;"></i>
                 {{ tecnico()?.reputacion || 4.9 }}
               </span>
             </div>
@@ -77,18 +76,12 @@ import { environment } from '../../../../environments/environment';
           >
             DISPONIBLE
           </button>
-          <button
-            type="button"
-            (click)="cambiarEstadoOperativo('OCUPADO')"
-            [disabled]="tecnico()?.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION'"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all"
-            [class.bg-sky-600]="tecnico()?.estadoOperativo === 'OCUPADO'"
-            [class.text-white]="tecnico()?.estadoOperativo === 'OCUPADO'"
-            [class.text-slate-600]="tecnico()?.estadoOperativo !== 'OCUPADO'"
-            [class.dark:text-slate-400]="tecnico()?.estadoOperativo !== 'OCUPADO'"
-          >
-            OCUPADO
-          </button>
+          @if (tecnico()?.estadoOperativo === 'OCUPADO') {
+            <span class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-sky-600 text-white inline-flex items-center gap-1">
+              <i class="pi pi-wrench text-xs"></i>
+              EN SERVICIO
+            </span>
+          }
           <button
             type="button"
             (click)="cambiarEstadoOperativo('FUERA_DE_SERVICIO')"
@@ -116,7 +109,7 @@ import { environment } from '../../../../environments/environment';
         <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div class="text-xs font-semibold text-slate-500">Reputación Promedio</div>
           <div class="text-2xl font-black text-amber-500 mt-1 flex items-center gap-1">
-            <mat-icon>star</mat-icon> {{ tecnico()?.reputacion || 4.9 }}
+            <i class="pi pi-star"></i> {{ tecnico()?.reputacion || 4.9 }}
           </div>
           <span class="text-[11px] text-slate-400">12 reseñas verificadas</span>
         </div>
@@ -134,7 +127,7 @@ import { environment } from '../../../../environments/environment';
         <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div class="text-xs font-semibold text-slate-500">Documentación</div>
           <div class="text-base font-black text-emerald-600 mt-2 flex items-center gap-1">
-            <mat-icon class="text-sm">verified</mat-icon>
+            <i class="pi pi-verified text-sm"></i>
             {{ tecnico()?.estadoValidacion || 'APROBADO' }}
           </div>
           <a routerLink="/tecnico/documentos" class="text-[11px] text-sky-600 hover:underline">Ver vigencias</a>
@@ -147,7 +140,7 @@ import { environment } from '../../../../environments/environment';
           routerLink="/tecnico/ofertas"
           class="px-5 py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all inline-flex items-center gap-2"
         >
-          <mat-icon class="text-sm">radar</mat-icon>
+          <i class="pi pi-compass text-sm"></i>
           Ver Radar de Solicitudes Entrantes
         </a>
 
@@ -155,7 +148,7 @@ import { environment } from '../../../../environments/environment';
           routerLink="/tecnico/liquidaciones"
           class="px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 font-bold text-xs sm:text-sm shadow-xs transition-colors inline-flex items-center gap-2"
         >
-          <mat-icon class="text-sm">account_balance_wallet</mat-icon>
+          <i class="pi pi-wallet text-sm"></i>
           Liquidaciones y Consignaciones
         </a>
 
@@ -163,7 +156,7 @@ import { environment } from '../../../../environments/environment';
           routerLink="/tecnico/documentos"
           class="px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 font-bold text-xs sm:text-sm shadow-xs transition-colors inline-flex items-center gap-2"
         >
-          <mat-icon class="text-sm">folder_shared</mat-icon>
+          <i class="pi pi-folder-open text-sm"></i>
           Auditoría de Documentos
         </a>
       </div>
@@ -179,11 +172,11 @@ import { environment } from '../../../../environments/environment';
 
         @if (misOtsEnCurso().length === 0) {
           <app-empty-state
-            icon="radar"
+            icon="pi pi-compass"
             title="No tienes servicios asignados en este momento"
             description="Revisa el radar de ofertas en Cúcuta para aceptar nuevas órdenes de trabajo en tu perímetro."
             actionLabel="Ir al Radar de Ofertas"
-            actionIcon="radar"
+            actionIcon="pi pi-compass"
             (actionClicked)="irAOfertas()"
           />
         } @else {
@@ -203,11 +196,11 @@ import { environment } from '../../../../environments/environment';
 
                 <div class="text-xs text-slate-500 space-y-1 pt-2 border-t border-slate-200 dark:border-slate-700">
                   <div class="flex items-center gap-1">
-                    <mat-icon class="text-xs">person</mat-icon>
+                    <i class="pi pi-user text-xs"></i>
                     <span>Cliente: {{ ot.clienteNombre }}</span>
                   </div>
                   <div class="flex items-center gap-1">
-                    <mat-icon class="text-xs">location_on</mat-icon>
+                    <i class="pi pi-map-marker text-xs"></i>
                     <span>{{ ot.direccion }} ({{ ot.barrio }})</span>
                   </div>
                 </div>
@@ -217,7 +210,7 @@ import { environment } from '../../../../environments/environment';
                     [routerLink]="['/tecnico/ejecucion', ot.id]"
                     class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors"
                   >
-                    <mat-icon class="text-xs">build</mat-icon>
+                    <i class="pi pi-wrench text-xs"></i>
                     Ejecutar Servicio
                   </a>
                 </div>
@@ -266,6 +259,10 @@ export class PanelTecnicoPage {
       next: () => {
         this.tecnico.set({ ...t, estadoOperativo: nuevo });
         this.toast.info('Estado Actualizado', `Ahora estás ${nuevo}`);
+      },
+      error: (err: Error) => {
+        // El backend rechaza el cambio mientras hay una OT activa (RF-F1-05).
+        this.toast.error('No se pudo cambiar el estado', err.message || 'Intenta de nuevo.');
       }
     });
   }

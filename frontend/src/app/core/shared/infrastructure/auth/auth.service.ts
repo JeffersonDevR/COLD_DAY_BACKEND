@@ -1,6 +1,8 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { TokenStorageService } from './token-storage.service';
+import { ToastService } from '../../presentation/toast.service';
 import { Rol, TokenResponse, UsuarioResponse } from '../../domain/models/common.models';
 
 @Injectable({
@@ -9,6 +11,11 @@ import { Rol, TokenResponse, UsuarioResponse } from '../../domain/models/common.
 export class AuthService {
   private readonly tokenStorage = inject(TokenStorageService);
   private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  /** Temporizador que cierra la sesión justo cuando expira el JWT. */
+  private expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly _currentUser = signal<UsuarioResponse | null>(null);
   readonly currentUser = this._currentUser.asReadonly();
@@ -18,25 +25,61 @@ export class AuthService {
 
   constructor() {
     this.restoreSession();
+    this.programarExpiracionSesion();
   }
 
   /**
    * Reconstruye la sesión a partir del JWT persistido. El backend no expone un
    * endpoint de perfil, así que los datos disponibles son los claims del token
-   * (`sub` = usuarioId, `rol`).
+   * (`sub` = usuarioId, `rol`). Se descarta si el token ya expiró.
    */
   private restoreSession(): void {
     const decoded = this.tokenStorage.getDecodedToken();
-    if (decoded?.rol) {
-      this._currentUser.set({
-        id: Number(decoded.id ?? decoded.sub ?? 0),
-        nombre: decoded.nombre ?? decoded.correo ?? 'Usuario',
-        correo: decoded.correo ?? '',
-        rol: decoded.rol,
-        habeasDataAceptado: true,
-        activo: true,
-      });
+    if (!decoded?.rol || this.tokenExpirado(decoded.exp)) {
+      this.tokenStorage.clearToken();
+      return;
     }
+    this._currentUser.set({
+      id: Number(decoded.id ?? decoded.sub ?? 0),
+      nombre: decoded.nombre ?? decoded.correo ?? 'Usuario',
+      correo: decoded.correo ?? '',
+      rol: decoded.rol,
+      habeasDataAceptado: true,
+      activo: true,
+    });
+  }
+
+  /** true si el `exp` (epoch segundos) ya pasó. */
+  private tokenExpirado(exp?: number): boolean {
+    return exp != null && exp * 1000 <= Date.now();
+  }
+
+  /**
+   * Programa el cierre de sesión exactamente al expirar el JWT para evitar la
+   * ráfaga de 401 que dejaría el usuario sin aviso. No renueva la sesión
+   * (no hay refresh token; el usuario debe volver a iniciar sesión).
+   */
+  private programarExpiracionSesion(): void {
+    if (!this.isBrowser) return;
+    if (this.expiryTimer) {
+      clearTimeout(this.expiryTimer);
+      this.expiryTimer = null;
+    }
+    const exp = this.tokenStorage.getDecodedToken()?.exp;
+    if (!exp) return;
+
+    const ms = exp * 1000 - Date.now();
+    if (ms <= 0) {
+      this.expirarSesion();
+      return;
+    }
+    this.expiryTimer = setTimeout(() => this.expirarSesion(), ms);
+  }
+
+  private expirarSesion(): void {
+    if (!this.isAuthenticated()) return;
+    this.toast.warning('Sesión expirada', 'Tu sesión caducó. Inicia sesión de nuevo para continuar.');
+    this.logout();
   }
 
   setCurrentUser(user: UsuarioResponse, token?: string): void {
@@ -48,6 +91,7 @@ export class AuthService {
     });
     this.tokenStorage.saveToken(jwt);
     this._currentUser.set(user);
+    this.programarExpiracionSesion();
   }
 
   /**
@@ -76,10 +120,15 @@ export class AuthService {
       activo: true,
     };
     this._currentUser.set(usuario);
+    this.programarExpiracionSesion();
     return usuario;
   }
 
   logout(): void {
+    if (this.expiryTimer) {
+      clearTimeout(this.expiryTimer);
+      this.expiryTimer = null;
+    }
     this.tokenStorage.clearToken();
     this._currentUser.set(null);
     this.router.navigate(['/login']);

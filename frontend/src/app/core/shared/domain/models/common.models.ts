@@ -247,6 +247,10 @@ export interface OtResponse {
     manoDeObra?: number;
     repuestos: number;
     tiempoEstimadoHoras?: number;
+    /** Cargo fijo de diagnóstico (visita) notificado al aceptar el técnico. */
+    cargoDiagnostico?: number;
+    /** Cargo fijo de transporte/desplazamiento. */
+    cargoTransporte?: number;
   };
   historial?: HistorialOtItem[];
   fechaCreacion?: string;

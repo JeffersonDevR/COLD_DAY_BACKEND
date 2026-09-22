@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { catchError, debounceTime, distinctUntilChanged, forkJoin, of, switchMap, tap } from 'rxjs';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
@@ -21,13 +20,13 @@ interface BarrioCucuta {
 @Component({
   selector: 'app-solicitar-servicio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, MatIconModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `
     <div class="max-w-4xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
         <div>
           <a routerLink="/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
-            <mat-icon class="text-xs">arrow_back</mat-icon> Volver al Panel
+            <i class="pi pi-arrow-left text-xs"></i> Volver al Panel
           </a>
           <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
             Solicitar Servicio Técnico
@@ -59,7 +58,7 @@ interface BarrioCucuta {
                 [class.dark:border-slate-800]="categoriaActual() !== 'AIRE_ACONDICIONADO'"
               >
                 <div class="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300 flex items-center justify-center">
-                  <mat-icon>mode_fan</mat-icon>
+                  <i class="pi pi-sparkles"></i>
                 </div>
                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">Aire Acondicionado</span>
               </button>
@@ -77,7 +76,7 @@ interface BarrioCucuta {
                 [class.dark:border-slate-800]="categoriaActual() !== 'REFRIGERACION'"
               >
                 <div class="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300 flex items-center justify-center">
-                  <mat-icon>kitchen</mat-icon>
+                  <i class="pi pi-box"></i>
                 </div>
                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">Refrigeración</span>
               </button>
@@ -95,7 +94,7 @@ interface BarrioCucuta {
                 [class.dark:border-slate-800]="categoriaActual() !== 'ELECTRICIDAD'"
               >
                 <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 flex items-center justify-center">
-                  <mat-icon>bolt</mat-icon>
+                  <i class="pi pi-bolt"></i>
                 </div>
                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">Electricidad</span>
               </button>
@@ -113,7 +112,7 @@ interface BarrioCucuta {
                 [class.dark:border-slate-800]="categoriaActual() !== 'ELECTRODOMESTICOS'"
               >
                 <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
-                  <mat-icon>local_laundry_service</mat-icon>
+                  <i class="pi pi-box"></i>
                 </div>
                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">Electrodomésticos</span>
               </button>
@@ -138,7 +137,7 @@ interface BarrioCucuta {
           <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <mat-icon class="text-sky-600 text-sm">my_location</mat-icon>
+                <i class="pi pi-directions text-sky-600 text-sm"></i>
                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   3. Ubicación del Domicilio en Cúcuta *
                 </h4>
@@ -186,7 +185,7 @@ interface BarrioCucuta {
                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-sky-500"
                   />
                   @if (buscandoDireccion()) {
-                    <mat-icon class="absolute right-3 top-2.5 text-slate-400 animate-spin text-base">sync</mat-icon>
+                    <i class="pi pi-sync absolute right-3 top-2.5 text-slate-400 animate-spin text-base"></i>
                   }
                   @if (sugerencias().length) {
                     <ul class="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-56 overflow-auto">
@@ -197,7 +196,7 @@ interface BarrioCucuta {
                             (click)="seleccionarSugerencia(s)"
                             class="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-start gap-2"
                           >
-                            <mat-icon class="text-sky-500 text-sm leading-none">place</mat-icon>
+                            <i class="pi pi-map-marker text-sky-500 text-sm leading-none"></i>
                             <span>{{ s.descripcion }}</span>
                           </button>
                         </li>
@@ -221,7 +220,7 @@ interface BarrioCucuta {
                     [disabled]="ubicando()"
                     class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:text-sky-500 disabled:opacity-50"
                   >
-                    <mat-icon class="text-sm leading-none">{{ ubicando() ? 'sync' : 'my_location' }}</mat-icon>
+                    <i [class]="'pi ' + (ubicando() ? 'pi-sync' : 'pi-directions') + ' text-sm leading-none'"></i>
                     Usar mi ubicación
                   </button>
                 </div>
@@ -279,10 +278,10 @@ interface BarrioCucuta {
               class="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-sm shadow-md transition-all inline-flex items-center gap-2"
             >
               @if (loading()) {
-                <mat-icon class="animate-spin text-sm">sync</mat-icon>
+                <i class="pi pi-sync animate-spin text-sm"></i>
                 Iniciando Broadcast...
               } @else {
-                <mat-icon class="text-sm">radar</mat-icon>
+                <i class="pi pi-compass text-sm"></i>
                 Emitir Solicitud de OT
               }
             </button>

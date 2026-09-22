@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sena.cold_day.core.modules.clientes.application.dto.ClienteRequest;
+import com.sena.cold_day.core.modules.clientes.application.dto.ClienteOnboardingRequest;
 import com.sena.cold_day.core.modules.clientes.application.dto.ClienteResponse;
 import com.sena.cold_day.core.modules.clientes.application.usecases.RegistrarClienteUseCase;
-import com.sena.cold_day.core.modules.clientes.infrastructure.api.requests.ClienteApiRequest;
+import com.sena.cold_day.core.modules.clientes.infrastructure.api.requests.ClienteOnboardingApiRequest;
 import com.sena.cold_day.core.modules.clientes.infrastructure.api.responses.ClienteApiResponse;
 import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.ActualizarUbicacionClienteUseCase;
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
@@ -42,13 +42,13 @@ public class ClienteController {
     }
 
     /**
-     * Creates the client profile for the authenticated principal (carried
-     * decision D6). The {@code usuarioId} is never read from the body.
+     * Alta pública de cliente: crea el Usuario (rol CLIENTE) y su perfil en una
+     * sola transacción (mismo patrón que {@code POST /api/tecnicos}). Ya no
+     * depende de un principal autenticado.
      */
     @PostMapping
-    public ResponseEntity<ClienteApiResponse> crear(@AuthenticationPrincipal AuthenticatedUser principal,
-            @Valid @RequestBody ClienteApiRequest request) {
-        ClienteResponse created = registrar.registrar(toApplicationRequest(request), principal.usuarioId());
+    public ResponseEntity<ClienteApiResponse> crear(@Valid @RequestBody ClienteOnboardingApiRequest request) {
+        ClienteResponse created = registrar.registrarNuevo(toApplicationRequest(request));
         return ResponseEntity.created(URI.create("/api/clientes/" + created.id().valor()))
                 .body(ClienteApiResponse.from(created));
     }
@@ -73,8 +73,9 @@ public class ClienteController {
                 .toList();
     }
 
-    private ClienteRequest toApplicationRequest(ClienteApiRequest request) {
-        return new ClienteRequest(request.tipoCliente(), request.calle(), request.ciudad(),
-                request.barrio(), request.ubicacion());
+    private ClienteOnboardingRequest toApplicationRequest(ClienteOnboardingApiRequest request) {
+        return new ClienteOnboardingRequest(request.nombre(), request.correo(), request.password(),
+                request.telefono(), request.fotoUrl(), request.tipoCliente(), request.calle(), request.ciudad(),
+                request.barrio(), request.ubicacion(), request.aceptaHabeasData());
     }
 }

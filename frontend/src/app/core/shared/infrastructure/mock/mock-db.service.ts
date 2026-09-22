@@ -669,7 +669,13 @@ export class MockDbService {
             fechaActualizacion: fecha,
             historial: [
               ...(ot.historial || []),
-              { estado: 'ASIGNADA', actor: 'TECNICO', fecha, motivo: `Oferta aceptada por ${tecnico.nombre}` }
+              { estado: 'ASIGNADA', actor: 'TECNICO', fecha, motivo: `Oferta aceptada por ${tecnico.nombre}` },
+              {
+                estado: 'ASIGNADA',
+                actor: 'SISTEMA',
+                fecha,
+                motivo: `Cargo de visita + diagnóstico notificado al cliente: $${(environment.diagnosticoPrecio + environment.transportePrecio).toLocaleString('es-CO')} COP (diagnóstico $${environment.diagnosticoPrecio.toLocaleString('es-CO')} + transporte $${environment.transportePrecio.toLocaleString('es-CO')})`
+              }
             ]
           };
         }
@@ -719,6 +725,10 @@ export class MockDbService {
     const fecha = new Date().toISOString();
     const manoObra = diag.costoManoObra ?? diag.manoDeObra ?? 0;
     const repuestos = diag.costoRepuestos ?? diag.repuestos ?? 0;
+    const cargoDiagnostico = environment.diagnosticoPrecio;
+    const cargoTransporte = environment.transportePrecio;
+    // `total` es solo la reparación (mano de obra + repuestos); la visita y el
+    // diagnóstico son un cargo aparte (constantes de environment).
     const total = manoObra + repuestos;
 
     this.ordenesTrabajo.update(list =>
@@ -731,7 +741,9 @@ export class MockDbService {
               aprobado: false,
               manoObra,
               repuestos,
-              total
+              total,
+              cargoDiagnostico,
+              cargoTransporte
             },
             fechaActualizacion: fecha,
             historial: [
@@ -740,7 +752,7 @@ export class MockDbService {
                 estado: ot.estado,
                 actor: 'TECNICO',
                 fecha,
-                motivo: `Diagnóstico emitido: $${total.toLocaleString('es-CO')} COP (Mano de obra: $${manoObra.toLocaleString('es-CO')}, Repuestos: $${repuestos.toLocaleString('es-CO')})`
+                motivo: `Diagnóstico emitido: $${total.toLocaleString('es-CO')} COP de reparación (Mano de obra: $${manoObra.toLocaleString('es-CO')}, Repuestos: $${repuestos.toLocaleString('es-CO')}) + $${(cargoDiagnostico + cargoTransporte).toLocaleString('es-CO')} de visita/diagnóstico`
               }
             ]
           };

@@ -24,17 +24,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Lee backend/.env (no se commitea). Aporta JWT_SECRET, GOOGLE_MAPS_ENABLED
+    # y GOOGLE_MAPS_API_KEY. `environment` tiene prioridad sobre `env_file`.
+    env_file:
+      - ./backend/.env
     environment:
       SPRING_PROFILES_ACTIVE: prod,postgres
       # update es el default del perfil postgres: conserva los datos entre reinicios.
       # Cambia a "create-drop" si alguna vez quieres recrear el esquema desde cero.
       SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      # Dentro de la red de Docker la DB es el servicio `db`, no localhost.
       POSTGRES_URL: jdbc:postgresql://db:5432/cold_day
       POSTGRES_USER: cold_day
       POSTGRES_PASSWORD: cold_day
-      JWT_SECRET: ${JWT_SECRET:-cold-day-local-dev-secret-key-change-me-32bytes!!}
-      GOOGLE_MAPS_ENABLED: ${GOOGLE_MAPS_ENABLED:-false}
-      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     ports:
       - "8090:8090"
 

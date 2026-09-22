@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 import { EstadoOt, HistorialOtItem } from '../../../core/shared/domain/models/common.models';
 
 interface TimelineStep {
@@ -14,7 +13,7 @@ interface TimelineStep {
 @Component({
   selector: 'app-ot-timeline',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, MatIconModule],
+  imports: [DatePipe],
   template: `
     <div class="w-full bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
       <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -59,9 +58,10 @@ interface TimelineStep {
               [class.dark:bg-slate-800]="!step.isCompleted && !step.isCurrent"
               [class.dark:border-slate-700]="!step.isCompleted && !step.isCurrent"
             >
-              <mat-icon class="text-base" style="font-size: 18px; width: 18px; height: 18px;">
-                {{ step.isCompleted && !step.isCurrent ? 'check' : step.icon }}
-              </mat-icon>
+              <i
+                style="font-size: 18px;"
+                [class]="'pi ' + (step.isCompleted && !step.isCurrent ? 'pi-check' : 'pi-' + step.icon)"
+              ></i>
             </div>
             <span
               class="text-xs mt-2 font-medium leading-tight max-w-[85px]"
@@ -127,42 +127,42 @@ export class OtTimeline {
       {
         estado: 'SOLICITADA',
         label: 'Solicitada',
-        icon: 'note_add',
+        icon: 'file-plus',
         isCompleted: currentIndex >= 0,
         isCurrent: current === 'SOLICITADA'
       },
       {
         estado: 'BUSCANDO_TECNICO',
         label: 'Buscando',
-        icon: 'radar',
+        icon: 'compass',
         isCompleted: currentIndex >= 1,
         isCurrent: current === 'BUSCANDO_TECNICO'
       },
       {
         estado: 'ASIGNADA',
         label: 'Asignada',
-        icon: 'person_pin',
+        icon: 'user',
         isCompleted: currentIndex >= 2,
         isCurrent: current === 'ASIGNADA'
       },
       {
         estado: 'EN_CAMINO',
         label: 'En Camino',
-        icon: 'two_wheeler',
+        icon: 'truck',
         isCompleted: currentIndex >= 3,
         isCurrent: current === 'EN_CAMINO'
       },
       {
         estado: 'EN_DIAGNOSTICO',
         label: 'Diagnóstico',
-        icon: 'build',
+        icon: 'wrench',
         isCompleted: currentIndex >= 4,
         isCurrent: current === 'EN_DIAGNOSTICO'
       },
       {
         estado: 'EN_REPARACION',
         label: 'Reparación',
-        icon: 'handyman',
+        icon: 'hammer',
         isCompleted: currentIndex >= 5,
         isCurrent: current === 'EN_REPARACION'
       },

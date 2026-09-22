@@ -19,6 +19,7 @@ import {
   DocumentoTecnicoApiResponse,
   OfertaOtApiResponse,
   OtApiResponse,
+  TecnicoApiRequest,
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
   UbicacionApiRequest,
@@ -41,6 +42,14 @@ export class TecnicosApi {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
+
+  /**
+   * POST /api/tecnicos: endpoint público que crea el Usuario (rol TECNICO) y su
+   * perfil de técnico en una sola transacción. No usar junto con /api/usuarios.
+   */
+  registrar(request: TecnicoApiRequest): Observable<TecnicoApiResponse> {
+    return this.http.post<TecnicoApiResponse>(this.apiConfig.url('/tecnicos'), request);
+  }
 
   /** GET /api/tecnicos/me/ots → OTs asignadas al técnico autenticado. */
   getMisOts(): Observable<OtResponse[]> {

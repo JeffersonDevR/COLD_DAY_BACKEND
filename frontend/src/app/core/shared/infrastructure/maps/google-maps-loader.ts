@@ -73,19 +73,31 @@ export class GoogleMapsLoaderService {
           return;
         }
 
+        const callbackName = '__coldDayMapsInit';
+        const winWithCb = window as unknown as Record<string, unknown>;
+        winWithCb[callbackName] = () => {
+          this.isLoaded.set(true);
+          this.isLoading.set(false);
+          resolve(true);
+        };
+
         const script = document.createElement('script');
         script.id = scriptId;
         script.type = 'text/javascript';
         script.async = true;
         script.defer = true;
 
+        // `loading=async` + callback: patrón recomendado por Google (evita el
+        // warning de performance de la carga directa).
+        const base = 'https://maps.googleapis.com/maps/api/js?libraries=geometry&v=weekly&loading=async';
         const url = key
-          ? `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=geometry&v=weekly`
-          : 'https://maps.googleapis.com/maps/api/js?libraries=geometry&v=weekly';
+          ? `${base}&key=${encodeURIComponent(key)}&callback=${callbackName}`
+          : `${base}&callback=${callbackName}`;
 
         script.src = url;
 
         script.onload = () => {
+          // Fallback por si el callback no se dispara.
           this.isLoaded.set(true);
           this.isLoading.set(false);
           resolve(true);
