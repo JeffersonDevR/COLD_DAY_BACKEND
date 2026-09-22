@@ -26,9 +26,9 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod,postgres
-      # create-drop es el default del perfil postgres: recrea el esquema en cada arranque.
-      # Cambia a "update" si quieres conservar datos entre reinicios locales.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-create-drop}
+      # update es el default del perfil postgres: conserva los datos entre reinicios.
+      # Cambia a "create-drop" si alguna vez quieres recrear el esquema desde cero.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
       POSTGRES_URL: jdbc:postgresql://db:5432/cold_day
       POSTGRES_USER: cold_day
       POSTGRES_PASSWORD: cold_day

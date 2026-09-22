@@ -32,3 +32,6 @@ frontend/.env
 frontend/node_nodules/
 frontend/
 /PROTOTIPO_FRONTEND_ANGULAR_AI_STUDIO.md
+
+# IDE (IntelliJ) — config local del desarrollador, incluye datos de conexion a BD
+.idea/
