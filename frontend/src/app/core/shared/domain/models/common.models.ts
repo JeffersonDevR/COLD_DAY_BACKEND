@@ -1,5 +1,5 @@
 /** Roles soportados por el backend (Rol.java). */
-export type Rol = 'CLIENTE' | 'TECNICO' | 'ADMINISTRADOR' | 'CONTABLE';
+export type Rol = 'CLIENTE' | 'TECNICO' | 'ADMINISTRADOR' | 'CONTABLE' | 'PROVEEDOR';
 
 export type CategoriaServicio =
   | 'REFRIGERACION'

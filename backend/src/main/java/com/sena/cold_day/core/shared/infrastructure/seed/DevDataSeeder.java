@@ -16,6 +16,8 @@ import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
+import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -50,13 +52,16 @@ public class DevDataSeeder implements ApplicationRunner {
     private final UsuarioRepository usuarioRepository;
     private final TecnicoRepository tecnicoRepository;
     private final ClienteRepository clienteRepository;
+    private final ProveedorRepository proveedorRepository;
     private final PasswordEncoderPort encoder;
 
     public DevDataSeeder(UsuarioRepository usuarioRepository, TecnicoRepository tecnicoRepository,
-            ClienteRepository clienteRepository, PasswordEncoderPort encoder) {
+            ClienteRepository clienteRepository, ProveedorRepository proveedorRepository,
+            PasswordEncoderPort encoder) {
         this.usuarioRepository = usuarioRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.clienteRepository = clienteRepository;
+        this.proveedorRepository = proveedorRepository;
         this.encoder = encoder;
     }
 
@@ -82,6 +87,12 @@ public class DevDataSeeder implements ApplicationRunner {
                 new TecnicoSeed("Diego Castillo", "tecnico5@coldday.com.co", "3045678901", "1098765005",
                         Set.of(CategoriaServicio.AIRE_ACONDICIONADO, CategoriaServicio.ELECTRICIDAD), new Point(7.8915, -72.4885)));
 
+        List<ProveedorSeed> proveedores = List.of(
+                new ProveedorSeed("Suministros del Norte", "proveedor1@coldday.com.co", "3105550001",
+                        "Suministros del Norte S.A.S.", "900123456-1", "Avenida 6 # 10-50",
+                        new Point(7.8950, -72.5010),
+                        Set.of("AIRE_ACONDICIONADO", "REFRIGERACION")));
+
         int clientesCreados = 0;
         for (ClienteSeed seed : clientes) {
             Long usuarioId = ensureUsuario(seed.nombre(), seed.correo(), seed.telefono(), Rol.CLIENTE);
@@ -103,12 +114,22 @@ public class DevDataSeeder implements ApplicationRunner {
             }
         }
 
+        int proveedoresCreados = 0;
+        for (ProveedorSeed seed : proveedores) {
+            Long usuarioId = ensureUsuario(seed.nombre(), seed.correo(), seed.telefono(), Rol.PROVEEDOR);
+            if (proveedorRepository.findByUsuarioId(usuarioId).isEmpty()) {
+                proveedorRepository.save(Proveedor.crear(usuarioId, seed.razonSocial(), seed.nit(),
+                        seed.telefono(), seed.direccion(), seed.ubicacion(), seed.categoriasInsumo()));
+                proveedoresCreados++;
+            }
+        }
+
         // Roles administrativos para poder observar los paneles de gestión.
         ensureUsuario("Carlos Méndez", "admin@coldday.com.co", "3104567890", Rol.ADMINISTRADOR);
         ensureUsuario("Ana Martínez", "contable@coldday.com.co", "3156789012", Rol.CONTABLE);
 
-        log.info("Seed verificado: {} clientes y {} técnicos creados (perfiles faltantes reparados). Password demo: {}.",
-                clientesCreados, tecnicosCreados, PASSWORD_DEMO);
+        log.info("Seed verificado: {} clientes, {} técnicos y {} proveedores creados (perfiles faltantes reparados). Password demo: {}.",
+                clientesCreados, tecnicosCreados, proveedoresCreados, PASSWORD_DEMO);
     }
 
     /**
@@ -128,5 +149,9 @@ public class DevDataSeeder implements ApplicationRunner {
 
     private record TecnicoSeed(String nombre, String correo, String telefono, String numeroIdentificacion,
             Set<CategoriaServicio> categorias, Point ubicacion) {
+    }
+
+    private record ProveedorSeed(String nombre, String correo, String telefono, String razonSocial,
+            String nit, String direccion, Point ubicacion, Set<String> categoriasInsumo) {
     }
 }

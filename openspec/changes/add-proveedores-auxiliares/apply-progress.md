@@ -1,7 +1,7 @@
 # Apply Progress: add-proveedores-auxiliares
 
 Change: `add-proveedores-auxiliares` · Store: `openspec` · Mode: Standard (`rules.apply.tdd: false`, no `strict_tdd` marker)
-Slices: **1 — Tariff calculator** (PR 1, committed `b45fd60`) + **2 — Estimate endpoint** (PR 2, committed `635db3e`) + **3 — Authoritative tariff persistence** (PR 3, committed `e9bb926`) + **4 — Auxiliar persistence** (PR 4, committed `bea0671`) + **5 — Auxiliar accept API** (PR 5, this attempt) · Chain strategy: `stacked-to-main`
+Slices: **1 — Tariff calculator** (PR 1, committed `b45fd60`) + **2 — Estimate endpoint** (PR 2, committed `635db3e`) + **3 — Authoritative tariff persistence** (PR 3, committed `e9bb926`) + **4 — Auxiliar persistence** (PR 4, committed `bea0671`) + **5 — Auxiliar accept API** (PR 5, committed `8ab5ff0`) + **6 — Proveedor identity** (PR 6, this attempt) · Chain strategy: `stacked-to-main`
 
 ## Completed Tasks
 
@@ -299,3 +299,78 @@ Slices: **1 — Tariff calculator** (PR 1, committed `b45fd60`) + **2 — Estima
 - Slices 6–14: proveedores, despacho-insumos, frontend surfaces, UI, full boot/verify.
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, reproduced without this slice.
+
+---
+
+# Slice 6 — Proveedor identity (PR 6 of the chained/stacked delivery)
+
+Identity foundation only (task 5.1). The admin provisioning + listing API (task 5.2) is slice 7; the despacho-insumos context is slices 8–11; UI/routes are slice 12.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 5.1 | New `proveedores` bounded context: `Proveedor` aggregate + `ProveedorId` VO + `ProveedorRepository` port; `ProveedorJpaEntity` + `SpringDataProveedorRepository` + `ProveedorRepositoryAdapter`; `Rol.PROVEEDOR`; additive `proveedor` table in `schema.sql`; 1 idempotent seeded supplier. **No public surface, no registration endpoint.** | `[x]` |
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `backend/.../proveedores/domain/valueobjects/ProveedorId.java` | Created | Own-UUID identity record, mirroring `TecnicoId` |
+| `backend/.../proveedores/domain/aggregates/Proveedor.java` | Created | Supplier identity aggregate: business identity + `Point` location + `categoriasInsumo` metadata + `activo`; `crear` enforces the linked-`Usuario` invariant (P1); `desactivar`/`activar` (P5); `reconstituir` for persistence |
+| `backend/.../proveedores/domain/repository/ProveedorRepository.java` | Created | Port: `save`, `buscarPorId`, `findByUsuarioId`, `findByActivoTrue` (P5/AD7 eligibility), `deleteAll` |
+| `backend/.../proveedores/infrastructure/persistence/CategoriasInsumoJsonConverter.java` | Created | `Set<String>` ↔ `categorias_insumo` JSON column, mirroring `CategoriaServicioJsonConverter` |
+| `backend/.../proveedores/infrastructure/persistence/ProveedorJpaEntity.java` | Created | `proveedor` mapping: own UUID PK, scalar unique `usuario_id`, unique `nit`, nullable contact/location, `activo` defaulted, `creado_en` |
+| `backend/.../proveedores/infrastructure/repository/SpringDataProveedorRepository.java` | Created | `JpaRepository` with `findByActivoTrue` + `findByUsuarioId` |
+| `backend/.../proveedores/infrastructure/repository/ProveedorRepositoryAdapter.java` | Created | Adapter delegating to the entity mapper (insert/merge semantics) |
+| `backend/.../usuarios/domain/valueobjects/Rol.java` | Modified | Added `PROVEEDOR` (D7 role) |
+| `backend/src/main/resources/schema.sql` | Modified | Additive `CREATE TABLE IF NOT EXISTS proveedor` mirroring the entity (design DDL) |
+| `backend/.../shared/infrastructure/seed/DevDataSeeder.java` | Modified | Injects `ProveedorRepository`; seeds 1 idempotent Proveedor (`proveedor1@coldday.com.co`), same `app.seed.enabled` flag |
+| `frontend/.../core/shared/domain/models/common.models.ts` | Modified | `Rol` union gains `'PROVEEDOR'` (enum value only; no routes/guards/pages) |
+| `backend/.../test/.../proveedores/domain/aggregates/ProveedorTest.java` | Created | 7 domain tests: creation, linked-`Usuario` invariant, required fields, active toggle, null categories, reconstitution |
+| `backend/.../test/.../proveedores/infrastructure/persistence/ProveedorRepositoryTest.java` | Created | 4 `@DataJpaTest` tests: save/find, location+categories round-trip, active lookup excludes inactive (P5), duplicate NIT rejected |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd backend && ./gradlew test --tests '*ProveedorTest'` → `BUILD SUCCESSFUL`; `ProveedorTest` `tests="7" failures="0"`. Extra: `--tests '*ProveedorRepositoryTest'` → `BUILD SUCCESSFUL`, `tests="4" failures="0"`. |
+| Runtime harness command/scenario and exact result | `cd backend && ./gradlew bootRun` (file-backed H2, `ddl-auto=update`). Seed log: `Seed verificado: 5 clientes, 5 técnicos y 1 proveedores creados`. `POST /api/usuarios/login` with `{"correo":"proveedor1@coldday.com.co","password":"demo1234"}` → **HTTP 200**, body `{"token":"...","expiracion":"...","rol":"PROVEEDOR"}`; the JWT payload decodes to `{"sub":"11","rol":"PROVEEDOR","ver":0,...}`. Offline `org.h2.tools.Shell` read-back of `proveedor JOIN usuario` → `Suministros del Norte S.A.S. | 900123456-1 | TRUE | 11 | proveedor1@coldday.com.co | PROVEEDOR`. |
+| `Rol`-generic JWT confirmation (design verified, no edit) | `JwtTokenIssuer`, `JwtAuthenticationFilter` and `SecurityConfig` were **not modified**. The runtime harness proves it: login issued `rol=PROVEEDOR` and `Rol.valueOf("PROVEEDOR")` resolved in the filter. No `permitAll` matcher was added (D7). |
+| Regression guard | `cd backend && ./gradlew test` → **332 tests / 4 failures**, and the 4 failing classes are exactly `ClientesApiIT` (the frozen out-of-scope baseline; 321 → 332 from the 11 new slice-6 tests). No new regressions. |
+| Frontend contract guard | `cd frontend && npx tsc -p tsconfig.app.json --noEmit` → exit 0 (the new union member breaks no exhaustive switch/record; no UI added). |
+| Rollback boundary | `modules/proveedores/**` (7 main + 2 test files), the `Rol.PROVEEDOR` member, the `proveedor` table block in `schema.sql`, the `DevDataSeeder` proveedor wiring, and the `'PROVEEDOR'` union member in `common.models.ts`. No `ot`/tariff/auxiliar behavior, no `SecurityConfig`/JWT, no `schema-postgres.sql`, no controller/route/guard is touched. |
+
+## Verification
+
+1. `cd backend && ./gradlew compileJava compileTestJava` → **BUILD SUCCESSFUL**
+2. `cd backend && ./gradlew test --tests '*ProveedorTest'` → **BUILD SUCCESSFUL**, 7 tests / 0 failures
+3. `cd backend && ./gradlew test --tests '*ProveedorRepositoryTest'` → **BUILD SUCCESSFUL**, 4 tests / 0 failures
+4. Runtime harness (above): seeded supplier resolves via login (`rol=PROVEEDOR`) and the persisted row joins its `usuario`
+5. `cd backend && ./gradlew test` → **332 tests / 4 failures**, all 4 `ClientesApiIT`
+6. `cd frontend && npx tsc -p tsconfig.app.json --noEmit` → exit 0
+
+## Budget
+
+Authored changed lines for this slice (measured with `git diff --cached --numstat`):
+
+- Implementation + tests (13 files: 4 modified + 9 new): **659** (654 additions + 5 deletions) — within the 720-line hard budget.
+- Merged apply-progress artifact: **77** (76 additions + 1 deletion).
+- **Combined work unit: 736** — 16 lines over the 720 hard cap once the artifact is included.
+
+The 659 implementation lines are one cohesive work unit (aggregate + VO + port + JPA + adapter + schema + seed + tests); the review-budget rule forbids shrinking it by deleting tests, comments or docs, and one honest slicing pass found no cohesive split (splitting the aggregate from its persistence/tests would break work-unit cohesion). **Recommend `size:exception` for the 16-line artifact overage**; the implementation itself needs no exception.
+
+## Deviations from Design
+
+- **`categorias_insumo` modelled as `Set<String>`** with a local `CategoriasInsumoJsonConverter`. The design names no `CategoriaInsumo` VO for this context and calls the field descriptive metadata (AD7); reusing the `tecnicos`-owned `CategoriaServicio` enum would invert the bounded-context direction. The JSON-in-a-single-column shape mirrors `CategoriaServicioJsonConverter` exactly.
+- **`usuario_id` uniqueness enforced by the column constraint** (`@Column(unique = true)`), not by a separately named `@Index` as the design's index list sketched. This matches `TecnicoJpaEntity`/`ClienteJpaEntity`; both H2 and Postgres create a unique index for it.
+- **No `NitDuplicadoException`** added. The design specifies 409 only for a duplicate `correo` (handled by the slice-7 use case via `existeCorreo`); a duplicate `nit` is unspecified, so the adapter lets the unique-constraint violation surface rather than inventing an exception.
+- **`schema-postgres.sql` unchanged** — no new spatial/PostGIS artifact is introduced; suppliers are not spatially queried (design schema section). Stated explicitly per the task.
+- **No `findAll` on the port yet**: listing (including inactive) is slice 7 (task 5.2); adding it now would be speculative.
+
+## Out of Scope (do not absorb)
+
+- Slice 7: `RegistrarProveedorUseCase`, `ListarProveedoresUseCase`, DTOs/controller/advice, `ProveedorApiIT`, admin frontend surface.
+- Slices 8–14: despacho-insumos, frontend surfaces, UI, full boot/verify.
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.

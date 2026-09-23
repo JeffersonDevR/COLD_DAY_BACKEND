@@ -158,3 +158,24 @@ CREATE TABLE IF NOT EXISTS disputa (
     resuelta_en TIMESTAMP
 );
 
+-- Proveedor identity (spec P1, design AD7). Brand-new additive table: it has no
+-- legacy rows, so the nullable/defaulted rule that protects existing tables from
+-- `ddl-auto=update` ALTERs does not apply here. Hibernate create-drop remains
+-- authoritative for H2 (D8); this mirror stays in lockstep with ProveedorJpaEntity.
+-- A Proveedor is linked to exactly one usuario (usuario_id NOT NULL UNIQUE);
+-- categorias_insumo is descriptive metadata, never an eligibility gate.
+CREATE TABLE IF NOT EXISTS proveedor (
+    id UUID PRIMARY KEY,
+    usuario_id BIGINT NOT NULL UNIQUE REFERENCES usuario(id),
+    razon_social VARCHAR(255) NOT NULL,
+    nit VARCHAR(50) NOT NULL UNIQUE,
+    telefono VARCHAR(30),
+    direccion VARCHAR(500),
+    latitud DOUBLE PRECISION,
+    longitud DOUBLE PRECISION,
+    categorias_insumo VARCHAR(1000),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    creado_en TIMESTAMP
+);
+
+

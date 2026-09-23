@@ -5,5 +5,5 @@ package com.sena.cold_day.core.modules.usuarios.domain.valueobjects;
  * inheritance: role aggregates keep referencing UsuarioId independently.
  */
 public enum Rol {
-	CLIENTE, TECNICO, ADMINISTRADOR, CONTABLE
+	CLIENTE, TECNICO, ADMINISTRADOR, CONTABLE, PROVEEDOR
 }
