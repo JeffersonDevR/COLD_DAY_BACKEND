@@ -337,7 +337,10 @@ export class MockDbService {
         observaciones: 'Se requiere desmonte de panel interior, sustitución de bimetal y lubricación de ducto de drenaje.',
         costoManoObra: 85000,
         costoRepuestos: 65000,
-        repuestosSugeridos: ['Bimetálico universal L55', 'Ventilador difusor 110V Haceb'],
+        insumos: [
+          { descripcion: 'Bimetálico universal L55', cantidad: 1 },
+          { descripcion: 'Ventilador difusor 110V Haceb', cantidad: 1 }
+        ],
         tiempoEstimadoMinutos: 90
       },
       presupuesto: {
@@ -376,7 +379,10 @@ export class MockDbService {
         fallaDetectada: 'Breaker termo-magnético de 40A vencido por sobrecarga con terminales sulfatados y fase recalentada.',
         costoManoObra: 95000,
         costoRepuestos: 85000,
-        repuestosSugeridos: ['Breaker Legrand 2x40A enchufable', 'Cable THHN #8 AWG 3 metros'],
+        insumos: [
+          { descripcion: 'Breaker Legrand 2x40A enchufable', cantidad: 1 },
+          { descripcion: 'Cable THHN #8 AWG 3 metros', cantidad: 3 }
+        ],
         tiempoEstimadoMinutos: 60
       },
       presupuesto: {
@@ -416,7 +422,10 @@ export class MockDbService {
         fallaDetectada: 'Serpentín condensador tapado por polvo y baja presión de 85 PSI (requirió presurización a 125 PSI).',
         costoManoObra: 110000,
         costoRepuestos: 70000,
-        repuestosSugeridos: ['Lata Refrigerante R410A 1kg', 'Limpiador desengrasante dieléctrico'],
+        insumos: [
+          { descripcion: 'Lata Refrigerante R410A 1kg', cantidad: 1 },
+          { descripcion: 'Limpiador desengrasante dieléctrico', cantidad: 1 }
+        ],
         tiempoEstimadoMinutos: 120
       },
       presupuesto: {
@@ -463,7 +472,7 @@ export class MockDbService {
         fallaDetectada: 'Bomba de expulsión atascada con restos de monedas y filtro de drenaje obstruido.',
         costoManoObra: 75000,
         costoRepuestos: 95000,
-        repuestosSugeridos: ['Bomba de drenaje magnética Whirlpool']
+        insumos: [{ descripcion: 'Bomba de drenaje magnética Whirlpool', cantidad: 1 }]
       },
       presupuesto: {
         aprobado: false,

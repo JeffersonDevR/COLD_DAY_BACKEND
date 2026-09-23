@@ -31,6 +31,8 @@ import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoExcep
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.proveedores.application.usecases.SolicitarInsumoUseCase;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.InsumoLinea;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -53,12 +55,13 @@ class RegistrarDiagnosticoUseCaseTest {
 
     @Mock OtRepository otRepository;
     @Mock TecnicoRepository tecnicoRepository;
+    @Mock SolicitarInsumoUseCase solicitarInsumo;
 
     private RegistrarDiagnosticoUseCase useCase;
 
     @BeforeEach
     void setup() {
-        useCase = new RegistrarDiagnosticoUseCase(otRepository, tecnicoRepository,
+        useCase = new RegistrarDiagnosticoUseCase(otRepository, tecnicoRepository, solicitarInsumo,
                 Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 
@@ -79,6 +82,25 @@ class RegistrarDiagnosticoUseCaseTest {
         assertThat(response.diagnostico().registradoEn()).isEqualTo(AHORA);
         assertThat(response.presupuesto().costoManoObra()).isEqualByComparingTo("120000.00");
         assertThat(response.presupuesto().costoRepuestos()).isEqualByComparingTo("350000.00");
+        // No lines declared: the dispatch is handed an empty list and creates nothing.
+        verify(solicitarInsumo).solicitar(ot.getId().valor(), tecnico.getId().valor(), List.of(), "Revisado en sitio");
+    }
+
+    @Test
+    void registrarTriggersTheInsumoDispatchWhenLinesAreDeclared() {
+        Tecnico tecnico = tecnico();
+        Ot ot = otAsignada(tecnico.getId(), EstadoOt.EN_CAMINO);
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        List<InsumoLinea> lineas = List.of(new InsumoLinea("Filtro secadora", 2));
+
+        useCase.registrar(PRINCIPAL, ot.getId(),
+                new DiagnosticoRequest("Compresor averiado", "Revisado en sitio", new BigDecimal("120000.00"),
+                        new BigDecimal("350000.00"), lineas));
+
+        verify(solicitarInsumo).solicitar(ot.getId().valor(), tecnico.getId().valor(), lineas,
+                "Revisado en sitio");
     }
 
     @Test

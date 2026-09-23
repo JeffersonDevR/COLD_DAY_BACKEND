@@ -16,6 +16,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.proveedores.application.usecases.SolicitarInsumoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
@@ -26,18 +27,26 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
  * (labor + parts), advancing {@code EN_CAMINO -> EN_DIAGNOSTICO} and presenting
  * the budget to the client. A non-assigned technician is a 403 and nothing is
  * persisted.
+ *
+ * <p>When the diagnosis declares insumo lines, the dispatch is triggered AFTER
+ * the diagnosis is persisted (spec disp.R1/R2, design flow (b)): only the
+ * assigned technician can reach it (the guard above), and the request is a
+ * separate root that never blocks the OT. Zero insumos create no request and
+ * leave the diagnóstico flow unchanged.
  */
 @Service
 public class RegistrarDiagnosticoUseCase {
 
     private final OtRepository otRepository;
     private final TecnicoRepository tecnicoRepository;
+    private final SolicitarInsumoUseCase solicitarInsumo;
     private final Clock clock;
 
     public RegistrarDiagnosticoUseCase(OtRepository otRepository, TecnicoRepository tecnicoRepository,
-            Clock clock) {
+            SolicitarInsumoUseCase solicitarInsumo, Clock clock) {
         this.otRepository = otRepository;
         this.tecnicoRepository = tecnicoRepository;
+        this.solicitarInsumo = solicitarInsumo;
         this.clock = clock;
     }
 
@@ -56,6 +65,12 @@ public class RegistrarDiagnosticoUseCase {
 
         ot.registrarDiagnostico(diagnostico, ActorOt.TECNICO, ahora);
         ot.presupuestar(presupuesto);
-        return OtResponse.fromDomain(otRepository.save(ot));
+        Ot guardada = otRepository.save(ot);
+
+        // spec disp.R1/AD5: the insumo lines live in the despacho tables, not in
+        // the diagnóstico JSON column; zero lines create no request and never fail.
+        solicitarInsumo.solicitar(guardada.getId().valor(), tecnico.getId().valor(), request.insumos(),
+                request.observaciones());
+        return OtResponse.fromDomain(guardada);
     }
 }

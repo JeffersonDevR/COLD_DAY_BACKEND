@@ -200,6 +200,12 @@ export function aDiagnosticoApiRequest(diag: DiagnosticoRequest): DiagnosticoApi
     observaciones: diag.observaciones,
     costoManoObra: diag.costoManoObra ?? diag.manoDeObra ?? 0,
     costoRepuestos: diag.costoRepuestos ?? diag.repuestos ?? 0,
+    // AD12: los insumos reemplazan al vestigial `repuestosSugeridos` y viajan
+    // al contrato real del backend (POST /api/ot/{id}/diagnostico).
+    insumos: (diag.insumos ?? []).map((linea) => ({
+      descripcion: linea.descripcion,
+      cantidad: linea.cantidad,
+    })),
   };
 }
 

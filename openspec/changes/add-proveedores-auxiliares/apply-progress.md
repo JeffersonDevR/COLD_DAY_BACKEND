@@ -673,3 +673,100 @@ The 1,322 lines are one cohesive work unit: the five use cases + the notificatio
 - Slice 12: frontend DTO/mapper/mock, supplier portal, técnico/client pages, routes/menu/auth.
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
+
+---
+
+# Slice 11 — Despacho API + wiring (PR 11 of the chained/stacked delivery)
+
+REST surface + diagnóstico wiring (tasks 6.4–6.5). The frontend feature surfaces (task 6.6) are slice 12; integration/verify/docs are slice 13.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 6.4 | Diagnóstico wiring: `insumos` on the wire (`DiagnosticoApiRequest` + `InsumoLineaApiRequest`) and the DTO (`DiagnosticoRequest`); `RegistrarDiagnosticoUseCase` triggers `SolicitarInsumoUseCase` after the diagnosis is persisted; zero insumos create nothing; non-assigned → 403 and no request (existing guard). AD5: the lines stay out of the `diagnostico` JSON column. | `[x]` |
+| 6.5 | API + tests: `InsumoController` (listing, aceptar, rechazar, entregar) with `@PreAuthorize('PROVEEDOR')` + `InsumoControllerAdvice`; `ListarSolicitudesProveedorUseCase` + the response records; first-wins, concurrency one-winner/one-409 **over HTTP**, late accept, reject, delivery, zero eligible, ineligible supplier 403 **(b)**, notification failure leaves state intact **(c, slice-10 proof)**; budget/liquidación unaffected (untouched). | `[x]` |
+| 6.6 (partial — AD12 only) | Frontend contract cleanup: the vestigial, mapper-dropped `repuestosSugeridos` is replaced by `insumos: InsumoLinea[]` in `common.models.ts` + `backend.dto.ts` + `backend.mappers.ts` and the 4 `mock-db.service.ts` literals. No UI pages (slice 12). | `[x]` |
+
+## Endpoints exposed (slice 12 binds to these)
+
+| Method / path | Auth | Success | Errors |
+|---|---|---|---|
+| `GET /api/proveedores/me/solicitudes` | `PROVEEDOR` | 200 `OfertaInsumoApiResponse[]` (offer + embedded `SolicitudInsumoApiResponse` request with its `items`) | 401, 403 |
+| `POST /api/insumos/{ofertaId}/aceptar` | `PROVEEDOR` | 200 `SolicitudInsumoApiResponse` (`estado=ASIGNADO`) | 400 malformed id, 401, 403, 409 |
+| `POST /api/insumos/{ofertaId}/rechazar` | `PROVEEDOR` | 200 `OfertaInsumoApiResponse` (`estado=RECHAZADO`) | 400, 401, 403, 409 |
+| `POST /api/insumos/{id}/entregar` | `PROVEEDOR` | 200 `SolicitudInsumoApiResponse` (`estado=ENTREGADO`) | 400, 401, 403, 404, 409 |
+
+`POST /api/ot/{id}/diagnostico` now accepts `insumos?: [{descripcion, cantidad}]`: 200 (EN_DIAGNOSTICO), 400 (blank description / quantity < 1 / ill-typed body), 401, 403 (non-assigned technician). `OfertaInsumoApiResponse` = `{id, requerimientoId, proveedorId, estado, creadaEn, expiraEn, resueltaEn, requerimiento}`; `SolicitudInsumoApiResponse` = `{id, otId, tecnicoId, estado, observaciones, items:[{descripcion,cantidad}], creadaEn, expiraEn, resueltaEn}`.
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `backend/.../proveedores/application/dto/SolicitudProveedor.java` | Created | Read projection pairing a pending offer with its request (offer id to act on + lines to display) |
+| `backend/.../proveedores/application/usecases/ListarSolicitudesProveedorUseCase.java` | Created | Supplier poll: eligibility gate, pending + still-vigente offers with their requests; lazy expiry via the shared `Clock` |
+| `backend/.../proveedores/infrastructure/api/responses/SolicitudInsumoApiResponse.java` | Created | Request view (root state + free-text lines) |
+| `backend/.../proveedores/infrastructure/api/responses/OfertaInsumoApiResponse.java` | Created | Offer view, embedding the request when the caller holds it |
+| `backend/.../proveedores/infrastructure/api/controllers/InsumoController.java` | Created | `GET /api/proveedores/me/solicitudes` + the three `POST /api/insumos/**` actions, all `@PreAuthorize('PROVEEDOR')` |
+| `backend/.../proveedores/infrastructure/api/controllers/InsumoControllerAdvice.java` | Created | Canonical `ApiError`: 403 ineligible, 409 unavailable/invalid-transition, 404 missing request, 400 malformed id |
+| `backend/.../ot/infrastructure/api/requests/InsumoLineaApiRequest.java` | Created | Wire insumo line (`@NotBlank`/`@Min(1)`) mapping to the `InsumoLinea` VO → 400 instead of a 500 |
+| `backend/.../ot/infrastructure/api/requests/DiagnosticoApiRequest.java` | Modified | Added optional `@Valid List<InsumoLineaApiRequest> insumos` |
+| `backend/.../ot/application/dto/DiagnosticoRequest.java` | Modified | Added `List<InsumoLinea> insumos` + a legacy 4-arg delegating constructor |
+| `backend/.../ot/application/usecases/RegistrarDiagnosticoUseCase.java` | Modified | Injects `SolicitarInsumoUseCase`; triggers the dispatch AFTER `otRepository.save`, passing `otId`/`tecnicoId` as UUIDs |
+| `backend/.../ot/infrastructure/api/controllers/OtController.java` | Modified | Maps the wire lines to `InsumoLinea` and passes them through |
+| `backend/.../ot/infrastructure/api/controllers/OtControllerAdvice.java` | Modified | `HttpMessageNotReadableException` → canonical 400 (ill-typed insumo quantity) |
+| `backend/.../test/.../ot/application/usecases/RegistrarDiagnosticoUseCaseTest.java` | Modified | Constructor + 1 wiring test (lines handed to the dispatch) and an empty-list assertion |
+| `backend/.../test/.../ot/infrastructure/api/controllers/OtDiagnosticoPresupuestoIT.java` | Modified | 3 end-to-end tests: insumos → request (outside the diagnóstico JSON); zero insumos → no request; non-assigned → 403 + no request |
+| `backend/.../test/.../proveedores/infrastructure/api/controllers/InsumoApiIT.java` | Modified | 7 MockMvc tests: listing, accept, loser 409, reject, deliver, non-winner 403, unlinked supplier 403, unknown offer 409/request 404, malformed id 400, role/401 boundaries |
+| `backend/.../test/.../proveedores/infrastructure/api/controllers/AceptacionInsumoConcurrenteIT.java` | Created | Two concurrent **HTTP** accepts → exactly one 200 and one 409; winner `ACEPTADA`, sibling `CANCELADA` |
+| `frontend/.../core/shared/domain/models/common.models.ts` | Modified | `InsumoLinea` view model; `DiagnosticoRequest.insumos` replaces `repuestosSugeridos` (AD12) |
+| `frontend/.../core/shared/infrastructure/api/backend.dto.ts` | Modified | `InsumoLineaApi` + optional `insumos` on `DiagnosticoApiRequest` |
+| `frontend/.../core/shared/infrastructure/api/backend.mappers.ts` | Modified | `aDiagnosticoApiRequest` now maps `insumos` |
+| `frontend/.../core/shared/infrastructure/mock/mock-db.service.ts` | Modified | The 4 `repuestosSugeridos` literals became `insumos: [{descripcion, cantidad}]` |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd backend && ./gradlew test --tests '*InsumoApiIT' --tests '*AceptacionInsumoConcurrenteIT' --tests '*OtDiagnosticoPresupuestoIT' --tests '*RegistrarDiagnosticoUseCaseTest'` → `BUILD SUCCESSFUL`; `InsumoApiIT` 11/0, `AceptacionInsumoConcurrenteIT` 1/0, `OtDiagnosticoPresupuestoIT` 11/0, `RegistrarDiagnosticoUseCaseTest` 4/0 failures. |
+| Runtime harness command/scenario and exact result | `cd backend && ./gradlew bootRun --args="--server.port=18090 --spring.datasource.url=jdbc:h2:file:/tmp/opencode/slice11/coldday;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1 --spring.jpa.hibernate.ddl-auto=update --app.dispatch.escalamiento-ms=3600000 --app.insumos.barrido-ms=3600000"` + a real HTTP walk. **Observed status codes:** diagnóstico with insumo lines → **200** `EN_DIAGNOSTICO`; `GET /api/proveedores/me/solicitudes` → **200** with `{estado:PENDIENTE, requerimiento.items:[{Filtro secadora,2},{Bimetalico L55,1}]}`; first accept → **200** `ASIGNADO`; losing accept → **409**; non-winner `entregar` → **403**; winner `entregar` → **200** `ENTREGADO`; técnico listing → **403**; anonymous → **401**; malformed id → **400**; unknown request `entregar` → **404**; blank/zero insumo → **400** with field errors; **zero-insumos diagnóstico → 200** `EN_DIAGNOSTICO` and the supplier's pending list stayed at 0 (no request created). |
+| Regression guard | `cd backend && ./gradlew test` → **410 tests / 4 failures**, the 4 failing classes exactly `ClientesApiIT` (the frozen out-of-scope baseline; 398 → 410 from the 12 new slice-11 tests). No new regressions. |
+| Frontend guard | `cd frontend && npx tsc -p tsconfig.app.json --noEmit` → exit 0; `npm run build` → **BUILD SUCCESSFUL**. `grep repuestosSugeridos frontend/src` → only the two AD12 removal comments remain, no code usage. |
+| Bounded-context direction check | `proveedores/**` still imports no `ot`/`tecnicos` domain types. The dependency is one-way: `ot/application` + `ot/infrastructure` import `proveedores/application` (`SolicitarInsumoUseCase`) and `proveedores/domain/valueobjects/InsumoLinea`, exactly as slice 10 anticipated. |
+| Rollback boundary | The 7 new `proveedores` API/application files, the new `InsumoLineaApiRequest`, the `DiagnosticoApiRequest`/`DiagnosticoRequest`/`OtController`/`OtControllerAdvice`/`RegistrarDiagnosticoUseCase` edits, the 4 test files (2 modified + 2 created — `InsumoApiIT` is modified, `AceptacionInsumoConcurrenteIT` created) and the 4 frontend contract files. No schema, no `application.properties`, no `SecurityConfig`/JWT, no `ot` aggregate/tariff/auxiliar behavior, no routes/menu/UI. |
+
+## Verification
+
+1. `cd backend && ./gradlew compileJava compileTestJava` → **BUILD SUCCESSFUL**
+2. `cd backend && ./gradlew test --tests '*InsumoApiIT' --tests '*AceptacionInsumoConcurrenteIT'` → **BUILD SUCCESSFUL**, 12 tests / 0 failures
+3. Runtime harness (above): full broadcast → first-accept → deliver over HTTP, zero-insumos unchanged; every status code as designed
+4. `cd backend && ./gradlew test` → **410 tests / 4 failures**, all 4 `ClientesApiIT`
+5. `cd frontend && npx tsc -p tsconfig.app.json --noEmit` → exit 0; `npm run build` → **BUILD SUCCESSFUL**
+
+## Budget
+
+Authored changed lines for this slice (measured with `git diff --numstat` + `wc -l` on new files):
+
+- Implementation + tests: **923** (904 additions + 19 deletions across 20 files: 12 modified + 8 created).
+- Merged apply-progress section included in the same commit.
+- **Combined work unit: ~1,040.**
+
+**Within the 1300-line hard budget.** No `size:exception` needed for slice 11 (unlike slices 2, 6–10, whose exceptions were already recorded).
+
+## Deviations from Design
+
+- **`ListarSolicitudesProveedorUseCase` + `SolicitudProveedor` + two response records added** (not named in the task file list). The design's `GET /api/proveedores/me/solicitudes` row returns pending `OfertaInsumo[]`, but slice 10 shipped no listing use case and the controller must not query repositories. The application projection pairs each offer with its request so the portal gets the offer id *and* the declared lines in one call; the response records are the wire shape slice 12 binds to.
+- **The dispatch is triggered unconditionally** with `request.insumos()` (possibly empty). Slice 10 explicitly documented that `SolicitarInsumoUseCase.solicitar` returns empty for zero lines "and lets slice 11 call it unconditionally", so the "zero lines create nothing" rule has a single owner (the use case) instead of a duplicated caller guard.
+- **`InsumoControllerAdvice` maps `MethodArgumentTypeMismatchException` → 400** so a malformed UUID path is the canonical `ApiError`, not Spring's default ProblemDetail.
+- **`OtControllerAdvice` gained `HttpMessageNotReadableException` → 400.** An ill-typed insumo quantity (`"dos"`) cannot bind, so `@Valid` never runs; without the handler it would surface as a 500.
+- **Unknown offer on `aceptar` is 409, not 404.** Slice 10's `AceptarInsumoUseCase` throws `OfertaInsumoNoDisponibleException` (409) for an unknown/foreign/resolved/losing offer, and `RequerimientoInsumoNoEncontradoException` (404) only when the offer references a missing request. The task's "404 missing request or offer" is satisfied by the `entregar` path (missing request → 404); the accept path follows the design/slice-10 exception contract exactly.
+- **Reject returns `OfertaInsumoApiResponse` while accept/deliver return `SolicitudInsumoApiResponse`.** `RechazarInsumoUseCase` returns the offer (not the request), so the reject response is offer-centric; the design only mandates the resulting `RECHAZADO` literal there.
+- **No UI change and no routes/menu/auth** — the frontend edits are the AD12 contract cleanup only; slice 12 owns the pages.
+- **No schema / `application.properties` / `schema-postgres.sql` change** — persistence was complete in slice 9 and the sweeper reads existing keys.
+
+## Out of Scope (do not absorb)
+
+- Slice 12: supplier portal module, técnico/client pages, routes/menu/auth, `environment.ts`, `cargo-visita.ts` (AD13).
+- Slice 13: boot checks, baseline comparison, docs (`ARQUITECTURA.md`).
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.

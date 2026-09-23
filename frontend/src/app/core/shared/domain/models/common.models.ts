@@ -230,6 +230,17 @@ export interface ProveedorResponse {
   creadoEn?: string;
 }
 
+/**
+ * Línea de insumo declarada por el técnico en el diagnóstico (spec disp.R1):
+ * descripción libre + cantidad positiva. No hay catálogo gestionado (AD5) y
+ * reemplaza al vestigial `repuestosSugeridos`, que no tenía contraparte en el
+ * backend (AD12).
+ */
+export interface InsumoLinea {
+  descripcion: string;
+  cantidad: number;
+}
+
 export interface DiagnosticoRequest {
   fallaDetectada?: string;
   diagnostico?: string;
@@ -238,7 +249,8 @@ export interface DiagnosticoRequest {
   manoDeObra?: number;
   costoRepuestos?: number;
   repuestos?: number;
-  repuestosSugeridos?: string[];
+  /** Insumos que el técnico declara; viajan al despacho, no al JSON del diagnóstico (AD5). */
+  insumos?: InsumoLinea[];
   tiempoEstimadoMinutos?: number;
   tiempoEstimadoHoras?: number;
 }

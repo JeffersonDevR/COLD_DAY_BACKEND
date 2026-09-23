@@ -259,11 +259,23 @@ export interface OtApiRequest {
   longitud: number;
 }
 
+/** Una línea de insumo libre declarada por el técnico (spec disp.R1, AD5). */
+export interface InsumoLineaApi {
+  descripcion: string;
+  cantidad: number;
+}
+
 export interface DiagnosticoApiRequest {
   fallaDetectada: string;
   observaciones?: string;
   costoManoObra: number;
   costoRepuestos: number;
+  /**
+   * Opcional: cero insumos no crean requerimiento y dejan el diagnóstico
+   * intacto. Las líneas viven en las tablas de despacho, nunca en el JSON
+   * `diagnostico` (AD5).
+   */
+  insumos?: InsumoLineaApi[];
 }
 
 export interface CancelarOtApiRequest {

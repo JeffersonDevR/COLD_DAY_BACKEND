@@ -29,6 +29,7 @@ import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarDiagnosti
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CancelarOtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.DiagnosticoApiRequest;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.InsumoLineaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.OtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.RechazoPresupuestoApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.HistorialEstadoApiResponse;
@@ -110,13 +111,19 @@ public class OtController {
         return OtApiResponse.from(iniciarDesplazamiento.iniciar(principal.usuarioId(), id));
     }
 
-    /** RF-F1-11: the assigned technician records the fault and presents the budget. */
+    /**
+     * RF-F1-11: the assigned technician records the fault and presents the
+     * budget, optionally declaring insumo lines (spec disp.R1). The lines are
+     * dispatched separately; zero insumos create no request and never fail.
+     */
     @PostMapping("/{id}/diagnostico")
     @PreAuthorize("hasRole('TECNICO')")
     public OtApiResponse registrarDiagnostico(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OtId id, @Valid @RequestBody DiagnosticoApiRequest request) {
         DiagnosticoRequest diagnostico = new DiagnosticoRequest(request.fallaDetectada(),
-                request.observaciones(), request.costoManoObra(), request.costoRepuestos());
+                request.observaciones(), request.costoManoObra(), request.costoRepuestos(),
+                request.insumos() == null ? List.of()
+                        : request.insumos().stream().map(InsumoLineaApiRequest::toDomain).toList());
         return OtApiResponse.from(registrarDiagnostico.registrar(principal.usuarioId(), id, diagnostico));
     }
 

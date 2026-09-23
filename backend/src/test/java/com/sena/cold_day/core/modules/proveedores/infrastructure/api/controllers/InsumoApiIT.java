@@ -2,6 +2,10 @@ package com.sena.cold_day.core.modules.proveedores.infrastructure.api.controller
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -16,10 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 
 import com.sena.cold_day.core.modules.proveedores.application.usecases.AceptarInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.EntregarInsumoUseCase;
@@ -45,18 +51,21 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
+import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 
 /**
  * Integration proof of the insumo dispatch flows against the real H2 schema and
  * the slice-9 persistence (spec disp.R1/R3/R6/R7, design flow (b)).
  *
- * <p>At this slice the dispatch use cases exist but no REST controller does, so
- * this IT exercises the application layer directly: broadcast, atomic
- * first-to-accept with sibling invalidation, delivery, the inactive-supplier
- * gate, zero eligible suppliers and the expiry sweep. Slice 11 extends this class
- * with the HTTP/controller subset once {@code InsumoController} lands.
+ * <p>The use-case subset exercises the application layer directly (broadcast,
+ * atomic first-to-accept with sibling invalidation, delivery, the
+ * inactive-supplier gate, zero eligible suppliers and the expiry sweep). The HTTP
+ * subset added in slice 11 drives {@code InsumoController} end to end with
+ * MockMvc and real JWTs: listing, accept, reject, deliver, the role boundary and
+ * the canonical error statuses.
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 @TestPropertySource(properties = "app.insumos.barrido-ms=3600000")
 @Import(InsumoApiIT.RelojFijo.class)
 class InsumoApiIT {
@@ -87,6 +96,8 @@ class InsumoApiIT {
     @Autowired SpringDataOfertaInsumoRepository springDataOfertas;
     @Autowired SpringDataProveedorRepository springDataProveedores;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
+    @Autowired MockMvc mockMvc;
+    @Autowired JwtTokenIssuer tokenIssuer;
 
     @BeforeEach
     @AfterEach
@@ -172,6 +183,145 @@ class InsumoApiIT {
                 found -> assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.SIN_PROVEEDOR));
         assertThat(requerimientos.buscarPorId(vigente.getId())).hasValueSatisfying(
                 found -> assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO));
+    }
+
+    // ------------------------------------------------------------------
+    // HTTP subset (slice 11): InsumoController + InsumoControllerAdvice
+    // ------------------------------------------------------------------
+
+    @Test
+    void supplierListsItsPendingSolicitudesOverHttp() throws Exception {
+        Proveedor primero = crearProveedorActivo("901-1", "http.prov.1@example.com");
+        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, "Compresor ruidoso").orElseThrow();
+
+        mockMvc.perform(get("/api/proveedores/me/solicitudes")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].estado").value("PENDIENTE"))
+                .andExpect(jsonPath("$[0].requerimiento.id").value(req.getId().valor().toString()))
+                .andExpect(jsonPath("$[0].requerimiento.estado").value("SOLICITADO"))
+                .andExpect(jsonPath("$[0].requerimiento.items[0].descripcion").value("Filtro secadora"))
+                .andExpect(jsonPath("$[0].requerimiento.items[0].cantidad").value(2));
+
+        // The supplier surface is closed to other roles and to anonymous callers.
+        mockMvc.perform(get("/api/proveedores/me/solicitudes")
+                        .header("Authorization", bearer(jwtDeRol(500L, Rol.TECNICO))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/proveedores/me/solicitudes"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void firstAcceptWinsOverHttpAndTheLoserGets409() throws Exception {
+        Proveedor primero = crearProveedorActivo("901-2", "http.prov.2@example.com");
+        Proveedor segundo = crearProveedorActivo("901-3", "http.prov.3@example.com");
+        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        OfertaInsumo dePrimero = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
+        OfertaInsumo deSegundo = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), segundo.getId());
+
+        mockMvc.perform(post("/api/insumos/" + dePrimero.getId().valor() + "/aceptar")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ASIGNADO"));
+
+        // disp.S3.2: the sibling offer lost the gate -> 409 and is invalidated.
+        mockMvc.perform(post("/api/insumos/" + deSegundo.getId().valor() + "/aceptar")
+                        .header("Authorization", bearer(jwt(segundo))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
+
+        assertThat(ofertas.buscarPorId(deSegundo.getId())).hasValueSatisfying(
+                oferta -> assertThat(oferta.getEstado()).isEqualTo(OfertaInsumoEstado.CANCELADA));
+    }
+
+    @Test
+    void supplierRejectsOverHttpAndIsNotBound() throws Exception {
+        Proveedor primero = crearProveedorActivo("901-4", "http.prov.4@example.com");
+        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        OfertaInsumo oferta = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
+
+        mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/rechazar")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("RECHAZADO"));
+
+        assertThat(requerimientos.buscarPorId(req.getId())).hasValueSatisfying(
+                found -> assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO));
+    }
+
+    @Test
+    void winningSupplierDeliversOverHttpAndAnotherSupplierIsForbidden() throws Exception {
+        Proveedor primero = crearProveedorActivo("901-5", "http.prov.5@example.com");
+        Proveedor segundo = crearProveedorActivo("901-6", "http.prov.6@example.com");
+        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        OfertaInsumo dePrimero = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
+
+        // disp.S7.1: a supplier that did not win the request cannot confirm delivery.
+        mockMvc.perform(post("/api/insumos/" + req.getId().valor() + "/entregar")
+                        .header("Authorization", bearer(jwt(segundo))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+
+        mockMvc.perform(post("/api/insumos/" + dePrimero.getId().valor() + "/aceptar")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/insumos/" + req.getId().valor() + "/entregar")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ENTREGADO"));
+    }
+
+    @Test
+    void anUnlinkedSupplierIsForbiddenOverHttp() throws Exception {
+        Proveedor activo = crearProveedorActivo("901-7", "http.prov.7@example.com");
+        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        OfertaInsumo oferta = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), activo.getId());
+        Long huerfano = crearUsuario("http.prov.huerfano@example.com");
+
+        // A PROVEEDOR account with no linked Proveedor cannot act (spec disp.R3, AD7).
+        mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .header("Authorization", bearer(jwtDeRol(huerfano, Rol.PROVEEDOR))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+    }
+
+    @Test
+    void anUnknownOfferIsAConflictAndAnUnknownRequestIsNotFound() throws Exception {
+        Proveedor activo = crearProveedorActivo("901-8", "http.prov.8@example.com");
+
+        mockMvc.perform(post("/api/insumos/" + UUID.randomUUID() + "/aceptar")
+                        .header("Authorization", bearer(jwt(activo))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
+
+        mockMvc.perform(post("/api/insumos/" + UUID.randomUUID() + "/entregar")
+                        .header("Authorization", bearer(jwt(activo))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void aMalformedOfferIdIsBadRequest() throws Exception {
+        Proveedor activo = crearProveedorActivo("901-9", "http.prov.9@example.com");
+
+        mockMvc.perform(post("/api/insumos/not-a-uuid/aceptar")
+                        .header("Authorization", bearer(jwt(activo))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    private String bearer(String token) {
+        return "Bearer " + token;
+    }
+
+    private String jwt(Proveedor proveedor) {
+        return jwtDeRol(proveedor.getUsuarioId(), Rol.PROVEEDOR);
+    }
+
+    private String jwtDeRol(Long usuarioId, Rol rol) {
+        return tokenIssuer.emitir(new UsuarioId(usuarioId), rol, 0).valor();
     }
 
     private Proveedor crearProveedorActivo(String nit, String correo) {

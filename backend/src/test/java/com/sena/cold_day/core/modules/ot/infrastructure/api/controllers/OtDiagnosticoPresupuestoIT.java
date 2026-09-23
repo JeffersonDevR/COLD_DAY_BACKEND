@@ -38,6 +38,14 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.OtEstadoHistorialJpaEntity;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.entities.RequerimientoInsumoItem;
+import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.repository.RequerimientoInsumoRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataOfertaInsumoRepository;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataProveedorRepository;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataRequerimientoInsumoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -69,6 +77,10 @@ class OtDiagnosticoPresupuestoIT {
     private static final Point UBICACION_SERVICIO = new Point(7.8939, -72.5078);
     private static final String DIAGNOSTICO_PAYLOAD = "{\"fallaDetectada\":\"Compresor averiado\","
             + "\"observaciones\":\"Revisado en sitio\",\"costoManoObra\":120000.00,\"costoRepuestos\":350000.00}";
+    private static final String DIAGNOSTICO_CON_INSUMOS_PAYLOAD = "{\"fallaDetectada\":\"Compresor averiado\","
+            + "\"observaciones\":\"Revisado en sitio\",\"costoManoObra\":120000.00,\"costoRepuestos\":350000.00,"
+            + "\"insumos\":[{\"descripcion\":\"Filtro secadora\",\"cantidad\":2},"
+            + "{\"descripcion\":\"Bimetalico universal L55\",\"cantidad\":1}]}";
 
     @Autowired MockMvc mockMvc;
     @Autowired OtRepository otRepository;
@@ -78,11 +90,19 @@ class OtDiagnosticoPresupuestoIT {
     @Autowired SpringDataTecnicoRepository springDataTecnico;
     @Autowired SpringDataOtEstadoHistorialRepository springDataHistorial;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
+    @Autowired RequerimientoInsumoRepository requerimientoRepository;
+    @Autowired ProveedorRepository proveedorRepository;
+    @Autowired SpringDataRequerimientoInsumoRepository springDataRequerimiento;
+    @Autowired SpringDataOfertaInsumoRepository springDataOferta;
+    @Autowired SpringDataProveedorRepository springDataProveedor;
     @Autowired JwtTokenIssuer tokenIssuer;
 
     @BeforeEach
     @AfterEach
     void cleanup() {
+        springDataOferta.deleteAll();
+        springDataRequerimiento.deleteAll();
+        springDataProveedor.deleteAll();
         springDataHistorial.deleteAll();
         springDataOt.deleteAll();
         springDataTecnico.deleteAll();
@@ -260,6 +280,84 @@ class OtDiagnosticoPresupuestoIT {
         mockMvc.perform(post("/api/ot/" + UUID.randomUUID() + "/diagnostico")
                         .contentType(MediaType.APPLICATION_JSON).content(DIAGNOSTICO_PAYLOAD))
                 .andExpect(status().isUnauthorized());
+    }
+
+    /**
+     * disp.S1.1 + AD5: a diagnóstico declaring insumo lines creates a request
+     * linked to the OT and technician, and the lines stay in the despacho tables
+     * instead of the OT diagnóstico JSON column.
+     */
+    @Test
+    void aDiagnosisWithInsumosBroadcastsARequestOutsideTheDiagnosisJson() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-insumos@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("tecnico-insumos@example.com", Rol.TECNICO);
+        TecnicoId tecnicoId = crearTecnico(tecnicoUsuario, true);
+        crearProveedorActivo("900-INS", "prov.insumos@example.com");
+        Ot ot = otEnEstado(cliente.getId(), tecnicoId, EstadoOt.EN_CAMINO, Instant.now(), null);
+
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/diagnostico")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO))
+                        .contentType(MediaType.APPLICATION_JSON).content(DIAGNOSTICO_CON_INSUMOS_PAYLOAD))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("EN_DIAGNOSTICO"))
+                .andExpect(jsonPath("$.diagnostico.fallaDetectada").value("Compresor averiado"));
+
+        assertThat(requerimientoRepository.buscarPorOt(ot.getId().valor()))
+                .singleElement()
+                .satisfies(req -> {
+                    assertThat(req.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO);
+                    assertThat(req.getOtId()).isEqualTo(ot.getId().valor());
+                    assertThat(req.getItems()).extracting(RequerimientoInsumoItem::getDescripcion)
+                            .containsExactly("Filtro secadora", "Bimetalico universal L55");
+                });
+        assertThat(springDataRequerimiento.findByOtId(ot.getId().valor())).hasSize(1);
+        assertThat(springDataOferta.findAll()).hasSize(1);
+    }
+
+    /** disp.S1.2: zero insumo lines create no request and leave the flow unchanged. */
+    @Test
+    void aDiagnosisWithoutInsumosCreatesNoRequest() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-sin-insumos@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("tecnico-sin-insumos@example.com", Rol.TECNICO);
+        TecnicoId tecnicoId = crearTecnico(tecnicoUsuario, true);
+        crearProveedorActivo("900-NONE", "prov.none@example.com");
+        Ot ot = otEnEstado(cliente.getId(), tecnicoId, EstadoOt.EN_CAMINO, Instant.now(), null);
+
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/diagnostico")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO))
+                        .contentType(MediaType.APPLICATION_JSON).content(DIAGNOSTICO_PAYLOAD))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("EN_DIAGNOSTICO"));
+
+        assertThat(requerimientoRepository.buscarPorOt(ot.getId().valor())).isEmpty();
+    }
+
+    /** disp.S2.1: only the assigned technician may declare insumos; another gets 403. */
+    @Test
+    void aNonAssignedTechnicianCannotDeclareInsumosAndCreatesNoRequest() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-intruso-ins@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long duenoUsuario = crearUsuario("tecnico-dueno-ins@example.com", Rol.TECNICO);
+        TecnicoId dueno = crearTecnico(duenoUsuario, true);
+        Long intrusoUsuario = crearUsuario("tecnico-intruso-ins@example.com", Rol.TECNICO);
+        crearTecnico(intrusoUsuario, false);
+        Ot ot = otEnEstado(cliente.getId(), dueno, EstadoOt.EN_CAMINO, Instant.now(), null);
+
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/diagnostico")
+                        .header("Authorization", "Bearer " + jwt(intrusoUsuario, Rol.TECNICO))
+                        .contentType(MediaType.APPLICATION_JSON).content(DIAGNOSTICO_CON_INSUMOS_PAYLOAD))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+
+        assertThat(requerimientoRepository.buscarPorOt(ot.getId().valor())).isEmpty();
+    }
+
+    private void crearProveedorActivo(String nit, String correo) {
+        Long usuarioId = crearUsuario(correo, Rol.PROVEEDOR);
+        proveedorRepository.save(Proveedor.crear(usuarioId, "Suministros " + nit, nit, "3105550001", null, null,
+                Set.of()));
     }
 
     private Ot otAsignada(ClienteId clienteId, TecnicoId tecnicoId, Instant asignadaEn) {

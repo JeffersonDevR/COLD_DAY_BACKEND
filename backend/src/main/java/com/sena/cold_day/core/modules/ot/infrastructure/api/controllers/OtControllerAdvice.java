@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -25,6 +26,17 @@ public class OtControllerAdvice {
         List<String> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + " " + error.getDefaultMessage()).toList();
         return ResponseEntity.badRequest().body(new ApiError(400, "Solicitud invalida", errors));
+    }
+
+    /**
+     * Ill-typed body (design "API Contracts": malformed input is a 400): an
+     * insumo quantity that is not an integer cannot be bound at all, so it is a
+     * canonical 400 and no diagnosis is recorded.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException exception) {
+        return ResponseEntity.badRequest()
+                .body(new ApiError(400, "Solicitud invalida", List.of("cuerpo de la solicitud ilegible")));
     }
 
     /** The requested OT does not exist. */
