@@ -11,8 +11,9 @@ import {
   UbicacionApiRequest,
 } from '../../../core/shared/infrastructure/api/backend.dto';
 import { aDisputaResponse, aOtApiRequest, aOtResponse } from '../../../core/shared/infrastructure/api/backend.mappers';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
+import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
 
 @Injectable({
   providedIn: 'root'
@@ -117,12 +118,7 @@ export class ClientesApi {
       return of(undefined).pipe(delay(300));
     }
 
-    return throwError(
-      () =>
-        new Error(
-          'Pendiente en el backend: calificación del servicio (POST /api/ot/{id}/calificar). Pendiente(backend).'
-        )
-    );
+    return pendienteBackend('calificación del servicio (POST /api/ot/{id}/calificar)');
   }
 
   /**

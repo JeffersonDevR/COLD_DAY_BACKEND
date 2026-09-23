@@ -32,8 +32,9 @@ import {
   aTecnicoCercano,
   aTecnicoResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
-import { Observable, forkJoin, of, throwError } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
 import { delay, map, switchMap } from 'rxjs/operators';
+import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
 
 @Injectable({
   providedIn: 'root'
@@ -170,11 +171,8 @@ export class TecnicosApi {
       const actualizada = this.mockDb.aceptarOt(otId, tecnicoId);
       return of(actualizada).pipe(delay(300));
     }
-    return throwError(
-      () =>
-        new Error(
-          'Pendiente en el backend: aceptación directa de OT (POST /api/ot/{id}/aceptar). Usar POST /api/ofertas/{id}/aceptar. Pendiente(backend).'
-        )
+    return pendienteBackend(
+      'aceptación directa de OT (POST /api/ot/{id}/aceptar). Usar POST /api/ofertas/{id}/aceptar',
     );
   }
 
@@ -217,11 +215,8 @@ export class TecnicosApi {
       this.mockDb.avanzarEstadoOt(otId, 'EN_DIAGNOSTICO', 'TECNICO', 'Técnico ha llegado al domicilio y comienza diagnóstico');
       return of(undefined).pipe(delay(200));
     }
-    return throwError(
-      () =>
-        new Error(
-          'Pendiente en el backend: POST /api/ot/{id}/llegada (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico). Pendiente(backend).'
-        )
+    return pendienteBackend(
+      'POST /api/ot/{id}/llegada (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico)',
     );
   }
 

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
+import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
@@ -235,20 +236,16 @@ export class PanelTecnicoPage {
   readonly misOtsEnCurso = signal<OtResponse[]>([]);
 
   constructor() {
-    const usuarioId = Number(this.authService.currentUser()?.id ?? 0);
-    this.tecnicosApi.getTecnicoPorUsuarioId(usuarioId).subscribe({
-      next: (tecnico) => {
-        this.tecnico.set(tecnico);
-        if (tecnico) {
-          this.tecnicosApi.getMisOts().subscribe({
-            next: (ots) => this.misOtsEnCurso.set(
-              ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado))
-            ),
-            error: () => this.misOtsEnCurso.set([]),
-          });
-        }
-      },
-      error: () => this.tecnico.set(undefined),
+    cargarTecnicoAutenticado(this.authService, this.tecnicosApi, (tecnico) => {
+      this.tecnico.set(tecnico);
+      if (tecnico) {
+        this.tecnicosApi.getMisOts().subscribe({
+          next: (ots) => this.misOtsEnCurso.set(
+            ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado))
+          ),
+          error: () => this.misOtsEnCurso.set([]),
+        });
+      }
     });
   }
 

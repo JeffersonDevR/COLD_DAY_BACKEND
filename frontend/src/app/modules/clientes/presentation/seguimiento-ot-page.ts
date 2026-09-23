@@ -8,6 +8,7 @@ import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
+import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrastructure/ot-carga';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -362,12 +363,7 @@ export class SeguimientoOtPage implements OnInit {
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
 
   /** En mock lee del MockDb (reactivo); contra el backend usa la OT cargada por API. */
-  readonly ot = computed<OtResponse | undefined>(() => {
-    if (this.apiConfig.useMocks()) {
-      return this.mockDb.ordenesTrabajo().find(o => o.id === this.otId());
-    }
-    return this._otRemoto();
-  });
+  readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
   readonly tecnicoUbicacion = signal<Point | null>(null);
   readonly distanciaKm = signal<number | null>(null);
@@ -387,25 +383,27 @@ export class SeguimientoOtPage implements OnInit {
   readonly motivoDisputaControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
+    cargarOtDesdeRuta(
+      this.route,
+      this.otApi,
+      (id) => {
         this.otId.set(id);
-        this.cargarOt(id);
         this.iniciarSeguimientoTecnico(id);
-      }
-    });
-  }
-
-  private cargarOt(id: string): void {
-    this.otApi.getOtById(id).subscribe({
-      next: (orden) => {
+      },
+      (orden) => {
         this._otRemoto.set(orden);
         this.recalcularDistancia();
         this.cargarTecnicosCercanos();
       },
-      error: () => {
-        // Sin backend disponible se conserva el estado local (mock).
+    );
+  }
+
+  private recargarOt(): void {
+    this.otApi.getOtById(this.otId()).subscribe({
+      next: (orden) => {
+        this._otRemoto.set(orden);
+        this.recalcularDistancia();
+        this.cargarTecnicosCercanos();
       },
     });
   }
@@ -440,22 +438,20 @@ export class SeguimientoOtPage implements OnInit {
   }
 
   private recalcularDistancia(): void {
-    const origen = this.tecnicoUbicacion();
-    const destino = this.ot()?.punto;
-    if (!origen || !destino) {
-      return;
-    }
-    this.mapsApi.distancia(origen, destino).subscribe({
-      next: (ruta) => {
+    calcularRuta(
+      this.mapsApi,
+      this.tecnicoUbicacion(),
+      this.ot()?.punto,
+      (ruta) => {
         this.distanciaKm.set(ruta.distanciaKm);
         this.etaMin.set(ruta.duracionMin);
       },
       // El backend puede tener Google Maps deshabilitado (503): no romper la vista.
-      error: () => {
+      () => {
         this.distanciaKm.set(null);
         this.etaMin.set(null);
       },
-    });
+    );
   }
 
   puedeCancelar(): boolean {
@@ -496,7 +492,7 @@ export class SeguimientoOtPage implements OnInit {
       next: () => {
         this.mostrarModalDisputa.set(false);
         this.toast.warning('Disputa Abierta', 'Un administrador revisará tu caso.');
-        this.cargarOt(this.otId());
+        this.recargarOt();
       },
       error: (err: Error) => this.toast.error('No se pudo abrir la disputa', err.message),
     });

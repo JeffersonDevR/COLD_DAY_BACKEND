@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal, computed, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
@@ -7,6 +7,7 @@ import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { TecnicoTrackingService } from '../infrastructure/tecnico-tracking.service';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
+import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrastructure/ot-carga';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
@@ -350,12 +351,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
 
   /** En mock lee del MockDb (reactivo); contra el backend usa la OT cargada por API. */
-  readonly ot = computed<OtResponse | undefined>(() => {
-    if (this.apiConfig.useMocks()) {
-      return this.mockDb.ordenesTrabajo().find(o => o.id === this.otId());
-    }
-    return this._otRemoto();
-  });
+  readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
   readonly medioPagoCierre = signal<MedioPago>('EFECTIVO');
   readonly distanciaKm = signal<number | null>(null);
@@ -366,16 +362,9 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   constructor() {
     // Recalcula distancia/ETA al cliente cada vez que cambia la posición del técnico.
     effect(() => {
-      const origen = this.tracking.ultimaPosicion();
-      const destino = this.ot()?.punto;
-      if (!origen || !destino) {
-        return;
-      }
-      this.mapsApi.distancia(origen, destino).subscribe({
-        next: (ruta) => {
-          this.distanciaKm.set(ruta.distanciaKm);
-          this.etaMin.set(ruta.duracionMin);
-        },
+      calcularRuta(this.mapsApi, this.tracking.ultimaPosicion(), this.ot()?.punto, (ruta) => {
+        this.distanciaKm.set(ruta.distanciaKm);
+        this.etaMin.set(ruta.duracionMin);
       });
     });
   }
@@ -409,15 +398,15 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
+    cargarOtDesdeRuta(
+      this.route,
+      this.otApi,
+      (id) => {
         this.otId.set(id);
         this.enSitio.set(false);
-        // Carga la OT de la fuente activa (mock o API real) para conocer estado y monto.
-        this.recargarOt();
-      }
-    });
+      },
+      (orden) => this._otRemoto.set(orden),
+    );
     // Empuja la ubicación del técnico mientras ejecuta el servicio.
     this.tracking.iniciar();
   }

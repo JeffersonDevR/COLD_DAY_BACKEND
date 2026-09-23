@@ -468,9 +468,9 @@ export class SolicitarServicioPage {
         this.toast.success('Solicitud Creada', `OT ${nuevaOt.id} transmitida por broadcast (10 km)`);
         this.router.navigate(['/cliente/ot', nuevaOt.id]);
       },
-      error: () => {
+      error: (err: Error) => {
         this.loading.set(false);
-        this.toast.error('Error', 'No se pudo crear la solicitud');
+        this.toast.error('No se pudo crear la solicitud', err.message || 'Intenta de nuevo.');
       }
     });
   }

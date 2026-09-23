@@ -13,6 +13,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoExceptio
 import com.sena.cold_day.core.modules.ot.domain.repository.OtEstadoHistorialRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.shared.domain.Point;
 
@@ -55,7 +56,7 @@ public class ConsultarOtUseCase {
             return Optional.empty();
         }
         return tecnicoRepository.findByIdAndActivoTrue(ot.getTecnicoId())
-                .map(tecnico -> tecnico.getUbicacion())
+                .map(Tecnico::getUbicacion)
                 .filter(Objects::nonNull);
     }
 }

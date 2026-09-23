@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@a
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
+import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
@@ -167,16 +168,17 @@ export class OfertasPage {
   readonly solicitudesDisponibles = computed(() => this.ofertas().map(oferta => oferta.ot));
 
   constructor() {
-    const usuarioId = Number(this.authService.currentUser()?.id ?? 0);
-    this.tecnicosApi.getTecnicoPorUsuarioId(usuarioId).subscribe({
-      next: (tecnico) => {
+    cargarTecnicoAutenticado(
+      this.authService,
+      this.tecnicosApi,
+      (tecnico) => {
         this.tecnico.set(tecnico);
         if (tecnico) {
           this.cargarOfertas(tecnico.id);
         }
       },
-      error: () => this.toast.error('Error', 'No se pudo cargar tu perfil de técnico.'),
-    });
+      () => this.toast.error('Error', 'No se pudo cargar tu perfil de técnico.'),
+    );
   }
 
   private cargarOfertas(tecnicoId: string): void {

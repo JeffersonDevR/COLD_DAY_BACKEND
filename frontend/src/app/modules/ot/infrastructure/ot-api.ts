@@ -22,8 +22,9 @@ import {
   aOtResponse,
   aTarifaEstimadaResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
+import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
 
 @Injectable({
   providedIn: 'root'
@@ -78,11 +79,8 @@ export class OtApi {
       this.mockDb.avanzarEstadoOt(otId, 'EN_DIAGNOSTICO', 'TECNICO', 'Técnico se encuentra en sitio realizando diagnóstico inicial');
       return of(undefined).pipe(delay(250));
     }
-    return throwError(
-      () =>
-        new Error(
-          'Pendiente en el backend: POST /api/ot/{id}/iniciar-diagnostico (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico). Pendiente(backend).'
-        )
+    return pendienteBackend(
+      'POST /api/ot/{id}/iniciar-diagnostico (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico)',
     );
   }
 

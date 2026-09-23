@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +55,18 @@ class SeguridadIT {
         mockMvc.perform(get("/api/tecnicos"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$[0].status").value(401));
+    }
+
+    @Test
+    void errorDispatchPreservesTheOriginalNotFoundStatusWithoutAnotherAuthenticationChallenge() throws Exception {
+        mockMvc.perform(get("/error")
+                        .with(request -> {
+                            request.setDispatcherType(DispatcherType.ERROR);
+                            return request;
+                        })
+                        .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 404)
+                        .requestAttr(RequestDispatcher.ERROR_REQUEST_URI, "/api/ot/123/tecnico-ubicacion"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

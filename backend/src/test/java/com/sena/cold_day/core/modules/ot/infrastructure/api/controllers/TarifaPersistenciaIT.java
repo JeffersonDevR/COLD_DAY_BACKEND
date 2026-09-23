@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
@@ -53,6 +54,7 @@ import com.sena.cold_day.core.shared.domain.Point;
  * {@code LINEAL}.
  */
 @SpringBootTest
+@TestPropertySource(properties = "app.maps.enabled=false")
 class TarifaPersistenciaIT {
 
     // Inside the metropolitan radius of the configured service center.

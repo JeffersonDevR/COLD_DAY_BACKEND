@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
+import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
 
@@ -153,11 +154,7 @@ export class PerfilDocumentosPage {
   });
 
   constructor() {
-    const usuarioId = Number(this.authService.currentUser()?.id ?? 0);
-    this.tecnicosApi.getTecnicoPorUsuarioId(usuarioId).subscribe({
-      next: (tecnico) => this.tecnico.set(tecnico),
-      error: () => this.tecnico.set(undefined),
-    });
+    cargarTecnicoAutenticado(this.authService, this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
     this.cargarDocumentos();
   }
 

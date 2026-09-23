@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { OtApi } from '../../ot/infrastructure/ot-api';
+import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
@@ -226,18 +227,15 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   });
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
-        this.otId.set(id);
-        this.otApi.getOtById(id).subscribe({
-          next: (orden) => {
-            this._otRemoto.set(orden);
-            this.cargarEstimacion(orden?.punto);
-          },
-        });
-      }
-    });
+    cargarOtDesdeRuta(
+      this.route,
+      this.otApi,
+      (id) => this.otId.set(id),
+      (orden) => {
+        this._otRemoto.set(orden);
+        this.cargarEstimacion(orden?.punto);
+      },
+    );
   }
 
   /** Consulta la tarifa de visita por distancia para el punto de servicio. */

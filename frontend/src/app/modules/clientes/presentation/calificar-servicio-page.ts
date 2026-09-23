@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
+import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtResponse } from '../../../core/shared/domain/models/common.models';
 
@@ -151,15 +152,7 @@ export class CalificarServicioPage implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
-        this.otId.set(id);
-        this.otApi.getOtById(id).subscribe({
-          next: (orden) => this._otRemoto.set(orden),
-        });
-      }
-    });
+    cargarOtDesdeRuta(this.route, this.otApi, (id) => this.otId.set(id), (orden) => this._otRemoto.set(orden));
   }
 
   toggleTag(tag: string): void {

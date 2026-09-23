@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -47,22 +48,24 @@ import com.sena.cold_day.core.shared.domain.Point;
 public class DevDataSeeder implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DevDataSeeder.class);
-    private static final String PASSWORD_DEMO = "demo1234";
 
     private final UsuarioRepository usuarioRepository;
     private final TecnicoRepository tecnicoRepository;
     private final ClienteRepository clienteRepository;
     private final ProveedorRepository proveedorRepository;
     private final PasswordEncoderPort encoder;
+    private final String passwordDemo;
 
     public DevDataSeeder(UsuarioRepository usuarioRepository, TecnicoRepository tecnicoRepository,
             ClienteRepository clienteRepository, ProveedorRepository proveedorRepository,
-            PasswordEncoderPort encoder) {
+            PasswordEncoderPort encoder,
+            @Value("${app.seed.demo-password:demo1234}") String passwordDemo) {
         this.usuarioRepository = usuarioRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.clienteRepository = clienteRepository;
         this.proveedorRepository = proveedorRepository;
         this.encoder = encoder;
+        this.passwordDemo = passwordDemo;
     }
 
     @Override
@@ -128,8 +131,8 @@ public class DevDataSeeder implements ApplicationRunner {
         ensureUsuario("Carlos Méndez", "admin@coldday.com.co", "3104567890", Rol.ADMINISTRADOR);
         ensureUsuario("Ana Martínez", "contable@coldday.com.co", "3156789012", Rol.CONTABLE);
 
-        log.info("Seed verificado: {} clientes, {} técnicos y {} proveedores creados (perfiles faltantes reparados). Password demo: {}.",
-                clientesCreados, tecnicosCreados, proveedoresCreados, PASSWORD_DEMO);
+        log.info("Seed verificado: {} clientes, {} técnicos y {} proveedores creados (perfiles faltantes reparados). Password demo configurable en app.seed.demo-password.",
+                clientesCreados, tecnicosCreados, proveedoresCreados);
     }
 
     /**
@@ -140,7 +143,7 @@ public class DevDataSeeder implements ApplicationRunner {
         return usuarioRepository.buscarPorCorreo(correo)
                 .map(Usuario::getId)
                 .orElseGet(() -> usuarioRepository.save(
-                        Usuario.registrar(nombre, correo, PASSWORD_DEMO, telefono, null, rol, true, encoder)).getId());
+                        Usuario.registrar(nombre, correo, passwordDemo, telefono, null, rol, true, encoder)).getId());
     }
 
     private record ClienteSeed(String nombre, String correo, String telefono, String calle, String barrio,

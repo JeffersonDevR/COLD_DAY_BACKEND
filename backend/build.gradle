@@ -9,6 +9,9 @@ sonar {
 	properties {
 		property "sonar.projectKey", "Cold-day-backend"
 		property "sonar.host.url", "http://localhost:9000"
+		// El codigo de test no se audita para issues (mismo criterio que el
+		// frontend, que excluye *.spec.ts); su cobertura si cuenta via JaCoCo.
+		property "sonar.test.exclusions", "src/test/**"
 	}
 }
 

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { UsuariosApi } from '../infrastructure/usuarios-api';
 import { ClientesApi } from '../../clientes/infrastructure/clientes-api';
@@ -291,42 +292,50 @@ export class RegistroPage {
 
     // TÉCNICO: /api/tecnicos crea Usuario + perfil en una sola llamada (endpoint público).
     if (rol === 'TECNICO') {
-      this.tecnicosApi.registrar({
-        nombre: formVal.nombre,
-        correo: formVal.correo,
-        password: formVal.password,
-        telefono: formVal.telefono,
-        numeroIdentificacion: formVal.numeroIdentificacion,
-        categoriasServicio: this.especialidades(),
-        certificaciones: [],
-        aceptaHabeasData: formVal.aceptaHabeasData,
-      }).pipe(
-        switchMap(() => this.usuariosApi.login(formVal.correo, formVal.password)),
-      ).subscribe({
-        next: (res) => this.completarAlta(res, formVal.correo),
-        error: (err: Error) => this.errorAlta(err),
-      });
+      this.altaConLogin(
+        this.tecnicosApi.registrar({
+          nombre: formVal.nombre,
+          correo: formVal.correo,
+          password: formVal.password,
+          telefono: formVal.telefono,
+          numeroIdentificacion: formVal.numeroIdentificacion,
+          categoriasServicio: this.especialidades(),
+          certificaciones: [],
+          aceptaHabeasData: formVal.aceptaHabeasData,
+        }),
+        formVal.correo,
+        formVal.password,
+      );
       return;
     }
 
     // CLIENTE: alta atómica en /api/clientes (Usuario + perfil) → login real.
     // Ya no se hacen dos pasos ni se usa el token mock.
-    this.clientesApi.registrarCliente({
-      nombre: formVal.nombre,
-      correo: formVal.correo,
-      password: formVal.password,
-      telefono: formVal.telefono,
-      tipoCliente: 'B2C',
-      calle: 'Por definir',
-      ciudad: 'Cúcuta',
-      ubicacion: { latitud: 7.8939, longitud: -72.5078 },
-      aceptaHabeasData: formVal.aceptaHabeasData,
-    }).pipe(
-      switchMap(() => this.usuariosApi.login(formVal.correo, formVal.password)),
-    ).subscribe({
-      next: (res) => this.completarAlta(res, formVal.correo),
-      error: (err: Error) => this.errorAlta(err),
-    });
+    this.altaConLogin(
+      this.clientesApi.registrarCliente({
+        nombre: formVal.nombre,
+        correo: formVal.correo,
+        password: formVal.password,
+        telefono: formVal.telefono,
+        tipoCliente: 'B2C',
+        calle: 'Por definir',
+        ciudad: 'Cúcuta',
+        ubicacion: { latitud: 7.8939, longitud: -72.5078 },
+        aceptaHabeasData: formVal.aceptaHabeasData,
+      }),
+      formVal.correo,
+      formVal.password,
+    );
+  }
+
+  /** Crea el usuario/perfil y encadena el login real para iniciar sesión. */
+  private altaConLogin(fuente$: Observable<unknown>, correo: string, password: string): void {
+    fuente$
+      .pipe(switchMap(() => this.usuariosApi.login(correo, password)))
+      .subscribe({
+        next: (res) => this.completarAlta(res, correo),
+        error: (err: Error) => this.errorAlta(err),
+      });
   }
 
   private completarAlta(res: TokenResponse, correo: string): void {

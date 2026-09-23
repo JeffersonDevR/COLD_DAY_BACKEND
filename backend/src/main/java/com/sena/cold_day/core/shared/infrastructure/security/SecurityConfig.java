@@ -19,6 +19,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -42,9 +43,14 @@ public class SecurityConfig {
                     // Stateless JWT API sin cookies ni sesiones: CSRF no aplica.
                     // Seguro deshabilitarlo aqui porque la autenticacion viaja en
                     // el header Authorization Bearer y SessionCreationPolicy.STATELESS.
-                    .csrf(AbstractHttpConfigurer::disable)
+                    .csrf(AbstractHttpConfigurer::disable) // NOSONAR: API stateless con JWT en header Authorization, sin cookies de sesion que proteger.
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Preserve the original API status/body when Spring forwards a
+                        // handled 404 (e.g. a technician has not reported a location yet)
+                        // through the servlet ERROR dispatcher. Requiring a JWT again on
+                        // that internal dispatch turns the expected 404 into a misleading 401.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // Health check publico para la plataforma de despliegue (Render).
                         .requestMatchers("/actuator/health", "/actuator/health/**")
                         .permitAll()

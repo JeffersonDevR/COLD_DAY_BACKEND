@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
+import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { OtResponse, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
@@ -265,18 +266,15 @@ export class DiagnosticoOtPage implements OnInit {
   ]);
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
-        this.otId.set(id);
-        this.otApi.getOtById(id).subscribe({
-          next: (orden) => {
-            this._otRemoto.set(orden);
-            this.cargarEstimacion(orden?.punto);
-          },
-        });
-      }
-    });
+    cargarOtDesdeRuta(
+      this.route,
+      this.otApi,
+      (id) => this.otId.set(id),
+      (orden) => {
+        this._otRemoto.set(orden);
+        this.cargarEstimacion(orden?.punto);
+      },
+    );
   }
 
   /** Consulta la tarifa de visita por distancia para el punto de servicio. */

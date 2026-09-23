@@ -127,10 +127,11 @@ public class ConsultarMetricasAdminUseCase {
     private BigDecimal[] recaudoMesActual() {
         BigDecimal recaudo = BigDecimal.ZERO;
         BigDecimal comisiones = BigDecimal.ZERO;
-        YearMonth mes = YearMonth.now();
+        ZoneId zona = ZoneId.systemDefault();
+        YearMonth mes = YearMonth.now(zona);
         for (Liquidacion liquidacion : liquidacionRepository.listarTodas()) {
             if (liquidacion.getCreadaEn() == null
-                    || !YearMonth.from(liquidacion.getCreadaEn().atZone(ZoneId.systemDefault())).equals(mes)) {
+                    || !YearMonth.from(liquidacion.getCreadaEn().atZone(zona)).equals(mes)) {
                 continue;
             }
             if (liquidacion.getMontoCobrado() != null) {

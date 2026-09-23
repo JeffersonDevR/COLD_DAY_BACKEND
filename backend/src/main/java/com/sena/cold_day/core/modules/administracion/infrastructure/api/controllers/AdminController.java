@@ -29,7 +29,7 @@ import jakarta.validation.Valid;
 /**
  * Modulo de administracion (CU-13, CU-15 / RF-F1-22/24/25): tablero de
  * monitoreo, conciliacion de consignaciones en efectivo y bandeja de disputas.
- * Todo el controller exige rol {@code ADMINISTRADOR}.
+ * Este controller exige rol {@code ADMINISTRADOR} en todos sus endpoints.
  */
 @RestController
 @RequestMapping("/api/admin")

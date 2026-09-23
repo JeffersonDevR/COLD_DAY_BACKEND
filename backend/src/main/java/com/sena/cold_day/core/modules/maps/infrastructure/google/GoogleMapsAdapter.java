@@ -5,12 +5,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
+
 import com.sena.cold_day.core.modules.maps.domain.model.DireccionGeocodificada;
 import com.sena.cold_day.core.modules.maps.domain.model.RutaCalculada;
 import com.sena.cold_day.core.modules.maps.domain.model.SugerenciaDireccion;
@@ -29,15 +31,32 @@ public class GoogleMapsAdapter implements MapsPort {
     private static final String AUTOCOMPLETE_URL = "https://maps.googleapis.com/maps/api/place/autocomplete/json";
     private static final String DISTANCE_URL = "https://maps.googleapis.com/maps/api/distancematrix/json";
 
+    private static final String PARAM_LANGUAGE = "language";
+    private static final String PARAM_REGION = "region";
+    private static final String FIELD_RESULTS = "results";
+    private static final String FIELD_STATUS = "status";
+    private static final String STATUS_ZERO_RESULTS = "ZERO_RESULTS";
+    private static final String LAT_LNG_FORMAT = "%f,%f";
+
     private final MapsProperties props;
     private final RestClient rest;
 
+    @Autowired
     public GoogleMapsAdapter(MapsProperties props) {
+        this(props, buildRestClient(props));
+    }
+
+    /** Test seam: lets ITs/unit tests inject a stubbed RestClient. */
+    GoogleMapsAdapter(MapsProperties props, RestClient rest) {
         this.props = props;
+        this.rest = rest;
+    }
+
+    private static RestClient buildRestClient(MapsProperties props) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(props.timeoutMs());
         factory.setReadTimeout(props.timeoutMs());
-        this.rest = RestClient.builder().requestFactory(factory).build();
+        return RestClient.builder().requestFactory(factory).build();
     }
 
     @Override
@@ -45,32 +64,32 @@ public class GoogleMapsAdapter implements MapsPort {
         String url = UriComponentsBuilder.fromUriString(GEOCODE_URL)
                 .queryParam("address", direccion)
                 .queryParam("key", props.apiKey())
-                .queryParam("language", props.language())
-                .queryParam("region", props.region())
+                .queryParam(PARAM_LANGUAGE, props.language())
+                .queryParam(PARAM_REGION, props.region())
                 .build().toUriString();
         JsonNode root = get(url);
         assertOk(root, "geocodificación");
-        if (!root.path("results").isArray() || root.path("results").isEmpty()) {
+        if (!root.path(FIELD_RESULTS).isArray() || root.path(FIELD_RESULTS).isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(leerDireccion(root.path("results").get(0)));
+        return Optional.of(leerDireccion(root.path(FIELD_RESULTS).get(0)));
     }
 
     @Override
     public Optional<DireccionGeocodificada> inversa(double latitud, double longitud) {
-        String latlng = String.format(Locale.US, "%f,%f", latitud, longitud);
+        String latlng = String.format(Locale.US, LAT_LNG_FORMAT, latitud, longitud);
         String url = UriComponentsBuilder.fromUriString(GEOCODE_URL)
                 .queryParam("latlng", latlng)
                 .queryParam("key", props.apiKey())
-                .queryParam("language", props.language())
-                .queryParam("region", props.region())
+                .queryParam(PARAM_LANGUAGE, props.language())
+                .queryParam(PARAM_REGION, props.region())
                 .build().toUriString();
         JsonNode root = get(url);
         assertOk(root, "geocodificación inversa");
-        if (!root.path("results").isArray() || root.path("results").isEmpty()) {
+        if (!root.path(FIELD_RESULTS).isArray() || root.path(FIELD_RESULTS).isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(leerDireccion(root.path("results").get(0)));
+        return Optional.of(leerDireccion(root.path(FIELD_RESULTS).get(0)));
     }
 
     @Override
@@ -78,15 +97,15 @@ public class GoogleMapsAdapter implements MapsPort {
         UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(AUTOCOMPLETE_URL)
                 .queryParam("input", texto)
                 .queryParam("key", props.apiKey())
-                .queryParam("language", props.language())
+                .queryParam(PARAM_LANGUAGE, props.language())
                 .queryParam("components", "country:CO");
         if (sesgoLat != null && sesgoLng != null) {
-            builder.queryParam("location", String.format(Locale.US, "%f,%f", sesgoLat, sesgoLng));
+            builder.queryParam("location", String.format(Locale.US, LAT_LNG_FORMAT, sesgoLat, sesgoLng));
             builder.queryParam("radius", 50000);
         }
         JsonNode root = get(builder.build().toUriString());
-        String status = root.path("status").asText("");
-        if ("ZERO_RESULTS".equals(status)) {
+        String status = root.path(FIELD_STATUS).asText("");
+        if (STATUS_ZERO_RESULTS.equals(status)) {
             return List.of();
         }
         assertOk(root, "autocompletado");
@@ -103,20 +122,20 @@ public class GoogleMapsAdapter implements MapsPort {
 
     @Override
     public Optional<RutaCalculada> distancia(double origenLat, double origenLng, double destinoLat, double destinoLng) {
-        String origins = String.format(Locale.US, "%f,%f", origenLat, origenLng);
-        String destinations = String.format(Locale.US, "%f,%f", destinoLat, destinoLng);
+        String origins = String.format(Locale.US, LAT_LNG_FORMAT, origenLat, origenLng);
+        String destinations = String.format(Locale.US, LAT_LNG_FORMAT, destinoLat, destinoLng);
         String url = UriComponentsBuilder.fromUriString(DISTANCE_URL)
                 .queryParam("origins", origins)
                 .queryParam("destinations", destinations)
                 .queryParam("key", props.apiKey())
-                .queryParam("language", props.language())
-                .queryParam("region", props.region())
+                .queryParam(PARAM_LANGUAGE, props.language())
+                .queryParam(PARAM_REGION, props.region())
                 .build().toUriString();
         JsonNode root = get(url);
         assertOk(root, "cálculo de distancia");
         JsonNode element = root.path("rows").path(0).path("elements").path(0);
-        String status = element.path("status").asText("");
-        if ("ZERO_RESULTS".equals(status) || "NOT_FOUND".equals(status)) {
+        String status = element.path(FIELD_STATUS).asText("");
+        if (STATUS_ZERO_RESULTS.equals(status) || "NOT_FOUND".equals(status)) {
             return Optional.empty();
         }
         if (!"OK".equals(status)) {
@@ -132,11 +151,16 @@ public class GoogleMapsAdapter implements MapsPort {
     }
 
     private JsonNode get(String url) {
+        JsonNode body;
         try {
-            return rest.get().uri(url).retrieve().body(JsonNode.class);
+            body = rest.get().uri(url).retrieve().body(JsonNode.class);
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo contactar Google Maps Platform: " + ex.getMessage(), ex);
         }
+        if (body == null) {
+            throw new IllegalStateException("Google Maps Platform devolvió una respuesta vacía");
+        }
+        return body;
     }
 
     private DireccionGeocodificada leerDireccion(JsonNode node) {
@@ -149,8 +173,8 @@ public class GoogleMapsAdapter implements MapsPort {
     }
 
     private void assertOk(JsonNode root, String operacion) {
-        String status = root.path("status").asText("");
-        if ("OK".equals(status) || "ZERO_RESULTS".equals(status)) {
+        String status = root.path(FIELD_STATUS).asText("");
+        if ("OK".equals(status) || STATUS_ZERO_RESULTS.equals(status)) {
             return;
         }
         if ("REQUEST_DENIED".equals(status)) {

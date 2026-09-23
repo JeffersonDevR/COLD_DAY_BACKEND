@@ -4,7 +4,7 @@
     {
       "name": "frontend",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["start", "--prefix", "frontend", "--", "--proxy-config", "proxy.local.json"],
+      "runtimeArgs": ["start", "--prefix", "frontend", "--", "--proxy-config", "proxy.conf.json"],
       "port": 4200
     }
   ]

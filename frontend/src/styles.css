@@ -43,5 +43,5 @@
 
 /* PrimeNG reserva `--p-*` para sus design tokens; los iconos usan la fuente `primeicons`. */
 .p-toast {
-  word-break: break-word;
+  word-break:word-break;
 }

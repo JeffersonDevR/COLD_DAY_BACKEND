@@ -69,7 +69,10 @@ import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "app.dispatch.escalamiento-ms=3600000")
+@TestPropertySource(properties = {
+        "app.dispatch.escalamiento-ms=3600000",
+        "app.maps.enabled=false",
+})
 class OtDiagnosticoPresupuestoIT {
 
     // Inside the metropolitan radius of the configured service center, so the
