@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, computed, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
@@ -147,9 +147,66 @@ import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common
                     <span class="text-sm">$ {{ (diagnosticoForm.getRawValue().manoDeObra + diagnosticoForm.getRawValue().repuestos).toLocaleString('es-CO') }} COP</span>
                   </div>
 
+                  <!-- Insumos requeridos: alimentan el despacho al proveedor (AD5). -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Insumos requeridos (opcional)
+                      </span>
+                      <button
+                        type="button"
+                        (click)="agregarInsumo()"
+                        class="text-xs font-bold text-sky-600 hover:text-sky-500 dark:text-sky-400 inline-flex items-center gap-1"
+                      >
+                        <i class="pi pi-plus text-xs"></i> Agregar insumo
+                      </button>
+                    </div>
+
+                    @for (linea of insumos.controls; track $index) {
+                      <div [formGroup]="linea" class="grid grid-cols-1 sm:grid-cols-[1fr_7rem_auto] gap-2 items-end">
+                        <div>
+                          <label [attr.for]="'insumo-desc-' + $index" class="block text-[11px] font-semibold text-slate-500 mb-1">
+                            Descripción
+                          </label>
+                          <input
+                            [id]="'insumo-desc-' + $index"
+                            type="text"
+                            formControlName="descripcion"
+                            placeholder="Ej. Capacitor 45uF"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label [attr.for]="'insumo-cant-' + $index" class="block text-[11px] font-semibold text-slate-500 mb-1">
+                            Cantidad
+                          </label>
+                          <input
+                            [id]="'insumo-cant-' + $index"
+                            type="number"
+                            min="1"
+                            formControlName="cantidad"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          (click)="quitarInsumo($index)"
+                          [attr.aria-label]="'Quitar insumo ' + ($index + 1)"
+                          class="h-9 w-9 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 flex items-center justify-center transition-colors"
+                        >
+                          <i class="pi pi-trash text-sm"></i>
+                        </button>
+                      </div>
+                    } @empty {
+                      <p class="text-[11px] text-slate-400">
+                        Sin insumos: es totalmente válido registrar el diagnóstico sin solicitar insumos.
+                      </p>
+                    }
+                  </div>
+
                   <button
                     type="submit"
-                    [disabled]="diagnosticoForm.invalid"
+                    [disabled]="diagnosticoForm.invalid || insumos.invalid"
                     class="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition-colors flex items-center justify-center gap-2"
                   >
                     <i class="pi pi-send text-sm"></i>
@@ -333,6 +390,24 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     tiempoEstimadoHoras: new FormControl(2, { nonNullable: true, validators: [Validators.required] })
   });
 
+  /** Líneas de insumo declaradas por el técnico; cero líneas es un caso normal. */
+  readonly insumos = new FormArray<FormGroup>([]);
+
+  private nuevaLineaInsumo(): FormGroup {
+    return new FormGroup({
+      descripcion: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      cantidad: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
+    });
+  }
+
+  agregarInsumo(): void {
+    this.insumos.push(this.nuevaLineaInsumo());
+  }
+
+  quitarInsumo(index: number): void {
+    this.insumos.removeAt(index);
+  }
+
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -371,12 +446,19 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   }
 
   enviarDiagnostico(): void {
-    if (this.diagnosticoForm.invalid) return;
+    if (this.diagnosticoForm.invalid || this.insumos.invalid) return;
 
     const val = this.diagnosticoForm.getRawValue();
-    this.tecnicosApi.registrarDiagnostico(this.otId(), val).subscribe({
+    const insumos = this.insumos.controls.map((grupo) => {
+      const linea = grupo.getRawValue() as { descripcion: string; cantidad: number };
+      return { descripcion: linea.descripcion.trim(), cantidad: linea.cantidad };
+    });
+
+    this.tecnicosApi.registrarDiagnostico(this.otId(), { ...val, insumos }).subscribe({
       next: () => {
-        this.toast.success('Presupuesto Notificado', 'El cliente ha recibido la cotización para su aprobación.');
+        const detalle =
+          insumos.length > 0 ? ` Se despacharon ${insumos.length} insumo(s) a los proveedores.` : '';
+        this.toast.success('Presupuesto Notificado', `El cliente ha recibido la cotización para su aprobación.${detalle}`);
         this.recargarOt();
       }
     });

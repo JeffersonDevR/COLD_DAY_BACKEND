@@ -770,3 +770,84 @@ Authored changed lines for this slice (measured with `git diff --numstat` + `wc 
 - Slice 13: boot checks, baseline comparison, docs (`ARQUITECTURA.md`).
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
+
+---
+
+# Slice 12 — Frontend surfaces (PR 12 of the chained/stacked delivery)
+
+The consumer-facing surfaces of task 6.6. Slices 1–11 already shipped every backend endpoint this UI consumes; **no backend file was touched**. Docs are slice 13.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 6.6 | Supplier portal module (domain/view model, real HTTP + mock branch, offer list with accept/reject/deliver, request lines, expiry, resolved state); technician auxiliar prompt at acceptance; technician diagnóstico insumo lines (AD12); client tariff display from `POST /api/ot/tarifa/estimar` (distance/source/out-of-range); `PROVEEDOR` route guard/routes/menu + dashboard redirect; slice-7 admin supplier page routed. | `[x]` |
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `frontend/.../domain/models/common.models.ts` | Modified | `EstadoRequerimiento`, `OfertaInsumoEstado`, `SolicitudInsumoResponse`, `OfertaInsumoResponse` view models |
+| `frontend/.../infrastructure/api/backend.dto.ts` | Modified | `SolicitudInsumoApiResponse` + `OfertaInsumoApiResponse` wire DTOs (exact contract) |
+| `frontend/.../infrastructure/api/backend.mappers.ts` | Modified | `aSolicitudInsumoResponse` + `aOfertaInsumoResponse` (null-safe on the optional embedded request) |
+| `frontend/.../infrastructure/mock/mock-db.service.ts` | Modified | `solicitudesProveedor` seed (pending/accepted/expired), `estimarTarifa` mock mirroring the bracket table, `aceptarInsumo`/`rechazarInsumo`/`entregarInsumo`; removed the `environment.diagnosticoPrecio/transportePrecio` history text |
+| `frontend/.../modules/proveedores/infrastructure/proveedores-api.ts` | Created | Supplier facade: `getMisSolicitudes`, `aceptar`, `rechazar`, `entregar` with a `useMocks()` branch |
+| `frontend/.../modules/proveedores/presentation/solicitudes-proveedor-page.ts` | Created | Portal: offer list, request lines, expiry, resolved state, accept/reject/deliver, human 409/403/404 messages, loading/empty/error states, `aria-live` |
+| `frontend/.../modules/tecnicos/presentation/ofertas-page.ts` | Modified | Per-card auxiliar count (default 0, `0..app.auxiliares.max`), sent as the optional accept body; distance-based tariff copy |
+| `frontend/.../modules/tecnicos/presentation/ejecucion-ot-page.ts` | Modified | `FormArray` of insumo lines (descripción/cantidad) with add/remove; zero lines valid; sent in the diagnóstico |
+| `frontend/.../modules/ot/infrastructure/ot-api.ts` | Modified | `estimarTarifa(punto)` → `POST /api/ot/tarifa/estimar` with a mock branch |
+| `frontend/.../modules/ot/components/cargo-visita.ts` | Modified | Replaced the fixed 40.000 + 20.000 with the real estimate: distance, `ROAD`/`LINEAL`, honest out-of-range, loading/error states |
+| `frontend/.../modules/clientes/presentation/seguimiento-ot-page.ts` | Modified | Passes `[punto]="orden.punto"` to the cargo component |
+| `frontend/.../modules/clientes/presentation/diagnostico-ot-page.ts` | Modified | Visit row + total use the real estimate (distance/source/out-of-range) |
+| `frontend/.../modules/clientes/presentation/pago-acta-page.ts` | Modified | Payment breakdown uses the real estimate (was the same static constants) |
+| `frontend/src/environments/environment.ts` | Modified | Removed `diagnosticoPrecio`/`transportePrecio`; added `auxiliaresMax: 10` |
+| `frontend/.../app.routes.ts` | Modified | Added `proveedor/panel` (PROVEEDOR) and routed the slice-7 `admin/proveedores` (ADMINISTRADOR) |
+| `frontend/.../layout/app.menu.ts` | Modified | Proveedor section (supplier portal) + admin `Proveedores` entry |
+| `frontend/.../auth/auth.service.ts` | Modified | `getDashboardRouteForRole('PROVEEDOR')` → `/proveedor/panel`; PROVEEDOR demo profile |
+| `frontend/.../presentation/panel-redirect.ts` | Modified | `PROVEEDOR` → `/proveedor/panel` |
+| `frontend/.../usuarios/presentation/login-page.ts` | Modified | Proveedor demo quick-login |
+| `frontend/.../mock/mock-db.service.spec.ts` | Created | 9 tests: supplier lifecycle (409/404) + tariff table |
+| `frontend/.../api/backend.mappers.spec.ts` | Created | 3 tests: insumo mappers |
+| `frontend/.../layout/app.menu.spec.ts` | Created | 3 tests: role→menu wiring |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd frontend && npm run build && npm run test` → build `BUILD SUCCESSFUL`; test **15 passed / 1 failed** (the 1 failure is the pre-existing `app.spec.ts`, see below). New coverage: `mock-db.service.spec.ts` 9/9, `backend.mappers.spec.ts` 3/3, `app.menu.spec.ts` 3/3. |
+| Runtime harness command/scenario and exact result | **Partial.** `cd frontend && npm run dev` (port 3000) → `Application bundle generation complete`; all touched routes served **HTTP 200** (`/`, `/proveedor/panel`, `/admin/proveedores`, `/tecnico/ofertas`, `/cliente/ot/OT-2026-001`) and the SPA shell rendered. The **interactive role walkthrough was not driven**: this environment has no headless browser (no chromium/chrome/firefox, no playwright/puppeteer). Substitute proof: the production build emits the lazy chunk `solicitudes-proveedor-page`, the mock-mode tests exercise the supplier accept/reject/deliver + 409/404 lifecycle and the tariff table, and `app.menu.spec.ts` proves the role→menu wiring. |
+| Rollback boundary | `modules/proveedores/**` (2 new files), the 5 spec files, and the 17 modified frontend files (contract models/dto/mappers/mock, ot-api, cargo-visita, the 4 pages, routes/menu/auth/panel-redirect/login, environment). No backend Java, no `schema.sql`, no planning artifact except this file. |
+
+## Verification
+
+1. `cd frontend && npx tsc -p tsconfig.app.json --noEmit` → exit 0
+2. `cd frontend && npm run build` → **BUILD SUCCESSFUL** (lazy chunk `solicitudes-proveedor-page` emitted)
+3. `cd frontend && npm run test` → **15 passed / 1 failed**. Proven pre-existing: stashing this slice's files and re-running reproduced the identical `TypeError: Cannot read properties of undefined (reading 'getItem')` at `layout.service.ts:72` (`LayoutService.restore`), the same failure as the pre-change baseline.
+4. Runtime harness → **partial** (dev server boots and serves every touched route 200; no browser available for the interactive walkthrough)
+5. AD12: `rg repuestosSugeridos frontend/src` → only the two removal comments, no code usage
+6. AD13 (backend, already slice 3): `rg TARIFA_VISITA_BASE backend/src` → none; frontend `rg "diagnosticoPrecio|transportePrecio"` → none
+7. `git status` → no backend Java / `schema.sql` change
+
+## Budget
+
+Authored changed lines (measured with `git diff --numstat` + `wc -l` on new files):
+
+- Modified tracked: **+674 / -62 = 736**
+- New files (2 implementation + 3 spec): **641**
+- **Implementation + tests: 1,377** — within the ≤1400 hard budget.
+- The merged apply-progress section is additional. This slice carries the forecast `size:exception` recorded in `tasks.md` (slices 8–12).
+
+## Deviations from Design
+
+- **The estimate is consumed from the OT's `punto`** (`POST /api/ot/tarifa/estimar` is keyed on the destination coordinates, not the OT id). `seguimiento-ot-page`, `diagnostico-ot-page` and `pago-acta-page` already had `orden.punto`, so no new backend contract was needed.
+- **`pago-acta-page.ts` also updated** although the prompt listed `cargo-visita.ts`: it was the third reader of the removed `environment.diagnosticoPrecio/transportePrecio`, and leaving it would have kept the hardcoded charge (and failed the type-check once the keys were deleted).
+- **The supplier portal renders its own state badges** instead of extending the shared `EstadoBadge`, whose union does not cover `OfertaInsumoEstado`/`EstadoRequerimiento`; this keeps the shared component untouched.
+- **Mock errors are `ApiHttpError`** (409/404) so the portal's status-based messaging behaves the same in `useMocks()` mode as against the real interceptor.
+- **`tasks.md` not edited** — the planning artifact is read-only for this slice and is table-based (no `- [ ]` checkboxes); completion is recorded here.
+
+## Out of Scope (do not absorb)
+
+- Slice 13: boot checks, baseline comparison, docs (`ARQUITECTURA.md`).
+- Backend behaviour, `schema.sql`, and any planning artifact other than this file.
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, reproduced without this slice.

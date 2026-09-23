@@ -41,6 +41,13 @@ const SECTIONS: MenuSection[] = [
       { label: 'Auditoría Técnicos', icon: 'pi pi-verified', routerLink: '/admin/validacion-tecnicos', roles: ['ADMINISTRADOR'] },
       { label: 'Disputas', icon: 'pi pi-shield', routerLink: '/admin/disputas', roles: ['ADMINISTRADOR'] },
       { label: 'Monitoreo OTs', icon: 'pi pi-desktop', routerLink: '/admin/monitoreo', roles: ['ADMINISTRADOR', 'CONTABLE'] },
+      { label: 'Proveedores', icon: 'pi pi-truck', routerLink: '/admin/proveedores', roles: ['ADMINISTRADOR'] },
+    ],
+  },
+  {
+    label: 'Proveedor',
+    items: [
+      { label: 'Solicitudes de Insumos', icon: 'pi pi-inbox', routerLink: '/proveedor/panel', roles: ['PROVEEDOR'] },
     ],
   },
 ];

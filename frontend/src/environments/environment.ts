@@ -31,10 +31,9 @@ export const environment = {
   commissionRate: 0.15, // 15% de comisión plataforma (app.liquidacion.comision-porcentaje=0.15)
   cancellationGraceMinutes: 10,
   /**
-   * Cargo de visita + diagnóstico que se notifica al cliente cuando el técnico
-   * acepta la orden (antes de iniciar la reparación). Diagnóstico estándar
-   * $40.000 + transporte $20.000 = $60.000 COP.
+   * Máximo de auxiliares declarables al aceptar una oferta. Debe espejar
+   * `app.auxiliares.max` del backend (default 10); el backend es la autoridad y
+   * responde 400 si el conteo lo excede.
    */
-  diagnosticoPrecio: 40000,
-  transportePrecio: 20000,
+  auxiliaresMax: 10,
 };

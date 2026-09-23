@@ -35,6 +35,9 @@ export class PanelRedirectComponent implements OnInit {
       case 'CONTABLE':
         this.router.navigate(['/admin/dashboard']);
         break;
+      case 'PROVEEDOR':
+        this.router.navigate(['/proveedor/panel']);
+        break;
       default:
         this.router.navigate(['/']);
     }

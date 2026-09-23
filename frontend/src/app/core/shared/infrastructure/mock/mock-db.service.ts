@@ -19,7 +19,12 @@ import {
   DocumentoTecnico,
   ProveedorRequest,
   ProveedorResponse,
+  Point,
+  SolicitudInsumoResponse,
+  OfertaInsumoResponse,
+  TarifaEstimadaResponse,
 } from '../../domain/models/common.models';
+import { ApiHttpError } from '../api/error.interceptor';
 
 @Injectable({
   providedIn: 'root'
@@ -287,6 +292,71 @@ export class MockDbService {
       activo: false, // Inactivo: excluido de despachos (P5), pero visible en el listado admin (P4)
       creadoEn: '2026-02-20',
     }
+  ]);
+
+  // --- DESPACHO DE INSUMOS (portal del proveedor) ---
+  // Espeja el contrato real: cada oferta trae su requerimiento embebido con las
+  // líneas declaradas por el técnico. PROV-001 (activo) tiene ofertas vigentes.
+  readonly solicitudesProveedor = signal<OfertaInsumoResponse[]>([
+    {
+      id: 'OFERTA-INSUMO-001',
+      requerimientoId: 'REQ-INSUMO-001',
+      proveedorId: 'PROV-001',
+      estado: 'PENDIENTE',
+      creadaEn: '2026-09-15T09:40:00Z',
+      expiraEn: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      requerimiento: {
+        id: 'REQ-INSUMO-001',
+        otId: 'OT-2026-002',
+        tecnicoId: 'TEC-001',
+        estado: 'SOLICITADO',
+        observaciones: 'Entrega en sitio durante la visita del técnico.',
+        items: [
+          { descripcion: 'Bimetálico universal L55', cantidad: 1 },
+          { descripcion: 'Ventilador difusor 110V Haceb', cantidad: 1 },
+        ],
+        creadaEn: '2026-09-15T09:40:00Z',
+        expiraEn: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      },
+    },
+    {
+      id: 'OFERTA-INSUMO-002',
+      requerimientoId: 'REQ-INSUMO-002',
+      proveedorId: 'PROV-001',
+      estado: 'ACEPTADA',
+      creadaEn: '2026-09-15T08:50:00Z',
+      resueltaEn: '2026-09-15T08:55:00Z',
+      requerimiento: {
+        id: 'REQ-INSUMO-002',
+        otId: 'OT-2026-003',
+        tecnicoId: 'TEC-003',
+        estado: 'ASIGNADO',
+        items: [
+          { descripcion: 'Breaker Legrand 2x40A enchufable', cantidad: 1 },
+          { descripcion: 'Cable THHN #8 AWG', cantidad: 3 },
+        ],
+        creadaEn: '2026-09-15T08:50:00Z',
+        resueltaEn: '2026-09-15T08:55:00Z',
+      },
+    },
+    {
+      id: 'OFERTA-INSUMO-003',
+      requerimientoId: 'REQ-INSUMO-003',
+      proveedorId: 'PROV-001',
+      estado: 'EXPIRADA',
+      creadaEn: '2026-09-14T10:00:00Z',
+      expiraEn: '2026-09-14T10:15:00Z',
+      resueltaEn: '2026-09-14T10:15:00Z',
+      requerimiento: {
+        id: 'REQ-INSUMO-003',
+        otId: 'OT-2026-005',
+        tecnicoId: 'TEC-001',
+        estado: 'SIN_PROVEEDOR',
+        items: [{ descripcion: 'Bomba de drenaje magnética Whirlpool', cantidad: 1 }],
+        creadaEn: '2026-09-14T10:00:00Z',
+        resueltaEn: '2026-09-14T10:15:00Z',
+      },
+    },
   ]);
 
   // --- ÓRDENES DE TRABAJO (OT) ---
@@ -702,6 +772,11 @@ export class MockDbService {
     if (!tecnico || tecnico.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION') return false;
 
     const fecha = new Date().toISOString();
+    const estimacion = oferta.ot.punto ? this.estimarTarifa(oferta.ot.punto) : null;
+    const motivoTarifa =
+      estimacion && estimacion.tarifa !== null
+        ? `Tarifa de visita + diagnóstico notificada al cliente: $${estimacion.tarifa.toLocaleString('es-CO')} COP (${estimacion.distanciaKm} km, fuente ${estimacion.tarifaFuente})`
+        : 'Tarifa de visita + diagnóstico notificada al cliente según la distancia recorrida.';
 
     // Actualizar OT
     this.ordenesTrabajo.update(list =>
@@ -723,7 +798,7 @@ export class MockDbService {
                 estado: 'ASIGNADA',
                 actor: 'SISTEMA',
                 fecha,
-                motivo: `Cargo de visita + diagnóstico notificado al cliente: $${(environment.diagnosticoPrecio + environment.transportePrecio).toLocaleString('es-CO')} COP (diagnóstico $${environment.diagnosticoPrecio.toLocaleString('es-CO')} + transporte $${environment.transportePrecio.toLocaleString('es-CO')})`
+                motivo: motivoTarifa
               }
             ]
           };
@@ -774,15 +849,15 @@ export class MockDbService {
     const fecha = new Date().toISOString();
     const manoObra = diag.costoManoObra ?? diag.manoDeObra ?? 0;
     const repuestos = diag.costoRepuestos ?? diag.repuestos ?? 0;
-    const cargoDiagnostico = environment.diagnosticoPrecio;
-    const cargoTransporte = environment.transportePrecio;
     // `total` es solo la reparación (mano de obra + repuestos); la visita y el
-    // diagnóstico son un cargo aparte (constantes de environment).
+    // diagnóstico se cobran aparte según la tarifa por distancia del backend.
     const total = manoObra + repuestos;
 
     this.ordenesTrabajo.update(list =>
       list.map(ot => {
         if (ot.id === otId) {
+          const estimacion = ot.punto ? this.estimarTarifa(ot.punto) : null;
+          const tarifaVisita = estimacion?.tarifa ?? null;
           return {
             ...ot,
             diagnostico: diag,
@@ -791,8 +866,7 @@ export class MockDbService {
               manoObra,
               repuestos,
               total,
-              cargoDiagnostico,
-              cargoTransporte
+              cargoDiagnostico: tarifaVisita ?? undefined
             },
             fechaActualizacion: fecha,
             historial: [
@@ -801,7 +875,9 @@ export class MockDbService {
                 estado: ot.estado,
                 actor: 'TECNICO',
                 fecha,
-                motivo: `Diagnóstico emitido: $${total.toLocaleString('es-CO')} COP de reparación (Mano de obra: $${manoObra.toLocaleString('es-CO')}, Repuestos: $${repuestos.toLocaleString('es-CO')}) + $${(cargoDiagnostico + cargoTransporte).toLocaleString('es-CO')} de visita/diagnóstico`
+                motivo: tarifaVisita !== null
+                  ? `Diagnóstico emitido: $${total.toLocaleString('es-CO')} COP de reparación (Mano de obra: $${manoObra.toLocaleString('es-CO')}, Repuestos: $${repuestos.toLocaleString('es-CO')}) + $${tarifaVisita.toLocaleString('es-CO')} de visita/diagnóstico`
+                  : `Diagnóstico emitido: $${total.toLocaleString('es-CO')} COP de reparación (Mano de obra: $${manoObra.toLocaleString('es-CO')}, Repuestos: $${repuestos.toLocaleString('es-CO')})`
               }
             ]
           };
@@ -1195,6 +1271,117 @@ export class MockDbService {
     };
     this.proveedores.update(list => [...list, nuevo]);
     return nuevo;
+  }
+
+  /**
+   * Estimación de la tarifa de visita espejando la tabla de brackets del backend
+   * (AD9): base metropolitana inclusiva, brackets marginales por distancia
+   * absoluta, tope antes del redondeo y fuera de rango explícito.
+   */
+  estimarTarifa(destino: Point): TarifaEstimadaResponse {
+    const centro: Point = { latitud: 7.8939, longitud: -72.5078 };
+    const distanciaKm = Math.round(this.haversineKm(centro, destino) * 100) / 100;
+    const base = 30000;
+    const radioMetropolitanoKm = 8;
+    const radioMaxKm = 30;
+    const precioMax = 80000;
+    const redondeoCop = 100;
+
+    if (distanciaKm > radioMaxKm) {
+      return { distanciaKm, tarifaFuente: 'LINEAL', banda: null, tarifa: null, fueraDeRango: true };
+    }
+
+    const brackets = [
+      { desde: radioMetropolitanoKm, hasta: 12, rate: 1800 },
+      { desde: 12, hasta: 18, rate: 2200 },
+      { desde: 18, hasta: 24, rate: 2600 },
+      { desde: 24, hasta: radioMaxKm, rate: 3200 },
+    ];
+
+    let marginal = 0;
+    let banda = 0;
+    brackets.forEach((bracket, index) => {
+      if (distanciaKm > bracket.desde) {
+        marginal += bracket.rate * Math.max(0, Math.min(distanciaKm, bracket.hasta) - bracket.desde);
+        banda = index + 1;
+      }
+    });
+
+    const bruto = Math.min(base + marginal, precioMax);
+    const tarifa = Math.round(bruto / redondeoCop) * redondeoCop;
+    return { distanciaKm, tarifaFuente: 'LINEAL', banda, tarifa, fueraDeRango: false };
+  }
+
+  /** Acepta la oferta (el primero gana): requerimiento ASIGNADO y hermanas CANCELADAS. */
+  aceptarInsumo(ofertaId: string): SolicitudInsumoResponse {
+    const oferta = this.solicitudesProveedor().find(o => o.id === ofertaId);
+    if (!oferta) throw new ApiHttpError('La oferta de insumos no existe o ya no está disponible.', 404);
+    if (oferta.estado !== 'PENDIENTE') throw new ApiHttpError('Otra empresa ya tomó esta solicitud.', 409);
+    if (!oferta.requerimiento) throw new ApiHttpError('El requerimiento asociado ya no está disponible.', 404);
+
+    const fecha = new Date().toISOString();
+    const requerimiento: SolicitudInsumoResponse = {
+      ...oferta.requerimiento,
+      estado: 'ASIGNADO',
+      resueltaEn: fecha,
+    };
+
+    this.solicitudesProveedor.update(list =>
+      list.map(o => {
+        if (o.id === ofertaId) {
+          return { ...o, estado: 'ACEPTADA', resueltaEn: fecha, requerimiento };
+        }
+        if (o.requerimientoId === oferta.requerimientoId && o.estado === 'PENDIENTE') {
+          return { ...o, estado: 'CANCELADA', resueltaEn: fecha };
+        }
+        return o;
+      })
+    );
+
+    return requerimiento;
+  }
+
+  /** Rechaza la oferta retenida: `RECHAZADO` sin vincular al proveedor. */
+  rechazarInsumo(ofertaId: string): OfertaInsumoResponse {
+    const oferta = this.solicitudesProveedor().find(o => o.id === ofertaId);
+    if (!oferta) throw new ApiHttpError('La oferta de insumos no existe o ya no está disponible.', 404);
+    if (oferta.estado !== 'PENDIENTE') throw new ApiHttpError('Esta solicitud ya fue gestionada.', 409);
+
+    const fecha = new Date().toISOString();
+    const rechazada: OfertaInsumoResponse = { ...oferta, estado: 'RECHAZADO', resueltaEn: fecha };
+    this.solicitudesProveedor.update(list => list.map(o => (o.id === ofertaId ? rechazada : o)));
+    return rechazada;
+  }
+
+  /** Confirma la entrega del requerimiento asignado a este proveedor. */
+  entregarInsumo(requerimientoId: string): SolicitudInsumoResponse {
+    const oferta = this.solicitudesProveedor().find(
+      o => o.requerimiento?.id === requerimientoId && o.estado === 'ACEPTADA'
+    );
+    if (!oferta?.requerimiento) {
+      throw new ApiHttpError('No hay un requerimiento asignado a tu empresa con ese identificador.', 404);
+    }
+
+    const fecha = new Date().toISOString();
+    const entregado: SolicitudInsumoResponse = {
+      ...oferta.requerimiento,
+      estado: 'ENTREGADO',
+      resueltaEn: fecha,
+    };
+    this.solicitudesProveedor.update(list =>
+      list.map(o => (o.id === oferta.id ? { ...o, requerimiento: entregado } : o))
+    );
+    return entregado;
+  }
+
+  private haversineKm(a: Point, b: Point): number {
+    const radioTierraKm = 6371;
+    const dLat = ((b.latitud - a.latitud) * Math.PI) / 180;
+    const dLng = ((b.longitud - a.longitud) * Math.PI) / 180;
+    const lat1 = (a.latitud * Math.PI) / 180;
+    const lat2 = (b.latitud * Math.PI) / 180;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 2 * radioTierraKm * Math.asin(Math.sqrt(h));
   }
 
   subirDocumentoTecnico(tecnicoId: string, tipo: TipoDocumentoTecnico, archivoUrl: string, fechaVencimiento?: string, nombre?: string): void {

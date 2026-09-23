@@ -85,8 +85,26 @@ import { environment } from '../../../../environments/environment';
               </div>
               <div class="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-semibold pt-1 border-t border-slate-200/70 dark:border-slate-700/70 mt-1">
                 <i class="pi pi-wallet text-xs"></i>
-                <span>El cliente pagará visita + diagnóstico: $ {{ cargoVisita.toLocaleString('es-CO') }}</span>
+                <span>El cliente pagará la visita + diagnóstico según la tarifa por distancia.</span>
               </div>
+            </div>
+
+            <!-- Auxiliares requeridos (opcional): 0 acepta sin fricción -->
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 space-y-1">
+              <label [attr.for]="'auxiliares-' + ot.id" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Auxiliares requeridos (opcional)
+              </label>
+              <input
+                [id]="'auxiliares-' + ot.id"
+                type="number"
+                min="0"
+                [max]="auxiliaresMax"
+                inputmode="numeric"
+                [value]="auxiliaresDe(ot.id)"
+                (input)="setAuxiliares(ot.id, $any($event.target).value)"
+                class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
+              />
+              <p class="text-[11px] text-slate-400">Déjalo en 0 si no necesitas ayudantes (máx. {{ auxiliaresMax }}).</p>
             </div>
 
             <!-- Botón de Aceptación Inmediata -->
@@ -141,7 +159,10 @@ export class OfertasPage {
   readonly ofertas = signal<OfertaTecnicoResponse[]>([]);
 
   /** Cargo de visita + diagnóstico que verá el cliente al aceptar. */
-  readonly cargoVisita = environment.diagnosticoPrecio + environment.transportePrecio;
+  readonly auxiliaresMax = environment.auxiliaresMax;
+
+  /** Conteo de auxiliares por OT; 0 por defecto para aceptar sin fricción. */
+  private readonly auxiliaresPorOt = signal<Record<string, number>>({});
 
   readonly solicitudesDisponibles = computed(() => this.ofertas().map(oferta => oferta.ot));
 
@@ -172,6 +193,16 @@ export class OfertasPage {
     }
   }
 
+  /** Auxiliares declarados para una OT; 0 cuando el técnico no toca el campo. */
+  auxiliaresDe(otId: string): number {
+    return this.auxiliaresPorOt()[otId] ?? 0;
+  }
+
+  setAuxiliares(otId: string, raw: string): void {
+    const valor = raw === '' ? 0 : Number(raw);
+    this.auxiliaresPorOt.update((mapa) => ({ ...mapa, [otId]: Number.isFinite(valor) ? valor : 0 }));
+  }
+
   aceptarOferta(ot: OtResponse): void {
     const tecnico = this.tecnico();
     if (!tecnico) {
@@ -184,6 +215,19 @@ export class OfertasPage {
       return;
     }
 
+    const auxiliaresRequeridos = this.auxiliaresDe(ot.id);
+    if (
+      !Number.isInteger(auxiliaresRequeridos) ||
+      auxiliaresRequeridos < 0 ||
+      auxiliaresRequeridos > this.auxiliaresMax
+    ) {
+      this.toast.error(
+        'Auxiliares inválidos',
+        `Indica un número entero entre 0 y ${this.auxiliaresMax}. Usa 0 si no necesitas ayudantes.`
+      );
+      return;
+    }
+
     const oferta = this.ofertas().find(o => o.otId === ot.id);
     if (!oferta) {
       this.toast.error('Sin Oferta Vigente', `No hay una oferta activa para la orden ${ot.id}. Puede que ya haya sido tomada.`);
@@ -191,12 +235,14 @@ export class OfertasPage {
     }
 
     this.loadingOt.set(ot.id);
-    this.tecnicosApi.aceptarOferta(oferta.id, tecnico.id).subscribe({
+    this.tecnicosApi.aceptarOferta(oferta.id, tecnico.id, auxiliaresRequeridos).subscribe({
       next: () => {
         this.loadingOt.set(null);
+        const detalleAuxiliares =
+          auxiliaresRequeridos > 0 ? ` con ${auxiliaresRequeridos} auxiliar(es)` : '';
         this.toast.success(
           '¡Servicio Asignado!',
-          `Has tomado la orden ${ot.id}. Se notificó al cliente el cargo de visita + diagnóstico ($${this.cargoVisita.toLocaleString('es-CO')}). Desplázate al domicilio.`
+          `Has tomado la orden ${ot.id}${detalleAuxiliares}. Se notificó al cliente la tarifa de visita + diagnóstico por distancia. Desplázate al domicilio.`
         );
         this.router.navigate(['/tecnico/ejecucion', ot.id]);
       },

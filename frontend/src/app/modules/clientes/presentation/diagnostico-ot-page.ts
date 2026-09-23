@@ -5,8 +5,7 @@ import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { OtResponse, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
 
 interface ChatMensaje {
   emisor: 'CLIENTE' | 'TECNICO';
@@ -61,12 +60,26 @@ interface ChatMensaje {
                   <div class="flex justify-between p-3.5 bg-sky-50/70 dark:bg-sky-950/25 border-b border-slate-100 dark:border-slate-800">
                     <div class="space-y-0.5">
                       <span class="font-bold text-slate-800 dark:text-slate-200">Visita y diagnóstico</span>
-                      <p class="text-[11px] text-slate-400">
-                        Diagnóstico $ {{ diagnosticoPrecio.toLocaleString('es-CO') }} + transporte $ {{ transportePrecio.toLocaleString('es-CO') }}
-                      </p>
+                      @if (estimacion(); as est) {
+                        @if (est.fueraDeRango) {
+                          <p class="text-[11px] text-amber-600 dark:text-amber-400">
+                            Fuera del radio de cobertura ({{ est.distanciaKm.toLocaleString('es-CO') }} km) — se confirma con el técnico
+                          </p>
+                        } @else {
+                          <p class="text-[11px] text-slate-400">
+                            Tarifa por distancia: {{ est.distanciaKm.toLocaleString('es-CO') }} km · {{ etiquetaFuente(est.tarifaFuente) }}
+                          </p>
+                        }
+                      } @else {
+                        <p class="text-[11px] text-slate-400">Calculando la tarifa por distancia...</p>
+                      }
                     </div>
                     <span class="font-bold text-slate-900 dark:text-slate-100">
-                      $ {{ cargoVisita.toLocaleString('es-CO') }}
+                      @if (estimacion(); as est) {
+                        {{ est.tarifa !== null ? ('$ ' + est.tarifa.toLocaleString('es-CO')) : 'Por confirmar' }}
+                      } @else {
+                        —
+                      }
                     </span>
                   </div>
 
@@ -96,7 +109,7 @@ interface ChatMensaje {
                   </div>
                 </div>
                 <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
-                  La visita y el diagnóstico ({{ cargoVisita.toLocaleString('es-CO') }} COP) se cobran aunque no apruebes la reparación.
+                  La visita y el diagnóstico se cobran según la distancia aunque no apruebes la reparación.
                 </p>
               </div>
 
@@ -237,14 +250,12 @@ export class DiagnosticoOtPage implements OnInit {
   readonly motivoRechazoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
   readonly nuevoMensajeCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
 
-  /** Cargo fijo de visita + diagnóstico (diagnóstico estándar + transporte). */
-  readonly diagnosticoPrecio = environment.diagnosticoPrecio;
-  readonly transportePrecio = environment.transportePrecio;
-  readonly cargoVisita = environment.diagnosticoPrecio + environment.transportePrecio;
+  /** Estimación de la tarifa de visita por distancia (solo lectura). */
+  readonly estimacion = signal<TarifaEstimadaResponse | null>(null);
 
-  /** Presupuesto de reparación + cargo de visita/diagnóstico. */
+  /** Presupuesto de reparación + tarifa de visita estimada. */
   readonly totalServicio = computed<number>(
-    () => (this.ot()?.presupuesto?.total || 150000) + this.cargoVisita
+    () => (this.ot()?.presupuesto?.total || 0) + (this.estimacion()?.tarifa ?? 0)
   );
 
   readonly chatMensajes = signal<ChatMensaje[]>([
@@ -259,10 +270,29 @@ export class DiagnosticoOtPage implements OnInit {
       if (id) {
         this.otId.set(id);
         this.otApi.getOtById(id).subscribe({
-          next: (orden) => this._otRemoto.set(orden),
+          next: (orden) => {
+            this._otRemoto.set(orden);
+            this.cargarEstimacion(orden?.punto);
+          },
         });
       }
     });
+  }
+
+  /** Consulta la tarifa de visita por distancia para el punto de servicio. */
+  private cargarEstimacion(punto?: Point): void {
+    if (!punto) {
+      this.estimacion.set(null);
+      return;
+    }
+    this.otApi.estimarTarifa(punto).subscribe({
+      next: (est) => this.estimacion.set(est),
+      error: () => this.estimacion.set(null),
+    });
+  }
+
+  etiquetaFuente(fuente: TarifaEstimadaResponse['tarifaFuente']): string {
+    return fuente === 'ROAD' ? 'Ruta por carretera' : 'Distancia lineal';
   }
 
   aprobarPresupuesto(): void {

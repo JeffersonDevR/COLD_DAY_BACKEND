@@ -15,10 +15,12 @@ import {
   HistorialOtItem,
   LiquidacionResponse,
   MetricasAdminResponse,
+  OfertaInsumoResponse,
   OfertaTecnicoResponse,
   OtRequest,
   OtResponse,
   ProveedorResponse,
+  SolicitudInsumoResponse,
   TarifaEstimadaResponse,
   TecnicoCercano,
   TecnicoResponse,
@@ -34,11 +36,13 @@ import {
   HistorialEstadoApiResponse,
   LiquidacionApiResponse,
   MetricasAdminApiResponse,
+  OfertaInsumoApiResponse,
   OfertaOtApiResponse,
   OtApiRequest,
   OtApiResponse,
   PresupuestoApi,
   ProveedorApiResponse,
+  SolicitudInsumoApiResponse,
   TarifaEstimadaApiResponse,
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
@@ -252,6 +256,37 @@ export function aProveedorResponse(dto: ProveedorApiResponse): ProveedorResponse
     telefono: dto.telefono ?? undefined,
     activo: dto.activo,
     creadoEn: dto.creadoEn ?? undefined,
+  };
+}
+
+export function aSolicitudInsumoResponse(dto: SolicitudInsumoApiResponse): SolicitudInsumoResponse {
+  return {
+    id: dto.id,
+    otId: dto.otId,
+    tecnicoId: dto.tecnicoId,
+    estado: dto.estado,
+    observaciones: dto.observaciones ?? undefined,
+    items: (dto.items ?? []).map((linea) => ({
+      descripcion: linea.descripcion,
+      cantidad: linea.cantidad,
+    })),
+    creadaEn: dto.creadaEn ?? undefined,
+    expiraEn: dto.expiraEn ?? undefined,
+    resueltaEn: dto.resueltaEn ?? undefined,
+  };
+}
+
+export function aOfertaInsumoResponse(dto: OfertaInsumoApiResponse): OfertaInsumoResponse {
+  return {
+    id: dto.id,
+    requerimientoId: dto.requerimientoId,
+    proveedorId: dto.proveedorId,
+    estado: dto.estado,
+    creadaEn: dto.creadaEn ?? undefined,
+    expiraEn: dto.expiraEn ?? undefined,
+    resueltaEn: dto.resueltaEn ?? undefined,
+    // El rechazo responde la oferta sin requerimiento embebido.
+    requerimiento: dto.requerimiento ? aSolicitudInsumoResponse(dto.requerimiento) : null,
   };
 }
 

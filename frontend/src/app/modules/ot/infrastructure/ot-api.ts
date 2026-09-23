@@ -9,15 +9,18 @@ import {
   ActorOt,
   HistorialOtItem,
   Point,
+  TarifaEstimadaResponse,
 } from '../../../core/shared/domain/models/common.models';
 import {
   HistorialEstadoApiResponse,
   OtApiResponse,
+  TarifaEstimadaApiResponse,
 } from '../../../core/shared/infrastructure/api/backend.dto';
 import {
   aDiagnosticoApiRequest,
   aHistorialOtItem,
   aOtResponse,
+  aTarifaEstimadaResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
@@ -37,6 +40,23 @@ export class OtApi {
       return of(ot).pipe(delay(150));
     }
     return this.http.get<OtApiResponse>(this.apiConfig.url(`/ot/${id}`)).pipe(map(aOtResponse));
+  }
+
+  /**
+   * POST /api/ot/tarifa/estimar {latitud, longitud} → estimación de la visita.
+   * Es de solo lectura: no crea ni muta la OT. Fuera de rango llega con
+   * `fueraDeRango = true` y `tarifa = null` (200, nunca error).
+   */
+  estimarTarifa(destino: Point): Observable<TarifaEstimadaResponse> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.estimarTarifa(destino)).pipe(delay(200));
+    }
+    return this.http
+      .post<TarifaEstimadaApiResponse>(this.apiConfig.url('/ot/tarifa/estimar'), {
+        latitud: destino.latitud,
+        longitud: destino.longitud,
+      })
+      .pipe(map(aTarifaEstimadaResponse));
   }
 
   /** POST /api/ot/{otId}/iniciar-desplazamiento (sin cuerpo) → void. */

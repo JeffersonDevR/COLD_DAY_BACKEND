@@ -241,6 +241,48 @@ export interface InsumoLinea {
   cantidad: number;
 }
 
+/** Estados raíz del despacho de insumos (EstadoRequerimiento.java). */
+export type EstadoRequerimiento = 'SOLICITADO' | 'ASIGNADO' | 'ENTREGADO' | 'SIN_PROVEEDOR';
+
+/**
+ * Estados por oferta del despacho (OfertaInsumoEstado.java). El literal de
+ * rechazo es `RECHAZADO` (nunca `RECHAZADA`); `CANCELADA` marca la oferta hermana
+ * que perdió la aceptación atómica.
+ */
+export type OfertaInsumoEstado = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADO' | 'EXPIRADA' | 'CANCELADA';
+
+/**
+ * Requerimiento de insumos tal como lo ve el proveedor (SolicitudInsumoApiResponse).
+ * Las líneas son texto libre declarado por el técnico; no hay catálogo gestionado.
+ */
+export interface SolicitudInsumoResponse {
+  id: string;
+  otId: string;
+  tecnicoId: string;
+  estado: EstadoRequerimiento;
+  observaciones?: string;
+  items: InsumoLinea[];
+  creadaEn?: string;
+  expiraEn?: string;
+  resueltaEn?: string;
+}
+
+/**
+ * Oferta de insumos con su requerimiento embebido (OfertaInsumoApiResponse).
+ * `requerimiento` puede venir en `null` cuando el endpoint responde la oferta de
+ * forma aislada (p. ej. el rechazo), por eso el portal lo trata como opcional.
+ */
+export interface OfertaInsumoResponse {
+  id: string;
+  requerimientoId: string;
+  proveedorId: string;
+  estado: OfertaInsumoEstado;
+  creadaEn?: string;
+  expiraEn?: string;
+  resueltaEn?: string;
+  requerimiento: SolicitudInsumoResponse | null;
+}
+
 export interface DiagnosticoRequest {
   fallaDetectada?: string;
   diagnostico?: string;

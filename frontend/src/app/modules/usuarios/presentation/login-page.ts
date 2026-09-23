@@ -236,6 +236,20 @@ import { Rol } from '../../../core/shared/domain/models/common.models';
                     <span class="block text-[11px] text-slate-500 truncate">Carlos Méndez</span>
                   </span>
                 </button>
+
+                <button
+                  type="button"
+                  (click)="quickLogin('proveedor1@coldday.com.co', 'PROVEEDOR')"
+                  class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-teal-50 dark:hover:bg-teal-950/40 hover:border-teal-300 transition-colors text-left"
+                >
+                  <span class="w-7 h-7 rounded-lg bg-teal-100 dark:bg-teal-900 text-teal-600 flex items-center justify-center shrink-0">
+                    <i class="pi pi-truck text-sm"></i>
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block font-bold text-slate-800 dark:text-slate-200 truncate">Proveedor</span>
+                    <span class="block text-[11px] text-slate-500 truncate">Suministros del Norte</span>
+                  </span>
+                </button>
               </div>
             </div>
 

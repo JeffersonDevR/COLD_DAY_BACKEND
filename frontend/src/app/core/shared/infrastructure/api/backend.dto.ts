@@ -14,9 +14,11 @@ import {
   EstadoLiquidacion,
   EstadoOperativo,
   EstadoOt,
+  EstadoRequerimiento,
   EstadoValidacion,
   MedioPago,
   OfertaEstado,
+  OfertaInsumoEstado,
   Point,
   Rol,
   TarifaFuente,
@@ -263,6 +265,39 @@ export interface OtApiRequest {
 export interface InsumoLineaApi {
   descripcion: string;
   cantidad: number;
+}
+
+/**
+ * Requerimiento de insumos (SolicitudInsumoApiResponse.java): estado raíz del
+ * despacho + las líneas declaradas. `estado` ∈ {SOLICITADO, ASIGNADO,
+ * ENTREGADO, SIN_PROVEEDOR}.
+ */
+export interface SolicitudInsumoApiResponse {
+  id: string;
+  otId: string;
+  tecnicoId: string;
+  estado: EstadoRequerimiento;
+  observaciones: string | null;
+  items: InsumoLineaApi[];
+  creadaEn: string | null;
+  expiraEn: string | null;
+  resueltaEn: string | null;
+}
+
+/**
+ * Oferta de insumos (OfertaInsumoApiResponse.java): estado por proveedor
+ * (PENDIENTE, ACEPTADA, RECHAZADO, EXPIRADA, CANCELADA) con el requerimiento
+ * embebido cuando el caller lo posee.
+ */
+export interface OfertaInsumoApiResponse {
+  id: string;
+  requerimientoId: string;
+  proveedorId: string;
+  estado: OfertaInsumoEstado;
+  creadaEn: string | null;
+  expiraEn: string | null;
+  resueltaEn: string | null;
+  requerimiento: SolicitudInsumoApiResponse | null;
 }
 
 export interface DiagnosticoApiRequest {

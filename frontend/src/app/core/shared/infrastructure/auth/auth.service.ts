@@ -172,6 +172,15 @@ export class AuthService {
         habeasDataAceptado: true,
         activo: true,
       },
+      PROVEEDOR: {
+        id: 10,
+        nombre: 'Suministros del Norte S.A.S.',
+        correo: 'proveedor1@coldday.com.co',
+        telefono: '3105550001',
+        rol: 'PROVEEDOR',
+        habeasDataAceptado: true,
+        activo: true,
+      },
     };
     const target = demoProfiles[rol] || demoProfiles['CLIENTE'];
     this.setCurrentUser(target);
@@ -186,6 +195,8 @@ export class AuthService {
       case 'ADMINISTRADOR':
       case 'CONTABLE':
         return '/admin/dashboard';
+      case 'PROVEEDOR':
+        return '/proveedor/panel';
       default:
         return '/login';
     }

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, V
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common.models';
+import { OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -117,7 +117,13 @@ import { environment } from '../../../../environments/environment';
               <div class="space-y-2 text-xs">
                 <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
                   <span class="text-slate-500">Visita y diagnóstico:</span>
-                  <span class="font-bold">$ {{ cargoVisita.toLocaleString('es-CO') }}</span>
+                  <span class="font-bold">
+                    @if (estimacion(); as est) {
+                      {{ est.tarifa !== null ? ('$ ' + est.tarifa.toLocaleString('es-CO')) : 'Por confirmar' }}
+                    } @else {
+                      —
+                    }
+                  </span>
                 </div>
                 <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
                   <span class="text-slate-500">Mano de Obra:</span>
@@ -212,11 +218,11 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   private isDrawing = false;
   private ctx: CanvasRenderingContext2D | null = null;
 
-  /** Cargo fijo de visita + diagnóstico (diagnóstico estándar + transporte). */
-  readonly cargoVisita = environment.diagnosticoPrecio + environment.transportePrecio;
+  /** Tarifa de visita estimada por distancia para el punto de servicio. */
+  readonly estimacion = signal<TarifaEstimadaResponse | null>(null);
 
   readonly totalMonto = computed(() => {
-    return (this.ot()?.presupuesto?.total || 150000) + this.cargoVisita;
+    return (this.ot()?.presupuesto?.total || 0) + (this.estimacion()?.tarifa ?? 0);
   });
 
   ngOnInit(): void {
@@ -225,9 +231,24 @@ export class PagoActaPage implements OnInit, AfterViewInit {
       if (id) {
         this.otId.set(id);
         this.otApi.getOtById(id).subscribe({
-          next: (orden) => this._otRemoto.set(orden),
+          next: (orden) => {
+            this._otRemoto.set(orden);
+            this.cargarEstimacion(orden?.punto);
+          },
         });
       }
+    });
+  }
+
+  /** Consulta la tarifa de visita por distancia para el punto de servicio. */
+  private cargarEstimacion(punto?: Point): void {
+    if (!punto) {
+      this.estimacion.set(null);
+      return;
+    }
+    this.otApi.estimarTarifa(punto).subscribe({
+      next: (est) => this.estimacion.set(est),
+      error: () => this.estimacion.set(null),
     });
   }
 

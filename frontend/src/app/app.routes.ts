@@ -140,6 +140,20 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/administracion/presentation/monitoreo-ot-page').then(m => m.MonitoreoOtPage),
     title: 'Monitoreo Global de OTs - COLD DAY'
   },
+  {
+    path: 'admin/proveedores',
+    canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
+    loadComponent: () => import('./modules/administracion/presentation/proveedores-admin-page').then(m => m.ProveedoresAdminPage),
+    title: 'Proveedores Auxiliares - COLD DAY'
+  },
+
+  // Rutas de Proveedores (despacho de insumos)
+  {
+    path: 'proveedor/panel',
+    canActivate: [authGuard, roleGuard(['PROVEEDOR'])],
+    loadComponent: () => import('./modules/proveedores/presentation/solicitudes-proveedor-page').then(m => m.SolicitudesProveedorPage),
+    title: 'Portal de Proveedores - COLD DAY'
+  },
 
   // Fallback
   {

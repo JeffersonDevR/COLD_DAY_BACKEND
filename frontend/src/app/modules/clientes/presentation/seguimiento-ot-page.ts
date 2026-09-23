@@ -168,7 +168,7 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
 
         <!-- Notificación del cargo de visita + diagnóstico (al aceptar el técnico) -->
         @if (mostrarCargoVisita()) {
-          <app-cargo-visita />
+          <app-cargo-visita [punto]="orden.punto" />
         }
 
         <!-- Detalle de la Solicitud y Falla -->
