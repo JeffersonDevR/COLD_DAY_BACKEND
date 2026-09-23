@@ -18,6 +18,7 @@ import {
   OfertaTecnicoResponse,
   OtRequest,
   OtResponse,
+  TarifaEstimadaResponse,
   TecnicoCercano,
   TecnicoResponse,
   TipoDocumentoTecnico,
@@ -36,6 +37,7 @@ import {
   OtApiRequest,
   OtApiResponse,
   PresupuestoApi,
+  TarifaEstimadaApiResponse,
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
   UsuarioApiResponse,
@@ -219,6 +221,16 @@ export function aOfertaTecnico(dto: OfertaOtApiResponse, ot: OtResponse): Oferta
     segundosRestantes: segundosHasta(dto.expiraEn),
     estado: dto.estado,
     fechaCreacion: dto.creadaEn,
+  };
+}
+
+export function aTarifaEstimadaResponse(dto: TarifaEstimadaApiResponse): TarifaEstimadaResponse {
+  return {
+    distanciaKm: dto.distanciaKm,
+    tarifaFuente: dto.tarifaFuente,
+    banda: dto.banda,
+    tarifa: dto.tarifa,
+    fueraDeRango: dto.fueraDeRango,
   };
 }
 

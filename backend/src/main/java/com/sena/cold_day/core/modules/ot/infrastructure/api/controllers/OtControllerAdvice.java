@@ -17,7 +17,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaEx
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
-@RestControllerAdvice(assignableTypes = OtController.class)
+@RestControllerAdvice(assignableTypes = { OtController.class, TarifaController.class })
 public class OtControllerAdvice {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

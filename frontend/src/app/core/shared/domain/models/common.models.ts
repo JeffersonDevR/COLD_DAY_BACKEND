@@ -89,6 +89,22 @@ export interface Point {
   longitud: number;
 }
 
+/** Fuente de la distancia usada en la tarifa de visita (TarifaFuente.java). */
+export type TarifaFuente = 'ROAD' | 'LINEAL';
+
+/**
+ * Estimacion de tarifa de visita (POST /api/ot/tarifa/estimar). Es solo lectura:
+ * no crea ni modifica una OT. Fuera de rango devuelve `banda` y `tarifa` en
+ * `null` explicito, nunca un centinela.
+ */
+export interface TarifaEstimadaResponse {
+  distanciaKm: number;
+  tarifaFuente: TarifaFuente;
+  banda: number | null;
+  tarifa: number | null;
+  fueraDeRango: boolean;
+}
+
 /**
  * Error canónico del backend (ApiError.java): {status, message, fieldErrors}.
  * Los handlers de seguridad y el de Maps devuelven un ARRAY con un solo ApiError.

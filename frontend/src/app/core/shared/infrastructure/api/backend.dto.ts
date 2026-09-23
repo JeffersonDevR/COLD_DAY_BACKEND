@@ -19,6 +19,7 @@ import {
   OfertaEstado,
   Point,
   Rol,
+  TarifaFuente,
   TipoCliente,
 } from '../../domain/models/common.models';
 
@@ -262,6 +263,23 @@ export interface OfertaOtApiResponse {
   estado: OfertaEstado;
   creadaEn: string;
   expiraEn: string;
+}
+
+export interface TarifaEstimarApiRequest {
+  latitud: number;
+  longitud: number;
+}
+
+/**
+ * Respuesta real de POST /api/ot/tarifa/estimar (TarifaEstimadaResponse.java).
+ * `banda` y `tarifa` son `null` explicito cuando `fueraDeRango` es true.
+ */
+export interface TarifaEstimadaApiResponse {
+  distanciaKm: number;
+  tarifaFuente: TarifaFuente;
+  banda: number | null;
+  tarifa: number | null;
+  fueraDeRango: boolean;
 }
 
 /* ------------------------------------------------------------------ */

@@ -68,6 +68,26 @@ public class MapsUseCase {
         return maps.distancia(o.latitud(), o.longitud(), d.latitud(), d.longitud());
     }
 
+    /**
+     * Non-throwing distance lookup (design AD10). Returns {@code Optional.empty()}
+     * when maps is disabled, unconfigured, has no route or fails, so the caller can
+     * fall back to Haversine and a third party never blocks OT creation. Unlike
+     * {@link #distancia(double, double, double, double)} this never raises
+     * {@code MapsNoDisponibleException}.
+     */
+    public Optional<RutaCalculada> distanciaOpcional(double oLat, double oLng, double dLat, double dLng) {
+        Point o = new Point(oLat, oLng);
+        Point d = new Point(dLat, dLng);
+        if (!props.usable()) {
+            return Optional.empty();
+        }
+        try {
+            return maps.distancia(o.latitud(), o.longitud(), d.latitud(), d.longitud());
+        } catch (RuntimeException ex) {
+            return Optional.empty();
+        }
+    }
+
     private void exigirDisponible() {
         if (!props.enabled()) {
             throw MapsNoDisponibleException.deshabilitado();
