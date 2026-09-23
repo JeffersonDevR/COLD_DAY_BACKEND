@@ -450,3 +450,78 @@ The design specifies **409 only for duplicate `correo`** and is silent on `nit`.
 - Slices 8–14: despacho-insumos, supplier portal/técnico/cliente pages, routes/menu/auth, full boot/verify.
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
+
+---
+
+# Slice 8 — Despacho domain (PR 8 of the chained/stacked delivery)
+
+Pure domain of the new `proveedores` insumo-dispatch context (task 6.1). Persistence (6.2) is slice 9, use cases + notification adapter + sweeper (6.3) slice 10, API + diagnóstico wiring (6.4–6.5) slice 11, frontend (6.6) slice 12.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 6.1 | Domain: `EstadoRequerimiento` (no `CANCELADO`), `OfertaInsumoEstado` (`RECHAZADO`), `RequerimientoInsumo`, `OfertaInsumo`, `InsumoLinea`, `RequerimientoInsumoItem`, `RequerimientoInsumoId`, `OfertaInsumoId`, the `TransicionesRequerimiento` table and the context-owned `NotificacionInsumoPort` (AD14). | `[x]` |
+
+## State machine as implemented (slice 9 binds to these exact names)
+
+`EstadoRequerimiento` = `SOLICITADO, ASIGNADO, ENTREGADO, SIN_PROVEEDOR`. **No `CANCELADO`** — unreachable in the specs, deliberately omitted. Transitions: `SOLICITADO → ASIGNADO` (atomic accept gate, PROVEEDOR), `ASIGNADO → ENTREGADO` (delivery confirmed, PROVEEDOR), `SOLICITADO → SIN_PROVEEDOR` (zero eligible, SISTEMA). `ENTREGADO` is the only hard terminal; `SIN_PROVEEDOR` is terminal-but-retriable.
+
+`OfertaInsumoEstado` = `PENDIENTE, ACEPTADA, RECHAZADO, EXPIRADA, CANCELADA`. Transitions from `PENDIENTE`: `→ ACEPTADA` (first conditional accept, PROVEEDOR), `→ RECHAZADO` (explicit decline, PROVEEDOR), `→ EXPIRADA` (sweeper / late accept, SISTEMA), `→ CANCELADA` (sibling won, SISTEMA). `RECHAZADO` is the literal (never `RECHAZADA`). `PENDIENTE` is the only actionable state; `ACEPTADA` is not a per-offer terminal because the request continues to `ENTREGADO`.
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `backend/.../proveedores/domain/valueobjects/EstadoRequerimiento.java` | Created | Root states `SOLICITADO/ASIGNADO/ENTREGADO/SIN_PROVEEDOR`; `esTerminal()` = `ENTREGADO` only; `CANCELADO` documented as removed |
+| `backend/.../proveedores/domain/valueobjects/OfertaInsumoEstado.java` | Created | Offer states `PENDIENTE/ACEPTADA/RECHAZADO/EXPIRADA/CANCELADA`; `estaPendiente()`/`esTerminal()` |
+| `backend/.../proveedores/domain/valueobjects/InsumoLinea.java` | Created | Free-text line VO: non-blank `descripcion` + positive `cantidad`; no catalog, no `Insumo` entity |
+| `backend/.../proveedores/domain/valueobjects/RequerimientoInsumoId.java` | Created | Own-UUID identity record, mirroring `ProveedorId`/`OfertaOtId` |
+| `backend/.../proveedores/domain/valueobjects/OfertaInsumoId.java` | Created | Own-UUID identity record with `of(String)` for path binding |
+| `backend/.../proveedores/domain/entities/RequerimientoInsumoItem.java` | Created | Immutable line item (id + descripcion + cantidad) with `crear`/`reconstituir` |
+| `backend/.../proveedores/domain/entities/OfertaInsumo.java` | Created | Offer mirroring `OfertaOt`: pending window, `estaVigente`, `aceptar`/`rechazar`/`expirar`/`cancelar` (all only from `PENDIENTE`) |
+| `backend/.../proveedores/domain/aggregates/RequerimientoInsumo.java` | Created | Separate root; local `UUID otId`/`tecnicoId`; `crear` (≥1 line), `asignar`/`marcarEntregado`/`marcarSinProveedor`, `estaVigente`, `reconstituir` |
+| `backend/.../proveedores/domain/exception/TransicionRequerimientoInvalidaException.java` | Created | Typed invalid-transition error mirroring `TransicionOtInvalidaException` |
+| `backend/.../proveedores/domain/services/TransicionesRequerimiento.java` | Created | Explicit root transition table + trigger/actor javadoc (the `TransicionesOt` pattern) |
+| `backend/.../proveedores/domain/services/NotificacionInsumoPort.java` | Created | Context-owned best-effort port (AD14), `notificarSolicitud`; never throws |
+| `backend/.../test/.../proveedores/domain/aggregates/RequerimientoInsumoTest.java` | Created | 12 domain tests: creation, ≥1 line, mandatory data, line validation, all legal transitions, forbidden transitions, `CANCELADO` absent, expiry boundary, reconstitution |
+| `backend/.../test/.../proveedores/domain/entities/OfertaInsumoTest.java` | Created | 11 domain tests: creation, mandatory data, expiry boundary, the four `PENDIENTE` resolutions, resolution-of-non-pending throws, `RECHAZADO` literal, terminal semantics, reconstitution |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd backend && ./gradlew test --tests '*RequerimientoInsumoTest'` → `BUILD SUCCESSFUL`; `RequerimientoInsumoTest` `tests="12" failures="0" errors="0"`. Extra: `--tests '*OfertaInsumoTest'` → `BUILD SUCCESSFUL`, `tests="11" failures="0" errors="0"`. |
+| Runtime harness command/scenario and exact result | **N/A** — this slice is pure domain with no Spring context, no DB and no network boundary. It declares no controller, repository, JPA mapping or scheduled bean, so there is no runtime path to exercise; the correctness surface is the transition table and aggregate invariants, proven by the unit tests above. |
+| Bounded-context direction check | `proveedores/domain/**` imports only `java.*`, `proveedores.*` and `shared.domain.Point` (not used here). No `ot`/`tecnicos` import: `otId`/`tecnicoId` are local `UUID` references, so the `ot` domain never has to import `proveedores`. |
+| Rollback boundary | The 11 new `proveedores/domain/**` files and the 2 new domain test files. No persistence, schema, use case, controller, adapter, frontend or `ot`/`tecnicos` behavior is touched. |
+
+## Verification
+
+1. `cd backend && ./gradlew compileJava compileTestJava` → **BUILD SUCCESSFUL**
+2. `cd backend && ./gradlew test --tests '*RequerimientoInsumoTest'` → **BUILD SUCCESSFUL**, 12 tests / 0 failures
+3. `cd backend && ./gradlew test` → **364 tests / 4 failures**, all 4 `ClientesApiIT` (the frozen out-of-scope baseline; 341 → 364 from the 23 new slice-8 tests). No new regressions.
+
+## Budget
+
+Authored changed lines for this slice:
+
+- Implementation + tests (13 files, all new): **1,001** (590 main + 411 test).
+- Merged apply-progress artifact: this section.
+
+**Over the 900-line hard budget** (≈430 estimate × 1.8 + artifact headroom). One honest slicing pass found no cohesive split: the state enums, ids, line item, aggregate, offer and transition table are a single state machine, and the tests must travel with it (work-unit-commits); splitting the aggregate from its state machine or its tests would break work-unit cohesion, which `tasks.md` already flags for slice 8. Trimming would mean deleting tests/comments, which the review-budget rule forbids. **Recommend `size:exception` for PR 8**, consistent with the accepted exceptions on slices 2, 6 and 7 and the tasks.md forecast that slice 8 carries one.
+
+## Deviations from Design
+
+- **`TransicionesRequerimiento` service added** (not in the task 6.1 file list). The design's transition table needs one explicit, testable source of truth; this mirrors `TransicionesOt` verbatim (design AD6) and makes "a transition the table forbids must throw" a first-class contract. The typed `TransicionRequerimientoInvalidaException` mirrors `TransicionOtInvalidaException`.
+- **`otId`/`tecnicoId` are plain `UUID`**, not local id VOs. The task 6.1 list names only `RequerimientoInsumoId`/`OfertaInsumoId`; modelling the two foreign references as raw `UUID` keeps the bounded context free of `ot`/`tecnicos` types without inventing two more VOs.
+- **No actor/trigger enum types.** Actor and trigger are made explicit in the `TransicionesRequerimiento` javadoc table and in each transition method's javadoc/name (`asignar`/`marcarEntregado` = PROVEEDOR, `marcarSinProveedor` = SISTEMA, `expirar`/`cancelar` = SISTEMA), matching how `TransicionesOt` documents the SRS. No history/actor column exists in the design schema, so a runtime actor type would be dead code.
+- **`OfertaInsumo` has no `radioKm`** (unlike `OfertaOt`): insumo dispatch has no radius; eligibility is "all active suppliers" (AD7).
+- **No persistence/schema file touched** — task 6.1 is domain-only; slice 9 owns the tables, JPA and adapters.
+
+## Out of Scope (do not absorb)
+
+- Slice 9: `requerimiento_insumo` / `requerimiento_insumo_item` / `oferta_insumo` tables, JPA entities, repository ports/adapters, `ProgramadorExpiracionInsumo`.
+- Slices 10–12: use cases, notification adapter, API, diagnóstico wiring, frontend.
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
