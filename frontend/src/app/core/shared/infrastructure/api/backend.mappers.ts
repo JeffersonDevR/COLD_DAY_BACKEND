@@ -18,6 +18,7 @@ import {
   OfertaTecnicoResponse,
   OtRequest,
   OtResponse,
+  ProveedorResponse,
   TarifaEstimadaResponse,
   TecnicoCercano,
   TecnicoResponse,
@@ -37,6 +38,7 @@ import {
   OtApiRequest,
   OtApiResponse,
   PresupuestoApi,
+  ProveedorApiResponse,
   TarifaEstimadaApiResponse,
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
@@ -232,6 +234,18 @@ export function aTarifaEstimadaResponse(dto: TarifaEstimadaApiResponse): TarifaE
     banda: dto.banda,
     tarifa: dto.tarifa,
     fueraDeRango: dto.fueraDeRango,
+  };
+}
+
+export function aProveedorResponse(dto: ProveedorApiResponse): ProveedorResponse {
+  return {
+    id: dto.id,
+    usuarioId: dto.usuarioId,
+    razonSocial: dto.razonSocial,
+    nit: dto.nit,
+    telefono: dto.telefono ?? undefined,
+    activo: dto.activo,
+    creadoEn: dto.creadoEn ?? undefined,
   };
 }
 

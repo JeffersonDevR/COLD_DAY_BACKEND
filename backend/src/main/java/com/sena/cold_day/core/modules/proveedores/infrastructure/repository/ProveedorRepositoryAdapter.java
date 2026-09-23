@@ -37,6 +37,12 @@ public class ProveedorRepositoryAdapter implements ProveedorRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Proveedor> findAll() {
+        return repository.findAll().stream().map(ProveedorJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Proveedor> buscarPorId(ProveedorId id) {
         return repository.findById(id.valor()).map(ProveedorJpaEntity::toDomain);
     }

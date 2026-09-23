@@ -15,6 +15,9 @@ public interface ProveedorRepository {
 
     Proveedor save(Proveedor proveedor);
 
+    /** Lists every supplier, including inactive ones (spec P4 admin listing). */
+    List<Proveedor> findAll();
+
     Optional<Proveedor> buscarPorId(ProveedorId id);
 
     Optional<Proveedor> findByUsuarioId(Long usuarioId);

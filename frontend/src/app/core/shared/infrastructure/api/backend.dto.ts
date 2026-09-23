@@ -187,6 +187,31 @@ export interface DocumentoTecnicoApiResponse {
 }
 
 /* ------------------------------------------------------------------ */
+/* proveedores                                                         */
+/* ------------------------------------------------------------------ */
+
+export interface ProveedorApiRequest {
+  nombre: string;
+  correo: string;
+  password: string;
+  telefono?: string;
+  razonSocial: string;
+  nit: string;
+  aceptaHabeasData: boolean;
+}
+
+/** ProveedorApiResponse.java: expone la identidad comercial y su usuarioId, sin credenciales. */
+export interface ProveedorApiResponse {
+  id: string;
+  usuarioId: number;
+  razonSocial: string;
+  nit: string;
+  telefono: string | null;
+  activo: boolean;
+  creadoEn: string | null;
+}
+
+/* ------------------------------------------------------------------ */
 /* ot                                                                  */
 /* ------------------------------------------------------------------ */
 

@@ -17,6 +17,8 @@ import {
   CategoriaServicio,
   TipoDocumentoTecnico,
   DocumentoTecnico,
+  ProveedorRequest,
+  ProveedorResponse,
 } from '../../domain/models/common.models';
 
 @Injectable({
@@ -262,6 +264,28 @@ export class MockDbService {
         { id: 'DOC-7', tipo: 'CEDULA', nombre: 'Cedula_Mateo_Rivera.pdf', estadoValidacion: 'EN_REVISION', semaforo: 'AMARILLO' },
         { id: 'DOC-8', tipo: 'ANTECEDENTES', nombre: 'Antecedentes_Judiciales.pdf', estadoValidacion: 'EN_REVISION', fechaVencimiento: '2027-01-01', semaforo: 'VERDE' }
       ]
+    }
+  ]);
+
+  // --- PROVEEDORES ---
+  readonly proveedores = signal<ProveedorResponse[]>([
+    {
+      id: 'PROV-001',
+      usuarioId: 10,
+      razonSocial: 'Suministros del Norte S.A.S.',
+      nit: '900123456-1',
+      telefono: '3105550001',
+      activo: true,
+      creadoEn: '2026-01-15',
+    },
+    {
+      id: 'PROV-002',
+      usuarioId: 11,
+      razonSocial: 'Refrigerantes Cúcuta Ltda.',
+      nit: '900987654-2',
+      telefono: '3105550002',
+      activo: false, // Inactivo: excluido de despachos (P5), pero visible en el listado admin (P4)
+      creadoEn: '2026-02-20',
     }
   ]);
 
@@ -1148,6 +1172,20 @@ export class MockDbService {
     this.ordenesTrabajo.update(list => list.map(o => o.id === otId ? otActualizada : o));
     this.tecnicos.update(list => list.map(t => t.id === tecnicoId ? { ...t, estadoOperativo: 'OCUPADO' } : t));
     return otActualizada;
+  }
+
+  crearProveedor(req: ProveedorRequest): ProveedorResponse {
+    const nuevo: ProveedorResponse = {
+      id: `PROV-${Date.now().toString().slice(-4)}`,
+      usuarioId: Date.now(),
+      razonSocial: req.razonSocial,
+      nit: req.nit,
+      telefono: req.telefono,
+      activo: true,
+      creadoEn: new Date().toISOString().slice(0, 10),
+    };
+    this.proveedores.update(list => [...list, nuevo]);
+    return nuevo;
   }
 
   subirDocumentoTecnico(tecnicoId: string, tipo: TipoDocumentoTecnico, archivoUrl: string, fechaVencimiento?: string, nombre?: string): void {

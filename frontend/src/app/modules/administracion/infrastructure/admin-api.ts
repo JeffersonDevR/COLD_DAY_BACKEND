@@ -7,11 +7,15 @@ import {
   DisputaResponse,
   EstadoValidacion,
   OtResponse,
+  ProveedorRequest,
+  ProveedorResponse,
 } from '../../../core/shared/domain/models/common.models';
 import {
   DisputaApiResponse,
   MetricasAdminApiResponse,
   OtApiResponse,
+  ProveedorApiRequest,
+  ProveedorApiResponse,
   ResolverDisputaApiRequest,
   ValidacionTecnicoApiRequest,
 } from '../../../core/shared/infrastructure/api/backend.dto';
@@ -19,6 +23,7 @@ import {
   aDisputaResponse,
   aMetricasAdmin,
   aOtResponse,
+  aProveedorResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
@@ -134,5 +139,26 @@ export class AdminApi {
       body.motivo = motivo;
     }
     return this.http.patch<void>(this.apiConfig.url(`/tecnicos/${tecnicoId}/validacion`), body);
+  }
+
+  /** GET /api/proveedores → listado de proveedores, incluye inactivos (P4). Solo ADMINISTRADOR. */
+  getProveedores(): Observable<ProveedorResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.proveedores()).pipe(delay(200));
+    }
+    return this.http
+      .get<ProveedorApiResponse[]>(this.apiConfig.url('/proveedores'))
+      .pipe(map(list => list.map(aProveedorResponse)));
+  }
+
+  /** POST /api/proveedores → alta de proveedor con rol PROVEEDOR. Solo ADMINISTRADOR. */
+  crearProveedor(req: ProveedorRequest): Observable<ProveedorResponse> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.crearProveedor(req)).pipe(delay(300));
+    }
+    const body: ProveedorApiRequest = req;
+    return this.http
+      .post<ProveedorApiResponse>(this.apiConfig.url('/proveedores'), body)
+      .pipe(map(aProveedorResponse));
   }
 }

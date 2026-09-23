@@ -205,6 +205,31 @@ export interface TecnicoCercano {
   fotoUrl?: string;
 }
 
+/**
+ * Alta de proveedor por el administrador (POST /api/proveedores). El rol
+ * PROVEEDOR se aplica en la creación y el admin aporta la contraseña inicial;
+ * la contraseña nunca viaja de vuelta en ninguna respuesta.
+ */
+export interface ProveedorRequest {
+  nombre: string;
+  correo: string;
+  password: string;
+  telefono?: string;
+  razonSocial: string;
+  nit: string;
+  aceptaHabeasData: boolean;
+}
+
+export interface ProveedorResponse {
+  id: string;
+  usuarioId?: number;
+  razonSocial: string;
+  nit: string;
+  telefono?: string;
+  activo: boolean;
+  creadoEn?: string;
+}
+
 export interface DiagnosticoRequest {
   fallaDetectada?: string;
   diagnostico?: string;

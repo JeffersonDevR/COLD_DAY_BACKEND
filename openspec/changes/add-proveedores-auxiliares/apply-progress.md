@@ -374,3 +374,79 @@ The 659 implementation lines are one cohesive work unit (aggregate + VO + port +
 - Slices 8–14: despacho-insumos, frontend surfaces, UI, full boot/verify.
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
+
+---
+
+# Slice 7 — Supplier admin API (PR 7 of the chained/stacked delivery)
+
+Admin provisioning + listing API (task 5.2), admin frontend surface (task 5.3) and their tests (task 5.4). The despacho-insumos context is slices 8–11; routes/menu/auth and the supplier portal are slice 12.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 5.2 | `RegistrarProveedorUseCase` (Usuario first with `Rol.PROVEEDOR`, then `Proveedor`, one `@Transactional`) + `ListarProveedoresUseCase` (incl. inactive); request/response DTOs, `ProveedorController` (`POST`/`GET /api/proveedores`, `@PreAuthorize('ADMINISTRADOR')`), `ProveedorControllerAdvice`; 201/400/403/409/401. | `[x]` |
+| 5.3 | Frontend lockstep: proveedor DTO/mapper/mock + `AdminApi.getProveedores`/`crearProveedor` + `ProveedoresAdminPage`. No routes/menu/auth (slice 12). | `[x]` |
+| 5.4 | Tests: provision 201/active/no-credentials; invalid 400; duplicate correo 409; duplicate nit 409 + rollback; non-admin 403 (create + list); unauthenticated 401; list incl. inactive; JWT carries `PROVEEDOR`; supplier blocked from unrelated operations. | `[x]` |
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `backend/.../proveedores/application/dto/ProveedorRequest.java` | Created | Application command: account credentials + business identity, mirroring `TecnicoRequest` |
+| `backend/.../proveedores/application/dto/ProveedorResponse.java` | Created | Flat proveedor view (business identity + `usuarioId`, no credentials) |
+| `backend/.../proveedores/application/usecases/RegistrarProveedorUseCase.java` | Created | `@Transactional`: duplicate-correo pre-check → `Usuario.registrar(..., Rol.PROVEEDOR, ...)` → linked `Proveedor`; no half-created account |
+| `backend/.../proveedores/application/usecases/ListarProveedoresUseCase.java` | Created | Lists every supplier including inactive (P4) |
+| `backend/.../proveedores/domain/repository/ProveedorRepository.java` | Modified | Added `List<Proveedor> findAll()` |
+| `backend/.../proveedores/infrastructure/repository/ProveedorRepositoryAdapter.java` | Modified | Implemented `findAll` |
+| `backend/.../proveedores/infrastructure/api/requests/ProveedorApiRequest.java` | Created | Wire request with Bean Validation (`@NotBlank`/`@Email`/`@NotNull`) → 400 |
+| `backend/.../proveedores/infrastructure/api/responses/ProveedorApiResponse.java` | Created | Scalar-`id` API view, no credentials, mirrors `TecnicoApiResponse` |
+| `backend/.../proveedores/infrastructure/api/controllers/ProveedorController.java` | Created | `POST`/`GET /api/proveedores` with `@PreAuthorize('ADMINISTRADOR')` |
+| `backend/.../proveedores/infrastructure/api/controllers/ProveedorControllerAdvice.java` | Created | Canonical `ApiError`: validation 400, correo 409, Habeas Data 400, integrity 409 |
+| `frontend/.../domain/models/common.models.ts` | Modified | `ProveedorRequest` + `ProveedorResponse` view models |
+| `frontend/.../infrastructure/api/backend.dto.ts` | Modified | `ProveedorApiRequest` + `ProveedorApiResponse` wire DTOs |
+| `frontend/.../infrastructure/api/backend.mappers.ts` | Modified | `aProveedorResponse` mapper |
+| `frontend/.../infrastructure/mock/mock-db.service.ts` | Modified | `proveedores` signal (one active, one inactive) + `crearProveedor` |
+| `frontend/.../administracion/infrastructure/admin-api.ts` | Modified | `getProveedores` + `crearProveedor` with mock branch |
+| `frontend/.../administracion/presentation/proveedores-admin-page.ts` | Created | Standalone admin page: provisioning form + listing incl. inactive |
+| `backend/.../test/.../proveedores/.../ProveedorApiIT.java` | Created | 9 end-to-end tests (prov.S1.1–S5.1) |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd backend && ./gradlew test --tests '*ProveedorApiIT'` → `BUILD SUCCESSFUL`; `ProveedorApiIT` `tests="9" failures="0" errors="0"`. |
+| Runtime harness command/scenario and exact result | `cd backend && ./gradlew bootRun` (H2) + real HTTP walk. Login `admin@coldday.com.co` → `POST /api/proveedores` **201** (body exposes `usuarioId`, `razonSocial`, `nit`, `activo=true`, **no `password`**); same `correo` → **409** `{"status":409,"message":"Correo duplicado: ..."}`; duplicate `nit` (different correo) → **409** `{"message":"NIT duplicado o dato unico ya registrado"}`; `GET /api/proveedores` as admin → **200** (seeded + created); `GET`/`POST` as `TECNICO` → **403**; `GET`/`POST` unauthenticated → **401**; login of the created supplier → **200** `{"rol":"PROVEEDOR"}` (JWT payload `{"sub":"14","rol":"PROVEEDOR","ver":0}`). |
+| Regression guard | `cd backend && ./gradlew test` → **341 tests / 4 failures**, all 4 `ClientesApiIT` (the frozen out-of-scope baseline; 332 → 341 from the 9 new slice-7 tests). No new regressions. |
+| Frontend guard | `cd frontend && npx tsc -p tsconfig.app.json --noEmit` → exit 0; `npm run build` → **BUILD SUCCESSFUL**. |
+| Rollback boundary | The `proveedores` application/api files (4 new use cases/DTOs + 4 API files), the `findAll` port+adapter additions, the 5 frontend contract files + `admin-api` + `proveedores-admin-page`, and `ProveedorApiIT`. No `SecurityConfig`/JWT, no schema, no `ot`/tariff/auxiliar behavior, no routes/menu. |
+
+## Design-gap decision — duplicate `nit`
+
+The design specifies **409 only for duplicate `correo`** and is silent on `nit`. Decision: **a duplicate `nit` maps to 409, consistently with `correo`, and never a 500.** It is not pre-checked (matching slice 6's stance: the adapter lets the `UNIQUE(nit)` violation surface); the module's `ProveedorControllerAdvice` maps `DataIntegrityViolationException` to a canonical 409. Because `RegistrarProveedorUseCase` is `@Transactional`, the violation rolls the whole unit back — the runtime harness and `rejectsDuplicateNitWith409AndRollsBackTheAccount` prove the second account is not created. A pre-check would have been a second source of truth racing the DB constraint, so the constraint remains the single authority.
+
+## Verification
+
+1. `cd backend && ./gradlew compileJava compileTestJava` → **BUILD SUCCESSFUL**
+2. `cd backend && ./gradlew test --tests '*ProveedorApiIT'` → **BUILD SUCCESSFUL**, 9 tests / 0 failures
+3. Runtime harness (above): 201 / 409 correo / 409 nit / 200 list / 403 non-admin / 401 unauthenticated / login `rol=PROVEEDOR`
+4. `cd backend && ./gradlew test` → **341 tests / 4 failures**, all 4 `ClientesApiIT`
+5. `cd frontend && npx tsc -p tsconfig.app.json --noEmit` → exit 0; `npm run build` → **BUILD SUCCESSFUL**
+
+## Budget
+
+**Slice 7 authored: 766 changed lines** (137 tracked insertions across 7 modified files + 629 lines across 10 new files), plus the merged apply-progress section. This is **over the 690-line hard budget** for this attempt. The 766 lines are one cohesive work unit (provisioning/listing use cases + DTOs + controller + advice + repository `findAll` + full frontend lockstep + 9 ITs); one honest review found no cohesive split that does not separate the API from its frontend contract (constraint 10 forbids trailing the contract) or split the tests from the behavior they verify. Trimming would mean deleting tests/coverage, which the review-budget rule forbids. **Recommend `size:exception` for PR 7** (consistent with the accepted exceptions on slices 2 and 6). No `size:exception` was pre-recorded for this slice.
+
+## Deviations from Design
+
+- **Duplicate `nit` handled by the DB constraint → 409** rather than a new `NitDuplicadoException` pre-check (see the decision above). Explicit and test-covered.
+- **`ProveedorResponse` is proveedor-centric** (`id`, `usuarioId`, `razonSocial`, `nit`, `telefono`, `activo`, `creadoEn`), not a Usuario+Proveedor join. The design says the response "exposes the supplier and its `usuarioId` but no credentials"; the admin listing therefore avoids an N+1 Usuario lookup while still returning inactive suppliers (P4). The provisioning form supplies `nombre`/`correo`, which the response intentionally does not echo.
+- **`SeguridadIT` / `JwtTokenIssuerTest` not modified** (task 5.4 named them). Neither enumerates `Rol` values, so neither needed a `PROVEEDOR` case; the role boundary (JWT carries `PROVEEDOR`; supplier blocked from admin/tecnico surfaces) is covered end-to-end in `ProveedorApiIT`.
+- **Routes/menu/auth untouched** — the page compiles but is not routed until slice 12 (task 6.6), per the stacked-slice plan.
+- **`schema-postgres.sql` unchanged** — no new spatial artifact.
+
+## Out of Scope (do not absorb)
+
+- Slices 8–14: despacho-insumos, supplier portal/técnico/cliente pages, routes/menu/auth, full boot/verify.
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
