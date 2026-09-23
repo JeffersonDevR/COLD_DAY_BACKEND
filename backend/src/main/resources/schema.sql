@@ -88,6 +88,11 @@ CREATE TABLE IF NOT EXISTS ot (
     tarifa_visita DECIMAL(12,2),
     diagnostico VARCHAR(4000),
     presupuesto VARCHAR(4000),
+    -- Authoritative tariff detail (design AD13, spec tar.R6). Both nullable so
+    -- pre-existing rows survive the additive ALTER and stay NULL until the
+    -- tariff is persisted at finalization/cancellation.
+    distancia_km DOUBLE PRECISION,
+    tarifa_fuente VARCHAR(20),
     version BIGINT
 );
 

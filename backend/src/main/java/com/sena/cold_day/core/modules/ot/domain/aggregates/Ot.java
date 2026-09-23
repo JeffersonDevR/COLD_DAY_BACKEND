@@ -16,6 +16,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
@@ -28,9 +29,6 @@ import com.sena.cold_day.core.shared.domain.Point;
  * change is ever lost (RNF-09). Terminal states have no exits.
  */
 public class Ot {
-
-    /** Base visit fee charged when a client cancels outside the free window (RF-F1-20/21). */
-    public static final BigDecimal TARIFA_VISITA_BASE = new BigDecimal("50000.00");
 
     /** Free client cancellation window measured from assignment (RF-F1-21). */
     public static final Duration VENTANA_CANCELACION_GRATUITA = Duration.ofMinutes(10);
@@ -52,6 +50,8 @@ public class Ot {
     private ActorOt canceladaPor;
     private MotivoCancelacion motivoCancelacion;
     private BigDecimal tarifaVisita;
+    private Double distanciaKm;
+    private TarifaFuente tarifaFuente;
     private Diagnostico diagnostico;
     private Presupuesto presupuesto;
 
@@ -98,14 +98,30 @@ public class Ot {
         return ot;
     }
 
-    /** Reconstitution from persistence. */
-    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado (19 campos). Un Builder ocultaria el mapeo 1:1 con la entidad JPA.
+    /**
+     * Reconstitution from persistence without the authoritative tariff detail.
+     * Kept as a delegating overload so the existing 19-argument call sites and
+     * tests compile untouched (design AD3); the distance and source stay null.
+     */
     public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
             CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
             String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
             Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
             MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
             Presupuesto presupuesto) {
+        return reconstituir(id, clienteId, tecnicoId, categoriaServicio, descripcionFalla, evidenciaUrls,
+                direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, null, null);
+    }
+
+    /** Reconstitution from persistence. */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado (21 campos). Un Builder ocultaria el mapeo 1:1 con la entidad JPA.
+    public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
+            CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
+            String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
+            Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
+            Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente) {
         Ot ot = new Ot();
         ot.id = id;
         ot.clienteId = clienteId;
@@ -124,9 +140,28 @@ public class Ot {
         ot.canceladaPor = canceladaPor;
         ot.motivoCancelacion = motivoCancelacion;
         ot.tarifaVisita = tarifaVisita;
+        ot.distanciaKm = distanciaKm;
+        ot.tarifaFuente = tarifaFuente;
         ot.diagnostico = diagnostico;
         ot.presupuesto = presupuesto;
         return ot;
+    }
+
+    /**
+     * Persists the authoritative visit tariff computed server-side (spec
+     * tar.R6, design AD9/AD13). Only the resulting amount, the distance it was
+     * based on and whether that distance came from the maps provider or the
+     * linear fallback are stored; the formula and the brackets never are, so
+     * changing the pricing model needs no migration.
+     */
+    public void registrarTarifaVisita(BigDecimal tarifaVisita, Double distanciaKm, TarifaFuente tarifaFuente,
+            Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento del registro de la tarifa es requerido");
+        }
+        this.tarifaVisita = tarifaVisita;
+        this.distanciaKm = distanciaKm;
+        this.tarifaFuente = tarifaFuente;
     }
 
     /**
@@ -292,6 +327,8 @@ public class Ot {
         this.canceladaPor = ActorOt.ADMINISTRADOR;
         this.motivoCancelacion = MotivoCancelacion.RESOLUCION_DISPUTA_SIN_ACUERDO;
         this.tarifaVisita = null;
+        this.distanciaKm = null;
+        this.tarifaFuente = null;
         registrarCambio(origen, EstadoOt.CANCELADA, actor, ahora, motivo);
     }
 
@@ -380,6 +417,14 @@ public class Ot {
 
     public BigDecimal getTarifaVisita() {
         return tarifaVisita;
+    }
+
+    public Double getDistanciaKm() {
+        return distanciaKm;
+    }
+
+    public TarifaFuente getTarifaFuente() {
+        return tarifaFuente;
     }
 
     public Diagnostico getDiagnostico() {

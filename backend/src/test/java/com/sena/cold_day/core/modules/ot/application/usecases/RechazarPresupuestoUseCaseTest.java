@@ -29,6 +29,7 @@ import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteReposito
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
+import com.sena.cold_day.core.modules.maps.application.usecases.MapsUseCase;
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.events.OtCancelada;
@@ -39,6 +40,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
+import com.sena.cold_day.core.modules.ot.infrastructure.config.TarifaProperties;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -63,13 +66,15 @@ class RechazarPresupuestoUseCaseTest {
     @Mock ClienteRepository clienteRepository;
     @Mock TecnicoRepository tecnicoRepository;
     @Mock ApplicationEventPublisher events;
+    @Mock MapsUseCase maps;
 
     private RechazarPresupuestoUseCase useCase;
 
     @BeforeEach
     void setup() {
+        TarifaProperties props = new TarifaProperties(0, 0, 0, null, null, 0, 0, null);
         useCase = new RechazarPresupuestoUseCase(otRepository, clienteRepository, tecnicoRepository,
-                events, Clock.fixed(AHORA, ZoneOffset.UTC));
+                events, Clock.fixed(AHORA, ZoneOffset.UTC), new EstimarTarifaUseCase(maps, props));
     }
 
     @Test
@@ -87,7 +92,9 @@ class RechazarPresupuestoUseCaseTest {
         assertThat(response.estado()).isEqualTo(EstadoOt.CANCELADA);
         assertThat(response.motivoCancelacion()).isEqualTo(MotivoCancelacion.RECHAZO_PRESUPUESTO);
         assertThat(response.canceladaPor()).isEqualTo(ActorOt.CLIENTE);
-        assertThat(response.tarifaVisita()).isEqualByComparingTo(Ot.TARIFA_VISITA_BASE);
+        assertThat(response.tarifaVisita()).isEqualByComparingTo("30000");
+        assertThat(ot.getDistanciaKm()).isZero();
+        assertThat(ot.getTarifaFuente()).isEqualTo(TarifaFuente.LINEAL);
         assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.DISPONIBLE);
 
         ArgumentCaptor<OtCancelada> captor = ArgumentCaptor.forClass(OtCancelada.class);
@@ -128,7 +135,7 @@ class RechazarPresupuestoUseCaseTest {
     private Ot otEnDiagnostico(ClienteId clienteId, TecnicoId tecnicoId) {
         Presupuesto presupuesto = new Presupuesto(new BigDecimal("120000.00"), new BigDecimal("350000.00"), AHORA);
         return Ot.reconstituir(OtId.nueva(), clienteId, tecnicoId, CategoriaServicio.REFRIGERACION,
-                "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0), EstadoOt.EN_DIAGNOSTICO, 10.0,
-                AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, presupuesto);
+                "No enciende", List.of(), "Calle 1", new Point(7.8939, -72.5078), EstadoOt.EN_DIAGNOSTICO,
+                10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, presupuesto);
     }
 }

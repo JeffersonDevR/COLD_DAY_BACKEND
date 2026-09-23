@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
+import com.sena.cold_day.core.modules.maps.application.usecases.MapsUseCase;
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.events.OtFinalizada;
@@ -32,6 +34,8 @@ import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoExcep
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
+import com.sena.cold_day.core.modules.ot.infrastructure.config.TarifaProperties;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -55,13 +59,18 @@ class FinalizarOtUseCaseTest {
     @Mock OtRepository otRepository;
     @Mock TecnicoRepository tecnicoRepository;
     @Mock ApplicationEventPublisher events;
+    @Mock MapsUseCase maps;
 
     private FinalizarOtUseCase useCase;
 
     @BeforeEach
     void setup() {
-        useCase = new FinalizarOtUseCase(otRepository, tecnicoRepository, events,
-                Clock.fixed(AHORA, ZoneOffset.UTC));
+        useCase = useCaseConTarifa(new TarifaProperties(0, 0, 0, null, null, 0, 0, null));
+    }
+
+    private FinalizarOtUseCase useCaseConTarifa(TarifaProperties props) {
+        return new FinalizarOtUseCase(otRepository, tecnicoRepository, events,
+                Clock.fixed(AHORA, ZoneOffset.UTC), new EstimarTarifaUseCase(maps, props));
     }
 
     @Test
@@ -107,6 +116,38 @@ class FinalizarOtUseCaseTest {
                 .isInstanceOf(OtNoEncontradoException.class);
     }
 
+    @Test
+    void finalizarPersisteLaTarifaAutoritativaConSuDistanciaYFuente() {
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otEnReparacion(tecnico.getId());
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OtResponse response = useCase.finalizar(PRINCIPAL, ot.getId());
+
+        assertThat(response.estado()).isEqualTo(EstadoOt.FINALIZADA);
+        assertThat(response.tarifaVisita()).isEqualByComparingTo("30000");
+        assertThat(ot.getDistanciaKm()).isZero();
+        assertThat(ot.getTarifaFuente()).isEqualTo(TarifaFuente.LINEAL);
+    }
+
+    @Test
+    void unaConfiguracionDistintaCambiaLaTarifaPersistidaSinTocarElEsquema() {
+        TarifaProperties props = new TarifaProperties(45000, 8, 30, new BigDecimal("80000"),
+                new BigDecimal("100"), 7.8939, -72.5078, null);
+        FinalizarOtUseCase useCaseConfigurado = useCaseConTarifa(props);
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otEnReparacion(tecnico.getId());
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OtResponse response = useCaseConfigurado.finalizar(PRINCIPAL, ot.getId());
+
+        assertThat(response.tarifaVisita()).isEqualByComparingTo("45000");
+    }
+
     private Tecnico tecnicoOcupado() {
         Tecnico tecnico = Tecnico.crear(USUARIO_ID, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
         tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
@@ -117,7 +158,7 @@ class FinalizarOtUseCaseTest {
 
     private Ot otEnReparacion(TecnicoId tecnicoId) {
         return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
-                "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0), EstadoOt.EN_REPARACION, 10.0,
-                AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);
+                "No enciende", List.of(), "Calle 1", new Point(7.8939, -72.5078), EstadoOt.EN_REPARACION,
+                10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);
     }
 }

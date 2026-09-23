@@ -1,6 +1,5 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 
@@ -55,14 +54,17 @@ public class CancelarOtUseCase {
     private final TecnicoRepository tecnicoRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final EstimarTarifaUseCase estimarTarifa;
 
     public CancelarOtUseCase(OtRepository otRepository, ClienteRepository clienteRepository,
-            TecnicoRepository tecnicoRepository, ApplicationEventPublisher events, Clock clock) {
+            TecnicoRepository tecnicoRepository, ApplicationEventPublisher events, Clock clock,
+            EstimarTarifaUseCase estimarTarifa) {
         this.otRepository = otRepository;
         this.clienteRepository = clienteRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.events = events;
         this.clock = clock;
+        this.estimarTarifa = estimarTarifa;
     }
 
     @Transactional
@@ -98,12 +100,15 @@ public class CancelarOtUseCase {
         }
 
         Instant ahora = clock.instant();
-        BigDecimal tarifaVisita = null;
+        ot.cancelar(actor, motivo, razon, ahora, null);
+
+        // Outside the free window the client is charged; the amount is computed
+        // server-side and persisted with its distance and source (design AD13).
         if (actor == ActorOt.CLIENTE && ot.getAsignadaEn() != null && !ot.dentroDeVentanaGratuita(ahora)) {
-            tarifaVisita = Ot.TARIFA_VISITA_BASE;
+            estimarTarifa.estimarPara(ot.getUbicacion()).ifPresent(tarifa -> ot.registrarTarifaVisita(
+                    tarifa.tarifa(), tarifa.distanciaKm(), tarifa.tarifaFuente(), ahora));
         }
 
-        ot.cancelar(actor, motivo, razon, ahora, tarifaVisita);
         Ot saved = otRepository.save(ot);
         liberarTecnico(saved.getTecnicoId());
         events.publishEvent(new OtCancelada(otId, actor, motivo, saved.getTecnicoId()));

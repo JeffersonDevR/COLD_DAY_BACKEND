@@ -37,14 +37,17 @@ public class RechazarPresupuestoUseCase {
     private final TecnicoRepository tecnicoRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final EstimarTarifaUseCase estimarTarifa;
 
     public RechazarPresupuestoUseCase(OtRepository otRepository, ClienteRepository clienteRepository,
-            TecnicoRepository tecnicoRepository, ApplicationEventPublisher events, Clock clock) {
+            TecnicoRepository tecnicoRepository, ApplicationEventPublisher events, Clock clock,
+            EstimarTarifaUseCase estimarTarifa) {
         this.otRepository = otRepository;
         this.clienteRepository = clienteRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.events = events;
         this.clock = clock;
+        this.estimarTarifa = estimarTarifa;
     }
 
     @Transactional
@@ -59,8 +62,9 @@ public class RechazarPresupuestoUseCase {
 
         Instant ahora = clock.instant();
         String motivo = razon == null || razon.isBlank() ? "Rechazo del presupuesto" : razon;
-        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.RECHAZO_PRESUPUESTO, motivo, ahora,
-                Ot.TARIFA_VISITA_BASE);
+        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.RECHAZO_PRESUPUESTO, motivo, ahora, null);
+        estimarTarifa.estimarPara(ot.getUbicacion()).ifPresent(tarifa -> ot.registrarTarifaVisita(
+                tarifa.tarifa(), tarifa.distanciaKm(), tarifa.tarifaFuente(), ahora));
         Ot saved = otRepository.save(ot);
         liberarTecnico(saved.getTecnicoId());
         events.publishEvent(new OtCancelada(otId, ActorOt.CLIENTE, MotivoCancelacion.RECHAZO_PRESUPUESTO,

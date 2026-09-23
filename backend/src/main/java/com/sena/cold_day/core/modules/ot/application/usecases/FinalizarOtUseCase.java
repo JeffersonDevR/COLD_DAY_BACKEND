@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
 import java.time.Clock;
+import java.time.Instant;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -32,13 +33,15 @@ public class FinalizarOtUseCase {
     private final TecnicoRepository tecnicoRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final EstimarTarifaUseCase estimarTarifa;
 
     public FinalizarOtUseCase(OtRepository otRepository, TecnicoRepository tecnicoRepository,
-            ApplicationEventPublisher events, Clock clock) {
+            ApplicationEventPublisher events, Clock clock, EstimarTarifaUseCase estimarTarifa) {
         this.otRepository = otRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.events = events;
         this.clock = clock;
+        this.estimarTarifa = estimarTarifa;
     }
 
     @Transactional
@@ -50,7 +53,10 @@ public class FinalizarOtUseCase {
             throw new TecnicoNoAsignadoException(otId, tecnico.getId());
         }
 
-        ot.finalizar(ActorOt.TECNICO, clock.instant());
+        Instant ahora = clock.instant();
+        ot.finalizar(ActorOt.TECNICO, ahora);
+        estimarTarifa.estimarPara(ot.getUbicacion()).ifPresent(tarifa -> ot.registrarTarifaVisita(
+                tarifa.tarifa(), tarifa.distanciaKm(), tarifa.tarifaFuente(), ahora));
         Ot saved = otRepository.save(ot);
         tecnico.liberarOrden();
         tecnicoRepository.save(tecnico);

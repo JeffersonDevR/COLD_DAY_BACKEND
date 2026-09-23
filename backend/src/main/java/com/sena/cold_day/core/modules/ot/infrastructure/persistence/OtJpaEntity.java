@@ -14,6 +14,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
@@ -114,6 +115,14 @@ public class OtJpaEntity {
     @Column(name = "presupuesto", length = 4000)
     private Presupuesto presupuesto;
 
+    // Authoritative tariff detail (design AD13): nullable so existing rows
+    // survive the additive ALTER and stay NULL until the tariff is persisted.
+    @Column(name = "distancia_km")
+    private Double distanciaKm;
+
+    @Column(name = "tarifa_fuente", length = 20)
+    private String tarifaFuente;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -145,6 +154,8 @@ public class OtJpaEntity {
         this.canceladaPor = source.getCanceladaPor();
         this.motivoCancelacion = source.getMotivoCancelacion();
         this.tarifaVisita = source.getTarifaVisita();
+        this.distanciaKm = source.getDistanciaKm();
+        this.tarifaFuente = source.getTarifaFuente() == null ? null : source.getTarifaFuente().name();
         this.diagnostico = source.getDiagnostico();
         this.presupuesto = source.getPresupuesto();
     }
@@ -157,6 +168,7 @@ public class OtJpaEntity {
                 categoriaServicio, descripcionFalla,
                 evidenciaUrls == null ? new ArrayList<>() : new ArrayList<>(evidenciaUrls),
                 direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
-                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto);
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
+                tarifaFuente == null ? null : TarifaFuente.valueOf(tarifaFuente));
     }
 }

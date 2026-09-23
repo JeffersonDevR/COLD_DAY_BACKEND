@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import com.sena.cold_day.core.modules.geolocalizacion.domain.services.CalculadoraHaversine;
@@ -38,5 +40,18 @@ public class EstimarTarifaUseCase {
                 .map(ruta -> calculadora.calcular(ruta.distanciaKm(), TarifaFuente.ROAD))
                 .orElseGet(() -> calculadora.calcular(
                         CalculadoraHaversine.distanciaKm(centro, destino), TarifaFuente.LINEAL));
+    }
+
+    /**
+     * Same authoritative computation applied to a destination the caller already
+     * holds, reused by the persistence paths (design data flow c). An unknown
+     * destination yields {@link Optional#empty()} so a missing location can never
+     * block finalization or cancellation.
+     */
+    public Optional<TarifaEstimada> estimarPara(Point destino) {
+        if (destino == null) {
+            return Optional.empty();
+        }
+        return Optional.of(estimar(destino.latitud(), destino.longitud()));
     }
 }

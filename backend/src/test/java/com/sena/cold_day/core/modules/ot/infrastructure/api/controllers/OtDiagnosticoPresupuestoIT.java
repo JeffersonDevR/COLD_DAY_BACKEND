@@ -34,6 +34,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.OtEstadoHistorialJpaEntity;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
@@ -63,7 +64,9 @@ import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 @TestPropertySource(properties = "app.dispatch.escalamiento-ms=3600000")
 class OtDiagnosticoPresupuestoIT {
 
-    private static final Point BOGOTA = new Point(4.6, -74.0);
+    // Inside the metropolitan radius of the configured service center, so the
+    // authoritative tariff is the flat base (30,000 COP) for every walk.
+    private static final Point UBICACION_SERVICIO = new Point(7.8939, -72.5078);
     private static final String DIAGNOSTICO_PAYLOAD = "{\"fallaDetectada\":\"Compresor averiado\","
             + "\"observaciones\":\"Revisado en sitio\",\"costoManoObra\":120000.00,\"costoRepuestos\":350000.00}";
 
@@ -155,7 +158,9 @@ class OtDiagnosticoPresupuestoIT {
                 .hasValueSatisfying(found -> {
                     assertThat(found.getEstado()).isEqualTo(EstadoOt.CANCELADA);
                     assertThat(found.getMotivoCancelacion()).isEqualTo(MotivoCancelacion.RECHAZO_PRESUPUESTO);
-                    assertThat(found.getTarifaVisita()).isEqualByComparingTo(Ot.TARIFA_VISITA_BASE);
+                    assertThat(found.getTarifaVisita()).isEqualByComparingTo("30000");
+                    assertThat(found.getDistanciaKm()).isZero();
+                    assertThat(found.getTarifaFuente()).isEqualTo(TarifaFuente.LINEAL);
                 });
         assertThat(tecnicoRepository.findByIdAndActivoTrue(tecnicoId))
                 .hasValueSatisfying(found -> assertThat(found.getEstadoOperativo())
@@ -178,8 +183,11 @@ class OtDiagnosticoPresupuestoIT {
                 .andExpect(jsonPath("$.canceladaPor").value("CLIENTE"));
 
         assertThat(otRepository.buscarPorId(ot.getId()))
-                .hasValueSatisfying(found -> assertThat(found.getTarifaVisita())
-                        .isEqualByComparingTo(Ot.TARIFA_VISITA_BASE));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getTarifaVisita()).isEqualByComparingTo("30000");
+                    assertThat(found.getDistanciaKm()).isZero();
+                    assertThat(found.getTarifaFuente()).isEqualTo(TarifaFuente.LINEAL);
+                });
     }
 
     @Test
@@ -267,8 +275,9 @@ class OtDiagnosticoPresupuestoIT {
     private Ot otEnEstado(ClienteId clienteId, TecnicoId tecnicoId, EstadoOt estado, Instant asignadaEn,
             Presupuesto presupuesto) {
         Ot ot = Ot.reconstituir(OtId.nueva(), clienteId, tecnicoId, CategoriaServicio.REFRIGERACION,
-                "No enciende", List.of(), "Calle 1", BOGOTA, estado, 10.0, Instant.now().plusSeconds(3600),
-                Instant.now(), asignadaEn, null, null, null, null, null, presupuesto);
+                "No enciende", List.of(), "Calle 1", UBICACION_SERVICIO, estado, 10.0,
+                Instant.now().plusSeconds(3600), Instant.now(), asignadaEn, null, null, null, null, null,
+                presupuesto);
         return otRepository.save(ot);
     }
 
@@ -280,7 +289,7 @@ class OtDiagnosticoPresupuestoIT {
         if (ocupado) {
             tecnico.aceptarOrden();
         }
-        tecnico.actualizarUbicacion(BOGOTA, Instant.now());
+        tecnico.actualizarUbicacion(UBICACION_SERVICIO, Instant.now());
         return tecnicoRepository.save(tecnico).getId();
     }
 
