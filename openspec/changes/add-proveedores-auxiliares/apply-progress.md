@@ -594,3 +594,82 @@ Authored changed lines for this slice: **1,020** (implementation + tests, all tr
 - Slices 10–12: `SolicitarInsumoUseCase`/`AceptarInsumoUseCase`/`RechazarInsumoUseCase`/`EntregarInsumoUseCase`/`ExpirarInsumosUseCase`, `LoggingNotificacionInsumoAdapter`, `InsumoController`, diagnóstico wiring, frontend.
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
+
+---
+
+# Slice 10 — Despacho use cases (PR 10 of the chained/stacked delivery)
+
+Application layer + notification adapter + sweeper re-point (task 6.3). The REST controller, API records and the diagnóstico wiring (tasks 6.4–6.5) are slice 11; the frontend is slice 12.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 6.3 | `SolicitarInsumoUseCase` (build the request from the free-text lines + broadcast to eligible suppliers), `AceptarInsumoUseCase` (atomic first-accept + sibling invalidation), `RechazarInsumoUseCase` (`RECHAZADO`), `EntregarInsumoUseCase` (AD8 delivery), `ExpirarInsumosUseCase` (offer expiry + request resolution); `LoggingNotificacionInsumoAdapter` (AD11/AD14, never throws); `ProgramadorExpiracionInsumo` re-pointed to `ExpirarInsumosUseCase`; `app.insumos.vigencia-ms` consumed as the offer window. | `[x]` |
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `backend/.../proveedores/application/usecases/SolicitarInsumoUseCase.java` | Created | Builds `RequerimientoInsumo` from the lines with a `app.insumos.vigencia-ms` window, broadcasts one pending `OfertaInsumo` per active supplier; empty lines → `Optional.empty()`; zero eligible → `SIN_PROVEEDOR`; notify AFTER the writes, inside try/catch |
+| `backend/.../proveedores/application/usecases/AceptarInsumoUseCase.java` | Created | Eligibility gate → lazy offer/request expiry → `intentarAsignar` root gate → `intentarAceptar` → `invalidarPendientesDe(CANCELADA)`; loser mutates nothing |
+| `backend/.../proveedores/application/usecases/RechazarInsumoUseCase.java` | Created | Records the explicit `RECHAZADO` literal for the holder without binding it |
+| `backend/.../proveedores/application/usecases/EntregarInsumoUseCase.java` | Created | AD8: only the supplier whose offer is `ACEPTADA` for the request can move `ASIGNADO → ENTREGADO` |
+| `backend/.../proveedores/application/usecases/ExpirarInsumosUseCase.java` | Created | Single sweep path: `expirarVencidas` + `expirarVencidos` under one clock/transaction; returns a `Resultado` record |
+| `backend/.../proveedores/infrastructure/notification/LoggingNotificacionInsumoAdapter.java` | Created | AD11/AD14 logging adapter; records the dispatch event and never propagates an exception |
+| `backend/.../proveedores/domain/exception/ProveedorNoElegibleException.java` | Created | Unknown/inactive/foreign supplier → 403 (slice-11 advice), never a 500 |
+| `backend/.../proveedores/domain/exception/OfertaInsumoNoDisponibleException.java` | Created | Unknown/foreign/resolved/expired/losing offer → 409 |
+| `backend/.../proveedores/domain/exception/RequerimientoInsumoNoEncontradoException.java` | Created | Missing request referenced by an offer → 404 |
+| `backend/.../proveedores/infrastructure/scheduling/ProgramadorExpiracionInsumo.java` | Modified | Re-pointed from the repository expiry primitives to `ExpirarInsumosUseCase.expirar()` — one sweep path, no duplicate logic |
+| `backend/.../test/.../proveedores/application/usecases/SolicitarInsumoUseCaseTest.java` | Created | 4 tests: fan-out + notify-after-write order, zero eligible, zero lines, notification-failure isolation |
+| `backend/.../test/.../proveedores/application/usecases/AceptarInsumoUseCaseTest.java` | Created | 7 tests: winner + sibling invalidation, loser mutates nothing, unknown/inactive supplier, expired offer, expired request, foreign offer |
+| `backend/.../test/.../proveedores/application/usecases/RechazarInsumoUseCaseTest.java` | Created | 3 tests: `RECHAZADO` recorded, foreign offer unavailable, ineligible supplier |
+| `backend/.../test/.../proveedores/application/usecases/EntregarInsumoUseCaseTest.java` | Created | 3 tests: assigned supplier delivers, other supplier ineligible, already-delivered fails the transition guard |
+| `backend/.../test/.../proveedores/application/usecases/ExpirarInsumosUseCaseTest.java` | Created | 2 tests: expires/resolves with counts, zero when nothing expired |
+| `backend/.../test/.../proveedores/infrastructure/api/controllers/InsumoApiIT.java` | Created | 4 Spring-backed tests over the real H2 schema: broadcast → first-accept → deliver; inactive-supplier gate; zero eligible → `SIN_PROVEEDOR`; expiry sweep |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd backend && ./gradlew test --tests '*SolicitarInsumoUseCaseTest' --tests '*AceptarInsumoUseCaseTest' --tests '*RechazarInsumoUseCaseTest' --tests '*EntregarInsumoUseCaseTest' --tests '*ExpirarInsumosUseCaseTest'` → `BUILD SUCCESSFUL`; `SolicitarInsumoUseCaseTest` 4/0, `AceptarInsumoUseCaseTest` 7/0, `RechazarInsumoUseCaseTest` 3/0, `EntregarInsumoUseCaseTest` 3/0, `ExpirarInsumosUseCaseTest` 2/0 (19 tests, 0 failures). |
+| Integration test command and exact result | `cd backend && ./gradlew test --tests '*InsumoApiIT'` → `BUILD SUCCESSFUL`; `InsumoApiIT` 4/0 failures. Full Spring context boot + real repositories/H2. |
+| Runtime harness command/scenario and exact result | **N/A at this slice** — the dispatch use cases can only be reached end-to-end through a controller, and the REST controller + diagnóstico wiring are slice 11. No HTTP path exists to exercise, so no harness was invented. The substitute proof is the Spring-backed `InsumoApiIT` above: the full application context boots with `LoggingNotificacionInsumoAdapter`, the five use cases and the re-pointed `ProgramadorExpiracionInsumo`, and the broadcast → first-accept → deliver, inactive-supplier, zero-eligible and expiry flows are proven against the real H2 schema. The end-to-end HTTP harness lands in slice 11. |
+| Regression guard | `cd backend && ./gradlew test` → **398 tests / 4 failures**, the 4 failing classes exactly `ClientesApiIT` (the frozen out-of-scope baseline; 375 → 398 from the 23 new slice-10 tests). No new regressions. |
+| Bounded-context direction check | `proveedores/application/**` and `proveedores/infrastructure/notification/**` import no `ot`/`tecnicos` domain types: the use cases receive `UUID otId`/`UUID tecnicoId` and return `RequerimientoInsumo`/`OfertaInsumo`. |
+| Rollback boundary | The 5 use cases, `LoggingNotificacionInsumoAdapter`, the 3 domain exceptions, the `ProgramadorExpiracionInsumo` re-point and the 6 test files. No controller, no API request/response record, no diagnóstico wiring, no schema/`application.properties`, no frontend, no `ot`/tariff/auxiliar behavior. |
+
+## Verification
+
+1. `cd backend && ./gradlew compileJava compileTestJava` → **BUILD SUCCESSFUL**
+2. `cd backend && ./gradlew test --tests '*SolicitarInsumoUseCaseTest' --tests '*AceptarInsumoUseCaseTest' --tests '*RechazarInsumoUseCaseTest' --tests '*EntregarInsumoUseCaseTest' --tests '*ExpirarInsumosUseCaseTest'` → **BUILD SUCCESSFUL**, 19 tests / 0 failures
+3. `cd backend && ./gradlew test --tests '*InsumoApiIT'` → **BUILD SUCCESSFUL**, 4 tests / 0 failures (the use-case subset that exists at this slice; slice 11 adds the HTTP subset)
+4. Runtime harness → **N/A** (see Work Unit Evidence); proven with the Spring-backed `InsumoApiIT`
+5. `cd backend && ./gradlew test` → **398 tests / 4 failures**, all 4 `ClientesApiIT`
+
+## Budget
+
+Authored changed lines (measured with `git diff --numstat` over the slice's paths):
+
+- Implementation (9 new + 1 modified): **498** (476 additions + 22 deletions)
+- Tests (6 new): **824**
+- **Implementation + tests: 1,322** — over the 1,220 hard budget by **102 lines**.
+- Merged apply-progress artifact: this section.
+
+The 1,322 lines are one cohesive work unit: the five use cases + the notification adapter + the sweeper re-point are a single dispatch application layer, and the tests must travel with the behavior (work-unit-commits). One honest slicing pass found no cohesive split — splitting the use cases from each other or from their tests would break work-unit cohesion, and trimming would mean deleting tests/comments, which the review-budget rule forbids. This slice already carries a forecast `size:exception` in `tasks.md` (slices 8–12). **Recommend `size:exception` for PR 10**, consistent with the accepted exceptions on slices 2, 6, 7, 8 and 9.
+
+## Deviations from Design
+
+- **The use cases take `UUID otId`/`UUID tecnicoId`**, not the design's conceptual `solicitar(ot, tecnicoId, insumos, ahora)`. Passing the `Ot` aggregate would force `proveedores/application` to import `ot` domain types and invert the bounded-context direction; the trigger-side `RegistrarDiagnosticoUseCase` (slice 11) passes `ot.getId().valor()` and `tecnico.getId().valor()`.
+- **`SolicitarInsumoUseCase` returns `Optional<RequerimientoInsumo>`** (empty when no lines) instead of relying on the caller to guard. This makes spec disp.R1's "zero insumos create nothing" hold at the use-case boundary and lets slice 11 call it unconditionally; the aggregate still requires ≥1 line.
+- **`ExpirarInsumosUseCase` returns a nested `Resultado(int ofertasExpiradas, int requerimientosSinProveedor)`** record (not named in the task list) so the sweeper log and tests can observe the sweep outcome; the two counts are the existing repository primitives' return values.
+- **Rejection and delivery persist via `save` on the loaded aggregate** (the domain methods enforce the state), because slice 9's `OfertaInsumoRepository` exposes no atomic reject primitive and this slice must not add persistence. Acceptance uses the existing atomic gate (`intentarAsignar` + `intentarAceptar`), so the concurrency-critical path stays race-free.
+- **`InsumoApiIT` is created at the slice-11 controller path with only the use-case subset** (no MockMvc, no controller). It is the Spring-backed proof for this slice and slice 11 extends it with the HTTP subset, exactly as the tasks.md 6.5 file list anticipates.
+- **No schema, `application.properties` or `schema-postgres.sql` change** — `app.insumos.vigencia-ms` already existed and is now consumed.
+
+## Out of Scope (do not absorb)
+
+- Slice 11: `InsumoController` + `InsumoControllerAdvice`, the API request/response records, the diagnóstico wiring (`DiagnosticoApiRequest`/`DiagnosticoRequest`/`OtController`/`RegistrarDiagnosticoUseCase`), the HTTP subset of `InsumoApiIT` and `AceptacionInsumoConcurrenteIT`.
+- Slice 12: frontend DTO/mapper/mock, supplier portal, técnico/client pages, routes/menu/auth.
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
