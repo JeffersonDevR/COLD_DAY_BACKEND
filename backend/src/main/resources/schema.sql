@@ -178,4 +178,48 @@ CREATE TABLE IF NOT EXISTS proveedor (
     creado_en TIMESTAMP
 );
 
+-- Insumo dispatch (spec disp.R1/R3/R5/R7, design AD5/AD6). Three additive tables:
+-- the request root, its immutable free-text lines and one offer row per notified
+-- active supplier. `oferta_insumo` deliberately carries NO `precio_total` column
+-- (design schema section): broadcast first-to-accept has no price-entry flow, so
+-- the column would be dead schema. Hibernate create-drop is authoritative for H2
+-- (D8); this mirror stays in lockstep with the proveedores persistence entities.
+-- `requerimiento_insumo.ot_id`/`tecnico_id` and `oferta_insumo.proveedor_id` are
+-- scalar references; the root carries its own server-authoritative `expira_en`.
+CREATE TABLE IF NOT EXISTS requerimiento_insumo (
+    id UUID PRIMARY KEY,
+    ot_id UUID NOT NULL REFERENCES ot(id),
+    tecnico_id UUID NOT NULL REFERENCES tecnico(id),
+    estado VARCHAR(20) NOT NULL,
+    observaciones VARCHAR(1000),
+    creada_en TIMESTAMP,
+    expira_en TIMESTAMP,
+    resuelta_en TIMESTAMP,
+    version BIGINT
+);
+
+CREATE TABLE IF NOT EXISTS requerimiento_insumo_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    requerimiento_id UUID NOT NULL REFERENCES requerimiento_insumo(id),
+    descripcion VARCHAR(500) NOT NULL,
+    cantidad INT NOT NULL
+);
+
+-- estado in {PENDIENTE, ACEPTADA, RECHAZADO, EXPIRADA, CANCELADA} (design state machines)
+CREATE TABLE IF NOT EXISTS oferta_insumo (
+    id UUID PRIMARY KEY,
+    requerimiento_id UUID NOT NULL REFERENCES requerimiento_insumo(id),
+    proveedor_id UUID NOT NULL REFERENCES proveedor(id),
+    estado VARCHAR(20) NOT NULL,
+    creada_en TIMESTAMP,
+    expira_en TIMESTAMP,
+    resuelta_en TIMESTAMP,
+    version BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_req_insumo_ot_id ON requerimiento_insumo(ot_id);
+CREATE INDEX IF NOT EXISTS idx_req_insumo_estado ON requerimiento_insumo(estado);
+CREATE INDEX IF NOT EXISTS idx_oferta_insumo_req_id ON oferta_insumo(requerimiento_id);
+CREATE INDEX IF NOT EXISTS idx_oferta_insumo_proveedor_id ON oferta_insumo(proveedor_id);
+
 

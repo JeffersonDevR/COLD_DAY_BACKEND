@@ -525,3 +525,72 @@ Authored changed lines for this slice:
 - Slices 10–12: use cases, notification adapter, API, diagnóstico wiring, frontend.
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
+
+---
+
+# Slice 9 — Despacho persistence (PR 9 of the chained/stacked delivery)
+
+Persistence of the slice-8 dispatch domain (task 6.2) plus the expiry sweeper. Use cases (slice 10), API/diagnóstico wiring (slice 11) and frontend (slice 12) are out of scope.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 6.2 | The three dispatch tables (`requerimiento_insumo`, `requerimiento_insumo_item`, `oferta_insumo`) + indexes, no `precio_total`; JPA entities, repository ports and adapters; the atomic two-level first-accept gate (`asignarSiDisponible` + `aceptarSiVigente`) as conditional bulk UPDATEs | `[x]` |
+| 6.3 (sweeper only) | `ProgramadorExpiracionInsumo` (`@Scheduled`, `app.insumos.barrido-ms`) + `app.insumos.vigencia-ms`; the use cases stay slice 10 | `[x]` |
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `backend/.../proveedores/domain/repository/RequerimientoInsumoRepository.java` | Created | Port: save/find, `buscarPorOt`/`buscarPorTecnico`, `intentarAsignar` gate, `expirarVencidos` |
+| `backend/.../proveedores/domain/repository/OfertaInsumoRepository.java` | Created | Port: save/find, pending listing, `intentarAceptar`, `invalidarPendientesDe`, `expirarVencidas` |
+| `backend/.../proveedores/infrastructure/persistence/RequerimientoInsumoJpaEntity.java` | Created | `requerimiento_insumo` mapping; scalar `ot_id`/`tecnico_id`; EAGER cascaded `@OneToMany` items; `@Version` |
+| `backend/.../proveedores/infrastructure/persistence/RequerimientoInsumoItemJpaEntity.java` | Created | `requerimiento_insumo_item` mapping; `@GeneratedValue(IDENTITY)` child, FK owned by the parent association |
+| `backend/.../proveedores/infrastructure/persistence/OfertaInsumoJpaEntity.java` | Created | `oferta_insumo` mapping; scalar `requerimiento_id`/`proveedor_id`; **no `precio_total`**; `@Version` |
+| `backend/.../proveedores/infrastructure/persistence/SpringDataRequerimientoInsumoRepository.java` | Created | Derived queries + `asignarSiDisponible` (`WHERE estado=SOLICITADO AND expira_en > :ahora`) + `expirarVencidos` |
+| `backend/.../proveedores/infrastructure/persistence/SpringDataOfertaInsumoRepository.java` | Created | Derived queries + `aceptarSiVigente` + `resolverPendientesDe` + `expirarVencidas` |
+| `backend/.../proveedores/infrastructure/repository/RequerimientoInsumoRepositoryAdapter.java` | Created | Adapter over the port; maps the request gate to the conditional UPDATE |
+| `backend/.../proveedores/infrastructure/repository/OfertaInsumoRepositoryAdapter.java` | Created | Adapter over the port; maps accept/invalidate/expire to the conditional UPDATEs |
+| `backend/.../proveedores/infrastructure/scheduling/ProgramadorExpiracionInsumo.java` | Created | `@Scheduled(fixedDelayString = "${app.insumos.barrido-ms:60000}")`: expires pending offers and resolves open requests |
+| `backend/src/main/resources/schema.sql` | Modified | Additive `CREATE TABLE IF NOT EXISTS` for the three tables + 4 indexes; no `precio_total` |
+| `backend/src/main/resources/application.properties` | Modified | `app.insumos.vigencia-ms` (900000) + `app.insumos.barrido-ms` (60000), env-overridable |
+| `backend/.../test/.../proveedores/infrastructure/persistence/RequerimientoInsumoRepositoryTest.java` | Created | 10 `@DataJpaTest` tests: request+items round-trip, root gate win/expiry, `expirarVencidos`, offer expiry round-trip, offer accept gate, sibling invalidation, expiry sweep, per-offer `RECHAZADO`/`EXPIRADA`/`CANCELADA` persistence, pending listing |
+| `backend/.../test/.../proveedores/infrastructure/persistence/RequerimientoInsumoConcurrenteIT.java` | Created | 1 `@SpringBootTest` concurrency test: two threads accept the same request → exactly one winner |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd backend && ./gradlew test --tests '*RequerimientoInsumoRepositoryTest'` → `BUILD SUCCESSFUL`; `tests="10" failures="0" errors="0"`. |
+| Concurrency test command and exact result | `cd backend && ./gradlew test --tests '*RequerimientoInsumoConcurrenteIT'` → `BUILD SUCCESSFUL`; `tests="1" failures="0" errors="0"`. Two threads race the root conditional UPDATE: exactly one wins, its offer is `ACEPTADA`, the sibling is `CANCELADA`. |
+| Runtime harness command/scenario and exact result | `cd backend && ./gradlew bootRun --args="--spring.datasource.url=jdbc:h2:file:/tmp/opencode/slice9/coldday;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1 --server.port=18080"` → `Started ColdDayApplication`. Live `INFORMATION_SCHEMA.COLUMNS` shows all three tables: `REQUERIMIENTO_INSUMO` (id, ot_id, tecnico_id, estado, observaciones, creada_en, expira_en, resuelta_en, version), `REQUERIMIENTO_INSUMO_ITEM` (id identity BIGINT, requerimiento_id, descripcion, cantidad), `OFERTA_INSUMO` (id, requerimiento_id, proveedor_id, estado, creada_en, expira_en, resuelta_en, version). `SELECT COUNT(*) ... TABLE_NAME='OFERTA_INSUMO' AND COLUMN_NAME='PRECIO_TOTAL'` → **0**. |
+| Regression guard | `cd backend && ./gradlew test` → **375 tests / 4 failures**, the 4 failing classes exactly `ClientesApiIT` (frozen out-of-scope baseline; 364 → 375 from the 11 new slice-9 tests). No new regressions. |
+| `schema-postgres.sql` | **No change needed** — suppliers/insumos are not spatially queried and no PostGIS artifact is introduced; `ddl-auto=update` derives the tables from the entity mappings (design schema section). |
+| Rollback boundary | The 2 ports, 3 entities, 2 SpringData repos, 2 adapters, `ProgramadorExpiracionInsumo`, the `schema.sql` three-table block, the `app.insumos.*` keys and the 2 test files. No `ot`/tariff/auxiliar behavior, no use case, no controller, no frontend. |
+
+## Verification
+
+1. `cd backend && ./gradlew compileJava compileTestJava` → **BUILD SUCCESSFUL**
+2. `cd backend && ./gradlew test --tests '*RequerimientoInsumoRepositoryTest'` → **BUILD SUCCESSFUL**, 10 tests / 0 failures
+3. `cd backend && ./gradlew test --tests '*RequerimientoInsumoConcurrenteIT'` → **BUILD SUCCESSFUL**, 1 test / 0 failures
+4. Runtime harness (above): the three tables exist with the expected columns; `precio_total` count = 0
+5. `cd backend && ./gradlew test` → **375 tests / 4 failures**, all 4 `ClientesApiIT`
+
+## Budget
+
+Authored changed lines for this slice: **1,020** (implementation + tests, all tracked additions; measured with `git diff --cached --numstat`). With the merged apply-progress section the combined work unit is ~1,090, over the 1,060 hard budget. The 1,020 lines are one cohesive work unit (three-table persistence + gates + adapters + sweeper + tests); one honest pass found no cohesive split — the tests must travel with the behavior (work-unit-commits) and trimming would delete coverage. This slice already carries a forecast `size:exception` in `tasks.md` (slices 8–12). **Recommend `size:exception` for PR 9.**
+
+## Deviations from Design
+
+- **Items persisted as a cascaded `@OneToMany` child collection** instead of a third `SpringData*Repository`. The task names `RequerimientoInsumoItemJpaEntity` but only two `SpringData*Repository` interfaces; the lines are an owned, immutable composition, so cascade + `orphanRemoval` is the faithful mapping. It is infrastructure-only (the domain keeps `List<RequerimientoInsumoItem>`), and `applyFromDomain` never rewrites lines (immutable by domain contract), avoiding delete-and-reinsert churn.
+- **`@Version` mapped on both `requerimiento_insumo` and `oferta_insumo`** per the design's candidate DDL (`version BIGINT`); the `ot` offer table omits it, but the design explicitly lists it here, so the entity and `schema.sql` stay in lockstep.
+- **The sweeper calls the repository expiry primitives directly** (`expirarVencidas`/`expirarVencidos`), not a use case: `ExpirarInsumosUseCase` is slice 10 (task 6.3), so referencing it now would not compile. The sweep is a persistence-level conditional bulk UPDATE, exactly like `OfertaOtRepository.expirarDe`; slice 10 can re-point the bean at its use case.
+- **Expired open requests resolve to `SIN_PROVEEDOR`** (the only negative, terminal-but-retriable root state) via the conditional `expirarVencidos` bulk UPDATE, satisfying D4's "unattended expiry resolves the request without blocking the OT".
+- **`app.insumos.vigencia-ms` is added but not yet consumed** — it is the offer window slice 10's `SolicitarInsumoUseCase` will read; the sweeper reads only `app.insumos.barrido-ms`.
+
+## Out of Scope (do not absorb)
+
+- Slices 10–12: `SolicitarInsumoUseCase`/`AceptarInsumoUseCase`/`RechazarInsumoUseCase`/`EntregarInsumoUseCase`/`ExpirarInsumosUseCase`, `LoggingNotificacionInsumoAdapter`, `InsumoController`, diagnóstico wiring, frontend.
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched by this slice.
