@@ -1,7 +1,7 @@
 # Apply Progress: add-proveedores-auxiliares
 
 Change: `add-proveedores-auxiliares` · Store: `openspec` · Mode: Standard (`rules.apply.tdd: false`, no `strict_tdd` marker)
-Slices: **1 — Tariff calculator** (PR 1, committed `b45fd60`) + **2 — Estimate endpoint** (PR 2, committed `635db3e`) + **3 — Authoritative tariff persistence** (PR 3, committed `e9bb926`) + **4 — Auxiliar persistence** (PR 4, committed `bea0671`) + **5 — Auxiliar accept API** (PR 5, committed `8ab5ff0`) + **6 — Proveedor identity** (PR 6, this attempt) · Chain strategy: `stacked-to-main`
+Slices: **1–13** of the `stacked-to-main` chain — 1 Tariff calculator `b45fd60`, 2 Estimate endpoint `635db3e`, 3 Tariff persistence `e9bb926`, 4 Auxiliar persistence `bea0671`, 5 Auxiliar accept API `8ab5ff0`, 6 Proveedor identity `3664767`, 7 Supplier admin API `4b08490`, 8 Despacho domain `8c92059`, 9 Despacho persistence `604364d`, 10 Despacho use cases `bc7de12`, 11 Despacho API `b788f0d`, 12 Frontend surfaces `27ab64d`, 13 Integration/verify (this commit) · Chain strategy: `stacked-to-main`
 
 ## Completed Tasks
 
@@ -851,3 +851,78 @@ Authored changed lines (measured with `git diff --numstat` + `wc -l` on new file
 - Backend behaviour, `schema.sql`, and any planning artifact other than this file.
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, reproduced without this slice.
+
+---
+
+# Slice 13 — Integration/verify (PR 13 of the chained/stacked delivery)
+
+Final slice: **verification and documentation only**. No application behaviour, schema, config or test was changed. This is the last PR of the chain.
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| 7.1 | Full backend compile + suite vs frozen baseline; the 4 `ClientesApiIT` failures remain only. | `[x]` |
+| 7.2 | Boot checks: H2 clean, then `prod,postgres` **against a non-empty `ot` table**; seeded Proveedor resolves. | `[x]` |
+| 7.3 | PostGIS suite + frontend full build/test. | `[x]` |
+| 7.4 | Documentation: `ARQUITECTURA.md` reflects the new modules, endpoints and `app.tarifa.*` / `app.auxiliares.max` / `app.insumos.*` keys. | `[x]` |
+| 7.5 | AD12 cleanup verification: no `repuestosSugeridos` remains in models/mock/mappers. | `[x]` |
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `ARQUITECTURA.md` | Modified | Tariff model + `app.tarifa.*`; auxiliares count; new `proveedores` module section (dispatch lifecycle + states + endpoints + seed); new tables and `ot` columns; `PROVEEDOR` role; supplier authorization; `ot → proveedores` integration; new scheduled job. Sections renumbered 8–16 → 9–17. |
+| `openspec/changes/add-proveedores-auxiliares/apply-progress.md` | Modified | This merged slice-13 record (slices 1–12 preserved). |
+
+## Verification — exact commands and observed results
+
+1. `cd backend && timeout 900 ./gradlew test` → **410 tests / 4 failures / 0 errors**. The 4 failing tests are all in `ClientesApiIT` (`build/test-results/test/TEST-...ClientesApiIT.xml` = 4 `<failure>`); no other class has a failure. **No new failure appeared.** (The planning baseline was 260/4; the suite grew to 410 as the change added tests, and the 4 pre-existing failures are unchanged.)
+2. `cd backend && timeout 600 ./gradlew testPostgis --rerun` → **BUILD SUCCESSFUL**; `PostgisTecnicoDisponibilidadIT` **3 tests / 0 failures / 0 errors**. The first run reported `UP-TO-DATE` and executed nothing, so it was forced with `--rerun`; the executed run is the evidence. The container `coldday-postgis` is up and the PostGIS path is **verified**.
+3. **H2 boot (default profile)** — `timeout 180 ./gradlew bootRun --args="--spring.datasource.url=jdbc:h2:file:/tmp/opencode/slice13/h2/coldday;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1 --spring.jpa.hibernate.ddl-auto=update --server.port=18111"` → `Started ColdDayApplication in 10.847 seconds`. H2 Shell read-back: the 4 new tables exist (`OFERTA_INSUMO`, `PROVEEDOR`, `REQUERIMIENTO_INSUMO`, `REQUERIMIENTO_INSUMO_ITEM`); `ot` has `AUXILIARES_REQUERIDOS INTEGER NOT NULL DEFAULT 0`, `DISTANCIA_KM DOUBLE PRECISION (nullable)`, `TARIFA_FUENTE CHARACTER VARYING (nullable)`; `OFERTA_INSUMO.PRECIO_TOTAL` count = **0**. Process killed after the check.
+4. **`prod,postgres` boot against a fresh legacy DB** — created `cold_day_verify13` with a **legacy `ot` table of 21 columns (no new columns) and 1 pre-existing row**, then `JWT_SECRET=... timeout 180 ./gradlew bootRun --args="--spring.profiles.active=prod,postgres --spring.datasource.url=jdbc:postgresql://localhost:5433/cold_day_verify13 --spring.jpa.hibernate.ddl-auto=update --server.port=18112 --app.seed.enabled=true"` → `Started ColdDayApplication in 35.072 seconds` against PostgreSQL 16.4. Post-boot read-back: `ot` went **21 → 24 columns**; the legacy row **survived** with `auxiliares_requeridos = 0` and null distance/source — the `ALTER ... DEFAULT 0` path was genuinely exercised on a non-empty table. Seeded supplier resolves: `Suministros del Norte S.A.S. | 900123456-1 | activo=t | proveedor1@coldday.com.co | rol=PROVEEDOR`; seed log `Seed verificado: 5 clientes, 5 técnicos y 1 proveedores creados`; the 3 dispatch tables exist. Process killed after the check.
+5. `cd frontend && timeout 600 npm run build` → **BUILD SUCCESSFUL** (exit 0); lazy chunk `solicitudes-proveedor-page` emitted.
+6. `cd frontend && timeout 600 npm run test -- --watch=false` → **16 tests total: 15 passed / 1 failed**. The single failure is `src/app/app.spec.ts` → `TypeError: Cannot read properties of undefined (reading 'getItem')` at `layout.service.ts:72` (`LayoutService.restore`) — the documented pre-existing baseline failure, unrelated to this change. The 3 new spec files pass (9 + 3 + 3 = 15).
+7. AD12: `rg repuestosSugeridos frontend/src` → only the two removal comments; no code usage.
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `timeout 900 ./gradlew test` → **410/4** (all `ClientesApiIT`); `timeout 600 ./gradlew testPostgis --rerun` → **3/0**; frontend `npm run test -- --watch=false` → **15/16** (1 pre-existing). |
+| Runtime harness command/scenario and exact result | H2 boot clean (4 new tables, 3 new `ot` columns, no `precio_total`) and `prod,postgres` boot against a non-empty legacy `ot` table (21→24 columns, legacy row defaulted to `0`, seeded `PROVEEDOR` resolves). Both started and were killed inside their timeouts. |
+| Rollback boundary | `ARQUITECTURA.md` and this apply-progress record only. **No application code, schema, config, test or planning artifact other than this file was modified.** |
+
+## Budget
+
+Documentation diff: **59 insertions + 14 deletions = 73 changed lines**. Plus this merged apply-progress section. Well within the ≤360 hard budget; no `size:exception` needed.
+
+## Deviations from Design
+
+- **None in behaviour** — this slice changes no code.
+- The `prod,postgres` boot used a **fresh legacy database** (`cold_day_verify13`) instead of the shared `cold_day`, because the shared DB already carried the new columns from a prior boot; only a DB without them genuinely exercises the `ALTER ... DEFAULT 0` path against a non-empty `ot` table.
+
+## Reconciliation — 26 requirements / 39 scenarios
+
+All 26 requirements across the four specs are implemented and covered by committed tests:
+
+| Capability | Req / Scenarios | Delivered & covered by |
+|---|---|---|
+| `proveedores` | 5 / 10 | slices 6–7 — `ProveedorTest`, `ProveedorRepositoryTest`, `ProveedorApiIT` |
+| `despacho-insumos` | 8 / 10 | slices 8–11 — `RequerimientoInsumoTest`, `OfertaInsumoTest`, `RequerimientoInsumoRepositoryTest`, the 5 use-case tests, `InsumoApiIT`, `AceptacionInsumoConcurrenteIT` |
+| `auxiliares` | 6 / 10 | slices 4–5 — `OtTest`, `OtRepositoryTest`, `AceptarOfertaUseCaseTest`, `AuxiliaresApiIT`, `AceptacionConcurrenteIT` |
+| `tarifa-visita` | 7 / 9 | slices 1–3 — `CalculadoraTarifaVisitaTest`, `MapsUseCaseTest`, `EstimarTarifaUseCaseTest`, `TarifaApiIT`, `TarifaPersistenciaIT` |
+
+Design-mandated tests: **(a)** bracket-endpoint continuity 12/18/24 in `CalculadoraTarifaVisitaTest`; **(b)** ineligible-supplier 403 in `InsumoApiIT`; **(c)** notification failure leaves state authoritative in `SolicitarInsumoUseCaseTest`.
+
+## Unverified / limitations
+
+- **Interactive UI walkthrough: not performed.** No headless browser exists in this environment (no chromium/chrome/firefox, no playwright/puppeteer). Substitute evidence: the production build succeeds, the supplier lazy chunk is emitted, and the mock-mode specs exercise the supplier lifecycle and tariff table. Reported as a known limitation, **not** as a pass.
+- **`prod,postgres` against the shared `cold_day` DB was not re-run**; the fresh legacy-DB run above is the stronger check because a pre-migrated DB cannot exercise the `ALTER` path.
+- The 4 `ClientesApiIT` failures remain — pre-existing, out of scope.
+- The pre-existing frontend `app.spec.ts` failure remains — pre-existing, unrelated.
+
+## Out of Scope (do not absorb)
+
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched.

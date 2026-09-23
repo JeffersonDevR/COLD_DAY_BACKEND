@@ -1,6 +1,6 @@
 # Arquitectura de Cold Day
 
-> Documento vivo de referencia del sistema. Generado a partir de un análisis exhaustivo del código en `backend/` (última actualización: 2026-09-21). Actualízalo cuando cambien decisiones estructurales relevantes.
+> Documento vivo de referencia del sistema. Generado a partir de un análisis exhaustivo del código en `backend/` (última actualización: 2026-09-23). Actualízalo cuando cambien decisiones estructurales relevantes.
 
 ## Estado del monorepo
 
@@ -30,6 +30,7 @@ core/
 │   ├── ot/
 │   ├── geolocalizacion/
 │   ├── maps/
+│   ├── proveedores/
 │   └── administracion/
 └── shared/
     ├── domain/            (Point, value objects compartidos)
@@ -81,11 +82,12 @@ Cada módulo replica el mismo patrón interno:
 | `geolocalizacion` | Captura de ubicación GPS y búsqueda espacial de técnicos cercanos | (sin agregado propio — orquesta sobre `Tecnico`/`Cliente`) |
 | `maps` | Proxy seguro a Google Maps (geocoding, autocomplete, distance matrix) | (stateless) |
 | `administracion` | Liquidaciones de pago técnico↔plataforma, disputas, métricas de dashboard | `Liquidacion`, entidad `Disputa` |
+| `proveedores` | Identidad del proveedor y despacho de insumos (solicitud, oferta al proveedor, entrega) | `Proveedor`, `RequerimientoInsumo`, entidad `OfertaInsumo` |
 
 ## 4. Módulo `usuarios`
 
 - **Agregado `Usuario`**: nombre, correo, passwordHash, teléfono, foto, rol, `habeasDataAceptado`, `activo`, **`tokenVersion`** (contador para revocar JWT emitidos al cambiar contraseña).
-- **Rol** (`Rol` enum): `CLIENTE, TECNICO, ADMINISTRADOR, CONTABLE`.
+- **Rol** (`Rol` enum): `CLIENTE, TECNICO, ADMINISTRADOR, CONTABLE, PROVEEDOR`. El rol `PROVEEDOR` es aditivo: `SecurityConfig`, `JwtTokenIssuer` y `JwtAuthenticationFilter` son genéricos sobre el enum y no requirieron cambios.
 - **Casos de uso**: `RegistrarUsuarioUseCase`, `AutenticarUsuarioUseCase` (login → JWT), `RecuperarContrasenaUseCase` (no enumera existencia de correos), `RestablecerContrasenaUseCase` (consume token, incrementa `tokenVersion`).
 - **Recuperación de contraseña**: token de 32 bytes aleatorios (Base64URL), se persiste solo el hash SHA-256 — nunca el token en claro (`SecureRandomTokenGenerator`, `infrastructure/security/`).
 - **Endpoints** (`/api/usuarios`): `POST /` (registro, público), `POST /login` (público), `POST /recuperar-contrasena` (público), `POST /reset-contrasena` (público).
@@ -158,24 +160,63 @@ Terminales: `FINALIZADA`, `CANCELADA`, `SIN_TECNICOS_DISPONIBLES`. Transición i
 
 Todo dentro de una única transacción — cualquier fallo revierte la OT a `BUSCANDO_TECNICO`.
 
+### Tarifa de visita por distancia
+
+`CalculadoraTarifaVisita` es un servicio de dominio puro sobre `(distanciaKm, duracionMin)`. La fórmula y los tramos **no se persisten**: viven solo en configuración (`app.tarifa.*`), de modo que cambiar el precio no requiere migración.
+
+- Base plana e **inclusiva** dentro del radio metropolitano (`radio-metropolitano-km`, 8 km): `base` (30.000 COP).
+- Tramos marginales por **distancia absoluta** `[desde, hasta)` con tarifas crecientes: 8–12 km → 1.800 COP/km, 12–18 → 2.200, 18–24 → 2.600, 24–30 → 3.200. La suma es continua en cada frontera compartida.
+- `tarifa = min(base + marginal, precio-max)` (tope 80.000 COP, aplicado **antes** del redondeo) y luego redondeo a `redondeo-cop` (100 COP).
+- Más allá de `radio-max-km` (30 km) la estimación queda **fuera de rango**: `POST /api/ot/tarifa/estimar` responde **HTTP 200** con `banda` y `tarifa` en `null` (nunca un centinela); `400` se reserva a entrada malformada.
+- `banda` es el índice 0..4 del tramo más alto alcanzado (`0` = solo base).
+- Fuente de la distancia: `ROAD` (Google Maps Distance Matrix) o `LINEAL` (Haversine al centro configurado) cuando Maps no está disponible; **una falla de Maps nunca bloquea la OT**.
+- La tarifa autoritativa se calcula y persiste en `ot.tarifa_visita` / `ot.distancia_km` / `ot.tarifa_fuente` al **finalizar** o al **cancelar fuera de la ventana gratuita**; aceptar una oferta no persiste nada.
+
+Claves `app.tarifa.*`: `base`, `radio-metropolitano-km`, `radio-max-km`, `precio-max`, `redondeo-cop`, `centro-lat`, `centro-lng`; los tramos usan los defaults de `TarifaProperties`.
+
+### Auxiliares (conteo declarado al aceptar)
+
+Al aceptar una oferta, el técnico puede declarar cuántos auxiliares requiere. Es un **conteo sin identidad, cuentas ni pagos**: nunca se cobra ni entra en presupuesto o liquidación.
+
+- El cuerpo de `POST /api/ofertas/{id}/aceptar` es **opcional** (`{auxiliaresRequeridos?: int}`, por defecto 0); `@Min(0)` en el wire y un máximo configurable (`app.auxiliares.max`, default 10) validado en `AceptarOfertaUseCase` **antes de cualquier escritura** (400 si se excede).
+- El conteo viaja en el **mismo UPDATE condicional** de la aceptación (`asignarSiDisponible`); no hay una segunda escritura sobre el agregado `@Version`, ni endpoint de mutación posterior a la aceptación.
+- `OtResponse`/`OtApiResponse` exponen `auxiliaresRequeridos`, con `0` para filas heredadas.
+
 ### Otras reglas de negocio
 
-- **Ventana de cancelación gratuita**: 10 minutos desde la asignación (`VENTANA_CANCELACION_GRATUITA`); fuera de esa ventana se cobra tarifa base de visita ($50.000, `TARIFA_VISITA_BASE`).
-- **Rechazo de presupuesto por el cliente** termina la OT como `CANCELADA` con motivo `RECHAZO_PRESUPUESTO` y cobro de tarifa base — decisión de diseño que diverge de un mapeo literal de requisitos, documentada en el código.
+- **Ventana de cancelación gratuita**: 10 minutos desde la asignación (`VENTANA_CANCELACION_GRATUITA`); fuera de esa ventana se cobra la tarifa de visita calculada por distancia (ver arriba). La constante `TARIFA_VISITA_BASE` fue eliminada: la única autoridad de precio es `CalculadoraTarifaVisita`.
+- **Rechazo de presupuesto por el cliente** termina la OT como `CANCELADA` con motivo `RECHAZO_PRESUPUESTO` y cobro de la tarifa de visita calculada por distancia — decisión de diseño que diverge de un mapeo literal de requisitos, documentada en el código.
 - **Historial append-only**: cada transición se acumula en una lista pendiente dentro del agregado (`cambiosPendientes`) y se drena/persiste atómicamente al guardar — garantiza que nunca se pierde un registro de auditoría, incluso si el `save()` falla a medio camino.
 - **Disputas**: `abrirDisputa`/`resolverDisputaConAcuerdo`/`resolverDisputaSinAcuerdo` existen en el agregado `Ot`, pero se orquestan desde `administracion.GestionarDisputaUseCase` (no desde `ot.application`) — es ese caso de uso el que publica los eventos terminales tras resolver.
 
 ### Endpoints
 
-`/api/ot`: `POST /` (crear), `GET /{id}`, `GET /{id}/historial`, `POST /{id}/iniciar-desplazamiento` (TECNICO), `POST /{id}/diagnostico` (TECNICO), `POST /{id}/presupuesto/aprobar` (CLIENTE), `POST /{id}/presupuesto/rechazar` (CLIENTE), `POST /{id}/finalizar` (TECNICO), `POST /{id}/cancelar` (CLIENTE o TECNICO).
+`/api/ot`: `POST /` (crear), `GET /{id}`, `GET /{id}/historial`, `POST /{id}/iniciar-desplazamiento` (TECNICO), `POST /{id}/diagnostico` (TECNICO, acepta `insumos`), `POST /{id}/presupuesto/aprobar` (CLIENTE), `POST /{id}/presupuesto/rechazar` (CLIENTE), `POST /{id}/finalizar` (TECNICO), `POST /{id}/cancelar` (CLIENTE o TECNICO), `POST /tarifa/estimar` (autenticado, solo lectura).
 
-`/api`: `POST /ofertas/{id}/aceptar` (TECNICO), `GET /tecnicos/me/ofertas` (TECNICO, solo ofertas vigentes).
+`/api`: `POST /ofertas/{id}/aceptar` (TECNICO, cuerpo opcional `{auxiliaresRequeridos?}`), `GET /tecnicos/me/ofertas` (TECNICO, solo ofertas vigentes).
 
 ### Notificaciones
 
 `LoggingNotificacionPushAdapter` — solo logging; el estado de la oferta en base de datos es la fuente de verdad, nunca depende de que la notificación push se entregue (diseño explícito para que el despacho no se bloquee por fallas de transporte). FCM/push real está pendiente de implementar.
 
-## 8. Módulo `geolocalizacion`
+## 8. Módulo `proveedores` (despacho de insumos)
+
+Contexto delimitado que cubre la identidad del proveedor y el despacho de insumos tras el diagnóstico. El dominio **no importa tipos de `ot`/`tecnicos`**: las referencias externas son `UUID` escalares.
+
+- **Agregados y entidades**: `Proveedor` (identidad de negocio, `usuarioId`, ubicación `Point`, `categoriasInsumo` como metadato, `activo`); raíz `RequerimientoInsumo` (por OT + técnico, con líneas de insumo de texto libre) y entidad `OfertaInsumo` (una por proveedor activo).
+- **Elegibilidad**: la difusión llega a **todos** los proveedores `activo=true`; `categorias_insumo` es metadato, no un filtro de elegibilidad.
+- **Estados**:
+  - `EstadoRequerimiento`: `SOLICITADO → ASIGNADO → ENTREGADO`; `SOLICITADO → SIN_PROVEEDOR` (terminal reintentable). **No existe `CANCELADO`** a nivel raíz.
+  - `OfertaInsumoEstado`: `PENDIENTE → ACEPTADA | RECHAZADO | EXPIRADA | CANCELADA` (la invalidez por hermano ganador es `CANCELADA`; el rechazo explícito usa el literal `RECHAZADO`).
+- **Ciclo de despacho**: diagnóstico con `insumos` no vacío → `RequerimientoInsumo(SOLICITADO)` + una `OfertaInsumo(PENDIENTE)` por proveedor activo → notificación best-effort (hoy solo logging; su falla **no** cambia el estado autoritativo) → el primer `aceptar` gana el UPDATE condicional y marca las ofertas hermanas `CANCELADA` → `entregar` mueve `ASIGNADO → ENTREGADO`. Un barrido `@Scheduled` expira ofertas vencidas y resuelve solicitudes sin proveedor. Cero insumos no crea nada y el despacho nunca bloquea el ciclo de la OT.
+- **Endpoints** (rol `PROVEEDOR`, salvo alta/listado que son `ADMINISTRADOR`):
+  - `POST /api/proveedores` (ADMINISTRADOR) — alta: crea el `Usuario` con rol `PROVEEDOR` y el `Proveedor` en una sola transacción (201/400/403/409).
+  - `GET /api/proveedores` (ADMINISTRADOR) — listado, incluye inactivos.
+  - `GET /api/proveedores/me/solicitudes` (PROVEEDOR) — ofertas pendientes con sus líneas.
+  - `POST /api/insumos/{ofertaId}/aceptar`, `POST /api/insumos/{ofertaId}/rechazar`, `POST /api/insumos/{id}/entregar` (PROVEEDOR) — 409 si la oferta ya no está disponible.
+- **Semilla**: `DevDataSeeder` crea 1 proveedor idempotente (`proveedor1@coldday.com.co`, password demo `demo1234`).
+
+## 9. Módulo `geolocalizacion`
 
 - No expone controladores propios; sus casos de uso son invocados desde `TecnicoController`/`ClienteController` y desde `ot`.
 - **Casos de uso**: `ActualizarUbicacionClienteUseCase`, `ActualizarUbicacionTecnicoUseCase`, `DesactivarTrackingTecnicoUseCase`.
@@ -184,7 +225,7 @@ Todo dentro de una única transacción — cualquier fallo revierte la OT a `BUS
   - `PostgisTecnicoDisponibilidadAdapter` (`@Profile("postgres")`): SQL nativo con `ST_MakePoint(...)::geography`, `ST_DWithin`, `ST_Distance`, apoyado en el índice GiST `idx_tecnico_ubicacion_geo` (definido en `schema-postgres.sql`). Ningún tipo geométrico de PostGIS cruza el puerto de dominio — solo se devuelven VOs planos (`TecnicoCercano`).
 - **Desacople por eventos**: `DesactivarTrackingListener` escucha `EventoTerminalOt` (publicado por `ot`/`administracion`) y apaga el tracking del técnico asignado cuando la OT llega a un estado terminal, conservando la última ubicación para auditoría. Tolera técnico ausente sin revertir la transacción de la OT.
 
-## 9. Módulo `maps`
+## 10. Módulo `maps`
 
 - Proxy backend a Google Maps Platform para que la API key nunca llegue al navegador.
 - APIs consumidas vía `RestClient` (no `RestTemplate`): Geocoding, Places Autocomplete, Distance Matrix.
@@ -192,7 +233,7 @@ Todo dentro de una única transacción — cualquier fallo revierte la OT a `BUS
 - **Endpoints** (`/api/maps`, requiere autenticación): `GET /estado`, `POST /geocode`, `GET /inversa`, `GET /autocompletar`, `POST /distancia`.
 - Totalmente desacoplado del resto del dominio: no depende de `Tecnico`/`Cliente`/`Ot`, y nada del backend lo llama — es de uso previsto para el frontend (autocompletar direcciones, mostrar distancia/ETA).
 
-## 10. Módulo `administracion`
+## 11. Módulo `administracion`
 
 Dos submodelos independientes bajo un mismo módulo:
 
@@ -204,7 +245,7 @@ Dos submodelos independientes bajo un mismo módulo:
 - **Casos de uso**: `RegistrarPagoUseCase`, `CargarComprobanteUseCase`, `VerificarComprobanteUseCase`, `GestionarDisputaUseCase`, `ConsultarMetricasAdminUseCase` (agrega lectura cruzada de `ot` + `tecnicos` + `administracion` para el dashboard).
 - **Endpoints**: `/api/admin/**` (rol `ADMINISTRADOR`: métricas, liquidaciones, disputas), `/api/disputas` (rol `CLIENTE`: abrir disputa), `/api/liquidaciones` (rol `TECNICO`: registrar pago, subir comprobante).
 
-## 11. Integración entre módulos (resumen)
+## 12. Integración entre módulos (resumen)
 
 No todo está desacoplado por eventos — es una mezcla deliberada:
 
@@ -212,20 +253,22 @@ No todo está desacoplado por eventos — es una mezcla deliberada:
 - **Dependencia de dominio compartido**: el agregado `Ot` nunca importa nada de `tecnicos` — solo guarda un `TecnicoId` (value object). El acoplamiento está en la capa de aplicación, no en el dominio.
 - **Eventos de dominio** (`ApplicationEventPublisher`, síncronos, misma transacción): usados específicamente para el efecto secundario de tracking (`geolocalizacion` escuchando `EventoTerminalOt` de `ot`/`administracion`). Los agregados en sí no publican eventos — la publicación es responsabilidad exclusiva de la capa de aplicación.
 - **`ot` → `geolocalizacion`**: puente real entre disponibilidad + ubicación + categoría de servicio, vía `TecnicoDisponibilidadRepository`.
+- **`ot` → `proveedores` (una sola dirección)**: `RegistrarDiagnosticoUseCase` invoca `SolicitarInsumoUseCase` tras persistir el diagnóstico, pasando `otId`/`tecnicoId` como `UUID`; el contexto `proveedores` no importa tipos de `ot`.
 - **`maps`**: aislado, sin llamadas entrantes ni salientes hacia otros módulos de dominio.
 
-## 12. Seguridad
+## 13. Seguridad
 
 - **Stateless JWT** (JJWT/HMAC), `JwtAuthenticationFilter` insertado antes de `UsernamePasswordAuthenticationFilter`. CSRF deshabilitado (API sin cookies).
 - Claims del token: `sub` (usuarioId), `rol`, `ver` (token version), `iat`, `exp`.
 - **Revocación por versión**: al cambiar contraseña se incrementa `Usuario.tokenVersion`; el filtro compara el claim `ver` contra el valor persistido y limpia el contexto de seguridad si no coincide — revoca todos los tokens previos sin necesitar lista negra.
 - BCrypt costo 12 (`PasswordEncoderAdapter`).
 - Reglas de autorización (`SecurityConfig`): público → `/actuator/health`, Swagger, `POST /api/usuarios` (registro/login/recuperación), `POST /api/tecnicos` (auto-registro); `PATCH /api/tecnicos/*/validacion` y `/api/admin/**` → rol `ADMINISTRADOR`; el resto requiere autenticación.
+- Nuevos endpoints de `proveedores` con `@PreAuthorize`: alta y listado de proveedores → `ADMINISTRADOR`; portal de insumos (`/api/proveedores/me/solicitudes`, `/api/insumos/**`) → `PROVEEDOR`. No se agregó ningún matcher `permitAll`.
 - `AuthenticationEntryPoint`/`AccessDeniedHandler` propios, devuelven el mismo contrato `ApiError` que el resto de la API.
 - Manejo de errores: **sin `@ControllerAdvice` global** — cada módulo define el suyo (`@RestControllerAdvice(assignableTypes=...)`) mapeando sus excepciones de dominio a HTTP, pero todos comparten el mismo tipo de respuesta (`ApiError`).
 - ⚠️ **No hay configuración de CORS** en ningún punto del código — pendiente para cuando exista un frontend que llame desde otro origen.
 
-## 13. Persistencia y esquema
+## 14. Persistencia y esquema
 
 - Sin Flyway/Liquibase. Gestión de esquema vía `spring.sql.init` + Hibernate `ddl-auto`:
   - Perfil por defecto (H2): `schema.sql` corre **antes** de que Hibernate cree las tablas; `ddl-auto=create-drop` es la autoridad real (el SQL es un espejo documental con `IF NOT EXISTS`).
@@ -233,20 +276,22 @@ No todo está desacoplado por eventos — es una mezcla deliberada:
   - En Render, `SPRING_JPA_HIBERNATE_DDL_AUTO=update` sobreescribe el `create-drop` por defecto para no perder datos en cada deploy.
 - **Geoespacial dual**: dev/H2 usa Haversine en Java; prod usa PostGIS con SQL nativo (`ST_MakePoint`, `ST_DWithin`, `ST_Distance`) sobre columnas `double` planas + índice GiST — sin dependencia de driver espacial en Gradle.
 - Value objects complejos (`Diagnostico`, `Presupuesto`, categorías, certificaciones, URLs de evidencia) se persisten como JSON vía `AttributeConverter` dedicados por campo.
+- **Tablas nuevas de este cambio** (aditivas): `proveedor`, `requerimiento_insumo`, `requerimiento_insumo_item` y `oferta_insumo` (esta última **sin** `precio_total`) con sus índices. La tabla `ot` gana `auxiliares_requeridos INT NOT NULL DEFAULT 0`, `distancia_km DOUBLE PRECISION` (nullable) y `tarifa_fuente VARCHAR(20)` (nullable). En `postgres`/`ddl-auto=update` Hibernate deriva los `ALTER TABLE` del mapeo de entidades; `schema.sql` es el espejo documental. No hay migración descendente.
 
-## 14. Jobs programados
+## 15. Jobs programados
 
 | Job | Frecuencia | Acción |
 |---|---|---|
 | `ProgramadorEscalamientoOt` (`ot`) | cada 5s (`app.dispatch.escalamiento-ms`) | Escala radio de búsqueda / agota opciones para OTs con ventana de oferta vencida |
 | `ProgramadorVigencia` (`tecnicos`) | diario 06:00 (`app.vigencia.cron`) | Suspende técnicos con documentación vencida, notifica vencimientos próximos (30 días) |
+| `ProgramadorExpiracionInsumo` (`proveedores`) | cada 60s (`app.insumos.barrido-ms`) | Expira ofertas de insumo vencidas y resuelve solicitudes sin proveedor |
 
-## 15. Despliegue
+## 16. Despliegue
 
 - **Dockerfile** multi-stage: build con `eclipse-temurin:25-jdk` (Gradle, tests excluidos del build de imagen), runtime con `eclipse-temurin:25-jre` corriendo como usuario no-root. Puerto expuesto `8090`.
 - **Render** (`render.yaml`, Blueprint): servicio web Docker, plan free, `rootDir: backend`, health check en `/actuator/health`, `autoDeploy: true`, perfil `prod,postgres`. Variables sensibles (`JWT_SECRET`, credenciales Postgres, `GOOGLE_MAPS_API_KEY`) marcadas `sync: false` — se configuran manualmente en el dashboard de Render, nunca en el repo.
 
-## 16. Observaciones / deuda técnica conocida
+## 17. Observaciones / deuda técnica conocida
 
 - Falta configuración de **CORS** (bloqueante en cuanto exista un frontend en otro origen).
 - Notificaciones push (`ot`) y de vigencia documental (`tecnicos`) son solo logging — falta integrar transporte real (FCM/email).
