@@ -354,6 +354,40 @@ class OtDiagnosticoPresupuestoIT {
         assertThat(requerimientoRepository.buscarPorOt(ot.getId().valor())).isEmpty();
     }
 
+    /**
+     * aux.S5.1 (presupuesto half): the client budget never charges auxiliares.
+     * Even when the OT was accepted declaring three auxiliares, the presented
+     * budget is exactly the declared mano de obra + repuestos; the headcount
+     * rides the OT but contributes no amount.
+     */
+    @Test
+    void elPresupuestoNoCobraAuxiliaresAunqueLaOtLosDeclare() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-aux-presupuesto@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("tecnico-aux-presupuesto@example.com", Rol.TECNICO);
+        TecnicoId tecnicoId = crearTecnico(tecnicoUsuario, true);
+        Ot ot = otEnCaminoConAuxiliares(cliente.getId(), tecnicoId, 3);
+
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/diagnostico")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO))
+                        .contentType(MediaType.APPLICATION_JSON).content(DIAGNOSTICO_PAYLOAD))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("EN_DIAGNOSTICO"))
+                .andExpect(jsonPath("$.auxiliaresRequeridos").value(3))
+                .andExpect(jsonPath("$.presupuesto.costoManoObra").value(120000.00))
+                .andExpect(jsonPath("$.presupuesto.costoRepuestos").value(350000.00));
+
+        assertThat(otRepository.buscarPorId(ot.getId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getAuxiliaresRequeridos()).isEqualTo(3);
+                    Presupuesto presupuesto = found.getPresupuesto();
+                    // Only the two declared components: 120,000 + 350,000. There
+                    // is no auxiliar term anywhere in the budget.
+                    assertThat(presupuesto.costoManoObra().add(presupuesto.costoRepuestos()))
+                            .isEqualByComparingTo("470000.00");
+                });
+    }
+
     private void crearProveedorActivo(String nit, String correo) {
         Long usuarioId = crearUsuario(correo, Rol.PROVEEDOR);
         proveedorRepository.save(Proveedor.crear(usuarioId, "Suministros " + nit, nit, "3105550001", null, null,
@@ -376,6 +410,15 @@ class OtDiagnosticoPresupuestoIT {
                 "No enciende", List.of(), "Calle 1", UBICACION_SERVICIO, estado, 10.0,
                 Instant.now().plusSeconds(3600), Instant.now(), asignadaEn, null, null, null, null, null,
                 presupuesto);
+        return otRepository.save(ot);
+    }
+
+    /** An OT in {@code EN_CAMINO} carrying a declared auxiliar headcount (aux.S5.1). */
+    private Ot otEnCaminoConAuxiliares(ClienteId clienteId, TecnicoId tecnicoId, int auxiliaresRequeridos) {
+        Ot ot = Ot.reconstituir(OtId.nueva(), clienteId, tecnicoId, CategoriaServicio.REFRIGERACION,
+                "No enciende", List.of(), "Calle 1", UBICACION_SERVICIO, EstadoOt.EN_CAMINO, 10.0,
+                Instant.now().plusSeconds(3600), Instant.now(), Instant.now(), null, null, null, null,
+                null, null, null, null, auxiliaresRequeridos);
         return otRepository.save(ot);
     }
 

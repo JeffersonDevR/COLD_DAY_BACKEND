@@ -189,6 +189,49 @@ class AuxiliaresApiIT {
                 .hasValueSatisfying(ot -> assertThat(ot.getEstado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO));
     }
 
+    /**
+     * aux.S6.1: the auxiliar count has an acceptance-only window. Once the OT is
+     * {@code ASIGNADA} there is no post-acceptance mutation surface: a dedicated
+     * mutation path does not exist (404), the only existing writer cannot be
+     * replayed to change the count (409), and the recorded value stays frozen.
+     */
+    @Test
+    void aPostAcceptanceAuxiliarMutationIsRejectedAndTheCountStaysFrozen() throws Exception {
+        Long usuarioId = crearUsuario("tecnico-aux-inmutable@example.com");
+        TecnicoId tecnicoId = crearTecnicoDisponible(usuarioId);
+        OfertaOt oferta = ofertaPendiente(crearOtBuscando(), tecnicoId);
+        String token = jwt(usuarioId);
+
+        // The winning acceptance is the only writer: it records 2.
+        mockMvc.perform(post("/api/ofertas/" + oferta.getId() + "/aceptar")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"auxiliaresRequeridos\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ASIGNADA"))
+                .andExpect(jsonPath("$.auxiliaresRequeridos").value(2));
+
+        // No dedicated post-acceptance auxiliar-mutation endpoint exists.
+        mockMvc.perform(post("/api/ot/" + oferta.getOtId().valor() + "/auxiliares")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"auxiliaresRequeridos\":9}"))
+                .andExpect(status().isNotFound());
+
+        // Replaying the only existing writer after acceptance is a conflict and
+        // cannot overwrite the recorded count. The count is within this context's
+        // max (5), so the rejection is the acceptance-only window, not validation.
+        mockMvc.perform(post("/api/ofertas/" + oferta.getId() + "/aceptar")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"auxiliaresRequeridos\":4}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
+
+        assertThat(otRepository.buscarPorId(oferta.getOtId()))
+                .hasValueSatisfying(ot -> assertThat(ot.getAuxiliaresRequeridos()).isEqualTo(2));
+    }
+
     private Ot crearOtBuscando() {
         Instant ahora = Instant.now();
         Ot ot = Ot.crear(ClienteId.nueva(), CategoriaServicio.REFRIGERACION, "No enciende", java.util.List.of(),

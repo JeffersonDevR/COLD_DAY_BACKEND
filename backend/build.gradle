@@ -57,6 +57,13 @@ tasks.named('test') {
 	useJUnitPlatform()
 	// Los tests crean sus propios datos; el seed de demo solo aplica a ejecución local.
 	systemProperty 'app.seed.enabled', 'false'
+	// Los barridos programados se invocan directamente en los tests. Con varios
+	// contextos Spring cacheados compartiendo la misma base H2 en memoria, un
+	// tick del scheduler ajeno expira filas a mitad de un test (ver CRITICAL-1 de
+	// la verificación). Empujar ambos delays fuera de la ventana de test mantiene
+	// los barridos deterministas sin tocar el producto.
+	systemProperty 'app.insumos.barrido-ms', '3600000'
+	systemProperty 'app.dispatch.escalamiento-ms', '3600000'
 	filter {
 		// El IT PostGIS necesita el contenedor local (cold_day_db:5432); corre aparte.
 		excludeTestsMatching '*Postgis*'

@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.proveedores.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -36,20 +37,33 @@ import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.Requerimie
  * threads released together by a {@link CountDownLatch}; the conditional bulk
  * UPDATE on the request root must let exactly one win, bind that supplier's
  * offer as {@code ACEPTADA} and invalidate the sibling as {@code CANCELADA}.
- * The sweep is pushed out of the way with a fixed delay.
+ *
+ * <p>The request window is derived from the injected real {@link Clock}, never
+ * from a hardcoded past instant: a past {@code expira_en} would be swept to
+ * {@code SIN_PROVEEDOR} by a sibling cached context's scheduler and both accept
+ * threads would read zero rows. The {@code test} task also pushes every sweep
+ * delay out of the test window (see build.gradle), so the proof is reproducible
+ * in a full-suite run, not only in isolation.
  */
 @SpringBootTest
 @TestPropertySource(properties = "app.insumos.barrido-ms=3600000")
 class RequerimientoInsumoConcurrenteIT {
 
-    private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final UUID OT_ID = UUID.randomUUID();
     private static final UUID TECNICO_ID = UUID.randomUUID();
 
+    @Autowired Clock clock;
     @Autowired RequerimientoInsumoRepository requerimientos;
     @Autowired OfertaInsumoRepository ofertas;
     @Autowired SpringDataRequerimientoInsumoRepository springDataRequerimientos;
     @Autowired SpringDataOfertaInsumoRepository springDataOfertas;
+
+    private Instant ahora;
+
+    @BeforeEach
+    void usarRelojReal() {
+        ahora = clock.instant();
+    }
 
     @BeforeEach
     @AfterEach
@@ -61,11 +75,11 @@ class RequerimientoInsumoConcurrenteIT {
     @Test
     void twoSimultaneousAcceptsResolveToExactlyOneWinner() throws Exception {
         RequerimientoInsumo req = requerimientos.save(RequerimientoInsumo.crear(OT_ID, TECNICO_ID,
-                List.of(new InsumoLinea("Filtro secadora", 1)), null, AHORA, AHORA.plusSeconds(600)));
+                List.of(new InsumoLinea("Filtro secadora", 1)), null, ahora, ahora.plusSeconds(600)));
         OfertaInsumo primero = ofertas.save(
-                OfertaInsumo.crear(req.getId(), ProveedorId.nueva(), AHORA, AHORA.plusSeconds(600)));
+                OfertaInsumo.crear(req.getId(), ProveedorId.nueva(), ahora, ahora.plusSeconds(600)));
         OfertaInsumo segundo = ofertas.save(
-                OfertaInsumo.crear(req.getId(), ProveedorId.nueva(), AHORA, AHORA.plusSeconds(600)));
+                OfertaInsumo.crear(req.getId(), ProveedorId.nueva(), ahora, ahora.plusSeconds(600)));
 
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CountDownLatch listos = new CountDownLatch(2);
@@ -98,10 +112,10 @@ class RequerimientoInsumoConcurrenteIT {
             CountDownLatch listos, CountDownLatch disparar) throws InterruptedException {
         listos.countDown();
         disparar.await(10, TimeUnit.SECONDS);
-        int gano = requerimientos.intentarAsignar(requerimientoId, AHORA);
+        int gano = requerimientos.intentarAsignar(requerimientoId, ahora);
         if (gano == 1) {
-            ofertas.intentarAceptar(ofertaId, AHORA);
-            ofertas.invalidarPendientesDe(requerimientoId, OfertaInsumoEstado.CANCELADA, AHORA);
+            ofertas.intentarAceptar(ofertaId, ahora);
+            ofertas.invalidarPendientesDe(requerimientoId, OfertaInsumoEstado.CANCELADA, ahora);
         }
         return gano;
     }

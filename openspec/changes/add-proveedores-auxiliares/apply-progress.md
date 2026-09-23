@@ -904,16 +904,26 @@ Documentation diff: **59 insertions + 14 deletions = 73 changed lines**. Plus th
 
 ## Reconciliation — 26 requirements / 39 scenarios
 
-All 26 requirements across the four specs are implemented and covered by committed tests:
+> **Correction (slice 14).** This section previously claimed that all 26 requirements
+> were "covered by committed tests" and mapped `auxiliares` to a test list that did
+> **not** cover `aux.S5.1` or `aux.S6.1`. The verify pass flagged that overstatement
+> (WARNING-3). Slice 14 adds the two missing proofs; the table below now names the
+> exact tests, including the two that were absent.
 
 | Capability | Req / Scenarios | Delivered & covered by |
 |---|---|---|
 | `proveedores` | 5 / 10 | slices 6–7 — `ProveedorTest`, `ProveedorRepositoryTest`, `ProveedorApiIT` |
 | `despacho-insumos` | 8 / 10 | slices 8–11 — `RequerimientoInsumoTest`, `OfertaInsumoTest`, `RequerimientoInsumoRepositoryTest`, the 5 use-case tests, `InsumoApiIT`, `AceptacionInsumoConcurrenteIT` |
-| `auxiliares` | 6 / 10 | slices 4–5 — `OtTest`, `OtRepositoryTest`, `AceptarOfertaUseCaseTest`, `AuxiliaresApiIT`, `AceptacionConcurrenteIT` |
+| `auxiliares` | 6 / 10 | slices 4–5 + 14 — `OtTest`, `OtRepositoryTest`, `AceptarOfertaUseCaseTest`, `AuxiliaresApiIT`, `AceptacionConcurrenteIT`. **aux.S5.1** = `RegistrarPagoUseCaseTest` (liquidación) + `OtDiagnosticoPresupuestoIT.elPresupuestoNoCobraAuxiliaresAunqueLaOtLosDeclare` (presupuesto); **aux.S6.1** = `AuxiliaresApiIT.aPostAcceptanceAuxiliarMutationIsRejectedAndTheCountStaysFrozen` |
 | `tarifa-visita` | 7 / 9 | slices 1–3 — `CalculadoraTarifaVisitaTest`, `MapsUseCaseTest`, `EstimarTarifaUseCaseTest`, `TarifaApiIT`, `TarifaPersistenciaIT` |
 
 Design-mandated tests: **(a)** bracket-endpoint continuity 12/18/24 in `CalculadoraTarifaVisitaTest`; **(b)** ineligible-supplier 403 in `InsumoApiIT`; **(c)** notification failure leaves state authoritative in `SolicitarInsumoUseCaseTest`.
+
+Known partial proofs that remain partial (not overstated): **disp.S4.1** is proven at
+use-case level (the HTTP 409 mapping is proven for a loser/unknown offer, not for an
+expired window); **disp.S8.1** is proven structurally (no `precio_total` column, the
+budget VO carries only `costoManoObra` + `costoRepuestos`). Both were assessed as
+cheap-enough-to-leave in the verify report; no extra test was added for them in slice 14.
 
 ## Unverified / limitations
 
@@ -926,3 +936,74 @@ Design-mandated tests: **(a)** bracket-endpoint continuity 12/18/24 in `Calculad
 
 - The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
 - The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched.
+
+---
+
+# Slice 14 — Verification remediation (PR 14 of the chained/stacked delivery)
+
+The independent `sdd-verify` pass over `db44801` returned **FAIL** with three CRITICALs
+(`verify-report.md`). This slice closes exactly those three plus two warnings. It fixes
+the **proofs**, not the product: no product behaviour changed except making an existing
+null-location no-op explicit at the call sites (observable outcome unchanged).
+
+## Completed Tasks
+
+| ID | Objective | Status |
+|---|---|---|
+| CRITICAL-1 | `RequerimientoInsumoConcurrenteIT` was non-deterministic in full-suite runs (2/3 failed `expected: 1 but was: 0`). Root cause: a hardcoded past instant (`2026-09-14`) made `expira_en` already expired against the real clock, so a sibling cached context's `ProgramadorExpiracionInsumo` swept the request to `SIN_PROVEEDOR` mid-test. Fix: derive the window from the injected real `Clock`; and push every sweep delay out of the test window globally via the Gradle `test` task. | `[x]` |
+| CRITICAL-2 | `aux.S5.1` (auxiliares never charged) was untested. Added `RegistrarPagoUseCaseTest` (liquidación) and `OtDiagnosticoPresupuestoIT.elPresupuestoNoCobraAuxiliaresAunqueLaOtLosDeclare` (presupuesto). | `[x]` |
+| CRITICAL-3 | `aux.S6.1` (acceptance-only window) was untested. Added `AuxiliaresApiIT.aPostAcceptanceAuxiliarMutationIsRejectedAndTheCountStaysFrozen`: a forged mutation path is 404, replaying the accept is 409, and the recorded count stays frozen. | `[x]` |
+| WARNING-4 | `estimarPara(...).ifPresent(...)` silently persisted nothing on a null location. The intent is now explicit (`registrarTarifaAutoritativa` guard + comment) in all three call sites, and `FinalizarOtUseCaseTest.finalizarSinUbicacionNoPersisteTarifaYNoFalla` covers it. **Observable tariff outcome unchanged.** | `[x]` |
+| WARNING-3 | The reconciliation above overstated coverage. Corrected to name the two missing scenarios and their new tests. | `[x]` |
+| WARNING-1/2 | `disp.S8.1` / `disp.S4.1` remain partial. Assessed as cheap-enough-to-leave in the verify report; no extra test added, and the partial status is now stated honestly in the reconciliation. | `[x]` |
+
+## Files Changed
+
+| File | Action | What Was Done |
+|------|--------|---------------|
+| `backend/build.gradle` | Modified | `test` task sets `app.insumos.barrido-ms=3600000` and `app.dispatch.escalamiento-ms=3600000` as system properties, so no scheduler ticks mid-test in any cached context. `@TestPropertySource` still wins where a test sets its own value. |
+| `backend/.../proveedores/infrastructure/persistence/RequerimientoInsumoConcurrenteIT.java` | Modified | Injects `Clock`; derives `ahora = clock.instant()` in `@BeforeEach`; removed the hardcoded past `AHORA`; javadoc explains the sibling-sweeper hazard. |
+| `backend/.../administracion/application/usecases/RegistrarPagoUseCaseTest.java` | Created | 2 tests proving the liquidation is derived only from the declared `montoCobrado` and is identical with 0 or 3 auxiliares. |
+| `backend/.../ot/infrastructure/api/controllers/OtDiagnosticoPresupuestoIT.java` | Modified | 1 test: an OT accepted with 3 auxiliares presents a budget of exactly `costoManoObra + costoRepuestos`; helper `otEnCaminoConAuxiliares`. |
+| `backend/.../ot/infrastructure/api/controllers/AuxiliaresApiIT.java` | Modified | 1 test: post-acceptance auxiliar mutation rejected (404 forged path / 409 replay) and the count stays frozen. |
+| `backend/.../ot/application/usecases/FinalizarOtUseCase.java` | Modified | Explicit `registrarTarifaAutoritativa` guard for a null location. |
+| `backend/.../ot/application/usecases/CancelarOtUseCase.java` | Modified | Same explicit guard. |
+| `backend/.../ot/application/usecases/RechazarPresupuestoUseCase.java` | Modified | Same explicit guard. |
+| `backend/.../ot/application/usecases/FinalizarOtUseCaseTest.java` | Modified | 1 test: a location-less OT finalizes with no persisted tariff/distance/source and does not fail. |
+| `openspec/changes/add-proveedores-auxiliares/apply-progress.md` | Modified | This merged slice-14 record + the corrected reconciliation. |
+
+## Work Unit Evidence
+
+| Evidence | Value |
+|---|---|
+| Focused test command and exact result | `cd backend && ./gradlew test --tests '*RegistrarPagoUseCaseTest' --tests '*AuxiliaresApiIT' --tests '*OtDiagnosticoPresupuestoIT' --tests '*FinalizarOtUseCaseTest' --tests '*RequerimientoInsumoConcurrenteIT'` → `BUILD SUCCESSFUL`; `RegistrarPagoUseCaseTest` 2/0, `AuxiliaresApiIT` 7/0, `OtDiagnosticoPresupuestoIT` 12/0, `FinalizarOtUseCaseTest` 6/0, `RequerimientoInsumoConcurrenteIT` 1/0. |
+| Runtime harness command/scenario and exact result | `cd backend && timeout 900 ./gradlew cleanTest test` **× 3** — the runtime boundary here is the full Spring/H2 suite with all cached contexts alive and every scheduler active. Observed: **415 / 4**, **415 / 4**, **415 / 4**; the 4 failures are exactly `ClientesApiIT` in every run and `RequerimientoInsumoConcurrenteIT` passed in all three (the pre-fix failure was 2 of 3). Reproducible. |
+| PostGIS regression | `cd backend && timeout 600 ./gradlew testPostgis --rerun` → `BUILD SUCCESSFUL`; `PostgisTecnicoDisponibilidadIT` 3/0. |
+| Rollback boundary | `backend/build.gradle` (2 system properties), the 3 tariff use cases' explicit guard, and the 4 test files (3 modified + 1 created). No schema, no controller contract, no persistence, no frontend, no other planning artifact. |
+
+## Verification — exact commands and observed results
+
+1. `cd backend && timeout 900 ./gradlew compileJava compileTestJava` → **BUILD SUCCESSFUL**
+2. `cd backend && timeout 900 ./gradlew cleanTest test` → **run 1: 415 tests / 4 failures**; **run 2: 415 / 4**; **run 3: 415 / 4**. All 4 failures are `ClientesApiIT` (the frozen out-of-scope baseline; 410 → 415 from the 5 new tests). **No flake in `RequerimientoInsumoConcurrenteIT`** (1/0 in all three).
+3. New/modified classes by name (see focused command above): all green.
+4. `cd backend && timeout 600 ./gradlew testPostgis --rerun` → **BUILD SUCCESSFUL**, 3/0.
+
+## Budget
+
+Authored changed lines (implementation + tests, `git diff --numstat` + `wc -l` on the new file):
+
+- `build.gradle` 7, `CancelarOtUseCase` 17, `FinalizarOtUseCase` 17, `RechazarPresupuestoUseCase` 17, `FinalizarOtUseCaseTest` 26, `AuxiliaresApiIT` 43, `OtDiagnosticoPresupuestoIT` 43, `RequerimientoInsumoConcurrenteIT` 30, new `RegistrarPagoUseCaseTest` 124 → **324 lines**.
+- Plus this merged apply-progress section. **Within the 700-line remediation budget**; no `size:exception` needed.
+
+## Deviations from Design
+
+- **`build.gradle` gained two test-only system properties.** The design/tasks never named the build file, but the verify report's own SUGGESTION-1 ("neutralize scheduling in tests globally … a test property disabling Spring scheduling") requires a global switch, and Spring Boot exposes no `spring.task.scheduling.enabled`. System properties on the Gradle `test` task are the non-shadowing global mechanism (`application.properties` in `src/test/resources` would have shadowed the main one). `testPostgis` runs only `*Postgis*` and needs no sweep change.
+- **The null-location guard is behaviour-preserving.** `EstimarTarifaUseCase.estimarPara(null)` already returned `Optional.empty()`; the guard only makes that explicit at the three call sites. No tariff outcome changed.
+- **`AuxiliaresApiIT` replay uses a count within the context's max.** This context sets `app.auxiliares.max=5`, so the replay body is `4` (not `9`) to reach the acceptance-only state check (409) instead of the validation check (400). The forged dedicated path is still rejected as 404.
+- **WARNING-1/2 intentionally not closed.** `disp.S8.1`/`disp.S4.1` stay partial; the reconciliation now says so instead of implying full coverage.
+
+## Out of Scope (do not absorb)
+
+- The 4 `ClientesApiIT` baseline failures — pre-existing, untouched.
+- The pre-existing frontend `app.spec.ts` failure — pre-existing, untouched.
+- Any product behaviour change: none was needed; the tariff outcome is unchanged.

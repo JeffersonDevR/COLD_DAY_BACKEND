@@ -148,6 +148,26 @@ class FinalizarOtUseCaseTest {
         assertThat(response.tarifaVisita()).isEqualByComparingTo("45000");
     }
 
+    /**
+     * tar.R6 guard: a location-less OT (legacy row) has no destination to price,
+     * so finalization persists no tariff, distance or source and never fails.
+     */
+    @Test
+    void finalizarSinUbicacionNoPersisteTarifaYNoFalla() {
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otEnReparacionSinUbicacion(tecnico.getId());
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OtResponse response = useCase.finalizar(PRINCIPAL, ot.getId());
+
+        assertThat(response.estado()).isEqualTo(EstadoOt.FINALIZADA);
+        assertThat(response.tarifaVisita()).isNull();
+        assertThat(ot.getDistanciaKm()).isNull();
+        assertThat(ot.getTarifaFuente()).isNull();
+    }
+
     private Tecnico tecnicoOcupado() {
         Tecnico tecnico = Tecnico.crear(USUARIO_ID, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
         tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
@@ -159,6 +179,12 @@ class FinalizarOtUseCaseTest {
     private Ot otEnReparacion(TecnicoId tecnicoId) {
         return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
                 "No enciende", List.of(), "Calle 1", new Point(7.8939, -72.5078), EstadoOt.EN_REPARACION,
+                10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);
+    }
+
+    private Ot otEnReparacionSinUbicacion(TecnicoId tecnicoId) {
+        return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
+                "No enciende", List.of(), "Calle 1", null, EstadoOt.EN_REPARACION,
                 10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);
     }
 }

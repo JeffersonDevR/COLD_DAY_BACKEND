@@ -55,12 +55,25 @@ public class FinalizarOtUseCase {
 
         Instant ahora = clock.instant();
         ot.finalizar(ActorOt.TECNICO, ahora);
-        estimarTarifa.estimarPara(ot.getUbicacion()).ifPresent(tarifa -> ot.registrarTarifaVisita(
-                tarifa.tarifa(), tarifa.distanciaKm(), tarifa.tarifaFuente(), ahora));
+        registrarTarifaAutoritativa(ot, ahora);
         Ot saved = otRepository.save(ot);
         tecnico.liberarOrden();
         tecnicoRepository.save(tecnico);
         events.publishEvent(new OtFinalizada(otId, saved.getTecnicoId()));
         return OtResponse.fromDomain(saved);
+    }
+
+    /**
+     * Persists the authoritative visit tariff for the OT's destination. A
+     * location-less OT (legacy row) has no destination to price, so no tariff,
+     * distance or source is persisted — an explicit, observable no-op rather
+     * than a silent skip (tar.R6).
+     */
+    private void registrarTarifaAutoritativa(Ot ot, Instant ahora) {
+        if (ot.getUbicacion() == null) {
+            return;
+        }
+        estimarTarifa.estimarPara(ot.getUbicacion()).ifPresent(tarifa -> ot.registrarTarifaVisita(
+                tarifa.tarifa(), tarifa.distanciaKm(), tarifa.tarifaFuente(), ahora));
     }
 }
