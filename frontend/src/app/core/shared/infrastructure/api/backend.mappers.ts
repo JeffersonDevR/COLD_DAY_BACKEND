@@ -164,6 +164,7 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
       : undefined,
     clienteNombre: dto.clienteNombre ?? undefined,
     tecnicoNombre: dto.tecnicoNombre ?? undefined,
+    auxiliaresRequeridos: dto.auxiliaresRequeridos,
     evidenciaUrls: [],
     // Pendiente(backend): barrio/historial requieren campos/endpoints que el
     // backend aún no expone (historial: GET /api/ot/{id}/historial).

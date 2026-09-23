@@ -52,6 +52,7 @@ public class Ot {
     private BigDecimal tarifaVisita;
     private Double distanciaKm;
     private TarifaFuente tarifaFuente;
+    private int auxiliaresRequeridos;
     private Diagnostico diagnostico;
     private Presupuesto presupuesto;
 
@@ -114,14 +115,32 @@ public class Ot {
                 canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, null, null);
     }
 
-    /** Reconstitution from persistence. */
-    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado (21 campos). Un Builder ocultaria el mapeo 1:1 con la entidad JPA.
+    /**
+     * Reconstitution from persistence without the auxiliar count. Kept as a
+     * delegating overload so every existing call site and test that rebuilds an
+     * OT compiles untouched (design AD3); the count defaults to zero.
+     */
     public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
             CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
             String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
             Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
             MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
             Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente) {
+        return reconstituir(id, clienteId, tecnicoId, categoriaServicio, descripcionFalla, evidenciaUrls,
+                direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
+                tarifaFuente, 0);
+    }
+
+    /** Reconstitution from persistence. */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado (22 campos). Un Builder ocultaria el mapeo 1:1 con la entidad JPA.
+    public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
+            CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
+            String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
+            Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
+            Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente,
+            Integer auxiliaresRequeridos) {
         Ot ot = new Ot();
         ot.id = id;
         ot.clienteId = clienteId;
@@ -142,6 +161,9 @@ public class Ot {
         ot.tarifaVisita = tarifaVisita;
         ot.distanciaKm = distanciaKm;
         ot.tarifaFuente = tarifaFuente;
+        // A row predating the auxiliar column reads back as NULL; map it to zero
+        // so the count is always non-null at the API boundary (design AD2/AD3).
+        ot.auxiliaresRequeridos = auxiliaresRequeridos == null ? 0 : auxiliaresRequeridos;
         ot.diagnostico = diagnostico;
         ot.presupuesto = presupuesto;
         return ot;
@@ -425,6 +447,11 @@ public class Ot {
 
     public TarifaFuente getTarifaFuente() {
         return tarifaFuente;
+    }
+
+    /** Declared auxiliares count; zero for every OT accepted without auxiliares. */
+    public int getAuxiliaresRequeridos() {
+        return auxiliaresRequeridos;
     }
 
     public Diagnostico getDiagnostico() {

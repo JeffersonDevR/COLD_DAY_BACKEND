@@ -29,8 +29,19 @@ public interface OtRepository {
 
     List<Ot> listarTodas();
 
-    /** Conditional UPDATE: exactly one assignment for the searching order. */
+    /**
+     * Conditional UPDATE: exactly one assignment for the searching order. The
+     * auxiliar count defaults to zero (design AD3 delegating overload); callers
+     * that do not declare auxiliares keep this signature untouched.
+     */
     int intentarAsignar(OtId id, TecnicoId tecnicoId, Instant ahora, double radioKm);
+
+    /**
+     * Canonical conditional UPDATE carrying the declared auxiliar count in the
+     * same atomic assignment (design AD2/AD3).
+     */
+    int intentarAsignar(OtId id, TecnicoId tecnicoId, Instant ahora, double radioKm,
+            int auxiliaresRequeridos);
 
     /** Orders still searching whose dispatch window has closed. */
     List<Ot> buscarVentanasVencidas(Instant ahora);

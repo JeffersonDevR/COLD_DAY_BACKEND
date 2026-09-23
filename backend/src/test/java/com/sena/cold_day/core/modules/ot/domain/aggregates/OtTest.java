@@ -290,6 +290,34 @@ class OtTest {
         assertThat(ot.getTarifaVisita()).isEqualByComparingTo("50000.00");
     }
 
+    @Test
+    void legacyReconstitutionDefaultsTheAuxiliarCountToZero() {
+        Ot ot = crearAsignada(AHORA);
+
+        assertThat(ot.getAuxiliaresRequeridos()).isZero();
+    }
+
+    @Test
+    void reconstitutionKeepsThePersistedAuxiliarCount() {
+        Ot ot = reconstituirConAuxiliares(3);
+
+        assertThat(ot.getAuxiliaresRequeridos()).isEqualTo(3);
+    }
+
+    @Test
+    void reconstitutionMapsANullAuxiliarCountToZeroDefensively() {
+        Ot ot = reconstituirConAuxiliares(null);
+
+        assertThat(ot.getAuxiliaresRequeridos()).isZero();
+    }
+
+    private Ot reconstituirConAuxiliares(Integer auxiliaresRequeridos) {
+        return Ot.reconstituir(OtId.nueva(), CLIENTE, TECNICO, CategoriaServicio.REFRIGERACION,
+                "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0), EstadoOt.ASIGNADA, 10.0,
+                AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null, null, null,
+                auxiliaresRequeridos);
+    }
+
     private Ot crear() {
         return Ot.crear(CLIENTE, CategoriaServicio.REFRIGERACION, "No enciende", List.of("http://foto"),
                 "Calle 1", new Point(4.6, -74.0), AHORA);

@@ -273,6 +273,11 @@ export interface OtResponse {
   fechaActualizacion?: string;
   radioBusquedaKm?: number;
   tiempoRestanteBroadcastSec?: number;
+  /**
+   * Auxiliar count declared when the offer was accepted (Ot.auxiliaresRequeridos).
+   * Optional in the view model; the backend always exposes it, 0 by default.
+   */
+  auxiliaresRequeridos?: number;
   // Acta de Garantía y firma
   firmaClienteUrl?: string;
   actaGarantiaGenerada?: boolean;

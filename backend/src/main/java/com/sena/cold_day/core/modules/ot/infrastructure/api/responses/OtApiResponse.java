@@ -34,7 +34,8 @@ public record OtApiResponse(
         Double latitud,
         Double longitud,
         String clienteNombre,
-        String tecnicoNombre) {
+        String tecnicoNombre,
+        int auxiliaresRequeridos) {
 
     public static OtApiResponse from(OtResponse response) {
         return from(response, null, null);
@@ -53,6 +54,6 @@ public record OtApiResponse(
                 response.presupuesto(),
                 ubicacion == null ? null : ubicacion.latitud(),
                 ubicacion == null ? null : ubicacion.longitud(),
-                clienteNombre, tecnicoNombre);
+                clienteNombre, tecnicoNombre, response.auxiliaresRequeridos());
     }
 }

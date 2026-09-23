@@ -88,8 +88,15 @@ public class OtRepositoryAdapter implements OtRepository {
     @Override
     @Transactional
     public int intentarAsignar(OtId id, TecnicoId tecnicoId, Instant ahora, double radioKm) {
+        return intentarAsignar(id, tecnicoId, ahora, radioKm, 0);
+    }
+
+    @Override
+    @Transactional
+    public int intentarAsignar(OtId id, TecnicoId tecnicoId, Instant ahora, double radioKm,
+            int auxiliaresRequeridos) {
         return repository.asignarSiDisponible(id.valor(), tecnicoId.valor(), ahora, radioKm,
-                EstadoOt.BUSCANDO_TECNICO, EstadoOt.ASIGNADA);
+                auxiliaresRequeridos, EstadoOt.BUSCANDO_TECNICO, EstadoOt.ASIGNADA);
     }
 
     @Override

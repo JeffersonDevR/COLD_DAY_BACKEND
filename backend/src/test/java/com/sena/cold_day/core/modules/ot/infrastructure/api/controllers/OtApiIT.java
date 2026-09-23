@@ -79,6 +79,8 @@ class OtApiIT {
                 .andExpect(jsonPath("$.clienteId").value(cliente.getId().valor().toString()))
                 .andExpect(jsonPath("$.estado").value("BUSCANDO_TECNICO"))
                 .andExpect(jsonPath("$.radioKm").value(10.0))
+                // Exposed even before acceptance: defaults to zero.
+                .andExpect(jsonPath("$.auxiliaresRequeridos").value(0))
                 .andReturn().getResponse().getContentAsString();
 
         String otId = com.jayway.jsonpath.JsonPath.read(body, "$.id");

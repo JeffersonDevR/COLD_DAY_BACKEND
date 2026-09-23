@@ -123,6 +123,11 @@ public class OtJpaEntity {
     @Column(name = "tarifa_fuente", length = 20)
     private String tarifaFuente;
 
+    // Auxiliar count declared at acceptance (design AD2). Non-null with a server
+    // default so the additive ALTER fills pre-existing rows with 0.
+    @Column(name = "auxiliares_requeridos", nullable = false, columnDefinition = "integer default 0")
+    private int auxiliaresRequeridos;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -156,6 +161,7 @@ public class OtJpaEntity {
         this.tarifaVisita = source.getTarifaVisita();
         this.distanciaKm = source.getDistanciaKm();
         this.tarifaFuente = source.getTarifaFuente() == null ? null : source.getTarifaFuente().name();
+        this.auxiliaresRequeridos = source.getAuxiliaresRequeridos();
         this.diagnostico = source.getDiagnostico();
         this.presupuesto = source.getPresupuesto();
     }
@@ -169,6 +175,6 @@ public class OtJpaEntity {
                 evidenciaUrls == null ? new ArrayList<>() : new ArrayList<>(evidenciaUrls),
                 direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
                 canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
-                tarifaFuente == null ? null : TarifaFuente.valueOf(tarifaFuente));
+                tarifaFuente == null ? null : TarifaFuente.valueOf(tarifaFuente), auxiliaresRequeridos);
     }
 }

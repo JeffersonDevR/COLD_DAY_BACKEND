@@ -221,6 +221,8 @@ export interface OtApiResponse {
   longitud: number | null;
   clienteNombre: string | null;
   tecnicoNombre: string | null;
+  /** OT column `auxiliares_requeridos`: always present, 0 for legacy rows. */
+  auxiliaresRequeridos: number;
 }
 
 export interface OtApiRequest {

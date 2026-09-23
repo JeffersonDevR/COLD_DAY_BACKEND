@@ -93,6 +93,10 @@ CREATE TABLE IF NOT EXISTS ot (
     -- tariff is persisted at finalization/cancellation.
     distancia_km DOUBLE PRECISION,
     tarifa_fuente VARCHAR(20),
+    -- Auxiliar count declared at acceptance (design AD2, spec aux.R1/aux.R4).
+    -- Non-null with a server default so the additive ALTER fills pre-existing
+    -- rows with 0; the count is only ever written by the atomic acceptance gate.
+    auxiliares_requeridos INT NOT NULL DEFAULT 0,
     version BIGINT
 );
 

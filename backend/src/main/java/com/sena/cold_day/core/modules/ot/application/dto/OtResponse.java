@@ -31,12 +31,13 @@ public record OtResponse(
         BigDecimal tarifaVisita,
         Diagnostico diagnostico,
         Presupuesto presupuesto,
-        Point ubicacion) {
+        Point ubicacion,
+        int auxiliaresRequeridos) {
 
     public static OtResponse fromDomain(Ot ot) {
         return new OtResponse(ot.getId(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
                 ot.getCategoriaServicio(), ot.getDescripcionFalla(), ot.getDireccion(), ot.getRadioKm(),
                 ot.getCreadaEn(), ot.getCanceladaPor(), ot.getMotivoCancelacion(), ot.getTarifaVisita(),
-                ot.getDiagnostico(), ot.getPresupuesto(), ot.getUbicacion());
+                ot.getDiagnostico(), ot.getPresupuesto(), ot.getUbicacion(), ot.getAuxiliaresRequeridos());
     }
 }

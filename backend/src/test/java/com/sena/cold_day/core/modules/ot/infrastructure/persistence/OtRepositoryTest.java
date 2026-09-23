@@ -106,6 +106,30 @@ class OtRepositoryTest {
     }
 
     @Test
+    void intentarAsignarPersistsTheAuxiliarCountInTheSameConditionalUpdate() {
+        Ot ot = repository.save(crearBuscandoTecnico(AHORA.plusSeconds(60)));
+
+        int ganador = repository.intentarAsignar(ot.getId(), TecnicoId.nueva(), AHORA, 10.0, 3);
+
+        assertThat(ganador).isEqualTo(1);
+        assertThat(repository.buscarPorId(ot.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getEstado()).isEqualTo(EstadoOt.ASIGNADA);
+            assertThat(found.getAuxiliaresRequeridos()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void intentarAsignarDefaultsTheAuxiliarCountToZeroOnTheDelegatingOverload() {
+        Ot ot = repository.save(crearBuscandoTecnico(AHORA.plusSeconds(60)));
+
+        int ganador = repository.intentarAsignar(ot.getId(), TecnicoId.nueva(), AHORA, 10.0);
+
+        assertThat(ganador).isEqualTo(1);
+        assertThat(repository.buscarPorId(ot.getId()))
+                .hasValueSatisfying(found -> assertThat(found.getAuxiliaresRequeridos()).isZero());
+    }
+
+    @Test
     void saveDrainsPendingStateChangesIntoTheAppendOnlyHistory() {
         Ot ot = repository.save(crearEnSolicitada());
         ot.iniciarBusqueda(10.0, AHORA.plusSeconds(60), ActorOt.CLIENTE, AHORA);
