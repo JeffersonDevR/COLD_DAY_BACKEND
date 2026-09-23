@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +31,7 @@ import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
 import com.sena.cold_day.core.modules.ot.domain.entities.OtEstadoHistorial;
 import com.sena.cold_day.core.modules.ot.domain.events.OtAsignada;
+import com.sena.cold_day.core.modules.ot.domain.exception.ConteoAuxiliaresInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OfertaExpiradaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OfertaNoDisponibleException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
@@ -64,6 +66,7 @@ class AceptarOfertaUseCaseTest {
     private static final Instant EXPIRA = AHORA.plusSeconds(60);
     private static final long USUARIO_ID = 7L;
     private static final UsuarioId PRINCIPAL = new UsuarioId(USUARIO_ID);
+    private static final int MAX_AUXILIARES = 10;
 
     @Mock OfertaOtRepository ofertaRepository;
     @Mock OtRepository otRepository;
@@ -76,7 +79,7 @@ class AceptarOfertaUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new AceptarOfertaUseCase(ofertaRepository, otRepository, historialRepository,
-                tecnicoRepository, events, Clock.fixed(AHORA, ZoneOffset.UTC));
+                tecnicoRepository, events, Clock.fixed(AHORA, ZoneOffset.UTC), MAX_AUXILIARES);
     }
 
     @Test
@@ -88,7 +91,7 @@ class AceptarOfertaUseCaseTest {
         OfertaOt oferta = ofertaPendiente(otId, tecnicoId);
         cuandoElTecnicoSeResuelve(tecnico);
         cuandoLaOfertaExiste(oferta);
-        when(otRepository.intentarAsignar(otId, tecnicoId, AHORA, oferta.getRadioKm())).thenReturn(1);
+        when(otRepository.intentarAsignar(otId, tecnicoId, AHORA, oferta.getRadioKm(), 0)).thenReturn(1);
         when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
         when(otRepository.buscarPorId(otId)).thenReturn(Optional.of(otAsignada(otId, clienteId, tecnicoId)));
 
@@ -127,7 +130,7 @@ class AceptarOfertaUseCaseTest {
         assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, expiradaId))
                 .isInstanceOf(OfertaExpiradaException.class);
 
-        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble());
+        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble(), anyInt());
         verify(ofertaRepository, never()).intentarAceptar(any(), any());
         verify(events, never()).publishEvent(any());
     }
@@ -138,7 +141,7 @@ class AceptarOfertaUseCaseTest {
         OfertaOt oferta = ofertaPendiente(OtId.nueva(), tecnico.getId());
         cuandoElTecnicoSeResuelve(tecnico);
         cuandoLaOfertaExiste(oferta);
-        when(otRepository.intentarAsignar(any(), any(), any(), anyDouble())).thenReturn(0);
+        when(otRepository.intentarAsignar(any(), any(), any(), anyDouble(), anyInt())).thenReturn(0);
         var ofertaId = oferta.getId();
 
         assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ofertaId))
@@ -162,7 +165,7 @@ class AceptarOfertaUseCaseTest {
         assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, aceptadaId))
                 .isInstanceOf(OfertaNoDisponibleException.class);
 
-        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble());
+        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble(), anyInt());
     }
 
     @Test
@@ -176,7 +179,7 @@ class AceptarOfertaUseCaseTest {
         assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ajenaId))
                 .isInstanceOf(OfertaNoDisponibleException.class);
 
-        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble());
+        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble(), anyInt());
     }
 
     @Test
@@ -190,7 +193,7 @@ class AceptarOfertaUseCaseTest {
         assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, desconocida))
                 .isInstanceOf(OfertaNoDisponibleException.class);
 
-        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble());
+        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble(), anyInt());
     }
 
     @Test
@@ -199,13 +202,113 @@ class AceptarOfertaUseCaseTest {
         OfertaOt oferta = ofertaPendiente(OtId.nueva(), pendiente.getId());
         cuandoElTecnicoSeResuelve(pendiente);
         cuandoLaOfertaExiste(oferta);
-        when(otRepository.intentarAsignar(any(), any(), any(), anyDouble())).thenReturn(1);
+        when(otRepository.intentarAsignar(any(), any(), any(), anyDouble(), anyInt())).thenReturn(1);
         var ofertaId = oferta.getId();
         when(ofertaRepository.intentarAceptar(ofertaId, AHORA)).thenReturn(1);
 
         assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ofertaId))
                 .isInstanceOf(TecnicoNoValidadoException.class);
 
+        verify(tecnicoRepository, never()).save(any());
+        verify(events, never()).publishEvent(any());
+    }
+
+    // --- Auxiliares (aux.R1, aux.R2) ---
+
+    @Test
+    void withoutACountTheCanonicalUpdateCarriesZeroAuxiliares() {
+        Tecnico tecnico = tecnicoDisponible();
+        OtId otId = OtId.nueva();
+        OfertaOt oferta = ofertaPendiente(otId, tecnico.getId());
+        cuandoElTecnicoSeResuelve(tecnico);
+        cuandoLaOfertaExiste(oferta);
+        when(otRepository.intentarAsignar(otId, tecnico.getId(), AHORA, oferta.getRadioKm(), 0)).thenReturn(1);
+        when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
+        when(otRepository.buscarPorId(otId))
+                .thenReturn(Optional.of(otAsignada(otId, ClienteId.nueva(), tecnico.getId())));
+
+        useCase.aceptar(PRINCIPAL, oferta.getId());
+
+        verify(otRepository).intentarAsignar(otId, tecnico.getId(), AHORA, oferta.getRadioKm(), 0);
+    }
+
+    @Test
+    void withACountTheCanonicalUpdateCarriesItInTheSameAtomicAssignment() {
+        Tecnico tecnico = tecnicoDisponible();
+        OtId otId = OtId.nueva();
+        OfertaOt oferta = ofertaPendiente(otId, tecnico.getId());
+        cuandoElTecnicoSeResuelve(tecnico);
+        cuandoLaOfertaExiste(oferta);
+        when(otRepository.intentarAsignar(otId, tecnico.getId(), AHORA, oferta.getRadioKm(), 2)).thenReturn(1);
+        when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
+        when(otRepository.buscarPorId(otId))
+                .thenReturn(Optional.of(otAsignada(otId, ClienteId.nueva(), tecnico.getId())));
+
+        useCase.aceptar(PRINCIPAL, oferta.getId(), 2);
+
+        verify(otRepository).intentarAsignar(otId, tecnico.getId(), AHORA, oferta.getRadioKm(), 2);
+    }
+
+    @Test
+    void aNegativeCountIsRejectedBeforeAnyWrite() {
+        OfertaOt oferta = ofertaPendiente(OtId.nueva(), TecnicoId.nueva());
+        var ofertaId = oferta.getId();
+
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ofertaId, -1))
+                .isInstanceOf(ConteoAuxiliaresInvalidoException.class);
+
+        verify(tecnicoRepository, never()).findByUsuarioIdAndActivoTrue(any());
+        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble(), anyInt());
+        verify(ofertaRepository, never()).intentarAceptar(any(), any());
+        verify(events, never()).publishEvent(any());
+    }
+
+    @Test
+    void aCountAboveTheConfiguredMaximumIsRejectedBeforeAnyWrite() {
+        OfertaOt oferta = ofertaPendiente(OtId.nueva(), TecnicoId.nueva());
+        var ofertaId = oferta.getId();
+
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ofertaId, MAX_AUXILIARES + 1))
+                .isInstanceOf(ConteoAuxiliaresInvalidoException.class);
+
+        verify(tecnicoRepository, never()).findByUsuarioIdAndActivoTrue(any());
+        verify(otRepository, never()).intentarAsignar(any(), any(), any(), anyDouble(), anyInt());
+        verify(ofertaRepository, never()).intentarAceptar(any(), any());
+    }
+
+    @Test
+    void theConfiguredMaximumItselfIsAccepted() {
+        Tecnico tecnico = tecnicoDisponible();
+        OtId otId = OtId.nueva();
+        OfertaOt oferta = ofertaPendiente(otId, tecnico.getId());
+        cuandoElTecnicoSeResuelve(tecnico);
+        cuandoLaOfertaExiste(oferta);
+        when(otRepository.intentarAsignar(otId, tecnico.getId(), AHORA, oferta.getRadioKm(),
+                MAX_AUXILIARES)).thenReturn(1);
+        when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
+        when(otRepository.buscarPorId(otId))
+                .thenReturn(Optional.of(otAsignada(otId, ClienteId.nueva(), tecnico.getId())));
+
+        useCase.aceptar(PRINCIPAL, oferta.getId(), MAX_AUXILIARES);
+
+        verify(otRepository).intentarAsignar(otId, tecnico.getId(), AHORA, oferta.getRadioKm(),
+                MAX_AUXILIARES);
+    }
+
+    @Test
+    void aLosingAcceptanceRecordsNothingEvenWithACount() {
+        Tecnico tecnico = tecnicoDisponible();
+        OfertaOt oferta = ofertaPendiente(OtId.nueva(), tecnico.getId());
+        cuandoElTecnicoSeResuelve(tecnico);
+        cuandoLaOfertaExiste(oferta);
+        when(otRepository.intentarAsignar(any(), any(), any(), anyDouble(), anyInt())).thenReturn(0);
+        var ofertaId = oferta.getId();
+
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, ofertaId, 3))
+                .isInstanceOf(OfertaNoDisponibleException.class);
+
+        verify(ofertaRepository, never()).intentarAceptar(any(), any());
+        verify(ofertaRepository, never()).invalidarPendientesDe(any(), any(), any());
         verify(tecnicoRepository, never()).save(any());
         verify(events, never()).publishEvent(any());
     }

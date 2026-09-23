@@ -143,17 +143,21 @@ export class TecnicosApi {
   }
 
   /**
-   * POST /api/ofertas/{ofertaId}/aceptar (sin body) → OtApiResponse; el backend
-   * resuelve el técnico del principal. Una carrera perdida responde 409 y la
-   * maneja el error interceptor.
+   * POST /api/ofertas/{ofertaId}/aceptar con body OPCIONAL
+   * `{ auxiliaresRequeridos?: number }` → OtApiResponse; el backend resuelve el
+   * técnico del principal. Sin `auxiliaresRequeridos` se envía el body vacío y
+   * el backend lo trata como 0 (spec: Optional Auxiliar Count at Acceptance).
+   * Una carrera perdida responde 409 y la maneja el error interceptor.
    */
-  aceptarOferta(ofertaId: string, tecnicoId: string): Observable<boolean> {
+  aceptarOferta(ofertaId: string, tecnicoId: string, auxiliaresRequeridos?: number): Observable<boolean> {
     if (this.apiConfig.useMocks()) {
-      const ok = this.mockDb.aceptarOferta(ofertaId, tecnicoId);
+      const ok = this.mockDb.aceptarOferta(ofertaId, tecnicoId, auxiliaresRequeridos ?? 0);
       return of(ok).pipe(delay(300));
     }
     return this.http
-      .post<OtApiResponse>(this.apiConfig.url(`/ofertas/${ofertaId}/aceptar`), null)
+      .post<OtApiResponse>(this.apiConfig.url(`/ofertas/${ofertaId}/aceptar`), {
+        auxiliaresRequeridos: auxiliaresRequeridos ?? 0,
+      })
       .pipe(map(() => true));
   }
 

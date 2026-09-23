@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.ot.application.usecases;
 import java.time.Clock;
 import java.time.Instant;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
 import com.sena.cold_day.core.modules.ot.domain.entities.OtEstadoHistorial;
 import com.sena.cold_day.core.modules.ot.domain.events.OtAsignada;
+import com.sena.cold_day.core.modules.ot.domain.exception.ConteoAuxiliaresInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OfertaExpiradaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OfertaNoDisponibleException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
@@ -52,20 +54,33 @@ public class AceptarOfertaUseCase {
     private final TecnicoRepository tecnicoRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    private final int maxAuxiliares;
 
     public AceptarOfertaUseCase(OfertaOtRepository ofertaRepository, OtRepository otRepository,
             OtEstadoHistorialRepository historialRepository, TecnicoRepository tecnicoRepository,
-            ApplicationEventPublisher events, Clock clock) {
+            ApplicationEventPublisher events, Clock clock,
+            @Value("${app.auxiliares.max:10}") int maxAuxiliares) {
         this.ofertaRepository = ofertaRepository;
         this.otRepository = otRepository;
         this.historialRepository = historialRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.events = events;
         this.clock = clock;
+        this.maxAuxiliares = maxAuxiliares;
+    }
+
+    /** Acceptance without a body: zero auxiliares, exactly as before (aux.R1/S1.1). */
+    @Transactional
+    public OtResponse aceptar(UsuarioId usuarioId, OfertaOtId ofertaId) {
+        return aceptar(usuarioId, ofertaId, 0);
     }
 
     @Transactional
-    public OtResponse aceptar(UsuarioId usuarioId, OfertaOtId ofertaId) {
+    public OtResponse aceptar(UsuarioId usuarioId, OfertaOtId ofertaId, int auxiliaresRequeridos) {
+        if (auxiliaresRequeridos < 0 || auxiliaresRequeridos > maxAuxiliares) {
+            throw new ConteoAuxiliaresInvalidoException(
+                    "auxiliaresRequeridos debe estar entre 0 y " + maxAuxiliares);
+        }
         Tecnico tecnico = tecnicoRepository.findByUsuarioIdAndActivoTrue(usuarioId.valor())
                 .orElseThrow(() -> new PerfilTecnicoNoEncontradoException(usuarioId.valor()));
         Instant ahora = clock.instant();
@@ -83,7 +98,9 @@ public class AceptarOfertaUseCase {
         }
 
         OtId otId = oferta.getOtId();
-        int asignadas = otRepository.intentarAsignar(otId, tecnico.getId(), ahora, oferta.getRadioKm());
+        // AD2: the count rides the single conditional UPDATE; there is no post-bulk write.
+        int asignadas = otRepository.intentarAsignar(otId, tecnico.getId(), ahora, oferta.getRadioKm(),
+                auxiliaresRequeridos);
         if (asignadas == 0) {
             throw new OfertaNoDisponibleException(ofertaId);
         }

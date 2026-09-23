@@ -275,9 +275,10 @@ export interface OtResponse {
   tiempoRestanteBroadcastSec?: number;
   /**
    * Auxiliar count declared when the offer was accepted (Ot.auxiliaresRequeridos).
-   * Optional in the view model; the backend always exposes it, 0 by default.
+   * Always present: the backend exposes it on every OT response, 0 by default,
+   * and the mock DB literals carry it explicitly.
    */
-  auxiliaresRequeridos?: number;
+  auxiliaresRequeridos: number;
   // Acta de Garantía y firma
   firmaClienteUrl?: string;
   actaGarantiaGenerada?: boolean;

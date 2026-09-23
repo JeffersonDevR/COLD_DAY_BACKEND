@@ -281,6 +281,8 @@ export class MockDbService {
       estado: 'BUSCANDO_TECNICO',
       radioBusquedaKm: 10,
       tiempoRestanteBroadcastSec: 42,
+      // Declared at acceptance; not yet accepted, so still zero.
+      auxiliaresRequeridos: 0,
       fechaCreacion: '2026-09-15T09:30:00Z',
       fechaActualizacion: '2026-09-15T09:30:00Z',
       historial: [
@@ -304,6 +306,8 @@ export class MockDbService {
       punto: { latitud: 7.9045, longitud: -72.4977 },
       estado: 'EN_DIAGNOSTICO',
       radioBusquedaKm: 10,
+      // Accepted by Juan Pérez with one helper (legacy acceptance: 0).
+      auxiliaresRequeridos: 1,
       diagnostico: {
         fallaDetectada: 'Ventilador forzador del difusor quemado y bimetálico de descongelación abierto, impidiendo el flujo de frío al conservador inferior.',
         observaciones: 'Se requiere desmonte de panel interior, sustitución de bimetal y lubricación de ducto de drenaje.',
@@ -343,6 +347,7 @@ export class MockDbService {
       barrio: 'La Riviera',
       punto: { latitud: 7.8911, longitud: -72.4933 },
       estado: 'EN_REPARACION',
+      auxiliaresRequeridos: 0,
       diagnostico: {
         fallaDetectada: 'Breaker termo-magnético de 40A vencido por sobrecarga con terminales sulfatados y fase recalentada.',
         costoManoObra: 95000,
@@ -382,6 +387,7 @@ export class MockDbService {
       barrio: 'Prados del Este',
       punto: { latitud: 7.8722, longitud: -72.4811 },
       estado: 'FINALIZADA',
+      auxiliaresRequeridos: 2,
       diagnostico: {
         fallaDetectada: 'Serpentín condensador tapado por polvo y baja presión de 85 PSI (requirió presurización a 125 PSI).',
         costoManoObra: 110000,
@@ -428,6 +434,7 @@ export class MockDbService {
       barrio: 'Los Caobos',
       punto: { latitud: 7.8902, longitud: -72.4965 },
       estado: 'DISPUTADA',
+      auxiliaresRequeridos: 0,
       diagnostico: {
         fallaDetectada: 'Bomba de expulsión atascada con restos de monedas y filtro de drenaje obstruido.',
         costoManoObra: 75000,
@@ -465,6 +472,7 @@ export class MockDbService {
       punto: { latitud: 7.8928, longitud: -72.5052 },
       estado: 'EN_CAMINO',
       radioBusquedaKm: 10,
+      auxiliaresRequeridos: 3,
       fechaCreacion: '2026-09-15T09:00:00Z',
       fechaActualizacion: '2026-09-15T09:12:00Z',
       historial: [
@@ -607,6 +615,8 @@ export class MockDbService {
       punto: { latitud: nuevaOt.latitud, longitud: nuevaOt.longitud },
       estado: 'BUSCANDO_TECNICO',
       radioBusquedaKm: 10,
+      // Not accepted yet: no auxiliar count declared.
+      auxiliaresRequeridos: 0,
       tiempoRestanteBroadcastSec: 60,
       evidenciaUrls: nuevaOt.evidenciaUrls,
       fechaCreacion: fecha,
@@ -646,7 +656,12 @@ export class MockDbService {
     return ot;
   }
 
-  aceptarOferta(ofertaId: string, tecnicoId: string): boolean {
+  /**
+   * Mock acceptance of an offer. `auxiliaresRequeridos` mirrors the optional
+   * accept body (0 when omitted), so the mock OT carries the count the caller
+   * would have sent to POST /api/ofertas/{id}/aceptar.
+   */
+  aceptarOferta(ofertaId: string, tecnicoId: string, auxiliaresRequeridos = 0): boolean {
     const oferta = this.ofertas().find(o => o.id === ofertaId && o.estado === 'PENDIENTE');
     if (!oferta) return false;
 
@@ -666,6 +681,7 @@ export class MockDbService {
             tecnicoNombre: tecnico.nombre,
             tecnicoTelefono: tecnico.telefono,
             tecnicoReputacion: tecnico.reputacion,
+            auxiliaresRequeridos,
             fechaActualizacion: fecha,
             historial: [
               ...(ot.historial || []),
@@ -1120,6 +1136,8 @@ export class MockDbService {
       tecnicoNombre: tecnico.nombre,
       tecnicoTelefono: tecnico.telefono,
       tecnicoReputacion: tecnico.reputacion,
+      // Direct-OT acceptance path has no auxiliar input: recorded as zero.
+      auxiliaresRequeridos: 0,
       fechaActualizacion: fecha,
       historial: [
         ...(ot.historial || []),

@@ -2,20 +2,26 @@ package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sena.cold_day.core.modules.ot.application.usecases.AceptarOfertaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.ListarOfertasTecnicoUseCase;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaOtId;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.AceptarOfertaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OfertaOtApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
+
+import jakarta.validation.Valid;
 
 /**
  * Dispatch-offer surface owned by PR6b: a technician accepts a pending offer
@@ -34,12 +40,20 @@ public class OfertaOtController {
         this.listar = listar;
     }
 
-    /** Atomic acceptance: exactly one simultaneous accept wins; the rest get a 409. */
+    /**
+     * Atomic acceptance (aux.R1/aux.R3): exactly one simultaneous accept wins;
+     * the rest get a 409. The body is optional — an absent body means zero
+     * auxiliares, so every existing bodyless caller keeps working unchanged.
+     */
     @PostMapping("/ofertas/{id}/aceptar")
     @PreAuthorize("hasRole('TECNICO')")
     public OtApiResponse aceptar(@AuthenticationPrincipal AuthenticatedUser principal,
-            @PathVariable OfertaOtId id) {
-        return OtApiResponse.from(aceptar.aceptar(principal.usuarioId(), id));
+            @PathVariable OfertaOtId id,
+            @Valid @RequestBody(required = false) AceptarOfertaApiRequest request) {
+        int auxiliaresRequeridos = request == null || request.auxiliaresRequeridos() == null
+                ? 0
+                : request.auxiliaresRequeridos();
+        return OtApiResponse.from(aceptar.aceptar(principal.usuarioId(), id, auxiliaresRequeridos));
     }
 
     /** The authenticated technician's pending, still-vigente offers (RF-F1-09). */

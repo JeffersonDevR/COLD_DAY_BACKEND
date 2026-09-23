@@ -68,6 +68,8 @@ class AceptacionConcurrenteIT {
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final Point BOGOTA = new Point(4.6, -74.0);
+    private static final int AUXILIARES_PRIMERO = 2;
+    private static final int AUXILIARES_SEGUNDO = 3;
 
     @TestConfiguration
     static class RelojFijo {
@@ -118,10 +120,10 @@ class AceptacionConcurrenteIT {
         try {
             Future<Object> corridaPrimero = pool.submit(
                     () -> aceptarCuandoSuene(new UsuarioId(primero.getUsuarioId()), ofertaPrimero.getId(),
-                            listos, disparar));
+                            AUXILIARES_PRIMERO, listos, disparar));
             Future<Object> corridaSegundo = pool.submit(
                     () -> aceptarCuandoSuene(new UsuarioId(segundo.getUsuarioId()), ofertaSegundo.getId(),
-                            listos, disparar));
+                            AUXILIARES_SEGUNDO, listos, disparar));
             assertThat(listos.await(10, TimeUnit.SECONDS)).isTrue();
             disparar.countDown();
             Object resultadoPrimero = corridaPrimero.get(15, TimeUnit.SECONDS);
@@ -141,6 +143,10 @@ class AceptacionConcurrenteIT {
         assertThat(asignada.getEstado()).isEqualTo(EstadoOt.ASIGNADA);
         TecnicoId ganador = asignada.getTecnicoId();
         TecnicoId perdedor = ganador.equals(primero.getId()) ? segundo.getId() : primero.getId();
+
+        // aux.S3.1: only the winner's count lands on the OT; the loser records nothing.
+        int auxiliaresEsperados = ganador.equals(primero.getId()) ? AUXILIARES_PRIMERO : AUXILIARES_SEGUNDO;
+        assertThat(asignada.getAuxiliaresRequeridos()).isEqualTo(auxiliaresEsperados);
 
         assertThat(ofertaRepository.buscarPorId(ofertaDe(ofertas, ganador).getId()))
                 .hasValueSatisfying(oferta -> assertThat(oferta.getEstado()).isEqualTo(OfertaEstado.ACEPTADA));
@@ -163,11 +169,11 @@ class AceptacionConcurrenteIT {
 
     /** Releases both threads together, then returns the response or the thrown domain error. */
     private Object aceptarCuandoSuene(UsuarioId usuarioId, com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaOtId ofertaId,
-            CountDownLatch listos, CountDownLatch disparar) throws InterruptedException {
+            int auxiliaresRequeridos, CountDownLatch listos, CountDownLatch disparar) throws InterruptedException {
         listos.countDown();
         disparar.await(10, TimeUnit.SECONDS);
         try {
-            return aceptarOferta.aceptar(usuarioId, ofertaId);
+            return aceptarOferta.aceptar(usuarioId, ofertaId, auxiliaresRequeridos);
         } catch (RuntimeException fallo) {
             return fallo;
         }

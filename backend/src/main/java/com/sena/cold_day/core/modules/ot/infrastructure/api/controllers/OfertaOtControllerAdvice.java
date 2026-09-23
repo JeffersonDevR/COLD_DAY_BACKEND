@@ -4,10 +4,12 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.sena.cold_day.core.modules.ot.domain.exception.ConteoAuxiliaresInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OfertaExpiradaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OfertaNoDisponibleException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
@@ -30,6 +32,23 @@ public class OfertaOtControllerAdvice {
         List<String> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + " " + error.getDefaultMessage()).toList();
         return ResponseEntity.badRequest().body(new ApiError(400, "Solicitud invalida", errors));
+    }
+
+    /**
+     * Ill-typed accept body (aux.S2.2): a non-integer auxiliar count cannot be
+     * bound at all, so it is a 400 with the canonical shape and no acceptance.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException exception) {
+        return ResponseEntity.badRequest()
+                .body(new ApiError(400, "Solicitud invalida", List.of("cuerpo de la solicitud ilegible")));
+    }
+
+    /** Auxiliar count outside {@code [0, app.auxiliares.max]} (aux.R2). */
+    @ExceptionHandler(ConteoAuxiliaresInvalidoException.class)
+    ResponseEntity<ApiError> handleInvalidAuxiliares(ConteoAuxiliaresInvalidoException exception) {
+        return ResponseEntity.badRequest()
+                .body(new ApiError(400, "Solicitud invalida", List.of(exception.getMessage())));
     }
 
     /** Offer expired lazily (design D6): the accept is rejected, the OT is unaffected. */
