@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,13 +25,12 @@ import jakarta.persistence.EntityManager;
  * RNF-03): the radius filter and the distance both run inside PostgreSQL with
  * {@code ST_DWithin}/{@code ST_Distance} over geography, backed by the partial
  * GiST index {@code idx_tecnico_disponible_ubicacion_geo} (see
- * {@code schema-postgres.sql}), scoped to the same {@code activo}/
+ * {@code db/migration/V1__baseline_esquema_actual.sql}), scoped to the same {@code activo}/
  * {@code estado_validacion}/{@code estado_operativo} predicate used below.
- * Active only under the {@code postgres} profile. Plain lat/long columns are
- * kept, so no PostGIS-mapped type crosses the port boundary.
+ * Plain lat/long columns are kept, so no PostGIS-mapped type crosses the port
+ * boundary.
  */
 @Repository
-@Profile("postgres")
 public class PostgisTecnicoDisponibilidadAdapter implements TecnicoDisponibilidadRepository {
 
     private static final double METROS_POR_KM = 1000.0;

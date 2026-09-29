@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ class RecuperarContrasenaUseCaseTest {
 
     private Usuario usuario(Long id, String correo, boolean activo) {
         return Usuario.reconstituir(id, "Ana", correo, "hash", null, null, Rol.CLIENTE,
-                LocalDateTime.now(), true, activo, 0);
+                Instant.now(), true, activo, 0);
     }
 
     @Test

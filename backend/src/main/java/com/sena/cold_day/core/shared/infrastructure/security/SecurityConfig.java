@@ -2,11 +2,16 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,13 +31,15 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity // habilita @PreAuthorize en los controllers
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({ JwtProperties.class, CorsProperties.class })
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final Optional<DevAuthBypassFilter> devBypassFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter, Optional<DevAuthBypassFilter> devBypassFilter) {
         this.jwtFilter = jwtFilter;
+        this.devBypassFilter = devBypassFilter;
     }
 
     @Bean
@@ -45,6 +52,9 @@ public class SecurityConfig {
                     // el header Authorization Bearer y SessionCreationPolicy.STATELESS.
                     .csrf(AbstractHttpConfigurer::disable) // NOSONAR: API stateless con JWT en header Authorization, sin cookies de sesion que proteger.
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Usa el bean CorsConfigurationSource; responde el preflight OPTIONS
+                // antes de exigir JWT.
+                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         // Preserve the original API status/body when Spring forwards a
                         // handled 404 (e.g. a technician has not reported a location yet)
@@ -67,10 +77,31 @@ public class SecurityConfig {
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(noAutenticado(objectMapper))
                         .accessDeniedHandler(sinPermiso(objectMapper)));
+            // Solo dev local (app.security.dev-bypass.enabled): va despues del JWT para que
+            // un token valido siempre tenga prioridad.
+            devBypassFilter.ifPresent(f -> http.addFilterAfter(f, JwtAuthenticationFilter.class));
             return http.build();
         } catch (Exception ex) {
             throw new IllegalStateException("No se pudo construir la cadena de filtros de seguridad", ex);
         }
+    }
+
+    /**
+     * CORS solo para los origenes configurados (app.cors.allowed-origins). La
+     * autenticacion viaja en el header Authorization (sin cookies), por eso no
+     * se habilitan credenciales.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(CorsProperties props) {
+        CorsConfiguration cfg = new CorsConfiguration();
+        cfg.setAllowedOrigins(props.allowedOrigins());
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        cfg.setAllowCredentials(false);
+        cfg.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", cfg);
+        return source;
     }
 
     private AuthenticationEntryPoint noAutenticado(tools.jackson.databind.ObjectMapper objectMapper) {

@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -495,7 +494,7 @@ class AdministracionUseCaseTest {
 
     private Usuario usuario(Long id, String nombre) {
         return Usuario.reconstituir(id, nombre, "correo@example.com", "hash", "3001234567", null,
-                Rol.TECNICO, java.time.LocalDateTime.now(ZoneId.systemDefault()), true, true, 0);
+                Rol.TECNICO, java.time.Instant.now(), true, true, 0);
     }
 
     private Ot ot(EstadoOt estado, TecnicoId tecnicoId, ClienteId clienteId, Instant creadaEn) {

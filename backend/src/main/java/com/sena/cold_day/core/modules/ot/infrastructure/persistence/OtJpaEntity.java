@@ -31,6 +31,8 @@ import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * JPA mapping of the {@code ot} aggregate. {@code cliente_id}/{@code tecnico_id}
@@ -65,7 +67,8 @@ public class OtJpaEntity {
     private String descripcionFalla;
 
     @Convert(converter = EvidenciaUrlsJsonConverter.class)
-    @Column(name = "evidencia_urls", length = 4000)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "evidencia_urls")
     private List<String> evidenciaUrls = new ArrayList<>();
 
     @Column(name = "direccion", length = 500)
@@ -108,11 +111,13 @@ public class OtJpaEntity {
     private BigDecimal tarifaVisita;
 
     @Convert(converter = DiagnosticoJsonConverter.class)
-    @Column(name = "diagnostico", length = 4000)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "diagnostico")
     private Diagnostico diagnostico;
 
     @Convert(converter = PresupuestoJsonConverter.class)
-    @Column(name = "presupuesto", length = 4000)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "presupuesto")
     private Presupuesto presupuesto;
 
     // Authoritative tariff detail (design AD13): nullable so existing rows

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.sena.cold_day.core.modules.geolocalizacion.domain.repository.TecnicoDisponibilidadRepository;
 import com.sena.cold_day.core.modules.geolocalizacion.domain.valueobjects.TecnicoCercano;
@@ -33,12 +32,9 @@ import com.sena.cold_day.core.shared.domain.Point;
 /**
  * PostGIS adapter boundary tests (RF-F1-07, RNF-03): {@code ST_DWithin} radius
  * filtering, {@code ST_Distance} ordering and eligibility rules against a real
- * PostgreSQL/PostGIS. Requires the local container
- * ({@code coldday-postgis} on localhost:5433) and is excluded from the default
- * {@code test} task — run with {@code .\gradlew testPostgis}.
+ * PostgreSQL/PostGIS (Testcontainers, see {@code PostgisContainerInitializer}).
  */
 @SpringBootTest
-@ActiveProfiles("postgres")
 class PostgisTecnicoDisponibilidadIT {
 
     private static final Point BOGOTA = new Point(4.6, -74.0);

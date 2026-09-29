@@ -45,6 +45,8 @@ import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.Spring
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
 import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
  * Auxiliar count over the accept REST surface (spec {@code auxiliares}):
@@ -60,6 +62,13 @@ import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 @AutoConfigureMockMvc
 @TestPropertySource(properties = { "app.dispatch.escalamiento-ms=3600000", "app.auxiliares.max=5" })
 class AuxiliaresApiIT {
+
+    FkFixtures fx;
+
+    @Autowired
+    void inyectarFixtures(JdbcTemplate jdbc) {
+        fx = new FkFixtures(jdbc);
+    }
 
     private static final Point BOGOTA = new Point(4.6, -74.0);
 
@@ -81,6 +90,7 @@ class AuxiliaresApiIT {
         springDataHistorial.deleteAll();
         springDataOt.deleteAll();
         springDataTecnico.deleteAll();
+        fx.limpiarPadres();
         usuarioRepository.deleteAll();
     }
 
@@ -234,7 +244,7 @@ class AuxiliaresApiIT {
 
     private Ot crearOtBuscando() {
         Instant ahora = Instant.now();
-        Ot ot = Ot.crear(ClienteId.nueva(), CategoriaServicio.REFRIGERACION, "No enciende", java.util.List.of(),
+        Ot ot = Ot.crear(fx.clienteId(), CategoriaServicio.REFRIGERACION, "No enciende", java.util.List.of(),
                 "Calle 1", BOGOTA, ahora);
         ot.iniciarBusqueda(10.0, ahora.plusSeconds(60), ActorOt.CLIENTE, ahora);
         return otRepository.save(ot);

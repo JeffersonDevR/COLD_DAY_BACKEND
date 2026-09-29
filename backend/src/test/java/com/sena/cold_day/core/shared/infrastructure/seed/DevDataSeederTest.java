@@ -96,7 +96,7 @@ class DevDataSeederTest {
 
     private Usuario usuario(Long id, String correo) {
         return Usuario.reconstituir(id, "Ana", correo, "hash", "3001234567", null, Rol.CLIENTE,
-                java.time.LocalDateTime.now(), true, true, 0);
+                java.time.Instant.now(), true, true, 0);
     }
 
     private Cliente cliente() {

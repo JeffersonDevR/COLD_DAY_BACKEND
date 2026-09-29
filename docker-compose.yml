@@ -30,9 +30,10 @@ services:
       - ./backend/.env
     environment:
       SPRING_PROFILES_ACTIVE: prod,postgres
-      # update es el default del perfil postgres: conserva los datos entre reinicios.
-      # Cambia a "create-drop" si alguna vez quieres recrear el esquema desde cero.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      # validate es el default del perfil postgres desde que Flyway gestiona el
+      # esquema (ver db/migration/ y ARQUITECTURA.md §14): Hibernate solo
+      # compara contra lo que Flyway ya aplicó, nunca emite DDL.
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-validate}
       # Dentro de la red de Docker la DB es el servicio `db`, no localhost.
       POSTGRES_URL: jdbc:postgresql://db:5432/cold_day
       POSTGRES_USER: cold_day

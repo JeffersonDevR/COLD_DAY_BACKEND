@@ -1,10 +1,10 @@
 # Arquitectura de Cold Day
 
-> Documento vivo de referencia del sistema. Generado a partir de un análisis exhaustivo del código en `backend/` (última actualización: 2026-09-23). Actualízalo cuando cambien decisiones estructurales relevantes.
+> Documento vivo de referencia del sistema. Generado a partir de un análisis exhaustivo del código en `backend/` (última actualización: 2026-09-29). Actualízalo cuando cambien decisiones estructurales relevantes.
 
 ## Estado del monorepo
 
-Este repositorio contiene el **backend** completo (`backend/`). La carpeta hermana `cold_day_forntend` (fuera de este repo, en `proyecto_cold_day/`) está vacía a la fecha de este documento — el frontend aún no se ha empezado a programar. Cuando exista, documentar aquí cómo consume esta API (base URL, autenticación, CORS).
+Este repositorio contiene el **backend** (`backend/`) y ya existe también una carpeta **`frontend/`** (proyecto Angular, committeada) — a diferencia de lo que decía una versión anterior de este documento, el frontend ya no está vacío ni vive en una carpeta hermana `cold_day_forntend` fuera del repo. La Especificación de Requisitos IEEE 830 v3.4 (agosto 2026) documenta un pivote de arquitectura del 28 de agosto de 2026: frontend unificado en Angular (Angular Universal/SSR para SEO) con empaquetado nativo condicional vía Ionic/Capacitor, reemplazando una decisión anterior de Astro + Flutter. Esta revisión no cubrió el contenido de `frontend/` en detalle (quedó fuera del alcance de la revisión de base de datos) — pendiente que el equipo actualice esta sección con el detalle real (base URL consumida, autenticación, CORS, etc.).
 
 ## 1. Stack tecnológico
 
@@ -13,7 +13,7 @@ Este repositorio contiene el **backend** completo (`backend/`). La carpeta herma
 - `springdoc-openapi` 2.8.5 (Swagger UI en `/swagger-ui.html`, OpenAPI en `/v3/api-docs`).
 - JWT vía `io.jsonwebtoken` (JJWT) 0.12.6.
 - Lombok.
-- Persistencia: H2 (dev/test, en memoria) y PostgreSQL + PostGIS (prod), sin Flyway/Liquibase — esquema gestionado con `ddl-auto` de Hibernate + archivos SQL manuales de respaldo.
+- Persistencia: PostgreSQL + PostGIS como único motor (dev, test y prod), gestionado con **Flyway** (`db/migration/V*.sql`) + `ddl-auto=validate`. Los tests levantan su propio contenedor con **Testcontainers**. Ver §14.
 - Jacoco para cobertura, SonarQube configurado (`sonar.projectKey=Cold-day-backend`).
 - Sin dependencia de driver espacial (JTS/Hibernate Spatial): PostGIS se usa mediante SQL nativo puro.
 
@@ -147,7 +147,7 @@ Terminales: `FINALIZADA`, `CANCELADA`, `SIN_TECNICOS_DISPONIBLES`. Transición i
 
 - Radio inicial **10 km**, ventana de oferta **60 segundos** por radio.
 - `ProgramadorEscalamientoOt` corre cada **5 segundos** (`app.dispatch.escalamiento-ms`) y, para cada OT con ventana vencida: expira ofertas pendientes, y si aún no hay técnico asignado, **escala el radio** en incrementos de 5 km hasta un máximo de 25 km (10→15→20→25); si se agota el radio máximo sin técnico, la OT pasa a `SIN_TECNICOS_DISPONIBLES` y se publica el evento correspondiente.
-- La búsqueda de técnicos candidatos delega en el módulo `geolocalizacion` (`TecnicoDisponibilidadRepository.buscarDisponiblesEnRadio`), que a su vez usa PostGIS (prod) o cálculo Haversine en memoria (dev/H2).
+- La búsqueda de técnicos candidatos delega en el módulo `geolocalizacion` (`TecnicoDisponibilidadRepository.buscarDisponiblesEnRadio`), que a su vez usa PostGIS.
 
 ### Aceptación atómica de ofertas
 
@@ -220,9 +220,7 @@ Contexto delimitado que cubre la identidad del proveedor y el despacho de insumo
 
 - No expone controladores propios; sus casos de uso son invocados desde `TecnicoController`/`ClienteController` y desde `ot`.
 - **Casos de uso**: `ActualizarUbicacionClienteUseCase`, `ActualizarUbicacionTecnicoUseCase`, `DesactivarTrackingTecnicoUseCase`.
-- **Búsqueda espacial** (`TecnicoDisponibilidadRepository`), dos implementaciones intercambiables por perfil Spring:
-  - `H2TecnicoDisponibilidadAdapter` (`@Profile("!postgres")`): filtro por bounding box en SQL + cálculo exacto Haversine en memoria (`CalculadoraHaversine`).
-  - `PostgisTecnicoDisponibilidadAdapter` (`@Profile("postgres")`): SQL nativo con `ST_MakePoint(...)::geography`, `ST_DWithin`, `ST_Distance`, apoyado en el índice GiST `idx_tecnico_ubicacion_geo` (definido en `schema-postgres.sql`). Ningún tipo geométrico de PostGIS cruza el puerto de dominio — solo se devuelven VOs planos (`TecnicoCercano`).
+- **Búsqueda espacial** (`TecnicoDisponibilidadRepository`): `PostgisTecnicoDisponibilidadAdapter`, SQL nativo con `ST_MakePoint(...)::geography`, `ST_DWithin`, `ST_Distance`, apoyado en el índice GiST parcial `idx_tecnico_disponible_ubicacion_geo` (definido en `V1__baseline_esquema_actual.sql`). Ningún tipo geométrico de PostGIS cruza el puerto de dominio — solo se devuelven VOs planos (`TecnicoCercano`). `CalculadoraHaversine` sigue en el dominio como servicio puro.
 - **Desacople por eventos**: `DesactivarTrackingListener` escucha `EventoTerminalOt` (publicado por `ot`/`administracion`) y apaga el tracking del técnico asignado cuando la OT llega a un estado terminal, conservando la última ubicación para auditoría. Tolera técnico ausente sin revertir la transacción de la OT.
 
 ## 10. Módulo `maps`
@@ -266,17 +264,17 @@ No todo está desacoplado por eventos — es una mezcla deliberada:
 - Nuevos endpoints de `proveedores` con `@PreAuthorize`: alta y listado de proveedores → `ADMINISTRADOR`; portal de insumos (`/api/proveedores/me/solicitudes`, `/api/insumos/**`) → `PROVEEDOR`. No se agregó ningún matcher `permitAll`.
 - `AuthenticationEntryPoint`/`AccessDeniedHandler` propios, devuelven el mismo contrato `ApiError` que el resto de la API.
 - Manejo de errores: **sin `@ControllerAdvice` global** — cada módulo define el suyo (`@RestControllerAdvice(assignableTypes=...)`) mapeando sus excepciones de dominio a HTTP, pero todos comparten el mismo tipo de respuesta (`ApiError`).
-- ⚠️ **No hay configuración de CORS** en ningún punto del código — pendiente para cuando exista un frontend que llame desde otro origen.
+- **CORS**: `SecurityConfig.corsConfigurationSource` permite solo los orígenes de `app.cors.allowed-origins` (`CorsProperties`; variable `CORS_ALLOWED_ORIGINS`, lista separada por comas). Por defecto `http://localhost:4200`; en prod es obligatoria y el arranque falla si falta. Sin credenciales (el JWT viaja en `Authorization`).
 
 ## 14. Persistencia y esquema
 
-- Sin Flyway/Liquibase. Gestión de esquema vía `spring.sql.init` + Hibernate `ddl-auto`:
-  - Perfil por defecto (H2): `schema.sql` corre **antes** de que Hibernate cree las tablas; `ddl-auto=create-drop` es la autoridad real (el SQL es un espejo documental con `IF NOT EXISTS`).
-  - Perfil `postgres`: `schema-postgres.sql` corre **después** de Hibernate (`defer-datasource-initialization=true`), porque necesita que la tabla `tecnico` ya exista para crear el índice espacial.
-  - En Render, `SPRING_JPA_HIBERNATE_DDL_AUTO=update` sobreescribe el `create-drop` por defecto para no perder datos en cada deploy.
-- **Geoespacial dual**: dev/H2 usa Haversine en Java; prod usa PostGIS con SQL nativo (`ST_MakePoint`, `ST_DWithin`, `ST_Distance`) sobre columnas `double` planas + índice GiST — sin dependencia de driver espacial en Gradle.
-- Value objects complejos (`Diagnostico`, `Presupuesto`, categorías, certificaciones, URLs de evidencia) se persisten como JSON vía `AttributeConverter` dedicados por campo.
-- **Tablas nuevas de este cambio** (aditivas): `proveedor`, `requerimiento_insumo`, `requerimiento_insumo_item` y `oferta_insumo` (esta última **sin** `precio_total`) con sus índices. La tabla `ot` gana `auxiliares_requeridos INT NOT NULL DEFAULT 0`, `distancia_km DOUBLE PRECISION` (nullable) y `tarifa_fuente VARCHAR(20)` (nullable). En `postgres`/`ddl-auto=update` Hibernate deriva los `ALTER TABLE` del mapeo de entidades; `schema.sql` es el espejo documental. No hay migración descendente.
+- **Un solo motor: PostgreSQL/PostGIS** en dev, test y prod (Render). Localmente, `application.properties` apunta por defecto al contenedor `coldday-postgis` (`postgis/postgis:16-3.4`, `localhost:5433`, `cold_day/cold_day`). **Tests**: `PostgisContainerInitializer` (registrado en `src/test/resources/META-INF/spring.factories`) levanta un único contenedor `postgis/postgis:16-3.4` con Testcontainers por JVM y apunta el DataSource de todos los contextos a él; Flyway aplica las migraciones reales. Requiere Docker en ejecución. No hay base embebida ni `schema.sql`.
+- **Esquema**: el esquema ya **no** lo gestiona `ddl-auto` — lo gestiona **Flyway** (`backend/src/main/resources/db/migration/V*.sql`), con `spring.jpa.hibernate.ddl-auto=validate` (Hibernate solo compara tablas/columnas/tipo/nulabilidad contra lo que Flyway aplicó y falla rápido en el arranque si no coinciden; nunca emite DDL). `schema-postgres.sql` fue eliminado — su contenido (extensión PostGIS, CHECK de `rol`, índice GiST parcial) vive ahora en `V1__baseline_esquema_actual.sql`.
+  - **Introducción de Flyway sobre una base de datos ya existente**: `spring.flyway.baseline-on-migrate=true` + `baseline-version=1`. Contra una base con el esquema ya creado por el `ddl-auto=update` anterior (p. ej. Render la primera vez que se despliega este cambio), Flyway se autobaseliza en la versión 1 **sin ejecutar** el SQL de `V1` — solo corren de verdad las migraciones `> 1`. Contra una Postgres nueva/vacía (docker-compose local, futuros entornos), Flyway ejecuta `V1..Vn` desde cero, por lo que `V1` reproduce con precisión el esquema real (columnas, tipos, `CHECK` autogenerados por Hibernate para los enums, UNIQUE, los 17 índices de `@Table(indexes=...)`, el índice GiST parcial) para que ese entorno nuevo termine idéntico al punto de partida real.
+  - **Migraciones actuales** (`V2` en adelante, aditivas sobre el baseline): `V2` añade `FOREIGN KEY ... NOT VALID` para las referencias cross-módulo que antes eran columnas escalares sin integridad real en Postgres (no se tocó el mapeo JPA — siguen sin `@ManyToOne`); `NOT VALID` evita que datos huérfanos preexistentes rompan el deploy, y se valida manualmente después con `ALTER TABLE ... VALIDATE CONSTRAINT ...` cuando se confirme que los datos están limpios. `V3` reemplaza los `UNIQUE` globales de `usuario.correo`/`tecnico.numero_identificacion`/`proveedor.nit` por índices únicos parciales (`WHERE activo = true`), para que un registro con soft-delete no bloquee ese valor para siempre. `V4`/`V5` migran `ot.diagnostico/presupuesto/evidencia_urls` y `tecnico.categorias_servicio/certificaciones` de `varchar(4000)` a `jsonb` nativo (acompañado de `@JdbcTypeCode(SqlTypes.JSON)` en las entidades, manteniendo los mismos `AttributeConverter` de Jackson). `V6` migra `usuario.fecha_registro` (el único timestamp del proyecto que no usaba `Instant`) a `timestamptz`.
+- **Geoespacial**: PostGIS con SQL nativo (`ST_MakePoint`, `ST_DWithin`, `ST_Distance`) sobre columnas `double` planas + índice GiST — sin dependencia de driver espacial en Gradle.
+- Value objects complejos (`Diagnostico`, `Presupuesto`, categorías, certificaciones) se persisten como `jsonb` en Postgres vía `AttributeConverter` dedicados por campo + `@JdbcTypeCode(SqlTypes.JSON)`; `evidencia_urls` sigue el mismo patrón.
+- **Tablas del módulo `proveedores`** (aditivas sobre el modelo original): `proveedor`, `requerimiento_insumo`, `requerimiento_insumo_item` y `oferta_insumo` (esta última **sin** `precio_total`) con sus índices. La tabla `ot` tiene además `auxiliares_requeridos INT NOT NULL DEFAULT 0`, `distancia_km DOUBLE PRECISION` (nullable) y `tarifa_fuente VARCHAR(20)` (nullable). No hay migración descendente — cualquier rollback de esquema requiere una migración `V` nueva.
 
 ## 15. Jobs programados
 
@@ -293,7 +291,8 @@ No todo está desacoplado por eventos — es una mezcla deliberada:
 
 ## 17. Observaciones / deuda técnica conocida
 
-- Falta configuración de **CORS** (bloqueante en cuanto exista un frontend en otro origen).
+- Falta configuración de **CORS** — ya **no** es una deuda solo futura: existe una carpeta `frontend/` (Angular) en este mismo repo, así que si ya consume esta API desde otro origen, esto es bloqueante hoy, no "en cuanto exista un frontend".
 - Notificaciones push (`ot`) y de vigencia documental (`tecnicos`) son solo logging — falta integrar transporte real (FCM/email).
 - Guardas de autorización asimétricas entre `OtController` (cada endpoint anotado) y `TecnicoController` (solo dos endpoints con `@PreAuthorize` explícito) — verificar si la protección real recae en otro lado o si falta reforzarla.
-- El frontend (`cold_day_forntend`) todavía no existe — no hay contrato de consumo real más allá del propio OpenAPI/Swagger expuesto por el backend.
+- El frontend ya existe (`frontend/`, ver "Estado del monorepo") pero esta revisión no cubrió su contenido — falta documentar aquí el contrato real de consumo (base URL, autenticación, manejo de errores) más allá del OpenAPI/Swagger expuesto por el backend.
+- **Resuelto 2026-09-29**: gestión de esquema sin Flyway/Liquibase. Ahora Postgres usa Flyway (`db/migration/`) + `ddl-auto=validate`; ver §14. Quedan como deuda aparte (fuera de esta revisión, centrada en la base de datos): no hay pipeline de CI que corra los tests antes del `autoDeploy` de Render, y el seeder de datos demo (`DevDataSeeder`) queda activo por defecto salvo que se fije `APP_SEED_ENABLED=false` explícitamente en el entorno de producción.

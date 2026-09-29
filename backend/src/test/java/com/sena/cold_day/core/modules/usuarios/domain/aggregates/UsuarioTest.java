@@ -3,7 +3,7 @@ package com.sena.cold_day.core.modules.usuarios.domain.aggregates;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 
@@ -85,12 +85,12 @@ class UsuarioTest {
         assertThat(usuario.isHabeasDataAceptado()).isTrue();
         assertThat(usuario.getNombre()).isEqualTo("Ana Maria");
         assertThat(usuario.getTelefono()).isEqualTo("3100000000");
-        assertThat(usuario.getFechaRegistro()).isBefore(LocalDateTime.now().plusMinutes(1));
+        assertThat(usuario.getFechaRegistro()).isBefore(Instant.now().plusSeconds(60));
     }
 
     @Test
     void reconstituirKeepsPersistedState() {
-        LocalDateTime fecha = LocalDateTime.of(2026, 1, 1, 10, 0);
+        Instant fecha = Instant.parse("2026-01-01T10:00:00Z");
         Usuario usuario = Usuario.reconstituir(5L, "Ana", "ana@example.com", "fake:hash", "300", null,
                 Rol.ADMINISTRADOR, fecha, true, true, 4);
 

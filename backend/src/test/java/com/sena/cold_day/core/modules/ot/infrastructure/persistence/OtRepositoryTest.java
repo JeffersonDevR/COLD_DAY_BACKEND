@@ -24,6 +24,8 @@ import com.sena.cold_day.core.modules.ot.infrastructure.repository.OtRepositoryA
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
  * Persistence boundary for the {@code ot} aggregate and its append-only history
@@ -33,6 +35,14 @@ import com.sena.cold_day.core.shared.domain.Point;
 @DataJpaTest
 @Import({OtRepositoryAdapter.class, OtEstadoHistorialRepositoryAdapter.class})
 class OtRepositoryTest {
+
+    @Autowired JdbcTemplate jdbc;
+    FkFixtures fx;
+
+    @BeforeEach
+    void fkFixtures() {
+        fx = new FkFixtures(jdbc);
+    }
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
 
@@ -86,10 +96,10 @@ class OtRepositoryTest {
     @Test
     void intentarAsignarWinsOnlyForTheSearchingOrder() {
         Ot ot = repository.save(crearBuscandoTecnico(AHORA.plusSeconds(60)));
-        TecnicoId tecnicoId = TecnicoId.nueva();
+        TecnicoId tecnicoId = fx.tecnicoId();
 
         int ganador = repository.intentarAsignar(ot.getId(), tecnicoId, AHORA, 10.0);
-        int repetido = repository.intentarAsignar(ot.getId(), TecnicoId.nueva(), AHORA, 10.0);
+        int repetido = repository.intentarAsignar(ot.getId(), fx.tecnicoId(), AHORA, 10.0);
 
         assertThat(ganador).isEqualTo(1);
         assertThat(repetido).isZero();
@@ -102,14 +112,14 @@ class OtRepositoryTest {
 
     @Test
     void intentarAsignarReturnsZeroForAnUnknownOrder() {
-        assertThat(repository.intentarAsignar(OtId.nueva(), TecnicoId.nueva(), AHORA, 10.0)).isZero();
+        assertThat(repository.intentarAsignar(OtId.nueva(), fx.tecnicoId(), AHORA, 10.0)).isZero();
     }
 
     @Test
     void intentarAsignarPersistsTheAuxiliarCountInTheSameConditionalUpdate() {
         Ot ot = repository.save(crearBuscandoTecnico(AHORA.plusSeconds(60)));
 
-        int ganador = repository.intentarAsignar(ot.getId(), TecnicoId.nueva(), AHORA, 10.0, 3);
+        int ganador = repository.intentarAsignar(ot.getId(), fx.tecnicoId(), AHORA, 10.0, 3);
 
         assertThat(ganador).isEqualTo(1);
         assertThat(repository.buscarPorId(ot.getId())).hasValueSatisfying(found -> {
@@ -122,7 +132,7 @@ class OtRepositoryTest {
     void intentarAsignarDefaultsTheAuxiliarCountToZeroOnTheDelegatingOverload() {
         Ot ot = repository.save(crearBuscandoTecnico(AHORA.plusSeconds(60)));
 
-        int ganador = repository.intentarAsignar(ot.getId(), TecnicoId.nueva(), AHORA, 10.0);
+        int ganador = repository.intentarAsignar(ot.getId(), fx.tecnicoId(), AHORA, 10.0);
 
         assertThat(ganador).isEqualTo(1);
         assertThat(repository.buscarPorId(ot.getId()))
@@ -148,7 +158,7 @@ class OtRepositoryTest {
     void roundTripsTheDiagnosisAndBudgetJsonColumns() {
         Diagnostico diagnostico = new Diagnostico("Compresor averiado", "Revisado en sitio", AHORA);
         Presupuesto presupuesto = new Presupuesto(new BigDecimal("120000.00"), new BigDecimal("350000.00"), AHORA);
-        Ot ot = Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), TecnicoId.nueva(),
+        Ot ot = Ot.reconstituir(OtId.nueva(), fx.clienteId(), fx.tecnicoId(),
                 CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0),
                 EstadoOt.EN_DIAGNOSTICO, 10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null,
                 diagnostico, presupuesto);
@@ -162,7 +172,7 @@ class OtRepositoryTest {
     }
 
     private Ot crearEnSolicitada() {
-        return Ot.crear(ClienteId.nueva(), CategoriaServicio.REFRIGERACION, "No enciende", List.of("http://foto"),
+        return Ot.crear(fx.clienteId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of("http://foto"),
                 "Calle 1", new Point(4.6, -74.0), AHORA);
     }
 

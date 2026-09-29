@@ -27,6 +27,7 @@ import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
+import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
@@ -56,11 +57,13 @@ class OtApiIT {
     @Autowired ClienteRepository clienteRepository;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired SpringDataOtRepository springDataOt;
+    @Autowired SpringDataOtEstadoHistorialRepository springDataHistorial;
     @Autowired JwtTokenIssuer tokenIssuer;
 
     @BeforeEach
     @AfterEach
     void cleanup() {
+        springDataHistorial.deleteAll();
         springDataOt.deleteAll();
         clienteRepository.deleteAll();
         usuarioRepository.deleteAll();

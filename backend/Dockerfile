@@ -29,5 +29,8 @@ USER app
 # Render define PORT; application-prod.properties lo respeta (server.port=${PORT:8090}).
 EXPOSE 8090
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC"
+# Perfil productivo por defecto: un contenedor nunca debe arrancar con la config de dev.
+# Se puede sobrescribir con la variable SPRING_PROFILES_ACTIVE de la plataforma.
+ENV SPRING_PROFILES_ACTIVE=prod
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

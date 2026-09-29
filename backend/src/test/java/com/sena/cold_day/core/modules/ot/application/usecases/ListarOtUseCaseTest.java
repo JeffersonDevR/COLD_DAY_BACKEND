@@ -150,6 +150,6 @@ class ListarOtUseCaseTest {
 
     private Usuario usuario(Long id, String nombre) {
         return Usuario.reconstituir(id, nombre, "correo@example.com", "hash", "3001234567", null,
-                Rol.TECNICO, java.time.LocalDateTime.now(), true, true, 0);
+                Rol.TECNICO, java.time.Instant.now(), true, true, 0);
     }
 }

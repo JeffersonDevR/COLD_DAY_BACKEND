@@ -52,6 +52,8 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
 import com.sena.cold_day.core.shared.domain.Point;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
  * Authoritative proof of the exactly-one-winner invariant (task 6b.6, RNF-07).
@@ -65,6 +67,13 @@ import com.sena.cold_day.core.shared.domain.Point;
 @TestPropertySource(properties = "app.dispatch.escalamiento-ms=3600000")
 @Import(AceptacionConcurrenteIT.RelojFijo.class)
 class AceptacionConcurrenteIT {
+
+    FkFixtures fx;
+
+    @Autowired
+    void inyectarFixtures(JdbcTemplate jdbc) {
+        fx = new FkFixtures(jdbc);
+    }
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final Point BOGOTA = new Point(4.6, -74.0);
@@ -98,6 +107,7 @@ class AceptacionConcurrenteIT {
         springDataHistorial.deleteAll();
         springDataOt.deleteAll();
         springDataTecnico.deleteAll();
+        fx.limpiarPadres();
         usuarioRepository.deleteAll();
     }
 
@@ -105,7 +115,7 @@ class AceptacionConcurrenteIT {
     void twoSimultaneousAcceptsResolveToExactlyOneAssignment() throws Exception {
         Tecnico primero = crearTecnicoDisponible(4.61);
         Tecnico segundo = crearTecnicoDisponible(4.62);
-        Ot ot = Ot.crear(ClienteId.nueva(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+        Ot ot = Ot.crear(fx.clienteId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
                 "Calle 1", BOGOTA, AHORA);
         Ot buscando = iniciarBusqueda.iniciar(ot);
 

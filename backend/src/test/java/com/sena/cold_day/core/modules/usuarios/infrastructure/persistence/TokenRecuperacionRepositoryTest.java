@@ -14,10 +14,24 @@ import org.springframework.context.annotation.Import;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.TokenRecuperacion;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.repository.TokenRecuperacionRepositoryAdapter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 @DataJpaTest
 @Import(TokenRecuperacionRepositoryAdapter.class)
 class TokenRecuperacionRepositoryTest {
+
+    @Autowired JdbcTemplate jdbc;
+    FkFixtures fx;
+    UsuarioId usuario1;
+    UsuarioId usuario2;
+
+    @BeforeEach
+    void fkFixtures() {
+        fx = new FkFixtures(jdbc);
+        usuario1 = new UsuarioId(fx.usuario("CLIENTE"));
+        usuario2 = new UsuarioId(fx.usuario("CLIENTE"));
+    }
 
     private static final Instant CREADO = Instant.parse("2026-01-01T10:00:00Z");
     private static final Instant EXPIRA = CREADO.plus(Duration.ofMinutes(30));
@@ -33,12 +47,12 @@ class TokenRecuperacionRepositoryTest {
     @Test
     void savesAndFindsByHashPreservingSingleUseState() {
         TokenRecuperacion saved = repository.save(
-                TokenRecuperacion.emitir(new UsuarioId(7L), "hash-abc", CREADO, EXPIRA));
+                TokenRecuperacion.emitir(usuario1, "hash-abc", CREADO, EXPIRA));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(repository.buscarPorHash("hash-abc")).hasValueSatisfying(found -> {
             assertThat(found.getId()).isEqualTo(saved.getId());
-            assertThat(found.getUsuarioId()).isEqualTo(new UsuarioId(7L));
+            assertThat(found.getUsuarioId()).isEqualTo(usuario1);
             assertThat(found.getTokenHash()).isEqualTo("hash-abc");
             assertThat(found.getExpiraEn()).isEqualTo(EXPIRA);
             assertThat(found.isUsado()).isFalse();
@@ -49,7 +63,7 @@ class TokenRecuperacionRepositoryTest {
     @Test
     void marcarUsadoInvalidatesTheToken() {
         TokenRecuperacion saved = repository.save(
-                TokenRecuperacion.emitir(new UsuarioId(7L), "hash-1", CREADO, EXPIRA));
+                TokenRecuperacion.emitir(usuario1, "hash-1", CREADO, EXPIRA));
 
         repository.marcarUsado(saved.getId(), CREADO.plusSeconds(60));
 
@@ -61,10 +75,10 @@ class TokenRecuperacionRepositoryTest {
 
     @Test
     void invalidarTodosDeOnlyInvalidatesTheRequestedUser() {
-        repository.save(TokenRecuperacion.emitir(new UsuarioId(7L), "hash-a", CREADO, EXPIRA));
-        repository.save(TokenRecuperacion.emitir(new UsuarioId(8L), "hash-b", CREADO, EXPIRA));
+        repository.save(TokenRecuperacion.emitir(usuario1, "hash-a", CREADO, EXPIRA));
+        repository.save(TokenRecuperacion.emitir(usuario2, "hash-b", CREADO, EXPIRA));
 
-        repository.invalidarTodosDe(new UsuarioId(7L));
+        repository.invalidarTodosDe(usuario1);
 
         assertThat(repository.buscarPorHash("hash-a")).hasValueSatisfying(t -> assertThat(t.isUsado()).isTrue());
         assertThat(repository.buscarPorHash("hash-b")).hasValueSatisfying(t -> assertThat(t.isUsado()).isFalse());

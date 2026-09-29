@@ -1,8 +1,11 @@
 package com.sena.cold_day.core.modules.usuarios.infrastructure.api.controllers;
 
 import java.net.URI;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +15,7 @@ import com.sena.cold_day.core.modules.usuarios.application.dto.TokenResponse;
 import com.sena.cold_day.core.modules.usuarios.application.dto.UsuarioRequest;
 import com.sena.cold_day.core.modules.usuarios.application.dto.UsuarioResponse;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.AutenticarUsuarioUseCase;
+import com.sena.cold_day.core.modules.usuarios.application.usecases.ListarUsuariosUseCase;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.RecuperarContrasenaUseCase;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.RegistrarUsuarioUseCase;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.RestablecerContrasenaUseCase;
@@ -31,13 +35,23 @@ public class UsuarioController {
     private final AutenticarUsuarioUseCase autenticar;
     private final RecuperarContrasenaUseCase recuperar;
     private final RestablecerContrasenaUseCase restablecer;
+    private final ListarUsuariosUseCase listarUsuarios;
 
     public UsuarioController(RegistrarUsuarioUseCase registrar, AutenticarUsuarioUseCase autenticar,
-            RecuperarContrasenaUseCase recuperar, RestablecerContrasenaUseCase restablecer) {
+            RecuperarContrasenaUseCase recuperar, RestablecerContrasenaUseCase restablecer,
+            ListarUsuariosUseCase listarUsuarios) {
         this.registrar = registrar;
         this.autenticar = autenticar;
         this.recuperar = recuperar;
         this.restablecer = restablecer;
+        this.listarUsuarios = listarUsuarios;
+    }
+
+    /** Lista todos los usuarios del sistema (solo ADMINISTRADOR). */
+    @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public List<UsuarioApiResponse> listar() {
+        return listarUsuarios.listar().stream().map(UsuarioApiResponse::from).toList();
     }
 
     @PostMapping

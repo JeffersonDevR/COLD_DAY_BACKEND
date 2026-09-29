@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.VerificarVigenciaDocumentalUseCase;
+import com.sena.cold_day.core.modules.tecnicos.infrastructure.persistence.SpringDataDocumentoTecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
@@ -36,6 +37,7 @@ class TecnicosApiIT {
     @Autowired MockMvc mockMvc;
     @Autowired TecnicoRepository repository;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
+    @Autowired SpringDataDocumentoTecnicoRepository documentoRepository;
     @Autowired JwtTokenIssuer tokenIssuer;
     @Autowired ObjectMapper objectMapper;
     @Autowired VerificarVigenciaDocumentalUseCase verificarVigencia;
@@ -43,6 +45,7 @@ class TecnicosApiIT {
     @BeforeEach
     @AfterEach
     void cleanup() {
+        documentoRepository.deleteAll();
         repository.deleteAll();
         usuarioRepository.deleteAll();
     }

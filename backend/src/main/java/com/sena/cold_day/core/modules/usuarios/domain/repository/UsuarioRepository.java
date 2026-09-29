@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.usuarios.domain.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
@@ -15,4 +16,6 @@ public interface UsuarioRepository {
     Optional<Usuario> buscarPorCorreo(String correo);
 
     boolean existeCorreo(String correo);
+
+    List<Usuario> listarTodos();
 }

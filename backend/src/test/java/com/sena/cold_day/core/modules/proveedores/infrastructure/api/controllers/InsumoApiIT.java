@@ -52,9 +52,11 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
 import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
- * Integration proof of the insumo dispatch flows against the real H2 schema and
+ * Integration proof of the insumo dispatch flows against the real PostgreSQL schema and
  * the slice-9 persistence (spec disp.R1/R3/R6/R7, design flow (b)).
  *
  * <p>The use-case subset exercises the application layer directly (broadcast,
@@ -70,10 +72,17 @@ import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 @Import(InsumoApiIT.RelojFijo.class)
 class InsumoApiIT {
 
+    FkFixtures fx;
+
+    @Autowired
+    void inyectarFixtures(JdbcTemplate jdbc) {
+        fx = new FkFixtures(jdbc);
+    }
+
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final Instant EXPIRA = AHORA.plusSeconds(900);
-    private static final UUID OT_ID = UUID.randomUUID();
-    private static final UUID TECNICO_ID = UUID.randomUUID();
+    private UUID otId;
+    private UUID tecnicoId;
     private static final List<InsumoLinea> LINEAS = List.of(new InsumoLinea("Filtro secadora", 2));
 
     @TestConfiguration
@@ -105,6 +114,9 @@ class InsumoApiIT {
         springDataOfertas.deleteAll();
         springDataRequerimientos.deleteAll();
         springDataProveedores.deleteAll();
+        fx.limpiarPadres();
+        otId = null;
+        tecnicoId = null;
         usuarioRepository.deleteAll();
     }
 
@@ -114,7 +126,7 @@ class InsumoApiIT {
         Proveedor segundo = crearProveedorActivo("900-2", "prov.2@example.com");
         crearProveedorInactivo("900-3", "prov.3@example.com");
 
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, "Compresor ruidoso").orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, "Compresor ruidoso").orElseThrow();
         assertThat(req.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO);
 
         // AD7: only the two active suppliers receive an offer.
@@ -140,7 +152,7 @@ class InsumoApiIT {
         crearProveedorActivo("900-4", "prov.4@example.com");
         Proveedor inactivo = crearProveedorInactivo("900-5", "prov.5@example.com");
 
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
         OfertaInsumo delInactivo = ofertas.save(
                 OfertaInsumo.crear(req.getId(), inactivo.getId(), AHORA, EXPIRA));
 
@@ -155,7 +167,7 @@ class InsumoApiIT {
 
     @Test
     void zeroEligibleSuppliersResolveToSinProveedorWithoutBlockingTheOt() {
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
 
         assertThat(req.getEstado()).isEqualTo(EstadoRequerimiento.SIN_PROVEEDOR);
         assertThat(ofertas.listarPendientesPorRequerimiento(req.getId())).isEmpty();
@@ -165,13 +177,13 @@ class InsumoApiIT {
 
     @Test
     void theExpirySweepClosesPendingOffersAndResolvesOpenRequests() {
-        RequerimientoInsumo vencido = requerimientos.save(RequerimientoInsumo.crear(OT_ID, TECNICO_ID, LINEAS,
+        RequerimientoInsumo vencido = requerimientos.save(RequerimientoInsumo.crear(otId(), tecnicoId(), LINEAS,
                 null, AHORA.minusSeconds(10), AHORA.minusSeconds(1)));
-        OfertaInsumo ofertaVencida = ofertas.save(OfertaInsumo.crear(vencido.getId(), ProveedorId.nueva(),
+        OfertaInsumo ofertaVencida = ofertas.save(OfertaInsumo.crear(vencido.getId(), fx.proveedorId(),
                 AHORA.minusSeconds(10), AHORA.minusSeconds(1)));
-        RequerimientoInsumo vigente = requerimientos.save(RequerimientoInsumo.crear(OT_ID, TECNICO_ID, LINEAS,
+        RequerimientoInsumo vigente = requerimientos.save(RequerimientoInsumo.crear(otId(), tecnicoId(), LINEAS,
                 null, AHORA, EXPIRA));
-        ofertas.save(OfertaInsumo.crear(vigente.getId(), ProveedorId.nueva(), AHORA, EXPIRA));
+        ofertas.save(OfertaInsumo.crear(vigente.getId(), fx.proveedorId(), AHORA, EXPIRA));
 
         ExpirarInsumosUseCase.Resultado resultado = expirar.expirar();
 
@@ -192,7 +204,7 @@ class InsumoApiIT {
     @Test
     void supplierListsItsPendingSolicitudesOverHttp() throws Exception {
         Proveedor primero = crearProveedorActivo("901-1", "http.prov.1@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, "Compresor ruidoso").orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, "Compresor ruidoso").orElseThrow();
 
         mockMvc.perform(get("/api/proveedores/me/solicitudes")
                         .header("Authorization", bearer(jwt(primero))))
@@ -216,7 +228,7 @@ class InsumoApiIT {
     void firstAcceptWinsOverHttpAndTheLoserGets409() throws Exception {
         Proveedor primero = crearProveedorActivo("901-2", "http.prov.2@example.com");
         Proveedor segundo = crearProveedorActivo("901-3", "http.prov.3@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
         OfertaInsumo dePrimero = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
         OfertaInsumo deSegundo = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), segundo.getId());
 
@@ -238,7 +250,7 @@ class InsumoApiIT {
     @Test
     void supplierRejectsOverHttpAndIsNotBound() throws Exception {
         Proveedor primero = crearProveedorActivo("901-4", "http.prov.4@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
         OfertaInsumo oferta = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
 
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/rechazar")
@@ -254,7 +266,7 @@ class InsumoApiIT {
     void winningSupplierDeliversOverHttpAndAnotherSupplierIsForbidden() throws Exception {
         Proveedor primero = crearProveedorActivo("901-5", "http.prov.5@example.com");
         Proveedor segundo = crearProveedorActivo("901-6", "http.prov.6@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
         OfertaInsumo dePrimero = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
 
         // disp.S7.1: a supplier that did not win the request cannot confirm delivery.
@@ -276,7 +288,7 @@ class InsumoApiIT {
     @Test
     void anUnlinkedSupplierIsForbiddenOverHttp() throws Exception {
         Proveedor activo = crearProveedorActivo("901-7", "http.prov.7@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(OT_ID, TECNICO_ID, LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
         OfertaInsumo oferta = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), activo.getId());
         Long huerfano = crearUsuario("http.prov.huerfano@example.com");
 
@@ -354,5 +366,19 @@ class InsumoApiIT {
     private OfertaInsumo ofertaDe(List<OfertaInsumo> pendientes, ProveedorId proveedorId) {
         return pendientes.stream().filter(oferta -> oferta.getProveedorId().equals(proveedorId)).findFirst()
                 .orElseThrow();
+    }
+
+    private UUID otId() {
+        if (otId == null) {
+            otId = fx.ot(UUID.randomUUID());
+        }
+        return otId;
+    }
+
+    private UUID tecnicoId() {
+        if (tecnicoId == null) {
+            tecnicoId = fx.tecnico(UUID.randomUUID());
+        }
+        return tecnicoId;
     }
 }

@@ -44,13 +44,23 @@ dependencies {
 
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
-	runtimeOnly 'com.h2database:h2'
+	// Gestiona el esquema (ver db/migration).
+	// Spring Boot 4 modulariza la autoconfiguracion por tecnologia (ver
+	// spring-boot-jdbc, spring-boot-hibernate, etc. en el classpath): el glue
+	// de Flyway con Spring Boot vive en spring-boot-flyway, no basta con la
+	// libreria flyway-core sola como en Boot 2/3.
+	runtimeOnly 'org.springframework.boot:spring-boot-flyway'
+	runtimeOnly 'org.flywaydb:flyway-core'
+	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testCompileOnly 'org.projectlombok:lombok'
+	// Los tests corren contra un PostgreSQL/PostGIS real levantado con Docker
+	// (ver PostgisContainerInitializer): no hay base embebida.
+	testImplementation 'org.testcontainers:testcontainers-postgresql'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	
@@ -60,17 +70,17 @@ tasks.named('test') {
 	useJUnitPlatform()
 	// Los tests crean sus propios datos; el seed de demo solo aplica a ejecución local.
 	systemProperty 'app.seed.enabled', 'false'
+	// Los tests de seguridad esperan la autenticacion real (401/403).
+	systemProperty 'app.security.dev-bypass.enabled', 'false'
+	// Los tests usan el contenedor de Testcontainers, no una base embebida.
+	systemProperty 'spring.test.database.replace', 'none'
 	// Los barridos programados se invocan directamente en los tests. Con varios
-	// contextos Spring cacheados compartiendo la misma base H2 en memoria, un
+	// contextos Spring cacheados compartiendo la misma base de datos, un
 	// tick del scheduler ajeno expira filas a mitad de un test (ver CRITICAL-1 de
 	// la verificación). Empujar ambos delays fuera de la ventana de test mantiene
 	// los barridos deterministas sin tocar el producto.
 	systemProperty 'app.insumos.barrido-ms', '3600000'
 	systemProperty 'app.dispatch.escalamiento-ms', '3600000'
-	filter {
-		// El IT PostGIS necesita el contenedor local (cold_day_db:5432); corre aparte.
-		excludeTestsMatching '*Postgis*'
-	}
 	finalizedBy tasks.named('jacocoTestReport')
 }
 
@@ -79,17 +89,5 @@ tasks.named('jacocoTestReport') {
 	reports {
 		xml.required = true
 		html.required = true
-	}
-}
-
-// Verificacion contra PostGIS real: .\gradlew testPostgis
-tasks.register('testPostgis', Test) {
-	dependsOn tasks.named('testClasses')
-	testClassesDirs = sourceSets.test.output.classesDirs
-	classpath = sourceSets.test.runtimeClasspath
-	useJUnitPlatform()
-	systemProperty 'app.seed.enabled', 'false'
-	filter {
-		includeTestsMatching '*Postgis*'
 	}
 }

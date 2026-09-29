@@ -1,6 +1,6 @@
 package com.sena.cold_day.core.modules.usuarios.application.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 
@@ -11,7 +11,7 @@ public record UsuarioResponse(
         String telefono,
         String fotoUrl,
         Rol rol,
-        LocalDateTime fechaRegistro,
+        Instant fechaRegistro,
         boolean habeasDataAceptado,
         boolean activo) {
 }

@@ -1,6 +1,6 @@
 package com.sena.cold_day.core.modules.usuarios.infrastructure.persistence;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
@@ -48,7 +48,7 @@ public class UsuarioJpaEntity {
     private Rol rol;
 
     @Column(name = "fecha_registro", nullable = false)
-    private LocalDateTime fechaRegistro;
+    private Instant fechaRegistro;
 
     @Column(name = "habeas_data_aceptado", nullable = false)
     private boolean habeasDataAceptado;

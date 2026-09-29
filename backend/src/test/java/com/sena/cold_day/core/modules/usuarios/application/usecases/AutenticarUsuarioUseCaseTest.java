@@ -37,7 +37,7 @@ class AutenticarUsuarioUseCaseTest {
 
     private Usuario usuario() {
         return Usuario.reconstituir(10L, "Ana", "ana@example.com", "hash", null, null, Rol.TECNICO,
-                Instant.now().atOffset(java.time.ZoneOffset.UTC).toLocalDateTime(), false, true, 0);
+                Instant.now(), false, true, 0);
     }
 
     @Test

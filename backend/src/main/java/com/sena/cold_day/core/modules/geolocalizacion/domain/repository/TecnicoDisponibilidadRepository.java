@@ -9,10 +9,9 @@ import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * Persistence-agnostic spatial availability port (design D9, RF-F1-07). It
- * exposes only domain value objects: no JPA, H2 or PostGIS type crosses this
- * boundary. The H2/Haversine adapter serves dev/test; the PostGIS adapter
- * ({@code ST_DWithin}/{@code ST_Distance} + GiST, RNF-03) takes over under
- * the {@code postgres} profile.
+ * exposes only domain value objects: no JPA or PostGIS type crosses this
+ * boundary. Implemented by the PostGIS adapter ({@code ST_DWithin}/
+ * {@code ST_Distance} + GiST, RNF-03).
  */
 public interface TecnicoDisponibilidadRepository {
 

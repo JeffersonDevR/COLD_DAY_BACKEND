@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,7 @@ class RestablecerContrasenaUseCaseTest {
 
     private Usuario usuarioConHash(String hash) {
         return Usuario.reconstituir(10L, "Ana", "ana@example.com", hash, null, null, Rol.CLIENTE,
-                LocalDateTime.now(), true, true, 0);
+                Instant.now(), true, true, 0);
     }
 
     @Test

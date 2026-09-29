@@ -46,6 +46,8 @@ import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.Spring
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
 import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
  * REST surface of atomic acceptance (tasks 6b.5/6b.8): a technician accepts its
@@ -57,6 +59,13 @@ import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 @AutoConfigureMockMvc
 @TestPropertySource(properties = "app.dispatch.escalamiento-ms=3600000")
 class OfertaApiIT {
+
+    FkFixtures fx;
+
+    @Autowired
+    void inyectarFixtures(JdbcTemplate jdbc) {
+        fx = new FkFixtures(jdbc);
+    }
 
     @Autowired MockMvc mockMvc;
     @Autowired OfertaOtRepository ofertaRepository;
@@ -78,6 +87,7 @@ class OfertaApiIT {
         springDataHistorial.deleteAll();
         springDataOt.deleteAll();
         springDataTecnico.deleteAll();
+        fx.limpiarPadres();
         usuarioRepository.deleteAll();
     }
 
@@ -213,7 +223,7 @@ class OfertaApiIT {
 
     private Ot crearOtBuscando() {
         Instant ahora = Instant.now();
-        Ot ot = Ot.crear(ClienteId.nueva(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+        Ot ot = Ot.crear(fx.clienteId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
                 "Calle 1", BOGOTA, ahora);
         ot.iniciarBusqueda(10.0, ahora.plusSeconds(60), ActorOt.CLIENTE, ahora);
         return otRepository.save(ot);

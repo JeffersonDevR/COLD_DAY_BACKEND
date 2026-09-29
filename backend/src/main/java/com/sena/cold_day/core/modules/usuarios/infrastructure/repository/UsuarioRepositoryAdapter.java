@@ -1,8 +1,10 @@
 package com.sena.cold_day.core.modules.usuarios.infrastructure.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,5 +51,11 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
     @Transactional(readOnly = true)
     public boolean existeCorreo(String correo) {
         return repository.existsByCorreo(correo);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Usuario> listarTodos() {
+        return repository.findAll(Sort.by("id")).stream().map(UsuarioJpaEntity::toDomain).toList();
     }
 }

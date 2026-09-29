@@ -21,6 +21,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.repository.OtEstadoHistorialRepositoryAdapter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
  * RNF-09 append-only history: entries record actor, timestamp, origin and
@@ -30,6 +32,14 @@ import com.sena.cold_day.core.modules.ot.infrastructure.repository.OtEstadoHisto
 @DataJpaTest
 @Import(OtEstadoHistorialRepositoryAdapter.class)
 class OtEstadoHistorialRepositoryTest {
+
+    @Autowired JdbcTemplate jdbc;
+    FkFixtures fx;
+
+    @BeforeEach
+    void fkFixtures() {
+        fx = new FkFixtures(jdbc);
+    }
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
 
@@ -43,7 +53,7 @@ class OtEstadoHistorialRepositoryTest {
 
     @Test
     void appendsAndListsByOtInChronologicalOrder() {
-        OtId otId = OtId.nueva();
+        OtId otId = fx.otId();
         repository.append(OtEstadoHistorial.registrar(otId,
                 new CambioEstado(null, EstadoOt.SOLICITADA, ActorOt.CLIENTE, AHORA, null)));
         repository.append(OtEstadoHistorial.registrar(otId,

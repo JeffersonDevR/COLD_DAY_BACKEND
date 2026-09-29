@@ -20,6 +20,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
+import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
+
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataTokenRecuperacionRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
@@ -39,6 +43,7 @@ class UsuariosApiIT {
     @Autowired MockMvc mockMvc;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired SpringDataTokenRecuperacionRepository tokenRepository;
+    @Autowired JwtTokenIssuer tokenIssuer;
 
     @BeforeEach
     void clearCaptures() { RECOVERIES.clear(); }
@@ -158,6 +163,30 @@ class UsuariosApiIT {
     void rejectsInvalidPayload() throws Exception {
         mockMvc.perform(post("/api/usuarios").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors").isNotEmpty());
+    }
+
+    @Test
+    void listingUsersRequiresAdministrador() throws Exception {
+        mockMvc.perform(post("/api/usuarios").contentType(MediaType.APPLICATION_JSON).content(validPayload(true)))
+                .andExpect(status().isCreated());
+
+        // No token -> 401.
+        mockMvc.perform(get("/api/usuarios")).andExpect(status().isUnauthorized());
+
+        // Non-admin -> 403.
+        String tecnicoToken = tokenIssuer.emitir(new UsuarioId(1L), Rol.TECNICO, 0).valor();
+        mockMvc.perform(get("/api/usuarios").header("Authorization", "Bearer " + tecnicoToken))
+                .andExpect(status().isForbidden());
+
+        // Administrador -> 200 with every user, never exposing the password hash.
+        String adminToken = tokenIssuer.emitir(new UsuarioId(999L), Rol.ADMINISTRADOR, 0).valor();
+        mockMvc.perform(get("/api/usuarios").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].correo").value("ana@example.com"))
+                .andExpect(jsonPath("$[0].rol").value("TECNICO"))
+                .andExpect(jsonPath("$[0].password").doesNotExist())
+                .andExpect(jsonPath("$[0].passwordHash").doesNotExist());
     }
 
     private String validPayload(boolean aceptaHabeasData) {

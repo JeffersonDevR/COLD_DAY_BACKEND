@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
-import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.spatial.H2TecnicoDisponibilidadAdapter;
+import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.spatial.PostgisTecnicoDisponibilidadAdapter;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
@@ -44,10 +44,12 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
 import com.sena.cold_day.core.shared.domain.Point;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
- * Runtime harness for dispatch (tasks 6a.3/6a.4): real H2 persistence, the real
- * H2 spatial adapter and a fixed clock, no sleeps. Proves the initial broadcast
+ * Runtime harness for dispatch (tasks 6a.3/6a.4): real PostgreSQL persistence, the real
+ * PostGIS spatial adapter and a fixed clock, no sleeps. Proves the initial broadcast
  * creates one pending 60-second offer per eligible technician, that escalation
  * expires the old offers and re-broadcasts at +5 km, and that the maximum radius
  * lands in the negative terminal state with an audited history entry.
@@ -55,9 +57,16 @@ import com.sena.cold_day.core.shared.domain.Point;
 @DataJpaTest
 @Import({IniciarBusquedaTecnicoUseCase.class, EscalarRadioUseCase.class,
         OtRepositoryAdapter.class, OtEstadoHistorialRepositoryAdapter.class,
-        OfertaOtRepositoryAdapter.class, H2TecnicoDisponibilidadAdapter.class,
+        OfertaOtRepositoryAdapter.class, PostgisTecnicoDisponibilidadAdapter.class,
         LoggingNotificacionPushAdapter.class, DespachoOtIT.ClockDePrueba.class})
 class DespachoOtIT {
+
+    FkFixtures fx;
+
+    @Autowired
+    void inyectarFixtures(JdbcTemplate jdbc) {
+        fx = new FkFixtures(jdbc);
+    }
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final Point BOGOTA = new Point(4.6, -74.0);
@@ -110,7 +119,7 @@ class DespachoOtIT {
         UUID cercanoEnQuince = persistirTecnico(4.708, -74.0, EstadoValidacion.APROBADO,
                 EstadoOperativo.DISPONIBLE, Set.of(CategoriaServicio.REFRIGERACION)); // ~12 km
         Ot ot = otBuscandoVencida(10.0);
-        OfertaOt ofertaVencida = ofertaRepository.save(OfertaOt.crear(ot.getId(), com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId.nueva(),
+        OfertaOt ofertaVencida = ofertaRepository.save(OfertaOt.crear(ot.getId(), fx.tecnicoId(),
                 10.0, AHORA.minusSeconds(60), AHORA));
 
         int procesadas = escalarRadio.ejecutar();
@@ -150,7 +159,7 @@ class DespachoOtIT {
     }
 
     private Ot otSolicitada() {
-        return Ot.crear(ClienteId.nueva(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+        return Ot.crear(fx.clienteId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
                 "Calle 1", BOGOTA, AHORA);
     }
 

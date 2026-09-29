@@ -24,6 +24,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Own-UUID identity (design D12): {@code tecnico.id} is its own UUID primary
@@ -49,7 +51,8 @@ public class TecnicoJpaEntity {
     private String numeroIdentificacion;
 
     @Convert(converter = CategoriaServicioJsonConverter.class)
-    @Column(name = "categorias_servicio", length = 4000)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "categorias_servicio")
     private Set<CategoriaServicio> categoriasServicio = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
@@ -64,7 +67,8 @@ public class TecnicoJpaEntity {
     private String motivoRechazoValidacion;
 
     @Convert(converter = CertificacionJsonConverter.class)
-    @Column(name = "certificaciones", length = 4000)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "certificaciones")
     private Set<Certificacion> certificaciones = new HashSet<>();
 
     @Column(nullable = false)

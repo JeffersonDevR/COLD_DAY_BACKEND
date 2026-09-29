@@ -30,6 +30,8 @@ import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsu
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoId;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
  * Authoritative proof of the exactly-one-winner invariant for insumo dispatch
@@ -49,8 +51,15 @@ import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.Requerimie
 @TestPropertySource(properties = "app.insumos.barrido-ms=3600000")
 class RequerimientoInsumoConcurrenteIT {
 
-    private static final UUID OT_ID = UUID.randomUUID();
-    private static final UUID TECNICO_ID = UUID.randomUUID();
+    FkFixtures fx;
+
+    @Autowired
+    void inyectarFixtures(JdbcTemplate jdbc) {
+        fx = new FkFixtures(jdbc);
+    }
+
+    private UUID otId;
+    private UUID tecnicoId;
 
     @Autowired Clock clock;
     @Autowired RequerimientoInsumoRepository requerimientos;
@@ -70,16 +79,19 @@ class RequerimientoInsumoConcurrenteIT {
     void cleanup() {
         springDataOfertas.deleteAll();
         springDataRequerimientos.deleteAll();
+        fx.limpiarPadres();
+        otId = null;
+        tecnicoId = null;
     }
 
     @Test
     void twoSimultaneousAcceptsResolveToExactlyOneWinner() throws Exception {
-        RequerimientoInsumo req = requerimientos.save(RequerimientoInsumo.crear(OT_ID, TECNICO_ID,
+        RequerimientoInsumo req = requerimientos.save(RequerimientoInsumo.crear(otId(), tecnicoId(),
                 List.of(new InsumoLinea("Filtro secadora", 1)), null, ahora, ahora.plusSeconds(600)));
         OfertaInsumo primero = ofertas.save(
-                OfertaInsumo.crear(req.getId(), ProveedorId.nueva(), ahora, ahora.plusSeconds(600)));
+                OfertaInsumo.crear(req.getId(), fx.proveedorId(), ahora, ahora.plusSeconds(600)));
         OfertaInsumo segundo = ofertas.save(
-                OfertaInsumo.crear(req.getId(), ProveedorId.nueva(), ahora, ahora.plusSeconds(600)));
+                OfertaInsumo.crear(req.getId(), fx.proveedorId(), ahora, ahora.plusSeconds(600)));
 
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CountDownLatch listos = new CountDownLatch(2);
@@ -125,5 +137,19 @@ class RequerimientoInsumoConcurrenteIT {
                 .map(id -> ofertas.buscarPorId(id).orElseThrow())
                 .filter(oferta -> oferta.getEstado() == estado)
                 .count();
+    }
+
+    private UUID otId() {
+        if (otId == null) {
+            otId = fx.ot(UUID.randomUUID());
+        }
+        return otId;
+    }
+
+    private UUID tecnicoId() {
+        if (tecnicoId == null) {
+            tecnicoId = fx.tecnico(UUID.randomUUID());
+        }
+        return tecnicoId;
     }
 }

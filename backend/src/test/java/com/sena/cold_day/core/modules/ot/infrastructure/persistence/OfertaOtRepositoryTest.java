@@ -17,6 +17,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaOtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.repository.OfertaOtRepositoryAdapter;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import org.springframework.jdbc.core.JdbcTemplate;
+import com.sena.cold_day.support.FkFixtures;
 
 /**
  * Persistence boundary of {@code oferta_ot} (design D4/D5). The conditional
@@ -26,6 +28,14 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 @DataJpaTest
 @Import(OfertaOtRepositoryAdapter.class)
 class OfertaOtRepositoryTest {
+
+    @Autowired JdbcTemplate jdbc;
+    FkFixtures fx;
+
+    @BeforeEach
+    void fkFixtures() {
+        fx = new FkFixtures(jdbc);
+    }
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final Instant EXPIRA = AHORA.plusSeconds(60);
@@ -40,8 +50,8 @@ class OfertaOtRepositoryTest {
 
     @Test
     void savesAndFindsByIdRoundTrippingTheOffer() {
-        TecnicoId tecnicoId = TecnicoId.nueva();
-        OfertaOt saved = repository.save(crearPendiente(OtId.nueva(), tecnicoId, 10.0, EXPIRA));
+        TecnicoId tecnicoId = fx.tecnicoId();
+        OfertaOt saved = repository.save(crearPendiente(fx.otId(), tecnicoId, 10.0, EXPIRA));
 
         assertThat(repository.buscarPorId(saved.getId())).hasValueSatisfying(found -> {
             assertThat(found.getTecnicoId()).isEqualTo(tecnicoId);
@@ -55,12 +65,12 @@ class OfertaOtRepositoryTest {
 
     @Test
     void listarPendientesPorOtReturnsOnlyPendingOffersOfThatOrder() {
-        OtId otId = OtId.nueva();
-        OtId otraOt = OtId.nueva();
-        repository.save(crearPendiente(otId, TecnicoId.nueva(), 10.0, EXPIRA));
-        OfertaOt resuelta = repository.save(crearPendiente(otId, TecnicoId.nueva(), 10.0, EXPIRA));
+        OtId otId = fx.otId();
+        OtId otraOt = fx.otId();
+        repository.save(crearPendiente(otId, fx.tecnicoId(), 10.0, EXPIRA));
+        OfertaOt resuelta = repository.save(crearPendiente(otId, fx.tecnicoId(), 10.0, EXPIRA));
         repository.intentarAceptar(resuelta.getId(), AHORA);
-        repository.save(crearPendiente(otraOt, TecnicoId.nueva(), 10.0, EXPIRA));
+        repository.save(crearPendiente(otraOt, fx.tecnicoId(), 10.0, EXPIRA));
 
         List<OfertaOt> pendientes = repository.listarPendientesPorOt(otId);
 
@@ -72,11 +82,11 @@ class OfertaOtRepositoryTest {
 
     @Test
     void listarPorTecnicoFiltersByTheRequestedStates() {
-        TecnicoId tecnicoId = TecnicoId.nueva();
-        repository.save(crearPendiente(OtId.nueva(), tecnicoId, 10.0, EXPIRA));
-        OfertaOt expirada = repository.save(crearPendiente(OtId.nueva(), tecnicoId, 10.0, EXPIRA));
+        TecnicoId tecnicoId = fx.tecnicoId();
+        repository.save(crearPendiente(fx.otId(), tecnicoId, 10.0, EXPIRA));
+        OfertaOt expirada = repository.save(crearPendiente(fx.otId(), tecnicoId, 10.0, EXPIRA));
         repository.expirarDe(expirada.getOtId(), AHORA);
-        repository.save(crearPendiente(OtId.nueva(), TecnicoId.nueva(), 10.0, EXPIRA));
+        repository.save(crearPendiente(fx.otId(), fx.tecnicoId(), 10.0, EXPIRA));
 
         assertThat(repository.listarPorTecnico(tecnicoId)).hasSize(2);
         assertThat(repository.listarPorTecnico(tecnicoId, OfertaEstado.PENDIENTE))
@@ -89,7 +99,7 @@ class OfertaOtRepositoryTest {
 
     @Test
     void intentarAceptarWinsForAPendingUnexpiredOfferExactlyOnce() {
-        OfertaOt oferta = repository.save(crearPendiente(OtId.nueva(), TecnicoId.nueva(), 10.0, EXPIRA));
+        OfertaOt oferta = repository.save(crearPendiente(fx.otId(), fx.tecnicoId(), 10.0, EXPIRA));
 
         int ganador = repository.intentarAceptar(oferta.getId(), AHORA);
         int repetido = repository.intentarAceptar(oferta.getId(), AHORA);
@@ -104,7 +114,7 @@ class OfertaOtRepositoryTest {
 
     @Test
     void intentarAceptarRejectsAnOfferWhoseWindowExpired() {
-        OfertaOt oferta = repository.save(crearPendiente(OtId.nueva(), TecnicoId.nueva(), 10.0, EXPIRA));
+        OfertaOt oferta = repository.save(crearPendiente(fx.otId(), fx.tecnicoId(), 10.0, EXPIRA));
 
         int filas = repository.intentarAceptar(oferta.getId(), EXPIRA);
 
@@ -120,11 +130,11 @@ class OfertaOtRepositoryTest {
 
     @Test
     void expirarDeClosesOnlyPendingOffersOfThatOrder() {
-        OtId otId = OtId.nueva();
-        OfertaOt pendiente = repository.save(crearPendiente(otId, TecnicoId.nueva(), 10.0, EXPIRA));
-        OfertaOt aceptada = repository.save(crearPendiente(otId, TecnicoId.nueva(), 10.0, EXPIRA));
+        OtId otId = fx.otId();
+        OfertaOt pendiente = repository.save(crearPendiente(otId, fx.tecnicoId(), 10.0, EXPIRA));
+        OfertaOt aceptada = repository.save(crearPendiente(otId, fx.tecnicoId(), 10.0, EXPIRA));
         repository.intentarAceptar(aceptada.getId(), AHORA);
-        OfertaOt ajena = repository.save(crearPendiente(OtId.nueva(), TecnicoId.nueva(), 10.0, EXPIRA));
+        OfertaOt ajena = repository.save(crearPendiente(fx.otId(), fx.tecnicoId(), 10.0, EXPIRA));
 
         repository.expirarDe(otId, EXPIRA);
 
@@ -140,9 +150,9 @@ class OfertaOtRepositoryTest {
 
     @Test
     void invalidarPendientesDeCancelsOnlyPendingOffersOfThatOrder() {
-        OtId otId = OtId.nueva();
-        OfertaOt pendiente = repository.save(crearPendiente(otId, TecnicoId.nueva(), 10.0, EXPIRA));
-        OfertaOt aceptada = repository.save(crearPendiente(otId, TecnicoId.nueva(), 10.0, EXPIRA));
+        OtId otId = fx.otId();
+        OfertaOt pendiente = repository.save(crearPendiente(otId, fx.tecnicoId(), 10.0, EXPIRA));
+        OfertaOt aceptada = repository.save(crearPendiente(otId, fx.tecnicoId(), 10.0, EXPIRA));
         repository.intentarAceptar(aceptada.getId(), AHORA);
 
         repository.invalidarPendientesDe(otId, OfertaEstado.CANCELADA, AHORA);

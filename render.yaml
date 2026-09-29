@@ -13,9 +13,11 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod,postgres
-      # Evita el create-drop del perfil postgres en produccion (no borra datos en cada deploy).
+      # El esquema del perfil postgres lo gestiona Flyway (db/migration/), no
+      # ddl-auto: validate solo compara contra lo que Flyway ya aplico y falla
+      # rapido en el arranque si no coincide, sin emitir DDL. Ver ARQUITECTURA.md #14.
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
-        value: update
+        value: validate
       - key: JWT_SECRET
         sync: false
       # JDBC puro SIN credenciales embebidas (el driver pgjdbc no acepta user:pass@host).
