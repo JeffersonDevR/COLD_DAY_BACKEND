@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoValidacionProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.shared.domain.Point;
 
@@ -13,6 +14,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -69,6 +72,13 @@ public class ProveedorJpaEntity {
     @Column(nullable = false)
     private boolean activo = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_validacion", nullable = false)
+    private EstadoValidacionProveedor estadoValidacion;
+
+    @Column(name = "motivo_rechazo_validacion", length = 500)
+    private String motivoRechazoValidacion;
+
     @Column(name = "creado_en")
     private Instant creadoEn;
 
@@ -118,14 +128,21 @@ public class ProveedorJpaEntity {
         this.longitud = ubicacion == null ? null : ubicacion.longitud();
         this.categoriasInsumo = new LinkedHashSet<>(source.getCategoriasInsumo());
         this.activo = source.isActivo();
+        this.estadoValidacion = source.getEstadoValidacion();
+        this.motivoRechazoValidacion = source.getMotivoRechazoValidacion();
         this.creadoEn = source.getCreadoEn();
     }
 
+    /**
+     * The persisted validation state is passed through, never defaulted: a read
+     * that reset the state would silently un-approve every supplier and make
+     * {@code exigirValidado()} a no-op.
+     */
     public Proveedor toDomain() {
         Point ubicacion = latitud == null || longitud == null ? null : new Point(latitud, longitud);
         return Proveedor.reconstituir(ProveedorId.desde(id), usuarioId, razonSocial, nit, telefono,
                 direccion, ubicacion,
                 categoriasInsumo == null ? new LinkedHashSet<>() : new LinkedHashSet<>(categoriasInsumo),
-                activo, creadoEn);
+                estadoValidacion, motivoRechazoValidacion, activo, creadoEn);
     }
 }

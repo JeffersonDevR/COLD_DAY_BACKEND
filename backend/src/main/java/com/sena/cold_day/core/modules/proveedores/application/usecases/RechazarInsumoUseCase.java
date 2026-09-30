@@ -18,8 +18,9 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 /**
  * Explicit supplier decline of a held offer (spec disp.R5, design "State
  * Machines"). It records the spec-mandated {@code RECHAZADO} literal — never
- * {@code RECHAZADA} — and never binds the supplier. Only an eligible active
- * supplier that actually holds the offer may reject it.
+ * {@code RECHAZADA} — and never binds the supplier. Only an eligible supplier
+ * whose documentation is approved and that actually holds the offer may reject
+ * it.
  */
 @Service
 public class RechazarInsumoUseCase {
@@ -50,13 +51,17 @@ public class RechazarInsumoUseCase {
         return ofertaRepository.save(oferta);
     }
 
-    /** Resolves the acting supplier and enforces the active/linked-account gate (AD7). */
+    /**
+     * Resolves the acting supplier and enforces the eligibility gate (AD7): a
+     * linked account that is active AND whose documentation is approved.
+     */
     private Proveedor proveedorElegible(UsuarioId usuarioId) {
         Proveedor proveedor = proveedorRepository.findByUsuarioId(usuarioId.valor())
                 .orElseThrow(() -> new ProveedorNoElegibleException(usuarioId.valor()));
         if (!proveedor.isActivo()) {
             throw new ProveedorNoElegibleException(usuarioId.valor());
         }
+        proveedor.exigirValidado();
         return proveedor;
     }
 }
