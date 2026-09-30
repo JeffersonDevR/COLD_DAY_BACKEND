@@ -22,4 +22,6 @@ public interface ClienteRepository {
     List<Cliente> findByActivoTrue();
 
     void deleteAll();
+
+
 }
