@@ -12,11 +12,17 @@ import com.sena.cold_day.core.shared.domain.Point;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * Persistence mapping for the {@code proveedor} table (design schema). Own-UUID
@@ -25,6 +31,7 @@ import lombok.Setter;
  * mirroring {@code TecnicoJpaEntity}.
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "proveedor")
 @Getter
 @Setter
@@ -64,6 +71,29 @@ public class ProveedorJpaEntity {
 
     @Column(name = "creado_en")
     private Instant creadoEn;
+
+    // Audit metadata (V10): persistence-layer only, never assigned by apply()
+    // and never mapped into the domain or an *ApiResponse. creadoEn above is a
+    // BUSINESS timestamp set by Proveedor.crear — deliberately NOT @CreatedDate,
+    // because Spring's DateTimeProvider would overwrite it. The four-field block
+    // is duplicated across the four audited entities on purpose — a shared
+    // @MappedSuperclass would push a JPA type into core/shared across the
+    // vertical module boundary.
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false, length = 255)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "last_modified_by", length = 255)
+    private String lastModifiedBy;
 
     public static ProveedorJpaEntity fromDomain(Proveedor source) {
         ProveedorJpaEntity target = new ProveedorJpaEntity();

@@ -22,6 +22,7 @@ import com.sena.cold_day.core.shared.domain.Point;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
@@ -33,6 +34,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * JPA mapping of the {@code ot} aggregate. {@code cliente_id}/{@code tecnico_id}
@@ -40,6 +46,7 @@ import org.hibernate.type.SqlTypes;
  * of JPA types; {@code version} drives optimistic locking (design D8).
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "ot", indexes = {
         @Index(name = "idx_ot_cliente_id", columnList = "cliente_id"),
         @Index(name = "idx_ot_tecnico_id", columnList = "tecnico_id"),
@@ -92,6 +99,31 @@ public class OtJpaEntity {
 
     @Column(name = "creada_en")
     private Instant creadaEn;
+
+    // Audit metadata (V10): persistence-layer only, never assigned by
+    // applyFromDomain and never mapped into the domain or an *ApiResponse.
+    // creadaEn above is a BUSINESS timestamp fed by Ot.crear from the Clock
+    // bean — it is deliberately NOT @CreatedDate, because Spring's
+    // DateTimeProvider would overwrite the deterministic Clock value that
+    // CrearOtUseCase / CalificarOtUseCase / AceptarOfertaUseCase and their
+    // fixed-clock tests depend on. The four-field block is duplicated across the
+    // four audited entities on purpose — a shared @MappedSuperclass would push a
+    // JPA type into core/shared across the vertical module boundary.
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false, length = 255)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "last_modified_by", length = 255)
+    private String lastModifiedBy;
 
     @Column(name = "asignada_en")
     private Instant asignadaEn;
