@@ -165,6 +165,31 @@ public class OtJpaEntity {
     @Column(name = "auxiliares_requeridos", nullable = false, columnDefinition = "integer default 0")
     private int auxiliaresRequeridos;
 
+    // Visit tracking and rating (V7): all nullable so rows created before the
+    // migration survive the additive ALTER and read back as NULL until the
+    // corresponding aggregate behaviour is invoked.
+    @Column(name = "llegada_en")
+    private Instant llegadaEn;
+
+    @Column(name = "medio_pago_visita", length = 30)
+    private String medioPagoVisita;
+
+    @Column(name = "visita_pagada_en")
+    private Instant visitaPagadaEn;
+
+    @Column(name = "calificacion_estrellas")
+    private Integer calificacionEstrellas;
+
+    @Column(name = "calificacion_comentario", length = 1000)
+    private String calificacionComentario;
+
+    @Column(name = "calificacion_en")
+    private Instant calificacionEn;
+
+    /** Plain scalar UUID, same convention as {@code cliente_id}/{@code tecnico_id}. */
+    @Column(name = "calificacion_tecnico_id")
+    private UUID calificacionTecnicoId;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -201,6 +226,14 @@ public class OtJpaEntity {
         this.auxiliaresRequeridos = source.getAuxiliaresRequeridos();
         this.diagnostico = source.getDiagnostico();
         this.presupuesto = source.getPresupuesto();
+        this.llegadaEn = source.getLlegadaEn();
+        this.medioPagoVisita = source.getMedioPagoVisita();
+        this.visitaPagadaEn = source.getVisitaPagadaEn();
+        this.calificacionEstrellas = source.getCalificacionEstrellas();
+        this.calificacionComentario = source.getCalificacionComentario();
+        this.calificacionEn = source.getCalificacionEn();
+        this.calificacionTecnicoId = source.getCalificacionTecnicoId() == null ? null
+                : source.getCalificacionTecnicoId().valor();
     }
 
     public Ot toDomain() {
@@ -212,6 +245,8 @@ public class OtJpaEntity {
                 evidenciaUrls == null ? new ArrayList<>() : new ArrayList<>(evidenciaUrls),
                 direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
                 canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
-                tarifaFuente == null ? null : TarifaFuente.valueOf(tarifaFuente), auxiliaresRequeridos);
+                tarifaFuente == null ? null : TarifaFuente.valueOf(tarifaFuente), auxiliaresRequeridos,
+                llegadaEn, medioPagoVisita, visitaPagadaEn, calificacionEstrellas, calificacionComentario,
+                calificacionEn, calificacionTecnicoId == null ? null : TecnicoId.desde(calificacionTecnicoId));
     }
 }

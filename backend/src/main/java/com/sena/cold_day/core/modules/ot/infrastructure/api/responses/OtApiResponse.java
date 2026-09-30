@@ -35,7 +35,11 @@ public record OtApiResponse(
         Double longitud,
         String clienteNombre,
         String tecnicoNombre,
-        int auxiliaresRequeridos) {
+        int auxiliaresRequeridos,
+        String medioPagoVisita,
+        Integer calificacionEstrellas,
+        String calificacionComentario,
+        Instant calificacionEn) {
 
     public static OtApiResponse from(OtResponse response) {
         return from(response, null, null);
@@ -54,6 +58,8 @@ public record OtApiResponse(
                 response.presupuesto(),
                 ubicacion == null ? null : ubicacion.latitud(),
                 ubicacion == null ? null : ubicacion.longitud(),
-                clienteNombre, tecnicoNombre, response.auxiliaresRequeridos());
+                clienteNombre, tecnicoNombre, response.auxiliaresRequeridos(),
+                response.medioPagoVisita(), response.calificacionEstrellas(), response.calificacionComentario(),
+                response.calificacionEn());
     }
 }
