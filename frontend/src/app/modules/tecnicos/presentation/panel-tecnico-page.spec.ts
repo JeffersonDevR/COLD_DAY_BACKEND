@@ -53,7 +53,8 @@ describe('PanelTecnicoPage', () => {
   it('cambia el estado operativo y avisa', () => {
     const { fixture, tecnicosApi, toast } = setup();
     fixture.componentInstance.cambiarEstadoOperativo('FUERA_DE_SERVICIO');
-    expect(tecnicosApi.actualizarEstadoOperativo).toHaveBeenCalledWith('TEC-1', 'FUERA_DE_SERVICIO');
+    // Sin id: /api/tecnicos/me/estado resuelve el técnico desde el principal.
+    expect(tecnicosApi.actualizarEstadoOperativo).toHaveBeenCalledWith('FUERA_DE_SERVICIO');
     expect(fixture.componentInstance.tecnico()?.estadoOperativo).toBe('FUERA_DE_SERVICIO');
     expect(toast.info).toHaveBeenCalled();
   });
