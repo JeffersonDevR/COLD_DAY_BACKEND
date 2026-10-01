@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -73,6 +74,17 @@ public class OtControllerAdvice {
     @ExceptionHandler(MotivoRequeridoException.class)
     ResponseEntity<ApiError> handleMotivoRequerido(MotivoRequeridoException exception) {
         return error(HttpStatus.BAD_REQUEST, exception);
+    }
+
+    /**
+     * Participation refused by the controller layer: 403. {@code @PreAuthorize}
+     * denials never reach here (Spring Security handles those in the filter
+     * chain), but a check performed inside the handler body throws from here and
+     * would otherwise be re-dispatched to /error as a 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException exception) {
+        return error(HttpStatus.FORBIDDEN, exception);
     }
 
     private ResponseEntity<ApiError> error(HttpStatus status, RuntimeException exception) {

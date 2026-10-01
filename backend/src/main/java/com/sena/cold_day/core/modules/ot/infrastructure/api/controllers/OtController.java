@@ -35,6 +35,7 @@ import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.RechazoPres
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.HistorialEstadoApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.TecnicoUbicacionApiResponse;
+import com.sena.cold_day.core.shared.infrastructure.security.AutorizacionPropietario;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
 import jakarta.validation.Valid;
@@ -57,13 +58,15 @@ public class OtController {
     private final AprobarPresupuestoUseCase aprobarPresupuesto;
     private final RechazarPresupuestoUseCase rechazarPresupuesto;
     private final FinalizarOtUseCase finalizar;
+    private final AutorizacionPropietario autorizacion;
 
     @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (8 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 8 params a otro ctor.
     public OtController(CrearOtUseCase crear, ConsultarOtUseCase consultar, CancelarOtUseCase cancelar,
             IniciarDesplazamientoUseCase iniciarDesplazamiento,
             RegistrarDiagnosticoUseCase registrarDiagnostico,
             AprobarPresupuestoUseCase aprobarPresupuesto,
-            RechazarPresupuestoUseCase rechazarPresupuesto, FinalizarOtUseCase finalizar) {
+            RechazarPresupuestoUseCase rechazarPresupuesto, FinalizarOtUseCase finalizar,
+            AutorizacionPropietario autorizacion) {
         this.crear = crear;
         this.consultar = consultar;
         this.cancelar = cancelar;
@@ -72,10 +75,12 @@ public class OtController {
         this.aprobarPresupuesto = aprobarPresupuesto;
         this.rechazarPresupuesto = rechazarPresupuesto;
         this.finalizar = finalizar;
+        this.autorizacion = autorizacion;
     }
 
     /** The cliente is resolved from the principal; all Phase-1 orders are urgent. */
     @PostMapping
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<OtApiResponse> crear(@AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody OtApiRequest request) {
         OtResponse created = crear.crear(new OtRequest(request.categoriaServicio(), request.descripcionFalla(),
@@ -84,19 +89,34 @@ public class OtController {
                 .body(OtApiResponse.from(created));
     }
 
+    /** Readable only by the owning client, the assigned technician, or an administrator. */
     @GetMapping("/{id}")
-    public OtApiResponse consultar(@PathVariable OtId id) {
-        return OtApiResponse.from(consultar.consultar(id));
+    public OtApiResponse consultar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id) {
+        OtResponse ot = consultar.consultar(id);
+        autorizacion.exigirParticipanteOAdmin(principal, ot);
+        return OtApiResponse.from(ot);
     }
 
     @GetMapping("/{id}/historial")
-    public List<HistorialEstadoApiResponse> historial(@PathVariable OtId id) {
+    public List<HistorialEstadoApiResponse> historial(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id) {
+        OtResponse ot = consultar.consultar(id);
+        autorizacion.exigirParticipanteOAdmin(principal, ot);
         return consultar.historial(id).stream().map(HistorialEstadoApiResponse::from).toList();
     }
 
-    /** RF-F1-27: última ubicación reportada por el técnico asignado (seguimiento en vivo). */
+    /**
+     * RF-F1-27: última ubicación reportada por el técnico asignado (seguimiento en vivo).
+     * <p>
+     * Treated as a privacy endpoint: it discloses the live GPS position of a
+     * named technician, so it is restricted to the participants of the order
+     * (owning client, assigned technician) and administrators.
+     */
     @GetMapping("/{id}/tecnico-ubicacion")
-    public TecnicoUbicacionApiResponse tecnicoUbicacion(@PathVariable OtId id) {
+    public TecnicoUbicacionApiResponse tecnicoUbicacion(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id) {
+        OtResponse ot = consultar.consultar(id);
+        autorizacion.exigirParticipanteOAdmin(principal, ot);
         return consultar.ubicacionTecnico(id)
                 .map(TecnicoUbicacionApiResponse::de)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
