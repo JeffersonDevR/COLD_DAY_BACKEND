@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -85,6 +86,17 @@ public class TecnicoControllerAdvice {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException exception) {
         return error(HttpStatus.CONFLICT, new RuntimeException("Data integrity violation"));
+    }
+
+    /**
+     * Ownership refused by the controller layer: 403. {@code @PreAuthorize}
+     * denials never reach here (Spring Security handles those in the filter
+     * chain), but a check performed inside the handler body throws from here and
+     * would otherwise be re-dispatched to /error as a 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException exception) {
+        return error(HttpStatus.FORBIDDEN, exception);
     }
 
     private ResponseEntity<ApiError> error(HttpStatus status, RuntimeException exception) {
