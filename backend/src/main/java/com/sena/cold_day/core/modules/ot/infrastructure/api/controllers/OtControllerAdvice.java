@@ -11,9 +11,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.CalificacionInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.ConfirmarLlegadaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.MotivoRequeridoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
@@ -76,15 +79,22 @@ public class OtControllerAdvice {
         return error(HttpStatus.BAD_REQUEST, exception);
     }
 
-    /**
-     * Participation refused by the controller layer: 403. {@code @PreAuthorize}
-     * denials never reach here (Spring Security handles those in the filter
-     * chain), but a check performed inside the handler body throws from here and
-     * would otherwise be re-dispatched to /error as a 500.
-     */
-    @ExceptionHandler(AccessDeniedException.class)
-    ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException exception) {
-        return error(HttpStatus.FORBIDDEN, exception);
+    /** Illegal arrival confirmation: the OT is not EN_CAMINO or has no technician. */
+    @ExceptionHandler(ConfirmarLlegadaInvalidaException.class)
+    ResponseEntity<ApiError> handleConfirmarLlegadaInvalida(ConfirmarLlegadaInvalidaException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** Illegal visit payment: already paid or the OT cannot be paid. */
+    @ExceptionHandler(PagoVisitaInvalidoException.class)
+    ResponseEntity<ApiError> handlePagoVisitaInvalido(PagoVisitaInvalidoException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** Illegal rating: not FINALIZADA, score out of range, no technician or already rated. */
+    @ExceptionHandler(CalificacionInvalidaException.class)
+    ResponseEntity<ApiError> handleCalificacionInvalida(CalificacionInvalidaException exception) {
+        return error(HttpStatus.CONFLICT, exception);
     }
 
     private ResponseEntity<ApiError> error(HttpStatus status, RuntimeException exception) {

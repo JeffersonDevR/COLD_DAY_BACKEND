@@ -11,6 +11,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import com.sena.cold_day.core.modules.proveedores.domain.exception.OfertaInsumoNoDisponibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoElegibleException;
+import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoValidadoException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.RequerimientoInsumoNoEncontradoException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.TransicionRequerimientoInvalidaException;
 import com.sena.cold_day.core.shared.errors.ApiError;
@@ -41,6 +42,17 @@ public class InsumoControllerAdvice {
     /** Unknown, inactive, foreign or non-owning supplier (spec disp.R3, design AD7). */
     @ExceptionHandler(ProveedorNoElegibleException.class)
     ResponseEntity<ApiError> handleIneligible(ProveedorNoElegibleException exception) {
+        return error(HttpStatus.FORBIDDEN, exception);
+    }
+
+    /**
+     * Active supplier whose documentary validation is not approved. Same 403 as
+     * an ineligible supplier — the caller is authenticated and linked, it simply
+     * is not entitled to dispatch — but a different cause, so it is reported
+     * with its own message instead of being flattened into the eligibility one.
+     */
+    @ExceptionHandler(ProveedorNoValidadoException.class)
+    ResponseEntity<ApiError> handleNotValidated(ProveedorNoValidadoException exception) {
         return error(HttpStatus.FORBIDDEN, exception);
     }
 

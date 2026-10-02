@@ -32,12 +32,19 @@ public record OtResponse(
         Diagnostico diagnostico,
         Presupuesto presupuesto,
         Point ubicacion,
-        int auxiliaresRequeridos) {
+        int auxiliaresRequeridos,
+        String medioPagoVisita,
+        boolean visitaPagada,
+        Integer calificacionEstrellas,
+        String calificacionComentario,
+        Instant calificacionEn) {
 
     public static OtResponse fromDomain(Ot ot) {
         return new OtResponse(ot.getId(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
                 ot.getCategoriaServicio(), ot.getDescripcionFalla(), ot.getDireccion(), ot.getRadioKm(),
                 ot.getCreadaEn(), ot.getCanceladaPor(), ot.getMotivoCancelacion(), ot.getTarifaVisita(),
-                ot.getDiagnostico(), ot.getPresupuesto(), ot.getUbicacion(), ot.getAuxiliaresRequeridos());
+                ot.getDiagnostico(), ot.getPresupuesto(), ot.getUbicacion(), ot.getAuxiliaresRequeridos(),
+                ot.getMedioPagoVisita(), ot.getVisitaPagadaEn() != null, ot.getCalificacionEstrellas(),
+                ot.getCalificacionComentario(), ot.getCalificacionEn());
     }
 }

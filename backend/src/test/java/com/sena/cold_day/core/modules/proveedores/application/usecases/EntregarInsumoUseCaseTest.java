@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
+import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.OfertaInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoElegibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.TransicionRequerimientoInvalidaException;
@@ -113,9 +115,13 @@ class EntregarInsumoUseCaseTest {
         verify(requerimientoRepository, never()).save(any());
     }
 
+    /** An eligible supplier: active AND documentary validation approved (AD7). */
     private Proveedor proveedorActivo() {
-        return Proveedor.crear(USUARIO_ID, "Suministros del Norte", "900123456-1", "3105550001", null, null,
-                Set.of());
+        Proveedor proveedor = Proveedor.crear(USUARIO_ID, "Suministros del Norte", "900123456-1", "3105550001",
+                null, null, Set.of());
+        proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1),
+                List.of(new DocumentoProveedor(1L, proveedor.getId(), "RUT", LocalDate.of(2027, 1, 1))));
+        return proveedor;
     }
 
     private RequerimientoInsumo requerimiento(RequerimientoInsumoId id, EstadoRequerimiento estado,
