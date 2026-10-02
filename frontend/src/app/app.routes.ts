@@ -154,6 +154,12 @@ export const routes: Routes = [
     loadComponent: () => import('./modules/proveedores/presentation/solicitudes-proveedor-page').then(m => m.SolicitudesProveedorPage),
     title: 'Portal de Proveedores - COLD DAY'
   },
+  {
+    path: 'proveedor/documentos',
+    canActivate: [authGuard, roleGuard(['PROVEEDOR'])],
+    loadComponent: () => import('./modules/proveedores/presentation/documentos-proveedor-page').then(m => m.DocumentosProveedorPage),
+    title: 'Expediente del Proveedor - COLD DAY'
+  },
 
   // Fallback
   {

@@ -6,6 +6,8 @@ import { switchMap } from 'rxjs/operators';
 import { UsuariosApi } from '../infrastructure/usuarios-api';
 import { ClientesApi } from '../../clientes/infrastructure/clientes-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
+import { ProveedoresApi } from '../../proveedores/infrastructure/proveedores-api';
+import { ProveedorRegistroService } from '../../proveedores/infrastructure/proveedor-registro.service';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -37,7 +39,7 @@ import { Rol, CategoriaServicio, TokenResponse } from '../../../core/shared/doma
               <span class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 ¿Cómo deseas usar la plataforma?
               </span>
-              <div class="grid grid-cols-2 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
                   type="button"
                   (click)="selectedRol.set('CLIENTE')"
@@ -77,6 +79,27 @@ import { Rol, CategoriaServicio, TokenResponse } from '../../../core/shared/doma
                   <div>
                     <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">Técnico</h4>
                     <p class="text-xs text-slate-500 dark:text-slate-400">Prestar servicios certificados</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="selectedRol.set('PROVEEDOR')"
+                  class="flex items-center gap-3 p-3.5 rounded-2xl border text-left transition-all"
+                  [class.border-emerald-500]="selectedRol() === 'PROVEEDOR'"
+                  [class.bg-emerald-50]="selectedRol() === 'PROVEEDOR'"
+                  [class.dark:bg-emerald-950/40]="selectedRol() === 'PROVEEDOR'"
+                  [class.ring-2]="selectedRol() === 'PROVEEDOR'"
+                  [class.ring-emerald-500/20]="selectedRol() === 'PROVEEDOR'"
+                  [class.border-slate-200]="selectedRol() !== 'PROVEEDOR'"
+                  [class.dark:border-slate-700]="selectedRol() !== 'PROVEEDOR'"
+                >
+                  <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <i class="pi pi-box"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-slate-100">Proveedor</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Suministrar insumos</p>
                   </div>
                 </button>
               </div>
@@ -178,6 +201,43 @@ import { Rol, CategoriaServicio, TokenResponse } from '../../../core/shared/doma
               </div>
             }
 
+            <!-- Datos comerciales si es PROVEEDOR -->
+            @if (selectedRol() === 'PROVEEDOR') {
+              <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-building text-emerald-600 text-sm"></i>
+                  <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">Datos Comerciales</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label for="razonSocial" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Razón Social * 
+                    </label>
+                    <input
+                      id="razonSocial"
+                      type="text"
+                      formControlName="razonSocial"
+                      placeholder="Ej. Suministros del Norte S.A.S."
+                      class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label for="nit" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      NIT * 
+                    </label>
+                    <input
+                      id="nit"
+                      type="text"
+                      formControlName="nit"
+                      placeholder="Ej. 900123456-1"
+                      class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <p class="text-[11px] text-slate-500">Tu cuenta se crea con el rol PROVEEDOR y en estado <strong>PENDIENTE</strong>. Podrás cargar tu documentación, pero no podrás aceptar pedidos de insumos hasta que un administrador la valide.</p>
+              </div>
+            }
+
             <!-- Checkbox Habeas Data OBLIGATORIO (Ley 1581) -->
             <div class="pt-2">
               <label class="flex items-start gap-3 cursor-pointer">
@@ -225,6 +285,8 @@ export class RegistroPage {
   private readonly usuariosApi = inject(UsuariosApi);
   private readonly clientesApi = inject(ClientesApi);
   private readonly tecnicosApi = inject(TecnicosApi);
+  private readonly proveedoresApi = inject(ProveedoresApi);
+  private readonly proveedorRegistro = inject(ProveedorRegistroService);
   private readonly apiConfig = inject(ApiConfig);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
@@ -240,6 +302,8 @@ export class RegistroPage {
     telefono: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(7)] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] }),
     numeroIdentificacion: new FormControl('', { nonNullable: true }),
+    razonSocial: new FormControl('', { nonNullable: true }),
+    nit: new FormControl('', { nonNullable: true }),
     aceptaHabeasData: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] })
   });
 
@@ -267,7 +331,45 @@ export class RegistroPage {
       return;
     }
 
+    // El proveedor declara su identidad comercial: sin razón social o sin NIT el
+    // backend responde 400, así que se corta aquí y no se gastan dos round trips.
+    if (rol === 'PROVEEDOR' && (!formVal.razonSocial.trim() || !formVal.nit.trim())) {
+      this.toast.error('Faltan datos comerciales', 'Ingresa la razón social y el NIT de tu empresa.');
+      return;
+    }
+
     this.loading.set(true);
+
+    // PROVEEDOR: alta atómica en /api/proveedores (Usuario rol PROVEEDOR + perfil).
+    // Va antes del atajo de mock porque el mock también tiene que crear el
+    // proveedor, no solo un usuario suelto.
+    if (rol === 'PROVEEDOR') {
+      this.proveedoresApi.registrar({
+        nombre: formVal.nombre,
+        correo: formVal.correo,
+        password: formVal.password,
+        telefono: formVal.telefono,
+        razonSocial: formVal.razonSocial.trim(),
+        nit: formVal.nit.trim(),
+        aceptaHabeasData: formVal.aceptaHabeasData,
+      }).subscribe({
+        next: (proveedor) => {
+          this.proveedorRegistro.guardar({
+            id: proveedor.id,
+            usuarioId: proveedor.usuarioId,
+            razonSocial: proveedor.razonSocial,
+            nit: proveedor.nit,
+            estadoValidacion: proveedor.estadoValidacion ?? 'PENDIENTE',
+          });
+          this.usuariosApi.login(formVal.correo, formVal.password).subscribe({
+            next: (res) => this.completarAlta(res, formVal.correo),
+            error: (err: Error) => this.errorAlta(err),
+          });
+        },
+        error: (err: Error) => this.errorAlta(err),
+      });
+      return;
+    }
 
     // Modo mock: alta en memoria + sesión simulada (comportamiento previo).
     if (this.apiConfig.useMocks()) {
@@ -342,7 +444,10 @@ export class RegistroPage {
     this.loading.set(false);
     const usuario = this.authService.establecerSesionDesdeToken(res, correo);
     this.toast.success('Cuenta Creada Exitosamente', `Bienvenido a COLD DAY, ${usuario.nombre}`);
-    this.router.navigate([this.authService.getDashboardRouteForRole(usuario.rol)]);
+    // El proveedor aterriza en su expediente, no en el listado de solicitudes:
+    // recién registrado está PENDIENTE y esas solicitudes le responderían 403.
+    const destino = usuario.rol === 'PROVEEDOR' ? '/proveedor/documentos' : this.authService.getDashboardRouteForRole(usuario.rol);
+    this.router.navigate([destino]);
   }
 
   private errorAlta(err: Error): void {

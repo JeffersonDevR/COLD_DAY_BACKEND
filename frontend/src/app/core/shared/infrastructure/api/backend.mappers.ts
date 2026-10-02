@@ -256,6 +256,7 @@ export function aProveedorResponse(dto: ProveedorApiResponse): ProveedorResponse
     telefono: dto.telefono ?? undefined,
     activo: dto.activo,
     creadoEn: dto.creadoEn ?? undefined,
+    estadoValidacion: dto.estadoValidacion,
   };
 }
 

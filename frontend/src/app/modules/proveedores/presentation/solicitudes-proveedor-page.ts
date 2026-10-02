@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { ProveedoresApi } from '../infrastructure/proveedores-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { ApiHttpError } from '../../../core/shared/infrastructure/api/error.interceptor';
@@ -20,7 +21,7 @@ type TonoBadge = 'pendiente' | 'ok' | 'error' | 'neutro';
 @Component({
   selector: 'app-solicitudes-proveedor-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   template: `
     <div class="space-y-6 max-w-5xl mx-auto">
       <div class="flex flex-wrap items-center justify-between gap-4">
@@ -43,6 +44,14 @@ type TonoBadge = 'pendiente' | 'ok' | 'error' | 'neutro';
         </button>
       </div>
 
+      <a
+        routerLink="/proveedor/documentos"
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      >
+        <i class="pi pi-folder text-sm"></i>
+        Mi expediente y validación
+      </a>
+
       <!-- Región viva para anunciar el resultado de las acciones asíncronas -->
       <p class="sr-only" aria-live="polite">{{ anuncio() }}</p>
 
@@ -56,6 +65,19 @@ type TonoBadge = 'pendiente' | 'ok' | 'error' | 'neutro';
           <i class="pi pi-exclamation-triangle text-3xl text-rose-500"></i>
           <h3 class="text-base font-bold text-rose-800 dark:text-rose-200 mt-2">No se pudieron cargar las solicitudes</h3>
           <p class="text-xs text-rose-700 dark:text-rose-300 mt-1">Verifica tu conexión e inténtalo de nuevo.</p>
+          @if (validacionBloquea()) {
+            <p class="text-xs text-amber-700 dark:text-amber-300 mt-2 max-w-md mx-auto">
+              Tu documentación aún está en estado <strong>PENDIENTE</strong>: hasta que un administrador la apruebe
+              no puedes recibir pedidos de insumos.
+            </p>
+            <a
+              routerLink="/proveedor/documentos"
+              class="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs"
+            >
+              <i class="pi pi-folder text-xs"></i>
+              Ir a mi expediente
+            </a>
+          }
           <button
             type="button"
             (click)="cargar()"
@@ -192,6 +214,8 @@ export class SolicitudesProveedorPage implements OnInit {
   readonly ofertas = signal<OfertaInsumoResponse[]>([]);
   readonly cargando = signal<boolean>(false);
   readonly errorCarga = signal<boolean>(false);
+  /** true cuando el 403 viene del gate de validación documental, no de la red. */
+  readonly validacionBloquea = signal<boolean>(false);
   readonly anuncio = signal<string>('');
   /** Id de la oferta cuya acción está en vuelo (deshabilita y muestra spinner). */
   readonly accionEnCurso = signal<string | null>(null);
@@ -203,13 +227,20 @@ export class SolicitudesProveedorPage implements OnInit {
   cargar(): void {
     this.cargando.set(true);
     this.errorCarga.set(false);
+    this.validacionBloquea.set(false);
     this.proveedoresApi.getMisSolicitudes().subscribe({
       next: (ofertas) => {
         this.ofertas.set(ofertas);
         this.cargando.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.errorCarga.set(true);
+        // 403 aquí significa "el gate de validación documental te cierra el paso"
+        // (exigirValidado), no una caída de red: decirlo evita que un proveedor
+        // recién registrado repita "Actualizar" esperando unmilagro.
+        this.validacionBloquea.set(
+          err instanceof ApiHttpError && err.status === 403
+        );
         this.cargando.set(false);
       },
     });
