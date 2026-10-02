@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoValidacionProveedor;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
@@ -24,7 +25,12 @@ import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.Usuari
 import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 
 /**
- * End-to-end admin supplier surface (spec P1/P2/P4/P5, prov.S1.1–S5.1).
+ * End-to-end supplier surface (spec P1/P2/P4/P5, prov.S1.1–S5.1).
+ *
+ * <p>{@code POST /api/proveedores} is public since supplier self-registration
+ * was opened, so the creation tests here no longer carry a token. What they do
+ * carry is the invariant the opening must not break: the role is derived
+ * server-side and the supplier is born {@code PENDIENTE}.
  *
  * <p>Duplicate {@code nit} is deliberately not pre-checked; the module maps the
  * {@code UNIQUE(nit)} constraint violation to 409 (see {@link ProveedorControllerAdvice})
@@ -76,7 +82,8 @@ class ProveedorApiIT {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors").isNotEmpty());
 
-        // Habeas Data consent is a mandatory registration invariant.
+        // Habeas Data consent is a mandatory registration invariant, and now the
+        // supplier asserts it for themselves instead of an administrator.
         mockMvc.perform(post("/api/proveedores").header("Authorization", bearer(adminJwt()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"nombre\":\"Ana\",\"correo\":\"prov.b@coldday.com.co\",\"password\":\"secreto123\","
@@ -116,21 +123,40 @@ class ProveedorApiIT {
     }
 
     @Test
-    void nonAdminCannotCreateSupplier() throws Exception {
-        for (String token : new String[] { tecnicoJwt(), clienteJwt(), proveedorJwt() }) {
-            mockMvc.perform(post("/api/proveedores").header("Authorization", bearer(token))
-                    .contentType(MediaType.APPLICATION_JSON).content(payload("NIT-4", "prov.e@coldday.com.co")))
-                    .andExpect(status().isForbidden());
-        }
-        assertThat(proveedorRepository.findAll()).isEmpty();
+    void registrationIsPublicSoAnyRoleAndAnonymousCanCreateTheirOwnSupplier() throws Exception {
+        // Anonymous: the caller IS the supplier, which is the whole point.
+        mockMvc.perform(post("/api/proveedores").contentType(MediaType.APPLICATION_JSON)
+                .content(payload("NIT-4", "prov.e@coldday.com.co")))
+                .andExpect(status().isCreated());
+
+        // An authenticated non-administrator registers exactly the same way;
+        // there is no longer a role gate on the creation call.
+        mockMvc.perform(post("/api/proveedores").header("Authorization", bearer(tecnicoJwt()))
+                .contentType(MediaType.APPLICATION_JSON).content(payload("NIT-4B", "prov.e2@coldday.com.co")))
+                .andExpect(status().isCreated());
+
+        assertThat(usuarioRepository.findByCorreo("prov.e@coldday.com.co")).get()
+                .extracting(UsuarioJpaEntity::getRol).isEqualTo(Rol.PROVEEDOR);
+        assertThat(proveedorRepository.findAll()).hasSize(2);
     }
 
     @Test
-    void unauthenticatedCreationIsNotExposed() throws Exception {
+    void aSelfRegisteredSupplierIsBornPendingBecauseTheV8DefaultWasDropped() throws Exception {
+        // estado_validacion has NO database default since V8, so every insert must
+        // state it. Proveedor.crear does, and the wire says so.
         mockMvc.perform(post("/api/proveedores").contentType(MediaType.APPLICATION_JSON)
-                .content(payload("NIT-5", "prov.f@coldday.com.co")))
-                .andExpect(status().isUnauthorized());
-        assertThat(proveedorRepository.findAll()).isEmpty();
+                .content(payload("NIT-PEND", "prov.p@coldday.com.co")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.estadoValidacion").value("PENDIENTE"))
+                .andExpect(jsonPath("$.activo").value(true));
+
+        UsuarioJpaEntity usuario = usuarioRepository.findByCorreo("prov.p@coldday.com.co").orElseThrow();
+        Proveedor persistido = proveedorRepository.findByUsuarioId(usuario.getId()).orElseThrow();
+        assertThat(persistido.getEstadoValidacion()).isEqualTo(EstadoValidacionProveedor.PENDIENTE);
+
+        // And it survives a round trip through the database, not just the DTO.
+        assertThat(proveedorRepository.buscarPorId(persistido.getId())).get()
+                .extracting(Proveedor::getEstadoValidacion).isEqualTo(EstadoValidacionProveedor.PENDIENTE);
     }
 
     @Test

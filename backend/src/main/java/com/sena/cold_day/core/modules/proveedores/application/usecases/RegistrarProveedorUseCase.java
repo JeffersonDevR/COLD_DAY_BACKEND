@@ -16,12 +16,20 @@ import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPo
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 
 /**
- * Admin-only supplier provisioning. Mirrors {@code RegistrarTecnicoUseCase}: the
+ * Supplier provisioning, used by both the now-public self-registration endpoint
+ * and the administrator flow. Mirrors {@code RegistrarTecnicoUseCase}: the
  * Usuario (identity) is created first with {@code Rol.PROVEEDOR} applied at
  * creation, then the Proveedor (business identity) is linked to it, all inside a
  * single transaction so no half-created supplier account can persist.
  *
- * <p>The administrator supplies the initial password (never generated and never
+ * <p>{@link ProveedorRequest} carries no role, so this method cannot mint an
+ * administrator out of caller input: {@code Rol.PROVEEDOR} is the one and only
+ * role this path can produce. Likewise {@code Proveedor.crear} states
+ * {@code EstadoValidacionProveedor.PENDIENTE} explicitly — it has to, because V8
+ * dropped the column default — so a self-registered supplier is born pending and
+ * {@code exigirValidado()} blocks it until an administrator approves it.
+ *
+ * <p>The supplier supplies the initial password (never generated and never
  * echoed back); a duplicate {@code correo} fails with 409 through the module's
  * controller advice.
  */

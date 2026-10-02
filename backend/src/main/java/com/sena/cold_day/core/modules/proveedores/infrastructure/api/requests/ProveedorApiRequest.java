@@ -7,10 +7,19 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * Wire contract for admin supplier provisioning. {@code correo}, {@code nombre},
- * {@code password}, {@code razonSocial} and {@code nit} are required; a missing
- * or invalid field is rejected with 400. The administrator asserts Habeas Data
- * consent on the supplier's behalf ({@code aceptaHabeasData}).
+ * Wire contract for supplier registration, public since self-registration was
+ * opened: {@code correo}, {@code nombre}, {@code password}, {@code razonSocial}
+ * and {@code nit} are required; a missing or invalid field is rejected with 400.
+ * The supplier asserts Habeas Data consent itself ({@code aceptaHabeasData}) —
+ * there is no administrator asserting it on their behalf any more.
+ *
+ * <p>There is deliberately NO {@code rol} component. The role is not input, it
+ * is an output: {@code RegistrarProveedorUseCase} applies {@code Rol.PROVEEDOR}
+ * at creation. Because the record does not declare the field, a client-supplied
+ * {@code "rol"} is an unknown JSON property, Jackson drops it, and the account
+ * is created with the only role this endpoint can ever grant. This is the same
+ * closure {@code POST /api/usuarios} relies on, and it is what stops a public
+ * registration endpoint from being a privilege-escalation vector.
  */
 public record ProveedorApiRequest(
         @NotBlank String nombre,

@@ -28,15 +28,30 @@ import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.D
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.ProveedorApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.security.AutorizacionPropietario;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
+import com.sena.cold_day.core.shared.infrastructure.security.SecurityConfig;
 
 import jakarta.validation.Valid;
 
 /**
- * Admin-only supplier surface plus the supplier's own documentation and
- * validation gate. Authorization is enforced server-side with
- * {@code @PreAuthorize}; no {@code permitAll} matcher is added for this path, so
- * an unauthenticated caller is rejected with 401 and a caller without the role
- * with 403 (D7). There is no public supplier registration surface.
+ * Supplier surface. {@code POST /api/proveedores} is the public self-registration
+ * endpoint: an unauthenticated caller may create its own supplier, exactly like
+ * clients ({@code POST /api/clientes}) and technicians
+ * ({@code POST /api/tecnicos}) do. {@link SecurityConfig} carries the
+ * {@code permitAll} matcher for it and {@code RutasPublicas} records the
+ * decision, so the allowlist and the filter chain cannot drift apart.
+ *
+ * <p>Self-registration does not weaken the validation gate: the role is
+ * server-derived ({@code Rol.PROVEEDOR} is applied inside
+ * {@link RegistrarProveedorUseCase}, never read from the body) and the supplier
+ * is born {@code PENDIENTE} because {@code Proveedor.crear} states it
+ * explicitly. V8 exists precisely so no supplier takes an insumo order without
+ * somebody ever validating its documentation, and {@code exigirValidado()} still
+ * blocks every accept/reject/deliver until an administrator approves.
+ *
+ * <p>Every other endpoint here stays authenticated and role-gated with
+ * {@code @PreAuthorize}: the roster is administrator-only, the validation
+ * decision is an operator judgement a supplier can never make about itself, and
+ * the {@code /me} documentation surface is the caller's own and nothing else.
  *
  * <p>{@link GestionarDocumentacionProveedorUseCase} existed with no HTTP surface,
  * which left every supplier permanently {@code PENDIENTE}: the aggregate gate
@@ -62,8 +77,19 @@ public class ProveedorController {
         this.autorizacion = autorizacion;
     }
 
+    /**
+     * Public self-registration, mirroring {@code POST /api/clientes} and
+     * {@code POST /api/tecnicos}: no {@code @PreAuthorize} here, because the
+     * caller IS the supplier and cannot reach any other supplier's data through
+     * this endpoint.
+     *
+     * <p>{@link ProveedorApiRequest} deliberately declares no {@code rol} field:
+     * {@link RegistrarProveedorUseCase} applies {@code Rol.PROVEEDOR} itself, so
+     * a {@code rol} in the body is dropped as an unknown property and cannot
+     * escalate the account to administrator. Same closure as
+     * {@code POST /api/usuarios}.
+     */
     @PostMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProveedorApiResponse> crear(@Valid @RequestBody ProveedorApiRequest request) {
         ProveedorResponse created = registrar.registrar(request.toApplicationRequest());
         return ResponseEntity.created(URI.create("/api/proveedores/" + created.id()))
