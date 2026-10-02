@@ -60,11 +60,23 @@ public final class FkFixtures {
         return id;
     }
 
+    /**
+     * Crea el proveedor en estado APROBADO.
+     *
+     * <p>APROBADO y no PENDIENTE a proposito: V8 dejo {@code estado_validacion}
+     * NOT NULL y sin DEFAULT, para que toda insercion declare su estado en
+     * lugar de heredar un PENDIENTE silencioso. Como el fixture escribe por
+     * JDBC crudo, no pasa por el registro de proveedor, y varios tests aceptan
+     * insumos sobre el: un proveedor PENDIENTE los rechazaria por
+     * {@code exigirValidado()} y el fallo apareceria como asercion en vez del
+     * problema real, que es que el fixture no puede ni insertarse.
+     */
     public UUID proveedor(UUID id) {
         if (!existe("proveedor", id)) {
             jdbc.update("""
-                    INSERT INTO proveedor (id, usuario_id, razon_social, nit, activo)
-                    VALUES (?, ?, 'Fixture SAS', ?, true)
+                    INSERT INTO proveedor (id, usuario_id, razon_social, nit, activo,
+                                           estado_validacion)
+                    VALUES (?, ?, 'Fixture SAS', ?, true, 'APROBADO')
                     """, id, usuario("PROVEEDOR"), "FX-" + id);
         }
         return id;
