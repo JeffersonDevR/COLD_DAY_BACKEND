@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
+import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
@@ -29,10 +31,14 @@ public class AutorizacionPropietario {
 
     private final TecnicoRepository tecnicoRepository;
     private final ClienteRepository clienteRepository;
+    private final ProveedorRepository proveedorRepository;
 
-    public AutorizacionPropietario(TecnicoRepository tecnicoRepository, ClienteRepository clienteRepository) {
+    @SuppressWarnings("java:S107") // Un solo punto de resolucion de propiedad para los tres perfiles (tecnico, cliente, proveedor).
+    public AutorizacionPropietario(TecnicoRepository tecnicoRepository, ClienteRepository clienteRepository,
+            ProveedorRepository proveedorRepository) {
         this.tecnicoRepository = tecnicoRepository;
         this.clienteRepository = clienteRepository;
+        this.proveedorRepository = proveedorRepository;
     }
 
     /** ADMINISTRADOR, or the technician identified by {@code tecnicoId} is the caller's. */
@@ -96,6 +102,32 @@ public class AutorizacionPropietario {
     public void exigirParticipanteOAdmin(AuthenticatedUser principal, OtResponse ot) {
         if (!esParticipanteOAdmin(principal, ot)) {
             throw new AccessDeniedException("El usuario autenticado no participa en la orden");
+        }
+    }
+
+    /**
+     * True only when {@code proveedorId} is the supplier profile linked to the
+     * authenticated user. As with technicians, the path id is only ever used to
+     * look the owner up, never to impersonate one.
+     */
+    public boolean esProveedorDe(AuthenticatedUser principal, ProveedorId proveedorId) {
+        return proveedorRepository.findByUsuarioId(principal.usuarioId().valor())
+                .filter(proveedor -> proveedor.getId().equals(proveedorId))
+                .isPresent();
+    }
+
+    /** ADMINISTRADOR, or the supplier identified by {@code proveedorId} is the caller's. */
+    public boolean esProveedorOAdmin(AuthenticatedUser principal, ProveedorId proveedorId) {
+        if (principal.rol() == Rol.ADMINISTRADOR) {
+            return true;
+        }
+        return esProveedorDe(principal, proveedorId);
+    }
+
+    /** 403 unless the caller owns that supplier profile or is an ADMINISTRADOR. */
+    public void exigirProveedorOAdmin(AuthenticatedUser principal, ProveedorId proveedorId) {
+        if (!esProveedorOAdmin(principal, proveedorId)) {
+            throw new AccessDeniedException("El usuario autenticado no administra ese proveedor");
         }
     }
 }
