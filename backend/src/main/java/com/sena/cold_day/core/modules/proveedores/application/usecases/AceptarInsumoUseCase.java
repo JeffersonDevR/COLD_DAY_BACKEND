@@ -79,13 +79,21 @@ public class AceptarInsumoUseCase {
                 .orElseThrow(() -> new RequerimientoInsumoNoEncontradoException(requerimiento.getId()));
     }
 
-    /** Resolves the acting supplier and enforces the active/linked-account gate (AD7). */
+    /**
+     * Resolves the acting supplier and enforces the eligibility gate (AD7): a
+     * linked account that is active AND whose documentation is approved. The
+     * two checks are separate on purpose — {@code isActivo()} is an operator
+     * action and raises {@link ProveedorNoElegibleException}, while
+     * {@code exigirValidado()} is a documentary fact and raises
+     * {@link ProveedorNoValidadoException}; both map to 403.
+     */
     private Proveedor proveedorElegible(UsuarioId usuarioId) {
         Proveedor proveedor = proveedorRepository.findByUsuarioId(usuarioId.valor())
                 .orElseThrow(() -> new ProveedorNoElegibleException(usuarioId.valor()));
         if (!proveedor.isActivo()) {
             throw new ProveedorNoElegibleException(usuarioId.valor());
         }
+        proveedor.exigirValidado();
         return proveedor;
     }
 }

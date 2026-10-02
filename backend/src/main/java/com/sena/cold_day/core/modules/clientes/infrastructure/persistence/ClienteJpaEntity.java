@@ -11,10 +11,17 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "clientes")
 @Getter
 @Setter
@@ -47,6 +54,27 @@ public class ClienteJpaEntity {
 
     @Column(nullable = false)
     private boolean activo = true;
+
+    // Audit metadata (V10): persistence-layer only, never mapped into the
+    // domain or exposed in any *ApiResponse. The four-field block is duplicated
+    // across the four audited entities on purpose — a shared @MappedSuperclass
+    // would push a JPA type into core/shared across the vertical module
+    // boundary.
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false, length = 255)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "last_modified_by", length = 255)
+    private String lastModifiedBy;
 
     public static ClienteJpaEntity fromDomain(Cliente source) {
         ClienteJpaEntity target = new ClienteJpaEntity();

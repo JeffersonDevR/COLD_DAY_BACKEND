@@ -16,6 +16,7 @@ import com.sena.cold_day.core.shared.domain.Point;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
@@ -26,6 +27,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * Own-UUID identity (design D12): {@code tecnico.id} is its own UUID primary
@@ -33,6 +39,7 @@ import org.hibernate.type.SqlTypes;
  * shared primary key ({@code @MapsId}/{@code @OneToOne}) is intentionally gone.
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "tecnico", indexes = {
         @Index(name = "idx_tecnico_estado_operativo", columnList = "estado_operativo")
 })
@@ -85,6 +92,29 @@ public class TecnicoJpaEntity {
 
     @Column(name = "ubicacion_actualizada_en")
     private Instant ubicacionActualizadaEn;
+
+    // Audit metadata (V10): persistence-layer only, never mapped into the
+    // domain. Note that ubicacionActualizadaEn above is a BUSINESS timestamp fed
+    // by ActualizarUbicacionTecnicoUseCase — it is deliberately NOT @LastModifiedDate,
+    // because "when the technician moved" and "when this row changed" are
+    // different facts. The four-field block is duplicated across the four audited
+    // entities on purpose — a shared @MappedSuperclass would push a JPA type into
+    // core/shared across the vertical module boundary.
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false, length = 255)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "last_modified_by", length = 255)
+    private String lastModifiedBy;
 
     public static TecnicoJpaEntity fromDomain(Tecnico source) {
         TecnicoJpaEntity target = new TecnicoJpaEntity();

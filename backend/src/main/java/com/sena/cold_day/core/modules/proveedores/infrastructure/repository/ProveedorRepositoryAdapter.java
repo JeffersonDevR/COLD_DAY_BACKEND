@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.proveedores.infrastructure.repository;
 import java.util.List;
 import java.util.Optional;
 
+import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataProveedorRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,7 +11,6 @@ import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.ProveedorJpaEntity;
-import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataProveedorRepository;
 
 @Repository
 public class ProveedorRepositoryAdapter implements ProveedorRepository {

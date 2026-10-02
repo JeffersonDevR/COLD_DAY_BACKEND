@@ -3,6 +3,8 @@ package com.sena.cold_day.core.modules.proveedores.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +15,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoValidacionProveedor;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.repository.ProveedorRepositoryAdapter;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
@@ -90,6 +94,35 @@ class ProveedorRepositoryTest {
                 .allSatisfy(found -> assertThat(found.isActivo()).isTrue());
         assertThat(repository.buscarPorId(inactive.getId()))
                 .hasValueSatisfying(found -> assertThat(found.isActivo()).isFalse());
+    }
+
+    @Test
+    void roundTripsTheValidationStateInsteadOfResettingItToPendiente() {
+        Long usuarioId = persistUsuario("validado@example.com");
+        Proveedor proveedor = proveedor(usuarioId, "900123456-6", true);
+        proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1),
+                List.of(new DocumentoProveedor(1L, proveedor.getId(), "RUT", LocalDate.of(2027, 1, 1))));
+        Proveedor saved = repository.save(proveedor);
+
+        // A read that defaulted the state would silently un-approve the supplier
+        // and make exigirValidado() meaningless.
+        assertThat(repository.buscarPorId(saved.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getEstadoValidacion()).isEqualTo(EstadoValidacionProveedor.APROBADO);
+            assertThat(found.getMotivoRechazoValidacion()).isNull();
+        });
+    }
+
+    @Test
+    void persistsTheRejectionReason() {
+        Long usuarioId = persistUsuario("rechazado@example.com");
+        Proveedor proveedor = proveedor(usuarioId, "900123456-7", true);
+        proveedor.rechazarValidacion("RUT vencido");
+        Proveedor saved = repository.save(proveedor);
+
+        assertThat(repository.buscarPorId(saved.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getEstadoValidacion()).isEqualTo(EstadoValidacionProveedor.RECHAZADO);
+            assertThat(found.getMotivoRechazoValidacion()).isEqualTo("RUT vencido");
+        });
     }
 
     @Test

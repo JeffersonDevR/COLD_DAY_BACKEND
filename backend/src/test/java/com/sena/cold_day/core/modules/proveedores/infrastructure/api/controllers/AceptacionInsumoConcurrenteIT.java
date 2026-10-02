@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.SolicitarInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
+import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.OfertaInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.OfertaInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
@@ -175,9 +177,13 @@ class AceptacionInsumoConcurrenteIT {
                 .orElseThrow();
     }
 
+    /** Active AND documentary validation approved: the full eligibility gate (AD7). */
     private Proveedor crearProveedorActivo(String nit, String correo) {
-        return proveedores.save(Proveedor.crear(crearUsuario(correo), "Suministros " + nit, nit, "3105550001",
-                null, null, Set.of()));
+        Proveedor proveedor = Proveedor.crear(crearUsuario(correo), "Suministros " + nit, nit, "3105550001",
+                null, null, Set.of());
+        proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1),
+                List.of(new DocumentoProveedor(1L, proveedor.getId(), "RUT", LocalDate.of(2027, 1, 1))));
+        return proveedores.save(proveedor);
     }
 
     private Long crearUsuario(String correo) {

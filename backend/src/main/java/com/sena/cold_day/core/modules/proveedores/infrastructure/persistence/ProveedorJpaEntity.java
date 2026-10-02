@@ -6,17 +6,26 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoValidacionProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.shared.domain.Point;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
  * Persistence mapping for the {@code proveedor} table (design schema). Own-UUID
@@ -25,6 +34,7 @@ import lombok.Setter;
  * mirroring {@code TecnicoJpaEntity}.
  */
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "proveedor")
 @Getter
 @Setter
@@ -62,8 +72,38 @@ public class ProveedorJpaEntity {
     @Column(nullable = false)
     private boolean activo = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_validacion", nullable = false)
+    private EstadoValidacionProveedor estadoValidacion;
+
+    @Column(name = "motivo_rechazo_validacion", length = 500)
+    private String motivoRechazoValidacion;
+
     @Column(name = "creado_en")
     private Instant creadoEn;
+
+    // Audit metadata (V10): persistence-layer only, never assigned by apply()
+    // and never mapped into the domain or an *ApiResponse. creadoEn above is a
+    // BUSINESS timestamp set by Proveedor.crear — deliberately NOT @CreatedDate,
+    // because Spring's DateTimeProvider would overwrite it. The four-field block
+    // is duplicated across the four audited entities on purpose — a shared
+    // @MappedSuperclass would push a JPA type into core/shared across the
+    // vertical module boundary.
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false, length = 255)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "last_modified_by", length = 255)
+    private String lastModifiedBy;
 
     public static ProveedorJpaEntity fromDomain(Proveedor source) {
         ProveedorJpaEntity target = new ProveedorJpaEntity();
@@ -88,14 +128,21 @@ public class ProveedorJpaEntity {
         this.longitud = ubicacion == null ? null : ubicacion.longitud();
         this.categoriasInsumo = new LinkedHashSet<>(source.getCategoriasInsumo());
         this.activo = source.isActivo();
+        this.estadoValidacion = source.getEstadoValidacion();
+        this.motivoRechazoValidacion = source.getMotivoRechazoValidacion();
         this.creadoEn = source.getCreadoEn();
     }
 
+    /**
+     * The persisted validation state is passed through, never defaulted: a read
+     * that reset the state would silently un-approve every supplier and make
+     * {@code exigirValidado()} a no-op.
+     */
     public Proveedor toDomain() {
         Point ubicacion = latitud == null || longitud == null ? null : new Point(latitud, longitud);
         return Proveedor.reconstituir(ProveedorId.desde(id), usuarioId, razonSocial, nit, telefono,
                 direccion, ubicacion,
                 categoriasInsumo == null ? new LinkedHashSet<>() : new LinkedHashSet<>(categoriasInsumo),
-                activo, creadoEn);
+                estadoValidacion, motivoRechazoValidacion, activo, creadoEn);
     }
 }

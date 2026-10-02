@@ -22,6 +22,10 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
  * from the body — and an inactive or unknown supplier fails with
  * {@link ProveedorNoElegibleException} (403), never as an unhandled 500.
  *
+ * <p>A supplier whose documentation is not approved is filtered out by the same
+ * eligibility gate as the write flows: it must never even see an offer, because
+ * it could not act on it.
+ *
  * <p>A stale {@code PENDIENTE} row whose window already closed is filtered out
  * with the shared {@link Clock} (lazy expiry), mirroring
  * {@code ListarOfertasTecnicoUseCase}, so a sweep lag never presents a dead
@@ -57,13 +61,14 @@ public class ListarSolicitudesProveedorUseCase {
                 .toList();
     }
 
-    /** Resolves the acting supplier and enforces the active/linked-account gate (AD7). */
+    /** Resolves the acting supplier and enforces the eligibility gate (AD7). */
     private Proveedor proveedorElegible(UsuarioId usuarioId) {
         Proveedor proveedor = proveedorRepository.findByUsuarioId(usuarioId.valor())
                 .orElseThrow(() -> new ProveedorNoElegibleException(usuarioId.valor()));
         if (!proveedor.isActivo()) {
             throw new ProveedorNoElegibleException(usuarioId.valor());
         }
+        proveedor.exigirValidado();
         return proveedor;
     }
 }

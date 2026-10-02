@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +34,7 @@ import com.sena.cold_day.core.modules.proveedores.application.usecases.ExpirarIn
 import com.sena.cold_day.core.modules.proveedores.application.usecases.SolicitarInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
+import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.OfertaInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoElegibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.OfertaInsumoRepository;
@@ -336,9 +338,18 @@ class InsumoApiIT {
         return tokenIssuer.emitir(new UsuarioId(usuarioId), rol, 0).valor();
     }
 
+    /**
+     * A supplier that passes the full eligibility gate: active AND documentary
+     * validation approved (AD7). The document is only the aggregate's input —
+     * it does not have to be persisted, because the documents live in their own
+     * table and the approval is what the gate reads.
+     */
     private Proveedor crearProveedorActivo(String nit, String correo) {
-        return proveedores.save(Proveedor.crear(crearUsuario(correo), "Suministros " + nit, nit, "3105550001",
-                null, null, Set.of()));
+        Proveedor proveedor = Proveedor.crear(crearUsuario(correo), "Suministros " + nit, nit, "3105550001",
+                null, null, Set.of());
+        proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1),
+                List.of(new DocumentoProveedor(1L, proveedor.getId(), "RUT", LocalDate.of(2027, 1, 1))));
+        return proveedores.save(proveedor);
     }
 
     private Proveedor crearProveedorInactivo(String nit, String correo) {

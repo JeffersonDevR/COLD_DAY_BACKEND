@@ -8,6 +8,9 @@ import java.util.Collections;
 import java.util.List;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
+import com.sena.cold_day.core.modules.ot.domain.exception.CalificacionInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.ConfirmarLlegadaInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
@@ -55,6 +58,13 @@ public class Ot {
     private int auxiliaresRequeridos;
     private Diagnostico diagnostico;
     private Presupuesto presupuesto;
+    private Instant llegadaEn;
+    private String medioPagoVisita;
+    private Instant visitaPagadaEn;
+    private Integer calificacionEstrellas;
+    private String calificacionComentario;
+    private Instant calificacionEn;
+    private TecnicoId calificacionTecnicoId;
 
     /** Pending state changes not yet persisted to the append-only history. */
     private final List<CambioEstado> cambiosPendientes = new ArrayList<>();
@@ -132,8 +142,12 @@ public class Ot {
                 tarifaFuente, 0);
     }
 
-    /** Reconstitution from persistence. */
-    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado (22 campos). Un Builder ocultaria el mapeo 1:1 con la entidad JPA.
+    /**
+     * Reconstitution from persistence without the visit tracking and rating
+     * state. Kept as a delegating overload so every existing call site and test
+     * that rebuilds an OT compiles untouched; the seven new fields default to
+     * null.
+     */
     public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
             CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
             String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
@@ -141,6 +155,23 @@ public class Ot {
             MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
             Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente,
             Integer auxiliaresRequeridos) {
+        return reconstituir(id, clienteId, tecnicoId, categoriaServicio, descripcionFalla, evidenciaUrls,
+                direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
+                tarifaFuente, auxiliaresRequeridos, null, null, null, null, null, null, null);
+    }
+
+    /** Reconstitution from persistence. */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado (29 campos). Un Builder ocultaria el mapeo 1:1 con la entidad JPA.
+    public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
+            CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
+            String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
+            Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
+            Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente,
+            Integer auxiliaresRequeridos, Instant llegadaEn, String medioPagoVisita, Instant visitaPagadaEn,
+            Integer calificacionEstrellas, String calificacionComentario, Instant calificacionEn,
+            TecnicoId calificacionTecnicoId) {
         Ot ot = new Ot();
         ot.id = id;
         ot.clienteId = clienteId;
@@ -166,6 +197,13 @@ public class Ot {
         ot.auxiliaresRequeridos = auxiliaresRequeridos == null ? 0 : auxiliaresRequeridos;
         ot.diagnostico = diagnostico;
         ot.presupuesto = presupuesto;
+        ot.llegadaEn = llegadaEn;
+        ot.medioPagoVisita = medioPagoVisita;
+        ot.visitaPagadaEn = visitaPagadaEn;
+        ot.calificacionEstrellas = calificacionEstrellas;
+        ot.calificacionComentario = calificacionComentario;
+        ot.calificacionEn = calificacionEn;
+        ot.calificacionTecnicoId = calificacionTecnicoId;
         return ot;
     }
 
@@ -460,5 +498,122 @@ public class Ot {
 
     public Presupuesto getPresupuesto() {
         return presupuesto;
+    }
+
+    public Instant getLlegadaEn() {
+        return llegadaEn;
+    }
+
+    public String getMedioPagoVisita() {
+        return medioPagoVisita;
+    }
+
+    public Instant getVisitaPagadaEn() {
+        return visitaPagadaEn;
+    }
+
+    public Integer getCalificacionEstrellas() {
+        return calificacionEstrellas;
+    }
+
+    public String getCalificacionComentario() {
+        return calificacionComentario;
+    }
+
+    public Instant getCalificacionEn() {
+        return calificacionEn;
+    }
+
+    /** Technician that actually served the order when it was rated (RF-F1-15). */
+    public TecnicoId getCalificacionTecnicoId() {
+        return calificacionTecnicoId;
+    }
+
+    /**
+     * RF-F1-14: el tecnico asignado confirma su llegada al sitio. Es un HECHO,
+     * no una transicion: la maquina de estados de SRS 5.2 no tiene un estado
+     * EN_LLEGADO, por eso el metodo no cambia {@code estado} ni genera entrada
+     * en {@code ot_estado_historial}.
+     *
+     * <p>Es idempotente: si la llegada ya fue confirmada se devuelve sin
+     * sobrescribir el instante original, para que un reintento del cliente no
+     * falsifique la hora real de llegada.
+     */
+    public void confirmarLlegada(ActorOt actor, Instant ahora) {
+        if (actor == null) {
+            throw new IllegalArgumentException("El actor de la confirmacion de llegada es requerido");
+        }
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento de la confirmacion de llegada es requerido");
+        }
+        if (this.llegadaEn != null) {
+            return;
+        }
+        if (this.estado != EstadoOt.EN_CAMINO) {
+            throw new ConfirmarLlegadaInvalidaException(
+                    "Solo se puede confirmar la llegada en EN_CAMINO, estado actual: " + this.estado);
+        }
+        if (!tieneTecnicoAsignado()) {
+            throw new ConfirmarLlegadaInvalidaException(
+                    "No se puede confirmar la llegada sin un tecnico asignado");
+        }
+        this.llegadaEn = ahora;
+    }
+
+    /**
+     * RF-F1-26: registra el medio de pago de la tarifa de visita. El PAGADOR
+     * es el CLIENTE (el caso de uso resuelve el perfil del cliente y valida
+     * que sea dueno de la OT), por eso este metodo NO congela ningun snapshot
+     * del tecnico: el pago no se atribuye a nadie, se atribuye a la orden.
+     *
+     * <p>El cobro no es idempotente a proposito: una segunda llamada
+     * significa un doble cobro y debe rechazarse.
+     */
+    public void registrarPagoVisita(String medioPago, Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento del pago de la visita es requerido");
+        }
+        if (medioPago == null || medioPago.isBlank()) {
+            throw new PagoVisitaInvalidoException("El medio de pago de la visita es requerido");
+        }
+        if (this.visitaPagadaEn != null) {
+            throw new PagoVisitaInvalidoException("La visita ya fue pagada, no se permite un doble cobro");
+        }
+        this.medioPagoVisita = medioPago;
+        this.visitaPagadaEn = ahora;
+    }
+
+    /**
+     * RF-F1-15: el cliente califica al TECNICO con escala de 1 a 5 estrellas y
+     * comentario cualitativo, recalculando su reputacion publica. Solo aplica
+     * sobre una OT FINALIZADA y una sola vez.
+     *
+     * <p>La calificacion es sobre una persona, no sobre la orden, por eso se
+     * congela el tecnico calificado: si la OT se reasigna despues, la
+     * calificacion sigue apuntando a quien recibio el trabajo.
+     */
+    public void calificar(int estrellas, String comentario, Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento de la calificacion es requerido");
+        }
+        if (this.estado != EstadoOt.FINALIZADA) {
+            throw new CalificacionInvalidaException(
+                    "Solo se puede calificar una OT FINALIZADA, estado actual: " + this.estado);
+        }
+        if (estrellas < 1 || estrellas > 5) {
+            throw new CalificacionInvalidaException(
+                    "La calificacion debe estar entre 1 y 5 estrellas, recibido: " + estrellas);
+        }
+        if (!tieneTecnicoAsignado()) {
+            throw new CalificacionInvalidaException(
+                    "No se puede calificar a un tecnico si nadie atendio la orden");
+        }
+        if (this.calificacionEstrellas != null) {
+            throw new CalificacionInvalidaException("La OT ya fue calificada, no se admite una segunda calificacion");
+        }
+        this.calificacionEstrellas = estrellas;
+        this.calificacionComentario = comentario == null || comentario.isBlank() ? null : comentario;
+        this.calificacionEn = ahora;
+        this.calificacionTecnicoId = this.tecnicoId;
     }
 }
