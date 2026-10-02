@@ -19,18 +19,23 @@ import com.sena.cold_day.core.modules.ot.application.dto.DiagnosticoRequest;
 import com.sena.cold_day.core.modules.ot.application.dto.OtRequest;
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.application.usecases.AprobarPresupuestoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.CalificarOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.CancelarOtUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.ConfirmarLlegadaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.ConsultarOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.CrearOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.FinalizarOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.PagarVisitaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RechazarPresupuestoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarDiagnosticoUseCase;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CalificarOtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CancelarOtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.DiagnosticoApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.InsumoLineaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.OtApiRequest;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.PagarVisitaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.RechazoPresupuestoApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.HistorialEstadoApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
@@ -43,8 +48,9 @@ import jakarta.validation.Valid;
 /**
  * OT REST surface: creation/read/history (PR5), dispatch acceptance (PR6) and
  * the diagnosis/budget, approval/rejection, finalize and cancellation surface
- * (PR7). The state machine and the assigned-technician/client ownership guards
- * are enforced by the use cases.
+ * (PR7), plus the arrival confirmation, visit payment and rating surface (PR8).
+ * The state machine and the assigned-technician/client ownership guards are
+ * enforced by the use cases.
  */
 @RestController
 @RequestMapping("/api/ot")
@@ -58,15 +64,19 @@ public class OtController {
     private final AprobarPresupuestoUseCase aprobarPresupuesto;
     private final RechazarPresupuestoUseCase rechazarPresupuesto;
     private final FinalizarOtUseCase finalizar;
+    private final ConfirmarLlegadaUseCase confirmarLlegada;
+    private final PagarVisitaUseCase pagarVisita;
+    private final CalificarOtUseCase calificarOt;
     private final AutorizacionPropietario autorizacion;
 
-    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (8 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 8 params a otro ctor.
+    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (11 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 11 params a otro ctor.
     public OtController(CrearOtUseCase crear, ConsultarOtUseCase consultar, CancelarOtUseCase cancelar,
             IniciarDesplazamientoUseCase iniciarDesplazamiento,
             RegistrarDiagnosticoUseCase registrarDiagnostico,
             AprobarPresupuestoUseCase aprobarPresupuesto,
             RechazarPresupuestoUseCase rechazarPresupuesto, FinalizarOtUseCase finalizar,
-            AutorizacionPropietario autorizacion) {
+            ConfirmarLlegadaUseCase confirmarLlegada, PagarVisitaUseCase pagarVisita,
+            CalificarOtUseCase calificarOt, AutorizacionPropietario autorizacion) {
         this.crear = crear;
         this.consultar = consultar;
         this.cancelar = cancelar;
@@ -75,6 +85,9 @@ public class OtController {
         this.aprobarPresupuesto = aprobarPresupuesto;
         this.rechazarPresupuesto = rechazarPresupuesto;
         this.finalizar = finalizar;
+        this.confirmarLlegada = confirmarLlegada;
+        this.pagarVisita = pagarVisita;
+        this.calificarOt = calificarOt;
         this.autorizacion = autorizacion;
     }
 
@@ -182,5 +195,44 @@ public class OtController {
             @RequestBody(required = false) CancelarOtApiRequest request) {
         String razon = request == null ? null : request.motivo();
         return OtApiResponse.from(cancelar.cancelar(principal.usuarioId(), principal.rol(), id, razon));
+    }
+
+    /**
+     * RF-F1-14: the assigned technician confirms arrival on site.
+     *
+     * <p>Deliberately bodyless. Arrival is a fact, not a transition (there is no
+     * EN_LLEGADO state in SRS 5.2), so the only input is the authenticated
+     * technician and the server clock; a request record would be an empty DTO.
+     * Replaying the call is idempotent by design: the aggregate keeps the
+     * original arrival instant instead of overwriting it.
+     */
+    @PostMapping("/{id}/llegada")
+    @PreAuthorize("hasRole('TECNICO')")
+    public OtApiResponse confirmarLlegada(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id) {
+        autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
+        return OtApiResponse.from(confirmarLlegada.confirmar(principal.usuarioId(), id));
+    }
+
+    /**
+     * RF-F1-26: the owning client pays the visit fee, which reopens dispatch.
+     * A second call is a double charge and is rejected, not absorbed.
+     */
+    @PostMapping("/{id}/pagar-visita")
+    @PreAuthorize("hasRole('CLIENTE')")
+    public OtApiResponse pagarVisita(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id, @Valid @RequestBody PagarVisitaApiRequest request) {
+        autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
+        return OtApiResponse.from(pagarVisita.pagar(principal.usuarioId(), id, request.medioPago()));
+    }
+
+    /** RF-F1-15: the owning client rates the technician who served the order. */
+    @PostMapping("/{id}/calificar")
+    @PreAuthorize("hasRole('CLIENTE')")
+    public OtApiResponse calificar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id,
+            @Valid @RequestBody CalificarOtApiRequest request) {
+        autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
+        return OtApiResponse.from(calificarOt.calificar(principal.usuarioId(), id, request.estrellas(),
+                request.comentario()));
     }
 }
