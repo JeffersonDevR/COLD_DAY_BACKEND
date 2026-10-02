@@ -24,6 +24,7 @@ import com.sena.cold_day.core.modules.usuarios.infrastructure.api.requests.Recup
 import com.sena.cold_day.core.modules.usuarios.infrastructure.api.requests.RestablecerContrasenaApiRequest;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.api.requests.UsuarioApiRequest;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.api.responses.UsuarioApiResponse;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 
 import jakarta.validation.Valid;
 
@@ -54,6 +55,19 @@ public class UsuarioController {
         return listarUsuarios.listar().stream().map(UsuarioApiResponse::from).toList();
     }
 
+    /**
+     * Legacy generic registration entry point, kept only so existing clients do
+     * not break.
+     *
+     * @deprecated This endpoint predates the modularisation of the system into
+     *             {@code /api/clientes}, {@code /api/tecnicos}, etc., and it is
+     *             {@code permitAll}, so it cannot be the way to choose a role:
+     *             the role is no longer accepted from the client and the server
+     *             always assigns the least-privilege role {@link Rol#CLIENTE}.
+     *             Use {@code POST /api/clientes} or {@code POST /api/tecnicos}
+     *             for the intended flow.
+     */
+    @Deprecated(forRemoval = true)
     @PostMapping
     public ResponseEntity<UsuarioApiResponse> crear(@Valid @RequestBody UsuarioApiRequest request) {
         UsuarioResponse response = registrar.registrar(toApplicationRequest(request));
@@ -78,9 +92,14 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * The role is assigned by the server, never taken from the request: this is
+     * a {@code permitAll} endpoint, so accepting a client-supplied role would
+     * allow self-registering as {@code ADMINISTRADOR}. Least privilege applies.
+     */
     private UsuarioRequest toApplicationRequest(UsuarioApiRequest request) {
         return new UsuarioRequest(request.nombre(), request.correo(), request.password(),
-                request.telefono(), request.fotoUrl(), request.rol(),
+                request.telefono(), request.fotoUrl(), Rol.CLIENTE,
                 Boolean.TRUE.equals(request.aceptaHabeasData()));
     }
 }

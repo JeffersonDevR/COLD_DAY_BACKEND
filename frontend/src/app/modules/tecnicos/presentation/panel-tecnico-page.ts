@@ -252,7 +252,9 @@ export class PanelTecnicoPage {
   cambiarEstadoOperativo(nuevo: EstadoOperativo): void {
     const t = this.tecnico();
     if (!t) return;
-    this.tecnicosApi.actualizarEstadoOperativo(t.id, nuevo).subscribe({
+    // Sin `t.id`: PUT /api/tecnicos/me/estado es owner-only y el backend
+    // resuelve el técnico desde el principal, así que no se envía id.
+    this.tecnicosApi.actualizarEstadoOperativo(nuevo).subscribe({
       next: () => {
         this.tecnico.set({ ...t, estadoOperativo: nuevo });
         this.toast.info('Estado Actualizado', `Ahora estás ${nuevo}`);

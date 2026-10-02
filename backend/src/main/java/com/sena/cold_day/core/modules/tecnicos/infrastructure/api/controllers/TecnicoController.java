@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +29,7 @@ import com.sena.cold_day.core.modules.tecnicos.application.usecases.ListarDocume
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.RegistrarTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.ValidarDocumentacionTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.DocumentoTecnicoApiRequest;
+import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.EstadoOperativoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.TecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.ValidacionTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.DocumentoTecnicoApiResponse;
@@ -43,6 +45,7 @@ import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.Actua
 import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.BuscarTecnicosCercanosUseCase;
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
 import com.sena.cold_day.core.shared.domain.Point;
+import com.sena.cold_day.core.shared.infrastructure.security.AutorizacionPropietario;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
 import jakarta.validation.Valid;
@@ -64,6 +67,7 @@ public class TecnicoController {
     private final ListarOtUseCase listarOts;
     private final ListarLiquidacionesTecnicoUseCase listarLiquidaciones;
     private final ListarDocumentosTecnicoUseCase listarDocumentos;
+    private final AutorizacionPropietario autorizacion;
 
     @SuppressWarnings("java:S107") // Superficie REST cohesiva de /api/tecnicos; dividir rompería la cohesión por recurso.
     public TecnicoController(RegistrarTecnicoUseCase registrar, ActualizarTecnicoUseCase actualizar,
@@ -73,7 +77,8 @@ public class TecnicoController {
             ActualizarUbicacionTecnicoUseCase actualizarUbicacion,
             BuscarTecnicosCercanosUseCase buscarCercanos, ListarOtUseCase listarOts,
             ListarLiquidacionesTecnicoUseCase listarLiquidaciones,
-            ListarDocumentosTecnicoUseCase listarDocumentos) {
+            ListarDocumentosTecnicoUseCase listarDocumentos,
+            AutorizacionPropietario autorizacion) {
         this.registrar = registrar;
         this.actualizar = actualizar;
         this.buscar = buscar;
@@ -85,6 +90,7 @@ public class TecnicoController {
         this.listarOts = listarOts;
         this.listarLiquidaciones = listarLiquidaciones;
         this.listarDocumentos = listarDocumentos;
+        this.autorizacion = autorizacion;
     }
 
     @PostMapping
@@ -94,13 +100,16 @@ public class TecnicoController {
                 .body(TecnicoApiResponse.from(created));
     }
 
+    /** The full roster exposes every technician's contact data: administrators only. */
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public List<TecnicoApiResponse> listar() {
         return buscar.listar().stream().map(TecnicoApiResponse::from).toList();
     }
 
     /** RF-F1-04: técnicos disponibles dentro de un radio desde un punto (radar del cliente). */
     @GetMapping("/cercanos")
+    @PreAuthorize("hasAnyRole('CLIENTE','TECNICO')")
     public List<TecnicoCercanoApiResponse> cercanos(
             @RequestParam @DecimalMin("-90.0") @DecimalMax("90.0") double lat,
             @RequestParam @DecimalMin("-180.0") @DecimalMax("180.0") double lng,
@@ -113,22 +122,38 @@ public class TecnicoController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public TecnicoApiResponse obtener(@PathVariable TecnicoId id) {
         return TecnicoApiResponse.from(buscar.obtener(id));
     }
 
+    /** Editing a profile is restricted to its owner; an administrator may correct any of them. */
     @PutMapping("/{id}")
-    public TecnicoApiResponse actualizar(@PathVariable TecnicoId id, @Valid @RequestBody TecnicoApiRequest request) {
+    public TecnicoApiResponse actualizar(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable TecnicoId id, @Valid @RequestBody TecnicoApiRequest request) {
+        autorizacion.exigirTecnicoOAdmin(principal, id);
         return TecnicoApiResponse.from(actualizar.actualizar(id, toApplicationRequest(request)));
     }
 
-    @PutMapping("/{id}/estado")
-    public TecnicoApiResponse cambiarEstado(@PathVariable TecnicoId id, @RequestBody java.util.Map<String, String> body) {
-        com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo nuevo =
-                com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo
-                        .valueOf(body.getOrDefault("estadoOperativo", "FUERA_DE_SERVICIO"));
-        cambiarDisponibilidad.cambiarEstado(id, nuevo);
-        return obtener(id);
+    /**
+     * The technician is resolved from the authenticated principal, not from the
+     * path: there is no {@code {id}} to tamper with, so this endpoint can only
+     * ever change the caller's own operational state. Restricted to the owner on
+     * purpose — letting an administrator take a technician out of service would
+     * silently remove capacity from the dispatch pool.
+     * <p>
+     * FRONTEND-VISIBLE PATH CHANGE: this was {@code PUT /api/tecnicos/{id}/estado}
+     * and is now {@code PUT /api/tecnicos/me/estado}.
+     */
+    @PutMapping("/me/estado")
+    public TecnicoApiResponse cambiarEstado(@AuthenticationPrincipal AuthenticatedUser principal,
+            @Valid @RequestBody EstadoOperativoApiRequest request) {
+        TecnicoId id = tecnicoDelPrincipal(principal);
+        if (!autorizacion.esPropietarioDe(principal, id)) {
+            throw new AccessDeniedException("Solo el tecnico propietario puede cambiar su estado operativo");
+        }
+        cambiarDisponibilidad.cambiarEstado(id, request.estadoOperativo());
+        return TecnicoApiResponse.from(buscar.obtener(id));
     }
 
     /**
@@ -188,17 +213,26 @@ public class TecnicoController {
     }
 
     @PostMapping("/{id}/documentos")
-    public ResponseEntity<DocumentoTecnicoApiResponse> registrarDocumento(@PathVariable  TecnicoId id,
-            @Valid @RequestBody DocumentoTecnicoApiRequest request) {
+    public ResponseEntity<DocumentoTecnicoApiResponse> registrarDocumento(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable TecnicoId id, @Valid @RequestBody DocumentoTecnicoApiRequest request) {
+        autorizacion.exigirTecnicoOAdmin(principal, id);
         var documento = validarDocumentacion.registrarDocumento(id, request.tipo(), request.fechaVencimiento());
         return ResponseEntity.created(URI.create("/api/tecnicos/" + id + "/documentos"))
                 .body(DocumentoTecnicoApiResponse.from(documento));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminar(@PathVariable TecnicoId id) {
         eliminar.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Resolves the technician profile of the authenticated user. */
+    private TecnicoId tecnicoDelPrincipal(AuthenticatedUser principal) {
+        return autorizacion.tecnicoDelPrincipal(principal)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "El usuario autenticado no tiene un perfil de tecnico activo"));
     }
 
     private TecnicoRequest toApplicationRequest(TecnicoApiRequest request) {

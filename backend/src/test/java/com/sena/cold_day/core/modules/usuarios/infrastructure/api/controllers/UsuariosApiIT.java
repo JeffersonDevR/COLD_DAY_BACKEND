@@ -56,10 +56,13 @@ class UsuariosApiIT {
 
     @Test
     void registersWithConsentLogsInAndRequestsRecovery() throws Exception {
+        // The generic endpoint is permitAll, so it no longer accepts a
+        // caller-supplied rol: the account is always created with the least
+        // privilege (CLIENTE).
         mockMvc.perform(post("/api/usuarios").contentType(MediaType.APPLICATION_JSON)
                 .content(validPayload(true)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.rol").value("TECNICO"))
+                .andExpect(jsonPath("$.rol").value("CLIENTE"))
                 .andExpect(jsonPath("$.habeasDataAceptado").value(true));
         assertThat(usuarioRepository.count()).isEqualTo(1);
 
@@ -72,7 +75,7 @@ class UsuariosApiIT {
                 .content("{\"correo\":\"ana@example.com\",\"password\":\"secreto\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(jsonPath("$.rol").value("TECNICO"));
+                .andExpect(jsonPath("$.rol").value("CLIENTE"));
 
         // bad credentials -> 401
         mockMvc.perform(post("/api/usuarios/login").contentType(MediaType.APPLICATION_JSON)
@@ -179,16 +182,23 @@ class UsuariosApiIT {
                 .andExpect(status().isForbidden());
 
         // Administrador -> 200 with every user, never exposing the password hash.
+        // The listed user was created through POST /api/usuarios, which always
+        // assigns CLIENTE; the listing must echo the role that was stored.
         String adminToken = tokenIssuer.emitir(new UsuarioId(999L), Rol.ADMINISTRADOR, 0).valor();
         mockMvc.perform(get("/api/usuarios").header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].correo").value("ana@example.com"))
-                .andExpect(jsonPath("$[0].rol").value("TECNICO"))
+                .andExpect(jsonPath("$[0].rol").value("CLIENTE"))
                 .andExpect(jsonPath("$[0].password").doesNotExist())
                 .andExpect(jsonPath("$[0].passwordHash").doesNotExist());
     }
 
+    /**
+     * The stale {@code "rol":"TECNICO"} is kept on purpose: the endpoint no
+     * longer declares that field, so Jackson drops it and the account is still
+     * created as CLIENTE. Sending it proves the escalation path is closed.
+     */
     private String validPayload(boolean aceptaHabeasData) {
         return "{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto\","
                 + "\"telefono\":\"3001234567\",\"rol\":\"TECNICO\",\"aceptaHabeasData\":"
@@ -207,8 +217,23 @@ class UsuariosApiIT {
         return com.jayway.jsonpath.JsonPath.read(body, "$.token");
     }
 
+    /**
+     * "Is this token still accepted?" probe. It must target an endpoint that is
+     * authenticated but NOT admin-only: {@code GET /api/tecnicos} is now
+     * {@code hasRole('ADMINISTRADOR')}, so probing it would report 403 for a
+     * perfectly valid CLIENTE token and blur the difference between "revoked"
+     * (401) and "not an administrator" (403).
+     * <p>
+     * {@code GET /api/tecnicos/cercanos} ({@code hasAnyRole('CLIENTE','TECNICO')})
+     * is the right probe: it needs only a location, returns 200 with an empty
+     * list when nothing is nearby, and never depends on the caller owning a
+     * domain profile. {@code GET /api/clientes/me/ots} was rejected because it
+     * answers 404 when the user has no {@code Cliente} profile, which would be
+     * indistinguishable from a revocation.
+     */
     private int protectedStatus(String token) throws Exception {
-        return mockMvc.perform(get("/api/tecnicos").header("Authorization", "Bearer " + token))
+        return mockMvc.perform(get("/api/tecnicos/cercanos").param("lat", "4.71").param("lng", "-74.07")
+                        .header("Authorization", "Bearer " + token))
                 .andReturn().getResponse().getStatus();
     }
 }

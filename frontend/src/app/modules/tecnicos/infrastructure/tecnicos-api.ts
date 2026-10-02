@@ -36,6 +36,13 @@ import { Observable, forkJoin, of } from 'rxjs';
 import { delay, map, switchMap } from 'rxjs/operators';
 import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
 
+/**
+ * Technician that owns the mock session (`usuarioId: 6`, juan.tecnico@coldday.com.co).
+ * Only used by the mock branch: the real endpoint resolves the technician from
+ * the principal, so no id travels in the request.
+ */
+const MOCK_TECNICO_PROPIO_ID = 'TEC-001';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -177,23 +184,26 @@ export class TecnicosApi {
   }
 
   /**
-   * PUT /api/tecnicos/{tecnicoId}/estado con {estadoOperativo} (el backend lee la
-   * clave `estadoOperativo`, NO `estado`) → TecnicoApiResponse; la firma expone boolean.
+   * PUT /api/tecnicos/me/estado con {estadoOperativo} (el backend lee la clave
+   * `estadoOperativo`, NO `estado`) → TecnicoApiResponse; la firma expone boolean.
+   *
+   * No `tecnicoId`: el endpoint es owner-only y resuelve el técnico desde el
+   * principal, así que no hay id que enviar (antes era `/{tecnicoId}/estado`).
    */
-  cambiarEstadoOperativo(tecnicoId: string, nuevoEstado: EstadoOperativo): Observable<boolean> {
+  cambiarEstadoOperativo(nuevoEstado: EstadoOperativo): Observable<boolean> {
     if (this.apiConfig.useMocks()) {
-      const res = this.mockDb.cambiarDisponibilidadTecnico(tecnicoId, nuevoEstado);
+      const res = this.mockDb.cambiarDisponibilidadTecnico(MOCK_TECNICO_PROPIO_ID, nuevoEstado);
       return of(res).pipe(delay(200));
     }
     return this.http
-      .put<TecnicoApiResponse>(this.apiConfig.url(`/tecnicos/${tecnicoId}/estado`), {
+      .put<TecnicoApiResponse>(this.apiConfig.url('/tecnicos/me/estado'), {
         estadoOperativo: nuevoEstado,
       })
       .pipe(map(() => true));
   }
 
-  actualizarEstadoOperativo(tecnicoId: string, nuevoEstado: EstadoOperativo): Observable<boolean> {
-    return this.cambiarEstadoOperativo(tecnicoId, nuevoEstado);
+  actualizarEstadoOperativo(nuevoEstado: EstadoOperativo): Observable<boolean> {
+    return this.cambiarEstadoOperativo(nuevoEstado);
   }
 
   /** POST /api/ot/{otId}/iniciar-desplazamiento (sin cuerpo). */

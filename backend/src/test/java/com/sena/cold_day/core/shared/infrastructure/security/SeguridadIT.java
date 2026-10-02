@@ -102,8 +102,14 @@ class SeguridadIT {
         Long usuarioId = persistUsuario("revocado@example.com");
         String tokenAntesDelReset = tokenIssuer.emitir(new UsuarioId(usuarioId), Rol.CLIENTE, 0).valor();
 
-        // Baseline: the fresh token authenticates.
-        mockMvc.perform(get("/api/tecnicos").header("Authorization", "Bearer " + tokenAntesDelReset))
+        // Baseline: the fresh token authenticates. The probe is
+        // GET /api/tecnicos/cercanos (hasAnyRole('CLIENTE','TECNICO')), not
+        // GET /api/tecnicos: the roster is now admin-only, so probing it would
+        // answer 403 for a valid CLIENTE token and make the revocation (401)
+        // indistinguishable from a role mismatch. It needs only a location and
+        // answers 200 with an empty list when nothing is nearby.
+        mockMvc.perform(get("/api/tecnicos/cercanos").param("lat", "4.71").param("lng", "-74.07")
+                        .header("Authorization", "Bearer " + tokenAntesDelReset))
                 .andExpect(status().isOk());
 
         // A password reset bumps the persisted token version (design D11).
@@ -111,7 +117,9 @@ class SeguridadIT {
         persisted.setTokenVersion(1);
         usuarioRepository.saveAndFlush(persisted);
 
-        mockMvc.perform(get("/api/tecnicos").header("Authorization", "Bearer " + tokenAntesDelReset))
+        // Same endpoint as the baseline, so the only variable is the token.
+        mockMvc.perform(get("/api/tecnicos/cercanos").param("lat", "4.71").param("lng", "-74.07")
+                        .header("Authorization", "Bearer " + tokenAntesDelReset))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$[0].status").value(401));
     }

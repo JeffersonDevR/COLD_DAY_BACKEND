@@ -116,11 +116,16 @@ class TecnicosApiIT {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
                 .content(validPayload("123", "Ana"))).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String id = objectMapper.readTree(body).get("id").asText();
+        JsonNode created = objectMapper.readTree(body);
+        String id = created.get("id").asText();
         String adminToken = adminJwt();
+        // The operational switch is owner-only, so the technician authenticates
+        // as themselves: the 403s below must come from the validation gate, not
+        // from an authorization denial.
+        String tecnicoToken = tecnicoJwt(created);
 
         // Not yet approved: operational change is forbidden (403, business rule)
-        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminToken)
+        mockMvc.perform(put("/api/tecnicos/me/estado").header("Authorization", "Bearer " + tecnicoToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"DISPONIBLE\"}"))
                 .andExpect(status().isForbidden());
 
@@ -128,7 +133,7 @@ class TecnicosApiIT {
         mockMvc.perform(patch("/api/tecnicos/" + id + "/validacion")
                 .header("Authorization", "Bearer " + adminToken).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"accion\":\"RECHAZAR\",\"motivo\":\"Docs vencidos\"}")).andExpect(status().isNoContent());
-        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminToken)
+        mockMvc.perform(put("/api/tecnicos/me/estado").header("Authorization", "Bearer " + tecnicoToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"DISPONIBLE\"}"))
                 .andExpect(status().isForbidden());
 
@@ -142,7 +147,7 @@ class TecnicosApiIT {
                 .content("{\"accion\":\"APROBAR\"}")).andExpect(status().isNoContent());
 
         // Now the operational switch works
-        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminToken)
+        mockMvc.perform(put("/api/tecnicos/me/estado").header("Authorization", "Bearer " + tecnicoToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"DISPONIBLE\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.estadoOperativo").value("DISPONIBLE"))
                 .andExpect(jsonPath("$.estadoValidacion").value("APROBADO"));
@@ -175,9 +180,9 @@ class TecnicosApiIT {
 
     @Test
     void approvedTechnicianCanToggleOccupied() throws Exception {
-        String id = registrarYAprobar("OCUPADO-1", "Ana");
+        String tecnicoToken = registrarYAprobar("OCUPADO-1", "Ana");
 
-        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminJwt())
+        mockMvc.perform(put("/api/tecnicos/me/estado").header("Authorization", "Bearer " + tecnicoToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"OCUPADO\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estadoOperativo").value("OCUPADO"))
@@ -186,9 +191,9 @@ class TecnicosApiIT {
 
     @Test
     void approvedTechnicianCanToggleOutOfService() throws Exception {
-        String id = registrarYAprobar("FUERA-1", "Ana");
+        String tecnicoToken = registrarYAprobar("FUERA-1", "Ana");
 
-        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminJwt())
+        mockMvc.perform(put("/api/tecnicos/me/estado").header("Authorization", "Bearer " + tecnicoToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"FUERA_DE_SERVICIO\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estadoOperativo").value("FUERA_DE_SERVICIO"))
@@ -200,18 +205,24 @@ class TecnicosApiIT {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
                 .content(validPayload("PENDIENTE-1", "Ana"))).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String id = objectMapper.readTree(body).get("id").asText();
+        JsonNode created = objectMapper.readTree(body);
 
-        mockMvc.perform(put("/api/tecnicos/" + id + "/estado").header("Authorization", "Bearer " + adminJwt())
+        // The owner is blocked by the validation gate (TecnicoNoValidado), not by
+        // an authorization denial: authenticating as the technician themselves
+        // proves the 403 comes from the business rule.
+        mockMvc.perform(put("/api/tecnicos/me/estado")
+                .header("Authorization", "Bearer " + tecnicoJwt(created))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estadoOperativo\":\"OCUPADO\"}"))
                 .andExpect(status().isForbidden());
     }
 
+    /** Registers a technician, approves them, and returns their own JWT. */
     private String registrarYAprobar(String numeroIdentificacion, String nombre) throws Exception {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
                 .content(validPayload(numeroIdentificacion, nombre))).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String id = objectMapper.readTree(body).get("id").asText();
+        JsonNode created = objectMapper.readTree(body);
+        String id = created.get("id").asText();
         String adminToken = adminJwt();
         mockMvc.perform(post("/api/tecnicos/" + id + "/documentos").header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -220,11 +231,16 @@ class TecnicosApiIT {
         mockMvc.perform(patch("/api/tecnicos/" + id + "/validacion").header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"accion\":\"APROBAR\"}"))
                 .andExpect(status().isNoContent());
-        return id;
+        return tecnicoJwt(created);
     }
 
     private String adminJwt() {
         return tokenIssuer.emitir(new UsuarioId(999L), Rol.ADMINISTRADOR, 0).valor();
+    }
+
+    /** JWT of the technician that owns the profile returned by the API. */
+    private String tecnicoJwt(JsonNode created) {
+        return tokenIssuer.emitir(new UsuarioId(created.get("usuarioId").asLong()), Rol.TECNICO, 0).valor();
     }
 
     private String validPayload(String numeroIdentificacion, String nombre) {

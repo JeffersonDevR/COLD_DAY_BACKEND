@@ -209,16 +209,16 @@ describe('TecnicosApi', () => {
     await expect(firstValueFrom(api.aceptarOt('ot1', 'TEC-001'))).rejects.toThrow('Pendiente en el backend');
   });
 
-  it('cambiarEstadoOperativo envía estadoOperativo y delega el alias', async () => {
-    const promise = firstValueFrom(api.cambiarEstadoOperativo('TEC-001', 'OCUPADO'));
-    const req = http.expectOne('/api/tecnicos/TEC-001/estado');
+  it('cambiarEstadoOperativo hace PUT /api/tecnicos/me/estado y delega el alias', async () => {
+    const promise = firstValueFrom(api.cambiarEstadoOperativo('OCUPADO'));
+    const req = http.expectOne('/api/tecnicos/me/estado');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ estadoOperativo: 'OCUPADO' });
     req.flush({});
     expect(await promise).toBe(true);
 
-    const alias = firstValueFrom(api.actualizarEstadoOperativo('TEC-001', 'DISPONIBLE'));
-    http.expectOne('/api/tecnicos/TEC-001/estado').flush({});
+    const alias = firstValueFrom(api.actualizarEstadoOperativo('DISPONIBLE'));
+    http.expectOne('/api/tecnicos/me/estado').flush({});
     expect(await alias).toBe(true);
   });
 
@@ -261,7 +261,7 @@ describe('TecnicosApi', () => {
     const ofertas = await firstValueFrom(api.getOfertasParaTecnico('TEC-001'));
     expect(ofertas.length).toBeGreaterThan(0);
 
-    const ok = await firstValueFrom(api.cambiarEstadoOperativo('TEC-001', 'OCUPADO'));
+    const ok = await firstValueFrom(api.cambiarEstadoOperativo('OCUPADO'));
     expect(ok).toBe(true);
   });
 });
