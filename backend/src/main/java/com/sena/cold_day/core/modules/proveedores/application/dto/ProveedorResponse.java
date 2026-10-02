@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.proveedores.application.dto;
 import java.time.Instant;
 
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoValidacionProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 
 /**
@@ -17,10 +18,21 @@ public record ProveedorResponse(
         String nit,
         String telefono,
         boolean activo,
-        Instant creadoEn) {
+        Instant creadoEn,
+        EstadoValidacionProveedor estadoValidacion) {
+
+    /**
+     * Normalizes a missing validation state to {@code PENDIENTE}. The aggregate
+     * already guarantees a non-null state on reconstitution; this only keeps the
+     * DTO honest if a supplier is ever mapped from a partial source.
+     */
+    public ProveedorResponse {
+        estadoValidacion = estadoValidacion == null ? EstadoValidacionProveedor.PENDIENTE : estadoValidacion;
+    }
 
     public static ProveedorResponse from(Proveedor proveedor) {
         return new ProveedorResponse(proveedor.getId(), proveedor.getUsuarioId(), proveedor.getRazonSocial(),
-                proveedor.getNit(), proveedor.getTelefono(), proveedor.isActivo(), proveedor.getCreadoEn());
+                proveedor.getNit(), proveedor.getTelefono(), proveedor.isActivo(), proveedor.getCreadoEn(),
+                proveedor.getEstadoValidacion());
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -35,6 +36,25 @@ public class ProveedorControllerAdvice {
         List<String> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + " " + error.getDefaultMessage()).toList();
         return ResponseEntity.badRequest().body(new ApiError(400, "Solicitud invalida", errors));
+    }
+
+    /** A path identifier that is not a UUID is malformed input (400), not a 500. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ApiError> handleMalformedId(MethodArgumentTypeMismatchException exception) {
+        return ResponseEntity.badRequest()
+                .body(new ApiError(400, "Solicitud invalida", List.of(exception.getName() + " invalido")));
+    }
+
+    /**
+     * The documentation and validation use cases reject their input with
+     * {@link IllegalArgumentException} — a blank rejection reason, a supplier
+     * that does not exist, a PROVEEDOR account with no supplier profile. This
+     * advice already answers 400 for malformed input, so those follow the same
+     * convention instead of surfacing as an unhandled 500.
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     @ExceptionHandler(CorreoDuplicadoException.class)

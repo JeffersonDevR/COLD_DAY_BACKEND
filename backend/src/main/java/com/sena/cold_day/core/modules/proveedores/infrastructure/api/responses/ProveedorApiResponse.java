@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses;
 
 import com.sena.cold_day.core.modules.proveedores.application.dto.ProveedorResponse;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoValidacionProveedor;
 
 /**
  * API view of a supplier. {@code id} is a plain UUID string so the wire contract
@@ -9,11 +10,12 @@ import com.sena.cold_day.core.modules.proveedores.application.dto.ProveedorRespo
  * exposed.
  */
 public record ProveedorApiResponse(String id, Long usuarioId, String razonSocial, String nit,
-        String telefono, boolean activo, String creadoEn) {
+        String telefono, boolean activo, String creadoEn, EstadoValidacionProveedor estadoValidacion) {
 
     public static ProveedorApiResponse from(ProveedorResponse response) {
         return new ProveedorApiResponse(String.valueOf(response.id()), response.usuarioId(), response.razonSocial(),
                 response.nit(), response.telefono(), response.activo(),
-                response.creadoEn() == null ? null : response.creadoEn().toString());
+                response.creadoEn() == null ? null : response.creadoEn().toString(),
+                response.estadoValidacion());
     }
 }
