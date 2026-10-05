@@ -386,12 +386,37 @@ export interface OtResponse {
   firmaClienteUrl?: string;
   actaGarantiaGenerada?: boolean;
   garantiaDias?: number;
+  /**
+   * Acta de garantía efectivamente FIRMADA y persistida (POST /api/ot/{id}/acta).
+   *
+   * `actaGenerada` no significa lo mismo que `actaFirmada`: lo primero es una
+   * expectativa de la maqueta, lo segundo un hecho guardado en la base. El
+   * código de verificación SOLO existe aquí y lo emite el servidor; nunca se
+   * arma en el cliente a partir del id de la OT, porque sería reproducible por
+   * cualquiera que pueda leer la orden.
+   */
+  actaFirmada?: boolean;
+  actaCodigoVerificacion?: string;
+  actaFirmadaEn?: string;
   // Calificación
   calificacion?: {
     estrellas: number;
     comentario?: string;
     fecha?: string;
   };
+}
+
+/**
+ * Acta de garantía ya firmada y persistida (POST /api/ot/{otId}/acta).
+ *
+ * Existe como tipo propio y no como `firmaClienteUrl: string` porque el
+ * código de verificación es la prueba: lo emite el servidor, es único y nunca
+ * se arma en el cliente. Sin un 2xx real no hay `ActaGarantia`.
+ */
+export interface ActaGarantia {
+  otId: string;
+  codigoVerificacion: string;
+  firmadaEn: string;
 }
 
 export interface OfertaTecnicoResponse {

@@ -8,6 +8,7 @@
  * Pendiente(backend) para no fingir información que no existe.
  */
 import {
+  ActaGarantia,
   Certificacion,
   DiagnosticoRequest,
   DisputaResponse,
@@ -28,6 +29,7 @@ import {
   UsuarioResponse,
 } from '../../domain/models/common.models';
 import {
+  ActaGarantiaApiResponse,
   CertificacionApi,
   DiagnosticoApi,
   DiagnosticoApiRequest,
@@ -172,8 +174,27 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
     tecnicoNombre: dto.tecnicoNombre ?? undefined,
     auxiliaresRequeridos: dto.auxiliaresRequeridos,
     evidenciaUrls: [],
+    // Acta firmada (V11). El código se muestra tal cual lo emitió el
+    // servidor; acá no se deriva ni se recalcula nada.
+    actaFirmada: dto.actaFirmada ?? false,
+    actaCodigoVerificacion: dto.actaCodigoVerificacion ?? undefined,
+    actaFirmadaEn: dto.actaFirmadaEn ?? undefined,
     // Pendiente(backend): barrio/historial requieren campos/endpoints que el
     // backend aún no expone (historial: GET /api/ot/{id}/historial).
+  };
+}
+
+/**
+ * Acta de garantía firmada tal como la emitió el servidor. No hay traducción
+ * posible ni necesaria: el código es un valor opaco, y cualquier
+ * "normalización" en el cliente sería exactamente la fabricación que esta
+ * pantalla ya dejó de hacer.
+ */
+export function aActaGarantia(dto: ActaGarantiaApiResponse): ActaGarantia {
+  return {
+    otId: dto.otId,
+    codigoVerificacion: dto.codigoVerificacion,
+    firmadaEn: dto.firmadaEn,
   };
 }
 

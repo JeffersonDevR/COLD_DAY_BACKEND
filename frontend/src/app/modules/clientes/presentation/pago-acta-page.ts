@@ -3,7 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
+import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({
@@ -96,14 +96,37 @@ import { environment } from '../../../../environments/environment';
               <div class="flex justify-between items-center pt-2">
                 <button
                   type="button"
-                  [disabled]="!hasFirma()"
+                  [disabled]="!hasFirma() || guardando() || !!acta()"
                   (click)="guardarYDescargarActa()"
                   class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition-colors inline-flex items-center gap-2"
                 >
-                  <i class="pi pi-download text-sm"></i>
-                  Descargar Acta de Garantía Firmada
+                  @if (guardando()) {
+                    <i class="pi pi-spin pi-spinner text-sm"></i>
+                    Registrando el acta…
+                  } @else if (acta(); as actaFirmada) {
+                    <i class="pi pi-verified text-sm"></i>
+                    Acta registrada
+                  } @else {
+                    <i class="pi pi-download text-sm"></i>
+                    Descargar Acta de Garantía Firmada
+                  }
                 </button>
-                <span class="text-xs text-slate-400">Código de verificación: CD-SEC-{{ orden.id }}</span>
+                @if (acta(); as actaFirmada) {
+                  <!--
+                    El código es el que devolvió el servidor. Antes se armaba
+                    acá mismo con el id de la OT (CD-SEC-...), una cadena que
+                    no existía en ninguna base y que el cliente daba por
+                    verificable. Sin un 2xx real no se muestra código alguno.
+                  -->
+                  <span class="text-xs text-slate-500 dark:text-slate-400 text-right">
+                    Código de verificación:
+                    <strong class="font-mono text-slate-700 dark:text-slate-200">{{ actaFirmada.codigoVerificacion }}</strong>
+                  </span>
+                } @else {
+                  <span class="text-xs text-slate-400 text-right">
+                    Sin firmar — aún no hay acta registrada
+                  </span>
+                }
               </div>
             </div>
           </div>
@@ -216,6 +239,17 @@ export class PagoActaPage implements OnInit, AfterViewInit {
 
   readonly medioPago = signal<MedioPago>('EFECTIVO');
   readonly hasFirma = signal<boolean>(false);
+
+  /**
+   * Acta ya registrada, tal como la devolvió el servidor. Mientras sea `null`
+   * NO hay acta: la página no puede afirmar que existe ni inventar un código de
+   * verificación para llenar el hueco.
+   */
+  readonly acta = signal<ActaGarantia | null>(null);
+
+  /** Petición en vuelo: deshabilita el botón y evita el doble envío. */
+  readonly guardando = signal<boolean>(false);
+
   private isDrawing = false;
   private ctx: CanvasRenderingContext2D | null = null;
 
@@ -311,7 +345,74 @@ export class PagoActaPage implements OnInit, AfterViewInit {
     }
   }
 
+  /**
+   * Persiste el acta de garantía firmada.
+   *
+   * Esto antes era un toast y nada más: la firma del <canvas> se descartaba y
+   * el "código de verificación" se fabricaba en el template. Bajo la Ley 1480
+   * ese documento es la prueba del consumidor de 90 días de garantía, así que
+   * el éxito solo se anuncia cuando el servidor respondió 2xx con un código
+   * emitido por él, y el error real se muestra cuando no.
+   *
+   * El botón queda deshabilitado mientras la petición está en vuelo porque el
+   * acta se firma UNA vez: un doble envío sería un 409 y, peor, le diría al
+   * cliente que su documento falló cuando lo que pasó fue que hizo clic dos
+   * veces.
+   */
   guardarYDescargarActa(): void {
-    this.toast.success('Acta Generada', 'Acta formal de garantía de 90 días firmada y certificada.');
+    if (this.guardando() || this.acta()) return;
+
+    const firmaDataUrl = this.exportarFirma();
+    if (!firmaDataUrl) {
+      this.toast.error('No pudimos registrar tu acta', 'Vuelve a dibujar tu firma e inténtalo de nuevo.');
+      return;
+    }
+
+    this.guardando.set(true);
+    this.otApi.firmarActaGarantia(this.otId(), firmaDataUrl).subscribe({
+      next: (acta) => {
+        // Un 2xx sin código no es prueba de nada: el código es lo que hace
+        // verificable el acta. Si faltara, se reporta como error en vez de
+        // anunciarlo como generado.
+        if (!acta?.codigoVerificacion) {
+          this.toast.error(
+            'No pudimos registrar tu acta',
+            'El servidor respondió sin un código de verificación, así que no hay acta que mostrar.',
+          );
+          return;
+        }
+        this.acta.set(acta);
+        this.toast.success(
+          'Acta registrada',
+          `Firma y acta guardadas. Tu código de verificación es ${acta.codigoVerificacion}.`,
+        );
+      },
+      error: (err: Error) => {
+        // Se muestra el mensaje real del backend (409 por OT no finalizada o
+        // acta ya firmada, 400 por firma vacía o demasiado grande, 403 si la
+        // orden no es del cliente). Un "éxito" acá volvería a mentir.
+        this.toast.error('No pudimos registrar tu acta', err.message);
+      },
+      complete: () => this.guardando.set(false),
+    });
+  }
+
+  /**
+   * Exporta el trazo del canvas como data URL. `toDataURL` sobre un canvas
+   * vacío igual devuelve una cadena (un PNG en blanco), así que un data URL
+   * vacío significa que el elemento no está disponible todavía.
+   */
+  private exportarFirma(): string | null {
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return null;
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      return dataUrl && dataUrl.length > 0 ? dataUrl : null;
+    } catch {
+      // Un canvas contaminado (imagen externa) lanza SecurityError al
+      // exportar: es un fallo real de la firma, no algo que deba reportarse
+      // como acta registrada.
+      return null;
+    }
   }
 }

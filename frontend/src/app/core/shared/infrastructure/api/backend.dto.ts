@@ -270,6 +270,28 @@ export interface OtApiResponse {
   tecnicoNombre: string | null;
   /** OT column `auxiliares_requeridos`: always present, 0 for legacy rows. */
   auxiliaresRequeridos: number;
+  /**
+   * Acta de garantía firmada (V11). La FIRMA no viaja aquí: puede llegar a
+   * ~1 MB y cada lectura de la OT arrastraría la tinta. El backend persiste
+   * código e instante juntos, así que `true` sin código no puede ocurrir.
+   *
+   * Opcionales a propósito: el mapper trata la ausencia igual que `false`, y
+   * así un fixture de test o una fila de una versión anterior del backend no
+   * obliga a mentir para compilar.
+   */
+  actaFirmada?: boolean;
+  actaCodigoVerificacion?: string | null;
+  actaFirmadaEn?: string | null;
+}
+
+/**
+ * Respuesta real de POST /api/ot/{otId}/acta (ActaGuarantiaApiResponse.java).
+ * Es lo único que autoriza a la UI a afirmar que el acta existe.
+ */
+export interface ActaGarantiaApiResponse {
+  otId: string;
+  codigoVerificacion: string;
+  firmadaEn: string;
 }
 
 export interface OtApiRequest {

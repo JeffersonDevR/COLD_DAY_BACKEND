@@ -1,6 +1,8 @@
 import { Injectable, signal } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../../../environments/environment';
 import {
+  ActaGarantia,
   UsuarioResponse,
   TecnicoResponse,
   OtResponse,
@@ -1094,6 +1096,66 @@ export class MockDbService {
         })
       );
     }
+  }
+
+  /**
+   * Acta de garantía firmada (mock de POST /api/ot/{id}/acta).
+   *
+   * Reproduce las TRES reglas del agregado real, no solo el camino feliz:
+   * se rechaza con 409 si la OT no está FINALIZADA, con 400 si la firma viene
+   * vacía, y con 409 si ya estaba firmada. Un mock que aceptara cualquier
+   * cosa dejaría pasar en modo demo exactamente los casos que el backend
+   * bloquea, que es como se cuelan los bugs de este tipo.
+   *
+   * El código se emite con `crypto.getRandomValues`, igual que el servidor usa
+   * SecureRandom: aunque sea un mock, no puede derivarse del id de la OT ni
+   * de la hora, o volvería a mentir sobre la única propiedad que lo hace
+   * verificable.
+   */
+  firmarActaGarantia(otId: string, firmaDataUrl: string): Observable<ActaGarantia> {
+    const ot = this.ordenesTrabajo().find(o => o.id === otId);
+    if (!ot) {
+      return throwError(() => new ApiHttpError('Orden de trabajo no encontrada.', 404));
+    }
+    if (ot.estado !== 'FINALIZADA') {
+      return throwError(
+        () => new ApiHttpError(
+          `Solo se puede firmar el acta de una OT FINALIZADA, estado actual: ${ot.estado}.`,
+          409,
+        ),
+      );
+    }
+    if (ot.actaFirmada) {
+      return throwError(
+        () => new ApiHttpError('El acta de esta OT ya fue firmada, no se admite una segunda firma.', 409),
+      );
+    }
+    if (!firmaDataUrl || !firmaDataUrl.trim()) {
+      return throwError(() => new ApiHttpError('La firma del acta es requerida.', 400));
+    }
+
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const codigoVerificacion =
+      'CD-ACT-' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    const firmadaEn = new Date().toISOString();
+
+    this.ordenesTrabajo.update(list =>
+      list.map(o =>
+        o.id === otId
+          ? {
+              ...o,
+              firmaClienteUrl: firmaDataUrl,
+              actaFirmada: true,
+              actaCodigoVerificacion: codigoVerificacion,
+              actaFirmadaEn: firmadaEn,
+              fechaActualizacion: firmadaEn,
+            }
+          : o,
+      ),
+    );
+
+    return of({ otId, codigoVerificacion, firmadaEn });
   }
 
   subirComprobanteLiquidacion(liqId: string, comprobanteUrl: string, referencia: string): void {
