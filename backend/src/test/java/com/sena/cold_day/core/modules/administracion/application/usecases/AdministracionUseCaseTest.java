@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -78,6 +80,15 @@ class AdministracionUseCaseTest {
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final Clock CLOCK = Clock.fixed(AHORA, ZoneOffset.UTC);
+    /**
+     * Instante dentro del mes en curso. {@code ConsultarMetricasAdminUseCase.recaudoMesActual()}
+     * descarta toda liquidacion cuyo {@code creadaEn} no caiga en {@code YearMonth.now()}, asi que
+     * una fecha congelada como {@link #AHORA} hace que el recaudo salte a cero en cuanto cambia el
+     * mes. Para las metricas que dependen del mes en curso se usa esta constante; {@code AHORA}
+     * sigue sirviendo para lo que solo necesita un instante estable.
+     */
+    private static final Instant EN_EL_MES_EN_CURSO =
+            YearMonth.now().atDay(15).atStartOfDay(ZoneId.systemDefault()).toInstant();
     private static final long USUARIO_ID = 7L;
     private static final UsuarioId PRINCIPAL = new UsuarioId(USUARIO_ID);
 
@@ -445,7 +456,7 @@ class AdministracionUseCaseTest {
         when(liquidacionRepository.buscarPorEstado(EstadoLiquidacion.EN_VERIFICACION))
                 .thenReturn(List.of(liquidacionEnVerificacion(disponible.getId())));
         when(liquidacionRepository.listarTodas())
-                .thenReturn(List.of(liquidacionAprobada(disponible.getId(), AHORA)));
+                .thenReturn(List.of(liquidacionAprobada(disponible.getId(), EN_EL_MES_EN_CURSO)));
 
         var response = metricas.consultar();
 
