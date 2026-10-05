@@ -27,11 +27,13 @@ import com.sena.cold_day.core.shared.errors.ApiError;
 @RestControllerAdvice(assignableTypes = OfertaOtController.class)
 public class OfertaOtControllerAdvice {
 
+    private static final String MENSAJE_SOLICITUD_INVALIDA = "Solicitud invalida";
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {
         List<String> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + " " + error.getDefaultMessage()).toList();
-        return ResponseEntity.badRequest().body(new ApiError(400, "Solicitud invalida", errors));
+        return ResponseEntity.badRequest().body(new ApiError(400, MENSAJE_SOLICITUD_INVALIDA, errors));
     }
 
     /**
@@ -41,7 +43,7 @@ public class OfertaOtControllerAdvice {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException exception) {
         return ResponseEntity.badRequest()
-                .body(new ApiError(400, "Solicitud invalida", List.of("cuerpo de la solicitud ilegible")));
+                .body(new ApiError(400, MENSAJE_SOLICITUD_INVALIDA, List.of("cuerpo de la solicitud ilegible")));
     }
 
     /** Auxiliar count outside {@code [0, app.auxiliares.max]} (aux.R2). */
