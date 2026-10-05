@@ -11,9 +11,12 @@ import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.exception.CalificacionInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.ConfirmarLlegadaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.ActaInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.FirmaActaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoVerificacionActa;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
@@ -65,6 +68,22 @@ public class Ot {
     private String calificacionComentario;
     private Instant calificacionEn;
     private TecnicoId calificacionTecnicoId;
+    private String actaFirmaDataUrl;
+    private CodigoVerificacionActa actaCodigoVerificacion;
+    private Instant actaFirmadaEn;
+
+    /**
+     * Hard ceiling on the signature payload, in characters of the data URL.
+     *
+     * <p>The canvas is 480x140. A hand-drawn stroke on it encodes as PNG in a
+     * few kilobytes and base64 inflates it by 4/3, so a real signature lands
+     * well under 64 KB. 1 MB leaves roughly an order of magnitude of headroom
+     * for a dense or high-DPI capture while still bounding what a single
+     * request can push into a {@code text} column: the point of the limit is
+     * to refuse a payload that is not a signature, not to police legitimate
+     * ink.
+     */
+    public static final int MAX_FIRMA_ACTA_CHARS = 1_048_576;
 
     /** Pending state changes not yet persisted to the append-only history. */
     private final List<CambioEstado> cambiosPendientes = new ArrayList<>();
@@ -172,6 +191,31 @@ public class Ot {
             Integer auxiliaresRequeridos, Instant llegadaEn, String medioPagoVisita, Instant visitaPagadaEn,
             Integer calificacionEstrellas, String calificacionComentario, Instant calificacionEn,
             TecnicoId calificacionTecnicoId) {
+        return reconstituir(id, clienteId, tecnicoId, categoriaServicio, descripcionFalla, evidenciaUrls,
+                direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
+                tarifaFuente, auxiliaresRequeridos, llegadaEn, medioPagoVisita, visitaPagadaEn,
+                calificacionEstrellas, calificacionComentario, calificacionEn, calificacionTecnicoId,
+                null, null, null);
+    }
+
+    /**
+     * Reconstitution from persistence including the signed warranty acta (V11).
+     * Kept as its own overload so every existing call site and test that rebuilds
+     * an OT compiles untouched; the three acta fields default to null, which is
+     * exactly what an order finalized before this feature reads back as.
+     */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: el estado completo del agregado (32 campos). Mismo motivo que la sobrecarga de 29 campos.
+    public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
+            CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
+            String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
+            Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
+            Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente,
+            Integer auxiliaresRequeridos, Instant llegadaEn, String medioPagoVisita, Instant visitaPagadaEn,
+            Integer calificacionEstrellas, String calificacionComentario, Instant calificacionEn,
+            TecnicoId calificacionTecnicoId, String actaFirmaDataUrl, String actaCodigoVerificacion,
+            Instant actaFirmadaEn) {
         Ot ot = new Ot();
         ot.id = id;
         ot.clienteId = clienteId;
@@ -204,6 +248,10 @@ public class Ot {
         ot.calificacionComentario = calificacionComentario;
         ot.calificacionEn = calificacionEn;
         ot.calificacionTecnicoId = calificacionTecnicoId;
+        ot.actaFirmaDataUrl = actaFirmaDataUrl;
+        ot.actaCodigoVerificacion = actaCodigoVerificacion == null ? null
+                : CodigoVerificacionActa.de(actaCodigoVerificacion);
+        ot.actaFirmadaEn = actaFirmadaEn;
         return ot;
     }
 
@@ -615,5 +663,75 @@ public class Ot {
         this.calificacionComentario = comentario == null || comentario.isBlank() ? null : comentario;
         this.calificacionEn = ahora;
         this.calificacionTecnicoId = this.tecnicoId;
+    }
+
+    /**
+     * Records the warranty acta signed by the client on a FINALIZADA order.
+     *
+     * <p>This is the operation the payment page used to fake: it drew a
+     * signature on a canvas, toasted "Acta Generada" and dropped the ink. Under
+     * Ley 1480 that document is the consumer's proof of 90 days of warranty, so
+     * the signature and the verification code now live on the aggregate, are
+     * persisted with the order, and are the only thing the UI is allowed to
+     * report.
+     *
+     * <p>Two invariants live here rather than in the controller:
+     * <ul>
+     *   <li>the OT must be FINALIZADA, because an acta certifying a service
+     *       that was never delivered certifies nothing;</li>
+     *   <li>it is signed once. A second signature is a conflict, not an update:
+     *       re-signing would silently replace the document the client is
+     *       holding and invalidate the code already printed on it.</li>
+     * </ul>
+     * The code is passed IN, generated by the application layer with
+     * {@link CodigoVerificacionActa#generar()}. The aggregate never derives it
+     * from its own id: that id is the API path of the order, so a code built
+     * from it would be reproducible by anyone.
+     *
+     * <p>Like {@link #calificar}, this is a fact about a terminal order, not a
+     * transition, so it produces no entry in {@code ot_estado_historial} and
+     * does not touch the state machine.
+     */
+    public void registrarActaGarantia(String firmaDataUrl, CodigoVerificacionActa codigo, Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento de la firma del acta es requerido");
+        }
+        if (this.estado != EstadoOt.FINALIZADA) {
+            throw new ActaInvalidaException(
+                    "Solo se puede firmar el acta de una OT FINALIZADA, estado actual: " + this.estado);
+        }
+        if (this.actaFirmadaEn != null) {
+            throw new ActaInvalidaException("El acta de esta OT ya fue firmada, no se admite una segunda firma");
+        }
+        if (firmaDataUrl == null || firmaDataUrl.isBlank()) {
+            throw new FirmaActaInvalidaException("La firma del acta es requerida");
+        }
+        if (firmaDataUrl.length() > MAX_FIRMA_ACTA_CHARS) {
+            throw new FirmaActaInvalidaException("La firma del acta excede el tamano maximo admitido ("
+                    + MAX_FIRMA_ACTA_CHARS + " caracteres)");
+        }
+        if (codigo == null) {
+            throw new IllegalArgumentException("El codigo de verificacion del acta es requerido");
+        }
+        this.actaFirmaDataUrl = firmaDataUrl;
+        this.actaCodigoVerificacion = codigo;
+        this.actaFirmadaEn = ahora;
+    }
+
+    /** True once the warranty acta has been signed; there is no unsigned state after this. */
+    public boolean actaFirmada() {
+        return this.actaFirmadaEn != null;
+    }
+
+    public String getActaFirmaDataUrl() {
+        return actaFirmaDataUrl;
+    }
+
+    public CodigoVerificacionActa getActaCodigoVerificacion() {
+        return actaCodigoVerificacion;
+    }
+
+    public Instant getActaFirmadaEn() {
+        return actaFirmadaEn;
     }
 }

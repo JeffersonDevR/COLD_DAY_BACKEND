@@ -28,15 +28,18 @@ import com.sena.cold_day.core.modules.ot.application.usecases.FinalizarOtUseCase
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.PagarVisitaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RechazarPresupuestoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarActaGarantiaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarDiagnosticoUseCase;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CalificarOtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CancelarOtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.DiagnosticoApiRequest;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.FirmarActaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.InsumoLineaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.OtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.PagarVisitaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.RechazoPresupuestoApiRequest;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.ActaGarantiaApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.HistorialEstadoApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.TecnicoUbicacionApiResponse;
@@ -67,16 +70,18 @@ public class OtController {
     private final ConfirmarLlegadaUseCase confirmarLlegada;
     private final PagarVisitaUseCase pagarVisita;
     private final CalificarOtUseCase calificarOt;
+    private final RegistrarActaGarantiaUseCase registrarActaGarantia;
     private final AutorizacionPropietario autorizacion;
 
-    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (11 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 11 params a otro ctor.
+    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (12 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 12 params a otro ctor.
     public OtController(CrearOtUseCase crear, ConsultarOtUseCase consultar, CancelarOtUseCase cancelar,
             IniciarDesplazamientoUseCase iniciarDesplazamiento,
             RegistrarDiagnosticoUseCase registrarDiagnostico,
             AprobarPresupuestoUseCase aprobarPresupuesto,
             RechazarPresupuestoUseCase rechazarPresupuesto, FinalizarOtUseCase finalizar,
             ConfirmarLlegadaUseCase confirmarLlegada, PagarVisitaUseCase pagarVisita,
-            CalificarOtUseCase calificarOt, AutorizacionPropietario autorizacion) {
+            CalificarOtUseCase calificarOt, RegistrarActaGarantiaUseCase registrarActaGarantia,
+            AutorizacionPropietario autorizacion) {
         this.crear = crear;
         this.consultar = consultar;
         this.cancelar = cancelar;
@@ -88,6 +93,7 @@ public class OtController {
         this.confirmarLlegada = confirmarLlegada;
         this.pagarVisita = pagarVisita;
         this.calificarOt = calificarOt;
+        this.registrarActaGarantia = registrarActaGarantia;
         this.autorizacion = autorizacion;
     }
 
@@ -234,5 +240,28 @@ public class OtController {
         autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
         return OtApiResponse.from(calificarOt.calificar(principal.usuarioId(), id, request.estrellas(),
                 request.comentario()));
+    }
+
+    /**
+     * Signs the 90-day warranty acta on a FINALIZADA order with the signature
+     * the client drew, and returns the server-issued verification code.
+     *
+     * <p>CLIENTE only: the acta is the consumer's own declaration of
+     * conformity, so neither the technician who performed the work nor anyone
+     * else signs on the client's behalf. Ownership is enforced through the
+     * existing participant check, and the FINALIZADA precondition plus the
+     * sign-once rule are validated inside the aggregate, not here.
+     *
+     * <p>This endpoint exists because the page that offers the acta used to
+     * report success without persisting anything. A 2xx from here is the only
+     * thing the UI is allowed to present as a generated acta.
+     */
+    @PostMapping("/{id}/acta")
+    @PreAuthorize("hasRole('CLIENTE')")
+    public ActaGarantiaApiResponse firmarActa(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id, @Valid @RequestBody FirmarActaApiRequest request) {
+        autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
+        return ActaGarantiaApiResponse.from(
+                registrarActaGarantia.registrar(principal.usuarioId(), id, request.firmaDataUrl()));
     }
 }

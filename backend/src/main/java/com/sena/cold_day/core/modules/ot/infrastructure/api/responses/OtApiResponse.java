@@ -39,7 +39,15 @@ public record OtApiResponse(
         String medioPagoVisita,
         Integer calificacionEstrellas,
         String calificacionComentario,
-        Instant calificacionEn) {
+        Instant calificacionEn,
+        // Signed warranty acta (V11). The signature data URL itself is NOT
+        // exposed here: it can reach ~1 MB and every OT read would carry it.
+        // Only the fact that it exists, the server-issued verification code and
+        // the signing instant travel on the OT projection; the ink is fetched
+        // by whoever needs to render the document.
+        boolean actaFirmada,
+        String actaCodigoVerificacion,
+        Instant actaFirmadaEn) {
 
     public static OtApiResponse from(OtResponse response) {
         return from(response, null, null);
@@ -60,6 +68,7 @@ public record OtApiResponse(
                 ubicacion == null ? null : ubicacion.longitud(),
                 clienteNombre, tecnicoNombre, response.auxiliaresRequeridos(),
                 response.medioPagoVisita(), response.calificacionEstrellas(), response.calificacionComentario(),
-                response.calificacionEn());
+                response.calificacionEn(), response.actaFirmada(), response.actaCodigoVerificacion(),
+                response.actaFirmadaEn());
     }
 }

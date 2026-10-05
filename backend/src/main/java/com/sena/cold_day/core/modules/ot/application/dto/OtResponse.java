@@ -37,7 +37,10 @@ public record OtResponse(
         boolean visitaPagada,
         Integer calificacionEstrellas,
         String calificacionComentario,
-        Instant calificacionEn) {
+        Instant calificacionEn,
+        boolean actaFirmada,
+        String actaCodigoVerificacion,
+        Instant actaFirmadaEn) {
 
     public static OtResponse fromDomain(Ot ot) {
         return new OtResponse(ot.getId(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
@@ -45,6 +48,8 @@ public record OtResponse(
                 ot.getCreadaEn(), ot.getCanceladaPor(), ot.getMotivoCancelacion(), ot.getTarifaVisita(),
                 ot.getDiagnostico(), ot.getPresupuesto(), ot.getUbicacion(), ot.getAuxiliaresRequeridos(),
                 ot.getMedioPagoVisita(), ot.getVisitaPagadaEn() != null, ot.getCalificacionEstrellas(),
-                ot.getCalificacionComentario(), ot.getCalificacionEn());
+                ot.getCalificacionComentario(), ot.getCalificacionEn(), ot.actaFirmada(),
+                ot.getActaCodigoVerificacion() == null ? null : ot.getActaCodigoVerificacion().valor(),
+                ot.getActaFirmadaEn());
     }
 }

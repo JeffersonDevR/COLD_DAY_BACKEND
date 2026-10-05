@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.ActaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.CalificacionInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.ConfirmarLlegadaInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.FirmaActaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.MotivoRequeridoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
@@ -95,6 +97,28 @@ public class OtControllerAdvice {
     @ExceptionHandler(CalificacionInvalidaException.class)
     ResponseEntity<ApiError> handleCalificacionInvalida(CalificacionInvalidaException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /**
+     * The warranty acta cannot be signed on this order: not FINALIZADA, or it
+     * was already signed. A conflict with the state of the order, so 409 and
+     * nothing is written.
+     */
+    @ExceptionHandler(ActaInvalidaException.class)
+    ResponseEntity<ApiError> handleActaInvalida(ActaInvalidaException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /**
+     * The signature payload itself is unusable: blank or oversized. A 400, not
+     * a 409: the order state is irrelevant when the request body is wrong.
+     * Oversized bodies are normally stopped earlier by
+     * {@code @Size(max = Ot.MAX_FIRMA_ACTA_CHARS)}; this handler covers a caller
+     * that reaches the aggregate directly.
+     */
+    @ExceptionHandler(FirmaActaInvalidaException.class)
+    ResponseEntity<ApiError> handleFirmaActaInvalida(FirmaActaInvalidaException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     private ResponseEntity<ApiError> error(HttpStatus status, RuntimeException exception) {
