@@ -190,6 +190,21 @@ public class OtJpaEntity {
     @Column(name = "calificacion_tecnico_id")
     private UUID calificacionTecnicoId;
 
+    // Signed warranty acta (V11): all nullable so orders finalized before the
+    // acta existed survive the additive ALTER and read back as "not signed".
+    // The signature is the client's ink as a data URL in a `text` column, not a
+    // URL in evidencia_urls: the acta has its own lifecycle and its own
+    // verification code, and mixing it into the evidence list would corrupt
+    // both. The code is server-emitted (SecureRandom) and unique in the base.
+    @Column(name = "acta_firma_data_url", columnDefinition = "text")
+    private String actaFirmaDataUrl;
+
+    @Column(name = "acta_codigo_verificacion", length = 32)
+    private String actaCodigoVerificacion;
+
+    @Column(name = "acta_firmada_en")
+    private Instant actaFirmadaEn;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -234,6 +249,10 @@ public class OtJpaEntity {
         this.calificacionEn = source.getCalificacionEn();
         this.calificacionTecnicoId = source.getCalificacionTecnicoId() == null ? null
                 : source.getCalificacionTecnicoId().valor();
+        this.actaFirmaDataUrl = source.getActaFirmaDataUrl();
+        this.actaCodigoVerificacion = source.getActaCodigoVerificacion() == null ? null
+                : source.getActaCodigoVerificacion().valor();
+        this.actaFirmadaEn = source.getActaFirmadaEn();
     }
 
     public Ot toDomain() {
@@ -247,6 +266,7 @@ public class OtJpaEntity {
                 canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
                 tarifaFuente == null ? null : TarifaFuente.valueOf(tarifaFuente), auxiliaresRequeridos,
                 llegadaEn, medioPagoVisita, visitaPagadaEn, calificacionEstrellas, calificacionComentario,
-                calificacionEn, calificacionTecnicoId == null ? null : TecnicoId.desde(calificacionTecnicoId));
+                calificacionEn, calificacionTecnicoId == null ? null : TecnicoId.desde(calificacionTecnicoId),
+                actaFirmaDataUrl, actaCodigoVerificacion, actaFirmadaEn);
     }
 }

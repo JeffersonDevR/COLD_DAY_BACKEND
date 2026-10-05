@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
+  ActaGarantia,
   OtResponse,
   DiagnosticoRequest,
   MedioPago,
@@ -12,11 +13,13 @@ import {
   TarifaEstimadaResponse,
 } from '../../../core/shared/domain/models/common.models';
 import {
+  ActaGarantiaApiResponse,
   HistorialEstadoApiResponse,
   OtApiResponse,
   TarifaEstimadaApiResponse,
 } from '../../../core/shared/infrastructure/api/backend.dto';
 import {
+  aActaGarantia,
   aDiagnosticoApiRequest,
   aHistorialOtItem,
   aOtResponse,
@@ -138,6 +141,27 @@ export class OtApi {
   }
 
   /** GET /api/ot/{otId}/historial → HistorialEstadoApiResponse[] traducido al modelo de vista. */
+  /**
+   * POST /api/ot/{otId}/acta — firma el acta de garantía de 90 días (Ley 1480).
+   *
+   * `firmaDataUrl` es el <canvas> exportado con `toDataURL`, base64 incluido.
+   * El backend acota la firma en 1.048.576 caracteres (Ot.MAX_FIRMA_ACTA_CHARS):
+   * un trazo sobre el canvas de 480x140 pesa pocos KB como PNG, así que el
+   * límite descarta cargas que no son una firma en vez de hurtingar tinta real.
+   *
+   * El código de verificación lo emite el SERVIDOR y vuelve en la respuesta.
+   * El cliente no lo calcula: derivarlo del id de la OT lo haría
+   * reproducible por cualquiera que pueda leer la orden.
+   */
+  firmarActaGarantia(otId: string, firmaDataUrl: string): Observable<ActaGarantia> {
+    if (this.apiConfig.useMocks()) {
+      return this.mockDb.firmarActaGarantia(otId, firmaDataUrl).pipe(delay(350));
+    }
+    return this.http
+      .post<ActaGarantiaApiResponse>(this.apiConfig.url(`/ot/${otId}/acta`), { firmaDataUrl })
+      .pipe(map(aActaGarantia));
+  }
+
   getHistorial(otId: string): Observable<HistorialOtItem[]> {
     if (this.apiConfig.useMocks()) {
       // El mock DB no mantiene historial de estados.
