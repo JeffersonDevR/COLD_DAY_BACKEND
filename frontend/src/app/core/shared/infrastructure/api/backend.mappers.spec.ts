@@ -239,9 +239,13 @@ describe('backend.mappers — contratos existentes', () => {
   it('mapea proveedor y tarifa estimada', () => {
     const proveedor: ProveedorApiResponse = {
       id: 'p1', usuarioId: 10, razonSocial: 'Suministros Norte', nit: '900123456',
-      telefono: null, activo: true, creadoEn: null,
+      telefono: null, activo: true, creadoEn: null, estadoValidacion: 'PENDIENTE',
     };
-    expect(aProveedorResponse(proveedor)).toMatchObject({ id: 'p1', razonSocial: 'Suministros Norte', telefono: undefined });
+    // El estado de validación viaja: el portal lo necesita para explicar por qué
+    // un proveedor recién registrado todavía no puede tomar insumos.
+    expect(aProveedorResponse(proveedor)).toMatchObject({
+      id: 'p1', razonSocial: 'Suministros Norte', telefono: undefined, estadoValidacion: 'PENDIENTE',
+    });
     const tarifa: TarifaEstimadaApiResponse = {
       distanciaKm: 35, tarifaFuente: 'LINEAL', banda: null, tarifa: null, fueraDeRango: true,
     };

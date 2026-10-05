@@ -5,6 +5,8 @@ import { RegistroPage } from './registro-page';
 import { UsuariosApi } from '../infrastructure/usuarios-api';
 import { ClientesApi } from '../../clientes/infrastructure/clientes-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
+import { ProveedoresApi } from '../../proveedores/infrastructure/proveedores-api';
+import { ProveedorRegistroService } from '../../proveedores/infrastructure/proveedor-registro.service';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
@@ -23,6 +25,8 @@ interface Mocks {
   usuariosApi: { registro: ReturnType<typeof vi.fn>; login: ReturnType<typeof vi.fn> };
   clientesApi: { registrarCliente: ReturnType<typeof vi.fn> };
   tecnicosApi: { registrar: ReturnType<typeof vi.fn> };
+  proveedoresApi: { registrar: ReturnType<typeof vi.fn> };
+  proveedorRegistro: { guardar: ReturnType<typeof vi.fn> };
   auth: { establecerSesionDesdeToken: ReturnType<typeof vi.fn>; getDashboardRouteForRole: ReturnType<typeof vi.fn>; setCurrentUser: ReturnType<typeof vi.fn> };
   toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 }
@@ -32,6 +36,17 @@ function setup(useMocks = false): { fixture: ComponentFixture<RegistroPage>; moc
     usuariosApi: { registro: vi.fn(() => of(usuario)), login: vi.fn(() => of({ token: 't', expiracion: 'e', rol: 'CLIENTE' })) },
     clientesApi: { registrarCliente: vi.fn(() => of({})) },
     tecnicosApi: { registrar: vi.fn(() => of({})) },
+    proveedoresApi: {
+      registrar: vi.fn(() => of({
+        id: 'PROV-1',
+        usuarioId: 42,
+        razonSocial: 'Suministros del Norte S.A.S.',
+        nit: '900123456-1',
+        activo: true,
+        estadoValidacion: 'PENDIENTE',
+      })),
+    },
+    proveedorRegistro: { guardar: vi.fn() },
     auth: {
       establecerSesionDesdeToken: vi.fn(() => usuario),
       getDashboardRouteForRole: vi.fn(() => '/panel'),
@@ -47,6 +62,8 @@ function setup(useMocks = false): { fixture: ComponentFixture<RegistroPage>; moc
       { provide: UsuariosApi, useValue: mocks.usuariosApi },
       { provide: ClientesApi, useValue: mocks.clientesApi },
       { provide: TecnicosApi, useValue: mocks.tecnicosApi },
+      { provide: ProveedoresApi, useValue: mocks.proveedoresApi },
+      { provide: ProveedorRegistroService, useValue: mocks.proveedorRegistro },
       { provide: ApiConfig, useValue: { useMocks: () => useMocks } },
       { provide: AuthService, useValue: mocks.auth },
       { provide: ToastService, useValue: mocks.toast },
@@ -66,6 +83,8 @@ function llenarFormulario(fixture: ComponentFixture<RegistroPage>): void {
     telefono: '3123456789',
     password: 'secreta1',
     numeroIdentificacion: '1098765001',
+    razonSocial: 'Suministros del Norte S.A.S.',
+    nit: '900123456-1',
     aceptaHabeasData: true,
   });
 }
@@ -143,5 +162,80 @@ describe('RegistroPage', () => {
     fixture.componentInstance.onSubmit();
 
     expect(mocks.toast.error).toHaveBeenCalledWith('Error al registrar', 'correo duplicado');
+  });
+
+  describe('alta de proveedor', () => {
+    it('exige razón social y NIT antes de llamar al backend', () => {
+      const { fixture, mocks } = setup();
+      llenarFormulario(fixture);
+      const page = fixture.componentInstance;
+      page.selectedRol.set('PROVEEDOR');
+      page.registroForm.controls.razonSocial.setValue('  ');
+      page.registroForm.controls.nit.setValue('');
+
+      page.onSubmit();
+
+      expect(mocks.toast.error).toHaveBeenCalledWith('Faltan datos comerciales', expect.any(String));
+      expect(mocks.proveedoresApi.registrar).not.toHaveBeenCalled();
+    });
+
+    it('crea el proveedor por POST /api/proveedores sin mandarle un rol y luego inicia sesión', () => {
+      const { fixture, mocks, navigate } = setup();
+      llenarFormulario(fixture);
+      fixture.componentInstance.selectedRol.set('PROVEEDOR');
+
+      fixture.componentInstance.onSubmit();
+
+      expect(mocks.proveedoresApi.registrar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          correo: 'nuevo@coldday.co',
+          razonSocial: 'Suministros del Norte S.A.S.',
+          nit: '900123456-1',
+          aceptaHabeasData: true,
+        }),
+      );
+      // El rol no es un dato de entrada: lo aplica el servidor.
+      expect(mocks.proveedoresApi.registrar.mock.calls[0][0]).not.toHaveProperty('rol');
+      expect(mocks.usuariosApi.login).toHaveBeenCalledWith('nuevo@coldday.co', 'secreta1');
+      expect(mocks.toast.success).toHaveBeenCalled();
+      void navigate;
+    });
+
+    it('recuerda el estado PENDIENTE del alta para la pantalla de expediente', () => {
+      const { fixture, mocks } = setup();
+      llenarFormulario(fixture);
+      fixture.componentInstance.selectedRol.set('PROVEEDOR');
+
+      fixture.componentInstance.onSubmit();
+
+      expect(mocks.proveedorRegistro.guardar).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'PROV-1', estadoValidacion: 'PENDIENTE' }),
+      );
+    });
+
+    it('aterriza en el expediente y no en el panel de solicitudes, que respondería 403', () => {
+      const { fixture, mocks, navigate } = setup();
+      mocks.auth.establecerSesionDesdeToken.mockReturnValue({ ...usuario, rol: 'PROVEEDOR' });
+      llenarFormulario(fixture);
+      fixture.componentInstance.selectedRol.set('PROVEEDOR');
+
+      fixture.componentInstance.onSubmit();
+
+      expect(navigate).toHaveBeenCalledWith(['/proveedor/documentos']);
+      expect(mocks.clientesApi.registrarCliente).not.toHaveBeenCalled();
+      expect(mocks.usuariosApi.registro).not.toHaveBeenCalled();
+    });
+
+    it('propaga el error del alta del proveedor', () => {
+      const { fixture, mocks } = setup();
+      mocks.proveedoresApi.registrar.mockReturnValue(throwError(() => new Error('NIT duplicado')));
+      llenarFormulario(fixture);
+      fixture.componentInstance.selectedRol.set('PROVEEDOR');
+
+      fixture.componentInstance.onSubmit();
+
+      expect(mocks.toast.error).toHaveBeenCalledWith('Error al registrar', 'NIT duplicado');
+      expect(mocks.usuariosApi.login).not.toHaveBeenCalled();
+    });
   });
 });

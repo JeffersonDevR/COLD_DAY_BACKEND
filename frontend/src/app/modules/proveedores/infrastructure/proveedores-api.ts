@@ -3,15 +3,22 @@ import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
+  DocumentoProveedorResponse,
   OfertaInsumoResponse,
+  ProveedorRequest,
+  ProveedorResponse,
   SolicitudInsumoResponse,
 } from '../../../core/shared/domain/models/common.models';
 import {
+  DocumentoProveedorApiResponse,
   OfertaInsumoApiResponse,
+  ProveedorApiRequest,
+  ProveedorApiResponse,
   SolicitudInsumoApiResponse,
 } from '../../../core/shared/infrastructure/api/backend.dto';
 import {
   aOfertaInsumoResponse,
+  aProveedorResponse,
   aSolicitudInsumoResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, of } from 'rxjs';
@@ -32,6 +39,55 @@ export class ProveedoresApi {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
+
+  /**
+   * POST /api/proveedores: alta publica y atomica (crea el Usuario rol PROVEEDOR
+   * y el perfil en una sola transaccion), igual que POST /api/clientes y
+   * POST /api/tecnicos.
+   *
+   * El request NO lleva `rol`: lo deriva el servidor. Y la respuesta siempre
+   * trae `estadoValidacion: 'PENDIENTE'`, porque V8 dejo la columna sin DEFAULT
+   * y `Proveedor.crear` la declara explicitamente. Un proveedor recien
+   * registrado no puede aceptar insumos hasta que un administrador lo aprueba.
+   */
+  registrar(req: ProveedorRequest): Observable<ProveedorResponse> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.crearProveedor(req)).pipe(delay(300));
+    }
+    const body: ProveedorApiRequest = req;
+    return this.http
+      .post<ProveedorApiResponse>(this.apiConfig.url('/proveedores'), body)
+      .pipe(map(aProveedorResponse));
+  }
+
+  /**
+   * GET /api/proveedores/me/documentos: el backend resuelve el proveedor desde
+   * el JWT, asi que esta llamada solo puede devolver el expediente propio.
+   */
+  getMisDocumentos(): Observable<DocumentoProveedorResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.documentosDe(this.mockDb.proveedorEnSesion())).pipe(delay(250));
+    }
+    return this.http
+      .get<DocumentoProveedorApiResponse[]>(this.apiConfig.url('/proveedores/me/documentos'))
+      .pipe(map(list => list.map(doc => ({ ...doc, fechaVencimiento: doc.fechaVencimiento ?? undefined }))));
+  }
+
+  /**
+   * POST /api/proveedores/me/documentos: declara un documento del expediente.
+   * Metadata-only (tipo + vencimiento): no hay archivo ni upload, y por eso no
+   * se envia nada mas.
+   */
+  registrarDocumento(tipo: string, fechaVencimiento?: string): Observable<DocumentoProveedorResponse> {
+    if (this.apiConfig.useMocks()) {
+      const enSesion = this.mockDb.proveedorEnSesion();
+      return of(this.mockDb.registrarDocumentoProveedor(enSesion, tipo, fechaVencimiento)).pipe(delay(300));
+    }
+    return this.http
+      .post<DocumentoProveedorApiResponse>(this.apiConfig.url('/proveedores/me/documentos'),
+        { tipo, fechaVencimiento: fechaVencimiento ?? null })
+      .pipe(map(doc => ({ ...doc, fechaVencimiento: doc.fechaVencimiento ?? undefined })));
+  }
 
   /** GET /api/proveedores/me/solicitudes → ofertas con su requerimiento embebido. */
   getMisSolicitudes(): Observable<OfertaInsumoResponse[]> {

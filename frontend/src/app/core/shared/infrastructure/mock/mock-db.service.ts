@@ -19,6 +19,7 @@ import {
   DocumentoTecnico,
   ProveedorRequest,
   ProveedorResponse,
+  DocumentoProveedorResponse,
   Point,
   SolicitudInsumoResponse,
   OfertaInsumoResponse,
@@ -282,6 +283,7 @@ export class MockDbService {
       telefono: '3105550001',
       activo: true,
       creadoEn: '2026-01-15',
+      estadoValidacion: 'APROBADO',
     },
     {
       id: 'PROV-002',
@@ -291,8 +293,20 @@ export class MockDbService {
       telefono: '3105550002',
       activo: false, // Inactivo: excluido de despachos (P5), pero visible en el listado admin (P4)
       creadoEn: '2026-02-20',
+      estadoValidacion: 'APROBADO',
     }
   ]);
+
+  /**
+   * Expediente documental por proveedor. El backend es metadata-only: tipo +
+   * fecha de vencimiento, sin archivo ni upload.
+   */
+  readonly documentosProveedor = signal<Record<string, DocumentoProveedorResponse[]>>({
+    'PROV-001': [
+      { id: 1, tipo: 'RUT', fechaVencimiento: '2027-06-30' },
+      { id: 2, tipo: 'CERTIFICADO', fechaVencimiento: '2026-12-15' }
+    ]
+  });
 
   // --- DESPACHO DE INSUMOS (portal del proveedor) ---
   // Espeja el contrato real: cada oferta trae su requerimiento embebido con las
@@ -1268,10 +1282,45 @@ export class MockDbService {
       telefono: req.telefono,
       activo: true,
       creadoEn: new Date().toISOString().slice(0, 10),
+      // espeja Proveedor.crear: todo proveedor nace PENDIENTE. Un proveedor
+      // auto-registrado no puede tomar insumos hasta que un admin lo aprueba.
+      estadoValidacion: 'PENDIENTE',
     };
     this.proveedores.update(list => [...list, nuevo]);
+    this.proveedorEnSesion.set(nuevo.id);
     return nuevo;
   }
+
+  /** Documentos declarados por un proveedor (metadata-only, sin archivo). */
+  documentosDe(proveedorId: string): DocumentoProveedorResponse[] {
+    return this.documentosProveedor()[proveedorId] ?? [];
+  }
+
+  registrarDocumentoProveedor(
+    proveedorId: string,
+    tipo: string,
+    fechaVencimiento?: string
+  ): DocumentoProveedorResponse {
+    const existentes = this.documentosDe(proveedorId);
+    const documento: DocumentoProveedorResponse = {
+      id: (existentes.at(-1)?.id ?? 0) + 1,
+      tipo,
+      fechaVencimiento,
+    };
+    this.documentosProveedor.update(todos => ({ ...todos, [proveedorId]: [...existentes, documento] }));
+    return documento;
+  }
+
+  /** Busca el proveedor recien registrado por el correo del usuario dueno. */
+  proveedorPorUsuarioId(usuarioId: number): ProveedorResponse | undefined {
+    return this.proveedores().find(p => p.usuarioId === usuarioId);
+  }
+
+  /**
+   * El backend resuelve el proveedor del `usuario_id` del JWT. El mock no tiene
+   * JWT, asi que recuerda el ultimo alta: es quien "esta en sesion" en el portal.
+   */
+  readonly proveedorEnSesion = signal<string>('PROV-001');
 
   /**
    * Estimación de la tarifa de visita espejando la tabla de brackets del backend

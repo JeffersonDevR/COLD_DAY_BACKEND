@@ -16,6 +16,7 @@ import {
   EstadoOt,
   EstadoRequerimiento,
   EstadoValidacion,
+  EstadoValidacionProveedor,
   MedioPago,
   OfertaEstado,
   OfertaInsumoEstado,
@@ -211,6 +212,25 @@ export interface ProveedorApiResponse {
   telefono: string | null;
   activo: boolean;
   creadoEn: string | null;
+  /**
+   * EstadoValidacionProveedor.java. El backend siempre lo emite, tambien en el
+   * alta: un proveedor recien registrado nace `PENDIENTE` porque V8 dejo la
+   * columna sin DEFAULT y `Proveedor.crear` la declara de forma explicita.
+   */
+  estadoValidacion: EstadoValidacionProveedor;
+}
+
+/** DocumentoProveedorApiRequest.java: solo metadata, sin archivo ni upload. */
+export interface DocumentoProveedorApiRequest {
+  tipo: string;
+  fechaVencimiento?: string | null;
+}
+
+/** DocumentoProveedorApiResponse.java: el expediente es metadata-only. */
+export interface DocumentoProveedorApiResponse {
+  id: number;
+  tipo: string;
+  fechaVencimiento: string | null;
 }
 
 /* ------------------------------------------------------------------ */

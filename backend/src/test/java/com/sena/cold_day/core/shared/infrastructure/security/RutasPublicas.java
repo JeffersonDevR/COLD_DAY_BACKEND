@@ -29,7 +29,12 @@ public final class RutasPublicas {
             "POST /api/usuarios/recuperar-contrasena",
             "POST /api/usuarios/reset-contrasena",
             "POST /api/tecnicos",
-            "POST /api/clientes");
+            "POST /api/clientes",
+            // Supplier self-registration. Exact path, never a prefix: only the
+            // creation call is anonymous, while GET /api/proveedores (the roster)
+            // and PATCH /api/proveedores/{id}/validacion (the operator decision)
+            // stay behind ADMINISTRADOR.
+            "POST /api/proveedores");
 
     /** Prefixes that are intentionally anonymous, subtree included. */
     public static final List<String> PREFIJOS = List.of(

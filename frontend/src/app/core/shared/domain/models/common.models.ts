@@ -220,6 +220,24 @@ export interface ProveedorRequest {
   aceptaHabeasData: boolean;
 }
 
+/**
+ * Ciclo de validacion documental del proveedor (EstadoValidacionProveedor.java).
+ * `PENDIENTE` es el estado de nacimiento de todo proveedor, tenga o no
+ * self-registration: V8 dejo `proveedor.estado_validacion` sin DEFAULT, asi que
+ * el alta siempre lo declara explicitamente.
+ */
+export type EstadoValidacionProveedor = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+
+/** Tipo de documento declarado por el proveedor (solo metadata, sin archivo). */
+export type TipoDocumentoProveedor = 'RUT' | 'CEDULA' | 'CERTIFICADO' | 'OTRO';
+
+/** Documento del expediente: el backend es metadata-only, no hay upload. */
+export interface DocumentoProveedorResponse {
+  id: number;
+  tipo: string;
+  fechaVencimiento?: string;
+}
+
 export interface ProveedorResponse {
   id: string;
   usuarioId?: number;
@@ -228,6 +246,12 @@ export interface ProveedorResponse {
   telefono?: string;
   activo: boolean;
   creadoEn?: string;
+  /**
+   * Estado de la validacion documental. Un proveedor recien registrado llega
+   * aqui como `PENDIENTE` y no puede tomar pedidos de insumos hasta que un
+   * administrador lo aprueba (`exigirValidado()`).
+   */
+  estadoValidacion?: EstadoValidacionProveedor;
 }
 
 /**

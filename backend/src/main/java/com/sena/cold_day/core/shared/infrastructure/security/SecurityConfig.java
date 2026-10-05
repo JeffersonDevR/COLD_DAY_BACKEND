@@ -66,9 +66,16 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll()
+                        // Registro publico: cada uno crea su propia cuenta, ninguno
+                        // alcanza datos de terceros. El rol SIEMPRE lo deriva el
+                        // servidor (Rol.TECNICO / CLIENTE / PROVEEDOR dentro del
+                        // caso de uso); ningun request acepta un "rol" del cuerpo.
+                        // POST /api/proveedores es el mismo patron: el proveedor se
+                        // nace PENDIENTE y exigirValidado() sigue cerrando el paso
+                        // a insumos hasta que un administrador lo apruebe.
                         .requestMatchers(HttpMethod.POST, "/api/usuarios", "/api/usuarios/login",
                                 "/api/usuarios/recuperar-contrasena", "/api/usuarios/reset-contrasena",
-                                "/api/tecnicos", "/api/clientes").permitAll()
+                                "/api/tecnicos", "/api/clientes", "/api/proveedores").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/tecnicos/*/validacion")
                         .hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
