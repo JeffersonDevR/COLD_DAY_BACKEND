@@ -31,15 +31,18 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity // habilita @PreAuthorize en los controllers
-@EnableConfigurationProperties({ JwtProperties.class, CorsProperties.class })
+@EnableConfigurationProperties({ JwtProperties.class, CorsProperties.class, RateLimitProperties.class })
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
     private final Optional<DevAuthBypassFilter> devBypassFilter;
+    private final RateLimitFilter rateLimitFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter, Optional<DevAuthBypassFilter> devBypassFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter, Optional<DevAuthBypassFilter> devBypassFilter,
+            RateLimitFilter rateLimitFilter) {
         this.jwtFilter = jwtFilter;
         this.devBypassFilter = devBypassFilter;
+        this.rateLimitFilter = rateLimitFilter;
     }
 
     @Bean
@@ -81,6 +84,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                // Rate limit de los 4 endpoints publicos de auth: va antes del
+                // JWT porque son permitAll y no hay autenticacion que evaluar,
+                // y es exactamente donde el cupo debe cortar la peticion. Es un
+                // bean @Component ademas de estar en la cadena; OncePerRequestFilter
+                // evita que el auto-registro del contenedor lo ejecute dos veces.
+                .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class)
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(noAutenticado(objectMapper))
                         .accessDeniedHandler(sinPermiso(objectMapper)));
