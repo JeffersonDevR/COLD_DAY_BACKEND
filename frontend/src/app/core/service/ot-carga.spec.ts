@@ -2,11 +2,11 @@ import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from './ot-carga';
-import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/service/mock-db.service';
-import { MapsApi } from '../../../core/service/maps-api';
+import { ApiConfig } from './api.config';
+import { MockDbService } from './mock-db.service';
+import { MapsApi } from './maps-api';
 import { OtApi } from './ot-api';
-import { OtResponse } from '../../../core/models/common.models';
+import { OtResponse } from '../models/common.models';
 
 const ot: OtResponse = {
   id: 'ot1', categoriaServicio: 'REFRIGERACION', descripcionFalla: 'x', estado: 'EN_CAMINO', auxiliaresRequeridos: 0,

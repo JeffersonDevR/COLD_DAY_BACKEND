@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { LiquidacionApi } from '../../modules/liquidacion/infrastructure/liquidacion-api';
+import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';

@@ -5,7 +5,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
-import { LiquidacionApi } from '../../modules/liquidacion/infrastructure/liquidacion-api';
+import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { EstadoLiquidacion, LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';

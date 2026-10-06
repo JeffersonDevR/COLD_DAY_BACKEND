@@ -1,19 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/service/mock-db.service';
+import { ApiConfig } from './api.config';
+import { MockDbService } from './mock-db.service';
 import {
   LiquidacionResponse,
   MedioPago,
-} from '../../../core/models/common.models';
+} from '../models/common.models';
 import {
   ComprobanteApiRequest,
   LiquidacionApiResponse,
   RechazoLiquidacionApiRequest,
   RegistrarPagoApiRequest,
-} from '../../../core/models/backend.dto';
-import { environment } from '../../../core/environment/environment';
-import { aLiquidacionResponse } from '../../../core/service/backend.mappers';
+} from '../models/backend.dto';
+import { environment } from '../environment/environment';
+import { aLiquidacionResponse } from './backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

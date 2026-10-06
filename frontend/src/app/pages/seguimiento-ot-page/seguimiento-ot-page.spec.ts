@@ -3,7 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { of, throwError } from 'rxjs';
 import { SeguimientoOtPage } from './seguimiento-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
-import { OtApi } from '../../modules/ot/infrastructure/ot-api';
+import { OtApi } from '../../core/service/ot-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { MapsApi } from '../../core/service/maps-api';
 import { ApiConfig } from '../../core/service/api.config';

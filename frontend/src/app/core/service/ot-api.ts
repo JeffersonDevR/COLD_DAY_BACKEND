@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/service/mock-db.service';
+import { ApiConfig } from './api.config';
+import { MockDbService } from './mock-db.service';
 import {
   ActaGarantia,
   OtResponse,
@@ -11,23 +11,23 @@ import {
   HistorialOtItem,
   Point,
   TarifaEstimadaResponse,
-} from '../../../core/models/common.models';
+} from '../models/common.models';
 import {
   ActaGarantiaApiResponse,
   HistorialEstadoApiResponse,
   OtApiResponse,
   TarifaEstimadaApiResponse,
-} from '../../../core/models/backend.dto';
+} from '../models/backend.dto';
 import {
   aActaGarantia,
   aDiagnosticoApiRequest,
   aHistorialOtItem,
   aOtResponse,
   aTarifaEstimadaResponse,
-} from '../../../core/service/backend.mappers';
+} from './backend.mappers';
 import { Observable, of } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
-import { pendienteBackend } from '../../../core/errorStatus/pendiente-backend';
+import { pendienteBackend } from '../errorStatus/pendiente-backend';
 
 @Injectable({
   providedIn: 'root'
