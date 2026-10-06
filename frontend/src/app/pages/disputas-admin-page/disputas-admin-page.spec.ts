@@ -2,10 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { DisputasAdminPage } from './disputas-admin-page';
-import { AdminApi } from '../infrastructure/admin-api';
-import { AuthService } from '../../../core/service/auth.service';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { DisputaResponse } from '../../../core/models/common.models';
+import { AdminApi } from '../../core/service/admin-api';
+import { AuthService } from '../../core/service/auth.service';
+import { ToastService } from '../../core/alertas/toast.service';
+import { DisputaResponse } from '../../core/models/common.models';
 
 const disputa: DisputaResponse = {
   id: 'DISP-1',

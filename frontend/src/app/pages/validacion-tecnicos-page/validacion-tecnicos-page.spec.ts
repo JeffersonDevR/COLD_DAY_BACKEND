@@ -2,10 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ValidacionTecnicosPage } from './validacion-tecnicos-page';
-import { AdminApi } from '../infrastructure/admin-api';
-import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { TecnicoResponse } from '../../../core/models/common.models';
+import { AdminApi } from '../../core/service/admin-api';
+import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { ToastService } from '../../core/alertas/toast.service';
+import { TecnicoResponse } from '../../core/models/common.models';
 
 const tecnico: TecnicoResponse = {
   id: 'TEC-1',
