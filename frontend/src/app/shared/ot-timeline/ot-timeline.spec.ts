@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { OtTimeline } from './ot-timeline';
-import { EstadoOt, HistorialOtItem } from '../../../core/models/common.models';
+import { EstadoOt, HistorialOtItem } from '../../core/models/common.models';
 
 describe('OtTimeline', () => {
   async function create(estado: EstadoOt, historial: HistorialOtItem[] = []) {

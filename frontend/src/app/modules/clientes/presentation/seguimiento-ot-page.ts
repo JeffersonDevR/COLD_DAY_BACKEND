@@ -12,9 +12,9 @@ import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrast
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { MapsApi } from '../../../core/service/maps-api';
 import { ToastService } from '../../../core/alertas/toast.service';
-import { OtTimeline } from '../../ot/components/ot-timeline';
-import { MapaRadar } from '../../ot/components/mapa-radar';
-import { CargoVisitaDiagnostico } from '../../ot/components/cargo-visita';
+import { OtTimeline } from '../../../shared/ot-timeline/ot-timeline';
+import { MapaRadar } from '../../../shared/mapa-radar/mapa-radar';
+import { CargoVisitaDiagnostico } from '../../../shared/cargo-visita/cargo-visita';
 import { EstadoBadge } from '../../../shared/estado-badge/estado-badge';
 import { OtResponse, Point, TecnicoCercano, MedioPago } from '../../../core/models/common.models';
 

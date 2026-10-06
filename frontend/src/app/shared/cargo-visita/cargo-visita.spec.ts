@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { CargoVisitaDiagnostico } from './cargo-visita';
-import { OtApi } from '../infrastructure/ot-api';
+import { OtApi } from '../../modules/ot/infrastructure/ot-api';
 
 describe('CargoVisitaDiagnostico', () => {
   async function create(nota?: string) {
