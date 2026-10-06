@@ -13,7 +13,6 @@ import {
 import { aDisputaResponse, aOtApiRequest, aOtResponse } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
-import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
 
 @Injectable({
   providedIn: 'root'
@@ -109,8 +108,8 @@ export class ClientesApi {
   }
 
   /**
-   * Placeholder de mutación: el backend NO expone POST /api/ot/{id}/calificar.
-   * Pendiente(backend): falta la calificación del servicio; la mutación lanza.
+   * POST /api/ot/{id}/calificar con {estrellas, comentario}; solo el cliente dueño
+   * de la OT (rol CLIENTE) puede calificar. El backend responde OtApiResponse.
    */
   calificarServicio(otId: string, estrellas: number, comentario: string): Observable<void> {
     if (this.apiConfig.useMocks()) {
@@ -118,7 +117,7 @@ export class ClientesApi {
       return of(undefined).pipe(delay(300));
     }
 
-    return pendienteBackend('calificación del servicio (POST /api/ot/{id}/calificar)');
+    return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/calificar`), { estrellas, comentario });
   }
 
   /**

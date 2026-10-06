@@ -115,8 +115,13 @@ describe('ClientesApi', () => {
     await promise;
   });
 
-  it('calificarServicio lanza en modo real (pendiente backend)', async () => {
-    await expect(firstValueFrom(api.calificarServicio('ot1', 5, 'ok'))).rejects.toThrow('Pendiente en el backend');
+  it('calificarServicio hace POST /api/ot/ot1/calificar con {estrellas, comentario}', async () => {
+    const promise = firstValueFrom(api.calificarServicio('ot1', 5, 'excelente [Aspectos: Puntualidad]'));
+    const req = http.expectOne('/api/ot/ot1/calificar');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ estrellas: 5, comentario: 'excelente [Aspectos: Puntualidad]' });
+    req.flush(null);
+    await promise;
   });
 
   it('registrarCliente hace POST /api/clientes', async () => {
