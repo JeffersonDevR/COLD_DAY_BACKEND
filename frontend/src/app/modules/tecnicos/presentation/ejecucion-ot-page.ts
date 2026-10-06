@@ -425,13 +425,18 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   }
 
   /**
-   * Confirmación de llegada local: habilita el formulario de diagnóstico.
-   * La transición real EN_CAMINO → EN_DIAGNOSTICO la hace el backend al
-   * registrar el diagnóstico (POST /api/ot/{id}/diagnostico).
+   * Confirma la llegada: persiste el hecho en el backend
+   * (POST /api/ot/{id}/llegada) y habilita localmente el formulario de diagnóstico.
+   * El backend no cambia el estado en esta llamada; la OT avanza a EN_DIAGNOSTICO
+   * cuando se registra el diagnóstico (POST /api/ot/{id}/diagnostico).
    */
   llegarADomicilio(): void {
-    this.enSitio.set(true);
-    this.toast.success('Llegada Registrada', 'Registra el diagnóstico y presupuesto del equipo.');
+    this.tecnicosApi.llegarADomicilio(this.otId()).subscribe({
+      next: () => {
+        this.enSitio.set(true);
+        this.toast.success('Llegada Registrada', 'Registra el diagnóstico y presupuesto del equipo.');
+      }
+    });
   }
 
   enviarDiagnostico(): void {
