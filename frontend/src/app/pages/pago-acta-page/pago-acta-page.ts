@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { OtApi } from '../../modules/ot/infrastructure/ot-api';
-import { cargarOtDesdeRuta } from '../../modules/ot/infrastructure/ot-carga';
+import { OtApi } from '../../core/service/ot-api';
+import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';

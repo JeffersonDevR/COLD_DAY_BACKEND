@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ClientesApi } from '../../core/service/clientes-api';
-import { OtApi } from '../../modules/ot/infrastructure/ot-api';
-import { cargarOtDesdeRuta } from '../../modules/ot/infrastructure/ot-carga';
+import { OtApi } from '../../core/service/ot-api';
+import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse, Point, TarifaEstimadaResponse } from '../../core/models/common.models';

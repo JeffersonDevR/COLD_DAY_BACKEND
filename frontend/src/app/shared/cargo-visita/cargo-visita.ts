@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
-import { OtApi } from '../../modules/ot/infrastructure/ot-api';
+import { OtApi } from '../../core/service/ot-api';
 import { Point, TarifaEstimadaResponse } from '../../core/models/common.models';
 
 /**

@@ -7,8 +7,8 @@ import { ApiConfig } from '../../core/service/api.config';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
 import { MapsApi } from '../../core/service/maps-api';
-import { OtApi } from '../../modules/ot/infrastructure/ot-api';
-import { LiquidacionApi } from '../../modules/liquidacion/infrastructure/liquidacion-api';
+import { OtApi } from '../../core/service/ot-api';
+import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse } from '../../core/models/common.models';
 

@@ -3,7 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import { of } from 'rxjs';
 import { DiagnosticoOtPage } from './diagnostico-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
-import { OtApi } from '../../modules/ot/infrastructure/ot-api';
+import { OtApi } from '../../core/service/ot-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse } from '../../core/models/common.models';

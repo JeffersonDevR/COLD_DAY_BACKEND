@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { LiquidacionesTecnicoPage } from './liquidaciones-tecnico-page';
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
-import { LiquidacionApi } from '../../modules/liquidacion/infrastructure/liquidacion-api';
+import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 
