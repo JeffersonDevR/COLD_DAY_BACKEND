@@ -124,6 +124,22 @@ describe('ClientesApi', () => {
     await promise;
   });
 
+  it('pagarVisita hace POST /api/ot/ot1/pagar-visita con {medioPago}', async () => {
+    const promise = firstValueFrom(api.pagarVisita('ot1', 'EFECTIVO'));
+    const req = http.expectOne('/api/ot/ot1/pagar-visita');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ medioPago: 'EFECTIVO' });
+    req.flush(null);
+    await promise;
+  });
+
+  it('en modo mock pagarVisita es un no-op sin petición HTTP', async () => {
+    config.setUseMocks(true);
+    const resultado = await firstValueFrom(api.pagarVisita('ot1', 'TRANSFERENCIA'));
+    expect(resultado).toBeUndefined();
+    http.verify();
+  });
+
   it('registrarCliente hace POST /api/clientes', async () => {
     const promise = firstValueFrom(
       api.registrarCliente({

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { DisputaResponse, OtRequest, OtResponse } from '../../../core/shared/domain/models/common.models';
+import { DisputaResponse, MedioPago, OtRequest, OtResponse } from '../../../core/shared/domain/models/common.models';
 import {
   ClienteApiRequest,
   ClienteApiResponse,
@@ -118,6 +118,22 @@ export class ClientesApi {
     }
 
     return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/calificar`), { estrellas, comentario });
+  }
+
+  /**
+   * POST /api/ot/{id}/pagar-visita con {medioPago}: el cliente dueño de la OT
+   * paga la tarifa de visita, lo que reabre el despacho tras rechazar el
+   * presupuesto (RF-F1-26). Una segunda llamada se rechaza como doble cobro.
+   *
+   * En modo mock el MockDb no modela esta operación: es un no-op que solo
+   * simula el retardo de red.
+   */
+  pagarVisita(otId: string, medioPago: MedioPago): Observable<void> {
+    if (this.apiConfig.useMocks()) {
+      return of(undefined).pipe(delay(300));
+    }
+
+    return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/pagar-visita`), { medioPago });
   }
 
   /**
