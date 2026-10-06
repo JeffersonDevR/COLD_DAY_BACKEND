@@ -151,13 +151,13 @@ export const routes: Routes = [
   {
     path: 'proveedor/panel',
     canActivate: [authGuard, roleGuard(['PROVEEDOR'])],
-    loadComponent: () => import('./modules/proveedores/presentation/solicitudes-proveedor-page').then(m => m.SolicitudesProveedorPage),
+    loadComponent: () => import('./pages/solicitudes-proveedor-page/solicitudes-proveedor-page').then(m => m.SolicitudesProveedorPage),
     title: 'Portal de Proveedores - COLD DAY'
   },
   {
     path: 'proveedor/documentos',
     canActivate: [authGuard, roleGuard(['PROVEEDOR'])],
-    loadComponent: () => import('./modules/proveedores/presentation/documentos-proveedor-page').then(m => m.DocumentosProveedorPage),
+    loadComponent: () => import('./pages/documentos-proveedor-page/documentos-proveedor-page').then(m => m.DocumentosProveedorPage),
     title: 'Expediente del Proveedor - COLD DAY'
   },
 

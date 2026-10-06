@@ -4,10 +4,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { firstValueFrom } from 'rxjs';
 import { ProveedoresApi } from './proveedores-api';
 import { ProveedorRegistroService } from './proveedor-registro.service';
-import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/service/mock-db.service';
-import { DocumentoProveedorApiResponse, ProveedorApiResponse } from '../../../core/models/backend.dto';
-import { ProveedorRequest } from '../../../core/models/common.models';
+import { ApiConfig } from './api.config';
+import { MockDbService } from './mock-db.service';
+import { DocumentoProveedorApiResponse, ProveedorApiResponse } from '../models/backend.dto';
+import { ProveedorRequest } from '../models/common.models';
 
 /**
  * El alta pública del proveedor (POST /api/proveedores) y su expediente.
