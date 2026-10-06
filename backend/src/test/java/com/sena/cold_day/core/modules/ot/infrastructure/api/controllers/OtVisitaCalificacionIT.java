@@ -28,7 +28,9 @@ import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrin
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
@@ -261,10 +263,11 @@ class OtVisitaCalificacionIT {
         Cliente cliente = crearCliente(clienteUsuario);
         Long tecnicoUsuario = crearUsuario("tecnico-pago-3@example.com", Rol.TECNICO);
         TecnicoId tecnicoId = crearTecnico(tecnicoUsuario);
-        Ot ot = otEnEstado(cliente.getId(), tecnicoId, EstadoOt.EN_CAMINO);
+        Ot ot = otEnEstado(cliente.getId(), tecnicoId, EstadoOt.FINALIZADA);
 
-        // registrarPagoVisita itself has no state guard; the reopen-dispatch step
-        // that follows it does, and TransicionesOt rejects EN_CAMINO -> BUSCANDO_TECNICO.
+        // Registrar el pago no tiene guarda de estado; la reapertura que sigue
+        // solo acepta SOLICITADA o una CANCELADA por rechazo de presupuesto.
+        // FINALIZADA sigue siendo impagable.
         mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/pagar-visita")
                         .header("Authorization", "Bearer " + jwt(clienteUsuario, Rol.CLIENTE))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"medioPago\":\"EFECTIVO\"}"))
@@ -273,7 +276,56 @@ class OtVisitaCalificacionIT {
 
         assertThat(otRepository.buscarPorId(ot.getId()))
                 .hasValueSatisfying(found -> {
-                    assertThat(found.getEstado()).isEqualTo(EstadoOt.EN_CAMINO);
+                    assertThat(found.getEstado()).isEqualTo(EstadoOt.FINALIZADA);
+                    assertThat(found.getVisitaPagadaEn()).isNull();
+                });
+    }
+
+    @Test
+    void payingTheVisitOnABudgetRejectedOrderReopensDispatch() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-pago-rechazo@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Ot ot = otCancelada(cliente.getId(), MotivoCancelacion.RECHAZO_PRESUPUESTO);
+
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/pagar-visita")
+                        .header("Authorization", "Bearer " + jwt(clienteUsuario, Rol.CLIENTE))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"medioPago\":\"NEQUI\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("BUSCANDO_TECNICO"))
+                .andExpect(jsonPath("$.medioPagoVisita").value("NEQUI"));
+
+        assertThat(otRepository.buscarPorId(ot.getId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getEstado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
+                    assertThat(found.getVisitaPagadaEn()).isNotNull();
+                    // La OT volvio a estar viva: deja de reportar la cancelacion.
+                    assertThat(found.getCanceladaPor()).isNull();
+                    assertThat(found.getMotivoCancelacion()).isNull();
+                    // La ventana de despacho se reabre a 60 s desde el cobro.
+                    assertThat(found.getVentanaExpiraEn()).isAfter(found.getVisitaPagadaEn());
+                });
+        // El historial conserva la cancelacion y registra la reapertura.
+        assertThat(springDataHistorial.findByOtIdOrderByOcurridoEnAscIdAsc(ot.getId().valor()))
+                .extracting(h -> h.getEstadoDestino())
+                .contains(EstadoOt.CANCELADA, EstadoOt.BUSCANDO_TECNICO);
+    }
+
+    @Test
+    void payingTheVisitOnACancellationThatIsNotABudgetRejectionDoesNotReopen() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-pago-cancel@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Ot ot = otCancelada(cliente.getId(), MotivoCancelacion.CANCELACION_CLIENTE);
+
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/pagar-visita")
+                        .header("Authorization", "Bearer " + jwt(clienteUsuario, Rol.CLIENTE))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"medioPago\":\"NEQUI\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
+
+        // Cobro y reapertura comparten transaccion: nada se persiste.
+        assertThat(otRepository.buscarPorId(ot.getId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getEstado()).isEqualTo(EstadoOt.CANCELADA);
                     assertThat(found.getVisitaPagadaEn()).isNull();
                 });
     }
@@ -456,6 +508,16 @@ class OtVisitaCalificacionIT {
                 "No enciende", List.of(), "Calle 1", UBICACION_SERVICIO, estado, 10.0,
                 Instant.now().plusSeconds(3600), Instant.now(), Instant.now(), null, null, null, null, null,
                 null);
+        return otRepository.save(ot);
+    }
+
+    /** OT en CANCELADA con el motivo dado; el pago de visita es el que la evalua. */
+    private Ot otCancelada(ClienteId clienteId, MotivoCancelacion motivo) {
+        Instant ahora = Instant.now();
+        Ot ot = Ot.crear(clienteId, CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+                "Calle 1", UBICACION_SERVICIO, ahora);
+        ot.iniciarBusqueda(10.0, ahora.plusSeconds(3600), ActorOt.CLIENTE, ahora);
+        ot.cancelar(ActorOt.CLIENTE, motivo, "Motivo de prueba", ahora.plusSeconds(1), null);
         return otRepository.save(ot);
     }
 

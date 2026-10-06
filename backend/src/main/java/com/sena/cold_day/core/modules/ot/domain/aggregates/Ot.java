@@ -13,6 +13,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.ConfirmarLlegadaInvali
 import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.ActaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.FirmaActaInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
@@ -32,7 +33,11 @@ import com.sena.cold_day.core.shared.domain.Point;
  *
  * <p>Every accepted transition is appended to an in-memory pending list of
  * {@link CambioEstado}; the persistence adapter drains it on save so no state
- * change is ever lost (RNF-09). Terminal states have no exits.
+ * change is ever lost (RNF-09). Terminal states have no exits, with one
+ * deliberate exception owned by this aggregate: a budget-rejected
+ * {@code CANCELADA} OT is reopened for dispatch once the client pays the visit
+ * fee (RF-F1-20/26), and only through
+ * {@link #reabrirDespachoTrasPagoVisita(double, Instant, ActorOt, Instant)}.
  */
 public class Ot {
 
@@ -276,9 +281,18 @@ public class Ot {
      * All Phase-1 orders are urgent: creation immediately advances
      * {@code SOLICITADA -> BUSCANDO_TECNICO} and opens the first dispatch
      * window (RF-F1-08).
+     *
+     * <p>Only a freshly created {@code SOLICITADA} OT may take this path. The
+     * table also permits {@code CANCELADA -> BUSCANDO_TECNICO}, but that exit is
+     * reserved for {@link #reabrirDespachoTrasPagoVisita}; enforcing the origin
+     * here keeps the permissive table edge from being reachable as a generic
+     * transition.
      */
     public void iniciarBusqueda(double radioKm, Instant ventanaExpiraEn, ActorOt actor, Instant ahora) {
         EstadoOt origen = this.estado;
+        if (origen != EstadoOt.SOLICITADA) {
+            throw new TransicionOtInvalidaException(origen, EstadoOt.BUSCANDO_TECNICO);
+        }
         TransicionesOt.validar(origen, EstadoOt.BUSCANDO_TECNICO);
         this.estado = EstadoOt.BUSCANDO_TECNICO;
         this.radioKm = radioKm;
@@ -629,6 +643,62 @@ public class Ot {
         }
         this.medioPagoVisita = medioPago;
         this.visitaPagadaEn = ahora;
+    }
+
+    /**
+     * RF-F1-20/RF-F1-26: reabre el despacho cuando el cliente paga la tarifa de
+     * visita de una OT cancelada por rechazo de presupuesto. Es la UNICA salida
+     * del estado {@code CANCELADA}: un rechazo cancela la orden, pero pagar la
+     * visita la devuelve al mercado en lugar de dejarla muerta.
+     *
+     * <p>El borde {@code CANCELADA -> BUSCANDO_TECNICO} de {@link TransicionesOt}
+     * es permissivo porque una tabla estatica no puede expresar el motivo de la
+     * cancelacion; por eso la guarda real vive aqui y exige las tres condiciones
+     * a la vez: la OT sigue {@code CANCELADA}, su motivo es
+     * {@link MotivoCancelacion#RECHAZO_PRESUPUESTO} (una cancelacion del cliente
+     * o del tecnico NO se reabre pagando) y la visita ya fue pagada
+     * ({@code visitaPagadaEn != null}). Ninguna otra ruta alcanza ese borde.
+     *
+     * <p>Limpia {@code canceladaPor} y {@code motivoCancelacion}: la OT vuelve a
+     * estar viva y reportar una cancelacion que ya no aplica confundiria a la API
+     * y a cualquier guarda de UI que observe esos campos. La cancelacion no se
+     * pierde, queda auditada en {@code ot_estado_historial} con su actor y motivo.
+     * {@code visitaPagadaEn} se conserva porque es el comprobante del cobro y el
+     * guardia contra el doble cobro de {@link #registrarPagoVisita}.
+     *
+     * @throws TransicionOtInvalidaException si la OT no esta CANCELADA
+     * @throws PagoVisitaInvalidoException   si el motivo no es rechazo de
+     *         presupuesto o si la visita no fue pagada todavía
+     */
+    public void reabrirDespachoTrasPagoVisita(double radioKm, Instant ventanaExpiraEn, ActorOt actor,
+            Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("El momento de la reapertura es requerido");
+        }
+        if (actor == null) {
+            throw new IllegalArgumentException("El actor de la reapertura es requerido");
+        }
+        if (this.estado != EstadoOt.CANCELADA) {
+            throw new TransicionOtInvalidaException(this.estado, EstadoOt.BUSCANDO_TECNICO);
+        }
+        if (this.motivoCancelacion != MotivoCancelacion.RECHAZO_PRESUPUESTO) {
+            throw new PagoVisitaInvalidoException(
+                    "La visita solo reabre una OT cancelada por rechazo de presupuesto; motivo actual: "
+                            + this.motivoCancelacion);
+        }
+        if (this.visitaPagadaEn == null) {
+            throw new PagoVisitaInvalidoException(
+                    "La visita debe estar pagada antes de reabrir el despacho");
+        }
+        EstadoOt origen = this.estado;
+        TransicionesOt.validar(origen, EstadoOt.BUSCANDO_TECNICO);
+        this.estado = EstadoOt.BUSCANDO_TECNICO;
+        this.radioKm = radioKm;
+        this.ventanaExpiraEn = ventanaExpiraEn;
+        this.canceladaPor = null;
+        this.motivoCancelacion = null;
+        registrarCambio(origen, EstadoOt.BUSCANDO_TECNICO, actor, ahora,
+                "Reapertura por pago de la visita");
     }
 
     /**

@@ -221,8 +221,10 @@ public class OtController {
     }
 
     /**
-     * RF-F1-26: the owning client pays the visit fee, which reopens dispatch.
-     * A second call is a double charge and is rejected, not absorbed.
+     * RF-F1-26: the owning client pays the visit fee. From {@code SOLICITADA}
+     * the payment starts dispatch; from a budget-rejected {@code CANCELADA} it
+     * reopens dispatch through the aggregate's guarded reopen. A second call is
+     * a double charge and is rejected, not absorbed.
      */
     @PostMapping("/{id}/pagar-visita")
     @PreAuthorize("hasRole('CLIENTE')")

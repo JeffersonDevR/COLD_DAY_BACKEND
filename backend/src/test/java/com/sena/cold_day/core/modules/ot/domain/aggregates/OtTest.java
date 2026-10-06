@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
+import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
@@ -291,6 +292,76 @@ class OtTest {
     }
 
     @Test
+    void reabrirDespachoTrasPagoVisitaReturnsTheOrderToDispatch() {
+        Ot ot = crearCanceladaPorRechazo();
+        ot.registrarPagoVisita("NEQUI", AHORA.plusSeconds(210));
+
+        ot.reabrirDespachoTrasPagoVisita(10.0, AHORA.plusSeconds(270), ActorOt.CLIENTE,
+                AHORA.plusSeconds(210));
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
+        assertThat(ot.getRadioKm()).isEqualTo(10.0);
+        assertThat(ot.getVentanaExpiraEn()).isEqualTo(AHORA.plusSeconds(270));
+        // La OT vuelve a estar viva: no puede seguir reportando la cancelacion.
+        assertThat(ot.getCanceladaPor()).isNull();
+        assertThat(ot.getMotivoCancelacion()).isNull();
+        // El cobro se conserva: es el comprobante y el guardia anti doble cobro.
+        assertThat(ot.getVisitaPagadaEn()).isEqualTo(AHORA.plusSeconds(210));
+        assertThat(ot.drenarCambiosPendientes()).singleElement().satisfies(cambio -> {
+            assertThat(cambio.origen()).isEqualTo(EstadoOt.CANCELADA);
+            assertThat(cambio.destino()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
+            assertThat(cambio.actor()).isEqualTo(ActorOt.CLIENTE);
+        });
+    }
+
+    @Test
+    void reabrirDespachoRequiereRechazoDePresupuesto() {
+        Ot ot = crearConBusqueda();
+        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.CANCELACION_CLIENTE, "Ya no la necesito",
+                AHORA.plusSeconds(30), null);
+        ot.registrarPagoVisita("NEQUI", AHORA.plusSeconds(40));
+
+        assertThatThrownBy(() -> ot.reabrirDespachoTrasPagoVisita(10.0, AHORA.plusSeconds(100),
+                ActorOt.CLIENTE, AHORA.plusSeconds(40)))
+                .isInstanceOf(PagoVisitaInvalidoException.class);
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.CANCELADA);
+    }
+
+    @Test
+    void reabrirDespachoRequiereElPagoDeLaVisita() {
+        Ot ot = crearCanceladaPorRechazo();
+
+        assertThatThrownBy(() -> ot.reabrirDespachoTrasPagoVisita(10.0, AHORA.plusSeconds(300),
+                ActorOt.CLIENTE, AHORA.plusSeconds(210)))
+                .isInstanceOf(PagoVisitaInvalidoException.class);
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.CANCELADA);
+    }
+
+    @Test
+    void reabrirDespachoRequiereEstadoCancelada() {
+        Ot ot = crearConBusqueda();
+        ot.registrarPagoVisita("NEQUI", AHORA.plusSeconds(30));
+
+        assertThatThrownBy(() -> ot.reabrirDespachoTrasPagoVisita(10.0, AHORA.plusSeconds(100),
+                ActorOt.CLIENTE, AHORA.plusSeconds(30)))
+                .isInstanceOf(TransicionOtInvalidaException.class);
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
+    }
+
+    @Test
+    void iniciarBusquedaNoPuedeSaltarseLaGuardaDesdeCancelada() {
+        Ot ot = crearCanceladaPorRechazo();
+        ot.registrarPagoVisita("NEQUI", AHORA.plusSeconds(210));
+
+        // El borde CANCELADA -> BUSCANDO_TECNICO existe en la tabla, pero el
+        // camino generico lo rechaza: solo la reapertura guardada puede tomarlo.
+        assertThatThrownBy(() -> ot.iniciarBusqueda(10.0, AHORA.plusSeconds(270), ActorOt.CLIENTE,
+                AHORA.plusSeconds(210)))
+                .isInstanceOf(TransicionOtInvalidaException.class);
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.CANCELADA);
+    }
+
+    @Test
     void legacyReconstitutionDefaultsTheAuxiliarCountToZero() {
         Ot ot = crearAsignada(AHORA);
 
@@ -348,6 +419,15 @@ class OtTest {
                 ActorOt.TECNICO, AHORA.plusSeconds(60));
         ot.presupuestar(new Presupuesto(new BigDecimal("120000.00"), new BigDecimal("350000.00"),
                 AHORA.plusSeconds(60)));
+        return ot;
+    }
+
+    /** OT cancelada por rechazo de presupuesto, el unico estado reabrible pagando. */
+    private Ot crearCanceladaPorRechazo() {
+        Ot ot = crearEnDiagnostico();
+        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.RECHAZO_PRESUPUESTO, "Presupuesto muy alto",
+                AHORA.plusSeconds(200), new BigDecimal("50000.00"));
+        ot.drenarCambiosPendientes();
         return ot;
     }
 }
