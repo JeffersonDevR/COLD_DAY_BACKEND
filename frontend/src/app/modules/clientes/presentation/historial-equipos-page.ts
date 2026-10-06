@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 
 interface EquipoHistorial {
   id: string;

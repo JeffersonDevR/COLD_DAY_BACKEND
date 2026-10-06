@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 import { roleGuard } from './role.guard';
-import { AuthService } from './auth.service';
-import { TokenStorageService } from './token-storage.service';
-import { Rol } from '../../../models/common.models';
+import { AuthService } from './service/auth.service';
+import { TokenStorageService } from './service/token-storage.service';
+import { Rol } from './models/common.models';
 
 const route = {} as ActivatedRouteSnapshot;
 const state = {} as RouterStateSnapshot;

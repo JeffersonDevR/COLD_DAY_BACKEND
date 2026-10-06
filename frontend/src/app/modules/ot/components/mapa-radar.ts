@@ -19,7 +19,7 @@ import {
   MapCircle,
   MapInfoWindow
 } from '@angular/google-maps';
-import { GoogleMapsLoaderService } from '../../../core/shared/infrastructure/maps/google-maps-loader';
+import { GoogleMapsLoaderService } from '../../../core/service/google-maps-loader';
 
 export interface RadarTecnicoItem {
   id: string;

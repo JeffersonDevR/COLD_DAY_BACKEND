@@ -3,7 +3,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { GoogleMapsLoaderService } from './google-maps-loader';
-import { environment } from '../../../environment/environment';
+import { environment } from '../environment/environment';
 
 const SCRIPT_ID = 'google-maps-platform-script';
 const KEY_ORIGINAL = environment.googleMapsApiKey;

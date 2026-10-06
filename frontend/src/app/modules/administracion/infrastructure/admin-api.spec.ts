@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { firstValueFrom } from 'rxjs';
 import { AdminApi } from './admin-api';
 import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { MockDbService } from '../../../core/service/mock-db.service';
 import { MetricasAdminApiResponse } from '../../../core/models/backend.dto';
 
 function metricasDto(): MetricasAdminApiResponse {

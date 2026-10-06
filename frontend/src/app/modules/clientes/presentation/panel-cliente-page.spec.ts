@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { PanelClientePage } from './panel-cliente-page';
 import { ClientesApi } from '../infrastructure/clientes-api';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { OtResponse } from '../../../core/models/common.models';
 
 function ot(overrides: Partial<OtResponse>): OtResponse {

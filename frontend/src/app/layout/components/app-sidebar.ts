@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Tooltip } from 'primeng/tooltip';
 import { LayoutService } from '../service/layout.service';
-import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../core/service/auth.service';
 import { buildMenu } from '../app.menu';
 
 @Component({

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PanelRedirectComponent } from './panel-redirect';
-import { AuthService } from '../shared/infrastructure/auth/auth.service';
+import { AuthService } from '../service/auth.service';
 import { Rol, UsuarioResponse } from '../models/common.models';
 
 function usuario(rol: Rol): UsuarioResponse {

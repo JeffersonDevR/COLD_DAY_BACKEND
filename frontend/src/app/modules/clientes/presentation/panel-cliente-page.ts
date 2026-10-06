@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ClientesApi } from '../infrastructure/clientes-api';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
 import { OtResponse } from '../../../core/models/common.models';

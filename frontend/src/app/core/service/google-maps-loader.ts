@@ -2,7 +2,7 @@ import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../../environment/environment';
+import { environment } from '../environment/environment';
 
 @Injectable({
   providedIn: 'root'

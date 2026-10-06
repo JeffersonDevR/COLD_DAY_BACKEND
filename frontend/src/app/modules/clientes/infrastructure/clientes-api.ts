@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { MockDbService } from '../../../core/service/mock-db.service';
 import { DisputaResponse, MedioPago, OtRequest, OtResponse } from '../../../core/models/common.models';
 import {
   ClienteApiRequest,

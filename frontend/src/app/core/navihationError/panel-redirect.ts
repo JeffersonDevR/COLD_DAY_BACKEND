@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from '../shared/infrastructure/auth/auth.service';
+import { AuthService } from '../service/auth.service';
 
 @Component({
   selector: 'app-panel-redirect',

@@ -3,7 +3,7 @@ import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { LoginPage } from './login-page';
 import { UsuariosApi } from '../../core/service/usuarios-api';
-import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ThemeService } from '../../core/service/theme.service';
 import { UsuarioResponse } from '../../core/models/common.models';

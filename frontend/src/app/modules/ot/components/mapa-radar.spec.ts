@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MapaRadar, RadarTecnicoItem } from './mapa-radar';
-import { GoogleMapsLoaderService } from '../../../core/shared/infrastructure/maps/google-maps-loader';
+import { GoogleMapsLoaderService } from '../../../core/service/google-maps-loader';
 
 function setup() {
   const mapsLoader = { isLoaded: () => false, isLoading: () => false, loadError: () => null, init: vi.fn() };

@@ -4,7 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { InputText } from 'primeng/inputtext';
 import { Password } from 'primeng/password';
 import { Button } from 'primeng/button';
-import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../core/service/auth.service';
 import { UsuariosApi } from '../../core/service/usuarios-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ThemeService } from '../../core/service/theme.service';

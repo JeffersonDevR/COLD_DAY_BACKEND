@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
-import { Point } from '../../../models/common.models';
+import { Point } from '../models/common.models';
 
 /**
  * Envoltorio SSR-safe de `navigator.geolocation`: expone la posición del

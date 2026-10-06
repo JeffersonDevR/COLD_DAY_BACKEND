@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ProveedoresApi } from './proveedores-api';
 import { ProveedorRegistroService } from './proveedor-registro.service';
 import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { MockDbService } from '../../../core/service/mock-db.service';
 import { DocumentoProveedorApiResponse, ProveedorApiResponse } from '../../../core/models/backend.dto';
 import { ProveedorRequest } from '../../../core/models/common.models';
 

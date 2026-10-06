@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpHandlerFn, HttpRequest } from '@angular/common/http';
 import { firstValueFrom, throwError } from 'rxjs';
 import { ApiHttpError, errorInterceptor } from './error.interceptor';
-import { AuthService } from '../shared/infrastructure/auth/auth.service';
+import { AuthService } from '../service/auth.service';
 import { ToastService } from '../alertas/toast.service';
 
 function run(url: string, error: unknown, isAuthenticated = true) {

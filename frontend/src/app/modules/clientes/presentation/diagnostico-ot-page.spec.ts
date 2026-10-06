@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { DiagnosticoOtPage } from './diagnostico-ot-page';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { ToastService } from '../../../core/alertas/toast.service';
 import { OtResponse } from '../../../core/models/common.models';
 

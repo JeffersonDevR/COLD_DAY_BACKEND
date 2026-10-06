@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { HistorialEquiposPage } from './historial-equipos-page';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 
 describe('HistorialEquiposPage', () => {
   async function create() {

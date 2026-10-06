@@ -2,8 +2,8 @@ import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { TokenStorageService } from './token-storage.service';
-import { ToastService } from '../../../alertas/toast.service';
-import { Rol, TokenResponse, UsuarioResponse } from '../../../models/common.models';
+import { ToastService } from '../alertas/toast.service';
+import { Rol, TokenResponse, UsuarioResponse } from '../models/common.models';
 
 @Injectable({
   providedIn: 'root'

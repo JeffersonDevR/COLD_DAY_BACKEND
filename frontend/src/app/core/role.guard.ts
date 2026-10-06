@@ -1,8 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from './auth.service';
-import { TokenStorageService } from './token-storage.service';
-import { Rol } from '../../../models/common.models';
+import { AuthService } from './service/auth.service';
+import { TokenStorageService } from './service/token-storage.service';
+import { Rol } from './models/common.models';
 
 export const roleGuard = (expectedRoles: Rol[]): CanActivateFn => {
   return () => {

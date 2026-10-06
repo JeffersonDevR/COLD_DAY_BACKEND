@@ -4,11 +4,11 @@ import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, debounceTime, distinctUntilChanged, forkJoin, of, switchMap, tap } from 'rxjs';
 import { ClientesApi } from '../infrastructure/clientes-api';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { ToastService } from '../../../core/alertas/toast.service';
 import { CategoriaServicio, Point } from '../../../core/models/common.models';
-import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
-import { GeolocationService } from '../../../core/shared/infrastructure/geolocation/geolocation.service';
+import { MapsApi } from '../../../core/service/maps-api';
+import { GeolocationService } from '../../../core/service/geolocation.service';
 import { SugerenciaApiResponse } from '../../../core/models/backend.dto';
 
 interface BarrioCucuta {

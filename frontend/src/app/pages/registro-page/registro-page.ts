@@ -9,7 +9,7 @@ import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api'
 import { ProveedoresApi } from '../../modules/proveedores/infrastructure/proveedores-api';
 import { ProveedorRegistroService } from '../../modules/proveedores/infrastructure/proveedor-registro.service';
 import { ApiConfig } from '../../core/service/api.config';
-import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { Rol, CategoriaServicio, TokenResponse } from '../../core/models/common.models';
 

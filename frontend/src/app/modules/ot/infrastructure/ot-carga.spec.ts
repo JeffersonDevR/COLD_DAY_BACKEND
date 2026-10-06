@@ -3,8 +3,8 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from './ot-carga';
 import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
+import { MockDbService } from '../../../core/service/mock-db.service';
+import { MapsApi } from '../../../core/service/maps-api';
 import { OtApi } from './ot-api';
 import { OtResponse } from '../../../core/models/common.models';
 

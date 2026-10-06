@@ -4,7 +4,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { ToastService } from '../../../core/alertas/toast.service';
 import { OtResponse, Point, TarifaEstimadaResponse } from '../../../core/models/common.models';
 

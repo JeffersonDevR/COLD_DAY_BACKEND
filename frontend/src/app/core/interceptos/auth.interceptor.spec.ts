@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpHandlerFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { firstValueFrom, of } from 'rxjs';
 import { authInterceptor } from './auth.interceptor';
-import { TokenStorageService } from './token-storage.service';
+import { TokenStorageService } from '../service/token-storage.service';
 
 async function run(url: string, token: string | null) {
   TestBed.configureTestingModule({

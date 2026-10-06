@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { Rol } from '../../../models/common.models';
+import { Rol } from '../models/common.models';
 
 /**
  * Claims presentes en el JWT emitido por el backend (JwtTokenIssuer.java):

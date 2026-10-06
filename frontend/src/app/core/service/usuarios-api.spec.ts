@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { firstValueFrom } from 'rxjs';
 import { UsuariosApi } from './usuarios-api';
 import { ApiConfig } from './api.config';
-import { MockDbService } from '../shared/infrastructure/mock/mock-db.service';
+import { MockDbService } from './mock-db.service';
 import { UsuarioRequest } from '../models/common.models';
 
 describe('UsuariosApi', () => {

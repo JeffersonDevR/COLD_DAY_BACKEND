@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 import { guestGuard } from './guest.guard';
-import { AuthService } from './auth.service';
-import { TokenStorageService } from './token-storage.service';
+import { AuthService } from './service/auth.service';
+import { TokenStorageService } from './service/token-storage.service';
 
 const route = {} as ActivatedRouteSnapshot;
 const state = {} as RouterStateSnapshot;

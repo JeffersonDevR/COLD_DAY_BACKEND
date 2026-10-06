@@ -2,7 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpStatusCode } from '@angular/c
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { ApiError } from '../models/common.models';
-import { AuthService } from '../shared/infrastructure/auth/auth.service';
+import { AuthService } from '../service/auth.service';
 import { ToastService } from '../alertas/toast.service';
 
 /**

@@ -1,4 +1,4 @@
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { TecnicoResponse } from '../../../core/models/common.models';
 import { TecnicosApi } from './tecnicos-api';
 

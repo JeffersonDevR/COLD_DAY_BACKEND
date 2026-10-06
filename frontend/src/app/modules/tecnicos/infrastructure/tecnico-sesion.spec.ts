@@ -1,6 +1,6 @@
 import { of, throwError } from 'rxjs';
 import { cargarTecnicoAutenticado } from './tecnico-sesion';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { TecnicosApi } from './tecnicos-api';
 import { TecnicoResponse } from '../../../core/models/common.models';
 

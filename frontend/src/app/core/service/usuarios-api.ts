@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from './api.config';
-import { MockDbService } from '../shared/infrastructure/mock/mock-db.service';
+import { MockDbService } from './mock-db.service';
 import { aUsuarioResponse } from './backend.mappers';
 import {
   TokenApiResponse,
