@@ -2,10 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { PanelTecnicoPage } from './panel-tecnico-page';
-import { AuthService } from '../../../core/service/auth.service';
-import { TecnicosApi } from '../infrastructure/tecnicos-api';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { OtResponse, TecnicoResponse } from '../../../core/models/common.models';
+import { AuthService } from '../../core/service/auth.service';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { ToastService } from '../../core/alertas/toast.service';
+import { OtResponse, TecnicoResponse } from '../../core/models/common.models';
 
 const tecnico: TecnicoResponse = {
   id: 'TEC-1',

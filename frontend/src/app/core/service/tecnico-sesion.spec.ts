@@ -1,8 +1,8 @@
 import { of, throwError } from 'rxjs';
 import { cargarTecnicoAutenticado } from './tecnico-sesion';
-import { AuthService } from '../../../core/service/auth.service';
+import { AuthService } from './auth.service';
 import { TecnicosApi } from './tecnicos-api';
-import { TecnicoResponse } from '../../../core/models/common.models';
+import { TecnicoResponse } from '../models/common.models';
 
 const tecnico: TecnicoResponse = { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co' };
 

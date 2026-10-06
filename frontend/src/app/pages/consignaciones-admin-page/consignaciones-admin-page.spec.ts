@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ConsignacionesAdminPage } from './consignaciones-admin-page';
 import { LiquidacionApi } from '../../modules/liquidacion/infrastructure/liquidacion-api';
-import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 

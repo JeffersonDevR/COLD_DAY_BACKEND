@@ -81,31 +81,31 @@ export const routes: Routes = [
   {
     path: 'tecnico/panel',
     canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/tecnicos/presentation/panel-tecnico-page').then(m => m.PanelTecnicoPage),
+    loadComponent: () => import('./pages/panel-tecnico-page/panel-tecnico-page').then(m => m.PanelTecnicoPage),
     title: 'Panel Operativo Técnico - COLD DAY'
   },
   {
     path: 'tecnico/ofertas',
     canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/tecnicos/presentation/ofertas-page').then(m => m.OfertasPage),
+    loadComponent: () => import('./pages/ofertas-page/ofertas-page').then(m => m.OfertasPage),
     title: 'Radar de Ofertas en Vivo - COLD DAY'
   },
   {
     path: 'tecnico/ejecucion/:id',
     canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/tecnicos/presentation/ejecucion-ot-page').then(m => m.EjecucionOtPage),
+    loadComponent: () => import('./pages/ejecucion-ot-page/ejecucion-ot-page').then(m => m.EjecucionOtPage),
     title: 'Ejecución de Servicio Técnico'
   },
   {
     path: 'tecnico/documentos',
     canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/tecnicos/presentation/perfil-documentos-page').then(m => m.PerfilDocumentosPage),
+    loadComponent: () => import('./pages/perfil-documentos-page/perfil-documentos-page').then(m => m.PerfilDocumentosPage),
     title: 'Acreditaciones y Documentos - COLD DAY'
   },
   {
     path: 'tecnico/liquidaciones',
     canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/tecnicos/presentation/liquidaciones-tecnico-page').then(m => m.LiquidacionesTecnicoPage),
+    loadComponent: () => import('./pages/liquidaciones-tecnico-page/liquidaciones-tecnico-page').then(m => m.LiquidacionesTecnicoPage),
     title: 'Liquidaciones y Consignaciones - COLD DAY'
   },
 

@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { RegistroPage } from './registro-page';
 import { UsuariosApi } from '../../core/service/usuarios-api';
 import { ClientesApi } from '../../core/service/clientes-api';
-import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ProveedoresApi } from '../../modules/proveedores/infrastructure/proveedores-api';
 import { ProveedorRegistroService } from '../../modules/proveedores/infrastructure/proveedor-registro.service';
 import { ApiConfig } from '../../core/service/api.config';

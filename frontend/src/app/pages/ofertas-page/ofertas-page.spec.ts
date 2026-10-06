@@ -2,10 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { OfertasPage } from './ofertas-page';
-import { AuthService } from '../../../core/service/auth.service';
-import { TecnicosApi } from '../infrastructure/tecnicos-api';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../core/models/common.models';
+import { AuthService } from '../../core/service/auth.service';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { ToastService } from '../../core/alertas/toast.service';
+import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../core/models/common.models';
 
 const ot: OtResponse = {
   id: 'OT-1',

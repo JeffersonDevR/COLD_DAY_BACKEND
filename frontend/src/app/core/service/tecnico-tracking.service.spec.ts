@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
 import { TecnicoTrackingService } from './tecnico-tracking.service';
-import { GeolocationService } from '../../../core/service/geolocation.service';
+import { GeolocationService } from './geolocation.service';
 import { TecnicosApi } from './tecnicos-api';
-import { Point } from '../../../core/models/common.models';
+import { Point } from '../models/common.models';
 
 describe('TecnicoTrackingService', () => {
   let posiciones: Subject<Point>;
