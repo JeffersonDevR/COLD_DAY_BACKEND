@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AppConfigurator } from './app-configurator';
 import { ThemeService } from '../../core/service/theme.service';
-import { LayoutService } from '../service/layout.service';
+import { LayoutService } from '../../core/service/layout.service';
 
 function themeMock() {
   return {

@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/service/auth.service';
 import { ToastHost } from './shared/toast-host/toast-host';
-import { AppTopbar } from './layout/components/app-topbar';
-import { AppSidebar } from './layout/components/app-sidebar';
-import { AppFooter } from './layout/components/app-footer';
-import { LayoutService } from './layout/service/layout.service';
+import { AppTopbar } from './shared/app-topbar/app-topbar';
+import { AppSidebar } from './shared/app-sidebar/app-sidebar';
+import { AppFooter } from './shared/app-footer/app-footer';
+import { LayoutService } from './core/service/layout.service';
 
 @Component({
   selector: 'app-root',

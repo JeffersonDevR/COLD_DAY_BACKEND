@@ -1,16 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { Tooltip } from 'primeng/tooltip';
-import { LayoutService } from '../service/layout.service';
-import { AuthService } from '../../core/service/auth.service';
-import { buildMenu } from '../app.menu';
 
-@Component({
-  selector: 'app-sidebar',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive, Tooltip],
-  template: `
     <!-- Contenido del menú reutilizado por el sidebar de escritorio y el drawer móvil -->
     <ng-template #menu let-collapsed="collapsed">
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-6">
@@ -85,16 +73,4 @@ import { buildMenu } from '../app.menu';
     >
       <ng-container *ngTemplateOutlet="menu; context: { collapsed: false }" />
     </aside>
-  `,
-})
-export class AppSidebar {
-  readonly layout = inject(LayoutService);
-  private readonly auth = inject(AuthService);
-
-  readonly sections = computed(() => buildMenu(this.auth.userRole()));
-  readonly isStatic = computed(() => this.layout.menuMode() === 'static');
-
-  onNavigate(): void {
-    this.layout.closeOverlays();
-  }
-}
+  

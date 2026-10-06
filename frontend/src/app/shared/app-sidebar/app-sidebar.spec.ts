@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AppSidebar } from './app-sidebar';
 import { AuthService } from '../../core/service/auth.service';
-import { LayoutService } from '../service/layout.service';
+import { LayoutService } from '../../core/service/layout.service';
 import { Rol } from '../../core/models/common.models';
 
 function setup(rol: Rol | null) {
