@@ -3,8 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { LiquidacionApi } from './liquidacion-api';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
-import { LiquidacionApiResponse } from '../../../core/shared/infrastructure/api/backend.dto';
+import { ApiConfig } from '../../../core/service/api.config';
+import { LiquidacionApiResponse } from '../../../core/models/backend.dto';
 
 function liquidacionDto(overrides: Partial<LiquidacionApiResponse> = {}): LiquidacionApiResponse {
   return {

@@ -1,6 +1,6 @@
 import { Signal, computed } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { OtResponse, Point } from '../../../core/models/common.models';

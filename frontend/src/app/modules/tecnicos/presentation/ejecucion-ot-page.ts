@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal, OnDestroy, 
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { TecnicoTrackingService } from '../infrastructure/tecnico-tracking.service';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';

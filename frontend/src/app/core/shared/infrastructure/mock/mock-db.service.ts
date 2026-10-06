@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { environment } from '../../../../../environments/environment';
+import { environment } from '../../../environment/environment';
 import {
   ActaGarantia,
   UsuarioResponse,
@@ -27,7 +27,7 @@ import {
   OfertaInsumoResponse,
   TarifaEstimadaResponse,
 } from '../../../models/common.models';
-import { ApiHttpError } from '../api/error.interceptor';
+import { ApiHttpError } from '../../../interceptos/error.interceptor';
 
 @Injectable({
   providedIn: 'root'

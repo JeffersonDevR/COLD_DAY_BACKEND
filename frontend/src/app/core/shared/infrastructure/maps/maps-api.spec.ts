@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { MapsApi } from './maps-api';
-import { ApiConfig } from '../api/api.config';
+import { ApiConfig } from '../../../service/api.config';
 
 describe('MapsApi', () => {
   let api: MapsApi;

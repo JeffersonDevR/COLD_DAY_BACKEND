@@ -17,7 +17,7 @@ export const environment = {
    * Browser key de Google Maps Platform (flujo build-time).
    * NO se versiona: se inyecta en build desde GOOGLE_MAPS_API_KEY
    * (frontend/.env o variable de entorno) vía scripts/generate-maps-key.mjs,
-   * que genera src/environments/maps-key.ts (gitignored).
+   * que genera src/app/core/environment/maps-key.ts (gitignored).
    * Si queda vacía, el loader intenta /api/config/maps (solo con SSR).
    */
   googleMapsApiKey: GOOGLE_MAPS_API_KEY,

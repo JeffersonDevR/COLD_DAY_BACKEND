@@ -7,7 +7,7 @@ import { ToastService } from '../../../core/alertas/toast.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
 import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../../core/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../core/environment/environment';
 
 @Component({
   selector: 'app-panel-tecnico-page',

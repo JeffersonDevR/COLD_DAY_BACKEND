@@ -2,13 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { ApiConfig } from '../api/api.config';
+import { ApiConfig } from '../../../service/api.config';
 import {
   DireccionApiResponse,
   DistanciaApiResponse,
   EstadoMapsApiResponse,
   SugerenciaApiResponse,
-} from '../api/backend.dto';
+} from '../../../models/backend.dto';
 import { Point } from '../../../models/common.models';
 
 /**

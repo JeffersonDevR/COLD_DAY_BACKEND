@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ApiConfig } from './api.config';
-import { environment } from '../../../../../environments/environment';
+import { environment } from '../environment/environment';
 
 describe('ApiConfig', () => {
   let config: ApiConfig;

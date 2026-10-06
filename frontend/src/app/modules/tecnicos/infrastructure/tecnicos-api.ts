@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
   TecnicoResponse,
@@ -23,7 +23,7 @@ import {
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
   UbicacionApiRequest,
-} from '../../../core/shared/infrastructure/api/backend.dto';
+} from '../../../core/models/backend.dto';
 import {
   aDiagnosticoApiRequest,
   aDocumentoTecnico,
@@ -31,10 +31,10 @@ import {
   aOtResponse,
   aTecnicoCercano,
   aTecnicoResponse,
-} from '../../../core/shared/infrastructure/api/backend.mappers';
+} from '../../../core/service/backend.mappers';
 import { Observable, forkJoin, of } from 'rxjs';
 import { delay, map, switchMap } from 'rxjs/operators';
-import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
+import { pendienteBackend } from '../../../core/errorStatus/pendiente-backend';
 
 /**
  * Technician that owns the mock session (`usuarioId: 6`, juan.tecnico@coldday.com.co).

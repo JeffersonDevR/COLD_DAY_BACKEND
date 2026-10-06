@@ -5,7 +5,7 @@ import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/alertas/toast.service';
 import { LiquidacionResponse, TecnicoResponse } from '../../../core/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../core/environment/environment';
 
 @Component({
   selector: 'app-consignaciones-admin-page',

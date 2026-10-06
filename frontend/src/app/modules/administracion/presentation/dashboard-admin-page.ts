@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { RouterLink } from '@angular/router';
 import { AdminApi } from '../infrastructure/admin-api';
 import { CategoriaServicio, MetricasAdminResponse } from '../../../core/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../core/environment/environment';
 
 @Component({
   selector: 'app-dashboard-admin-page',

@@ -7,7 +7,7 @@ import { ClientesApi } from '../../modules/clientes/infrastructure/clientes-api'
 import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
 import { ProveedoresApi } from '../../modules/proveedores/infrastructure/proveedores-api';
 import { ProveedorRegistroService } from '../../modules/proveedores/infrastructure/proveedor-registro.service';
-import { ApiConfig } from '../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../core/service/api.config';
 import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { UsuarioResponse } from '../../core/models/common.models';

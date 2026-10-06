@@ -5,7 +5,7 @@ import { DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { interval, startWith, switchMap } from 'rxjs';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrastructure/ot-carga';

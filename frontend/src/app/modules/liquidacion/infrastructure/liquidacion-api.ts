@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
   LiquidacionResponse,
@@ -11,9 +11,9 @@ import {
   LiquidacionApiResponse,
   RechazoLiquidacionApiRequest,
   RegistrarPagoApiRequest,
-} from '../../../core/shared/infrastructure/api/backend.dto';
-import { environment } from '../../../../environments/environment';
-import { aLiquidacionResponse } from '../../../core/shared/infrastructure/api/backend.mappers';
+} from '../../../core/models/backend.dto';
+import { environment } from '../../../core/environment/environment';
+import { aLiquidacionResponse } from '../../../core/service/backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

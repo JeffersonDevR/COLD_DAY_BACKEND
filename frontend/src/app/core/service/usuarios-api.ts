@@ -1,13 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../shared/infrastructure/api/api.config';
+import { ApiConfig } from './api.config';
 import { MockDbService } from '../shared/infrastructure/mock/mock-db.service';
-import { aUsuarioResponse } from '../shared/infrastructure/api/backend.mappers';
+import { aUsuarioResponse } from './backend.mappers';
 import {
   TokenApiResponse,
   UsuarioApiRequest,
   UsuarioApiResponse,
-} from '../shared/infrastructure/api/backend.dto';
+} from '../models/backend.dto';
 import {
   TokenResponse,
   UsuarioRequest,

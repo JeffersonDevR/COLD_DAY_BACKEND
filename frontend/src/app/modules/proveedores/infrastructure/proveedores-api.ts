@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
   DocumentoProveedorResponse,
@@ -16,12 +16,12 @@ import {
   ProveedorApiResponse,
   SolicitudInsumoApiResponse,
   ValidacionProveedorApiRequest,
-} from '../../../core/shared/infrastructure/api/backend.dto';
+} from '../../../core/models/backend.dto';
 import {
   aOfertaInsumoResponse,
   aProveedorResponse,
   aSolicitudInsumoResponse,
-} from '../../../core/shared/infrastructure/api/backend.mappers';
+} from '../../../core/service/backend.mappers';
 import { Observable, defer, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

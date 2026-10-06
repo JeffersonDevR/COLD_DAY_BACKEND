@@ -1,5 +1,5 @@
 import { MockDbService } from './mock-db.service';
-import { ApiHttpError } from '../api/error.interceptor';
+import { ApiHttpError } from '../../../interceptos/error.interceptor';
 
 describe('MockDbService — despacho de insumos', () => {
   let db: MockDbService;

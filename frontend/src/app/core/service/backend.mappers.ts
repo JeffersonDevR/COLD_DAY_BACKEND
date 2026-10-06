@@ -27,7 +27,7 @@ import {
   TecnicoResponse,
   TipoDocumentoTecnico,
   UsuarioResponse,
-} from '../../../models/common.models';
+} from '../models/common.models';
 import {
   ActaGarantiaApiResponse,
   CertificacionApi,
@@ -49,7 +49,7 @@ import {
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
   UsuarioApiResponse,
-} from './backend.dto';
+} from '../models/backend.dto';
 
 /** Segundos restantes hasta una fecha ISO; 0 si ya venció o es inválida. */
 function segundosHasta(iso: string | null | undefined): number {

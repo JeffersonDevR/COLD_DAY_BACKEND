@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
   MetricasAdminResponse,
@@ -18,13 +18,13 @@ import {
   ProveedorApiResponse,
   ResolverDisputaApiRequest,
   ValidacionTecnicoApiRequest,
-} from '../../../core/shared/infrastructure/api/backend.dto';
+} from '../../../core/models/backend.dto';
 import {
   aDisputaResponse,
   aMetricasAdmin,
   aOtResponse,
   aProveedorResponse,
-} from '../../../core/shared/infrastructure/api/backend.mappers';
+} from '../../../core/service/backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

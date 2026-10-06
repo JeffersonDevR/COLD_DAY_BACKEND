@@ -3,13 +3,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { ProveedoresApi } from './proveedores-api';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import {
   OfertaInsumoApiResponse,
   ProveedorApiResponse,
   SolicitudInsumoApiResponse,
-} from '../../../core/shared/infrastructure/api/backend.dto';
+} from '../../../core/models/backend.dto';
 
 function requerimientoDto(overrides: Partial<SolicitudInsumoApiResponse> = {}): SolicitudInsumoApiResponse {
   return {

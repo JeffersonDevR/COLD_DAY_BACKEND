@@ -9,7 +9,7 @@ import { ToastService } from '../../../core/alertas/toast.service';
 import { CategoriaServicio, Point } from '../../../core/models/common.models';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { GeolocationService } from '../../../core/shared/infrastructure/geolocation/geolocation.service';
-import { SugerenciaApiResponse } from '../../../core/shared/infrastructure/api/backend.dto';
+import { SugerenciaApiResponse } from '../../../core/models/backend.dto';
 
 interface BarrioCucuta {
   nombre: string;

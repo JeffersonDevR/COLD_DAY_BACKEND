@@ -6,7 +6,7 @@ import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { ApiConfig } from '../../../core/service/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { ToastService } from '../../../core/alertas/toast.service';
 import { OtResponse } from '../../../core/models/common.models';

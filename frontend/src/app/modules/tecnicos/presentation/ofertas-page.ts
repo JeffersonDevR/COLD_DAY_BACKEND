@@ -5,7 +5,7 @@ import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { ToastService } from '../../../core/alertas/toast.service';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../core/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../core/environment/environment';
 
 @Component({
   selector: 'app-ofertas-page',

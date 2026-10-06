@@ -30,7 +30,7 @@ import {
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
   UsuarioApiResponse,
-} from './backend.dto';
+} from '../models/backend.dto';
 
 const otDto = (overrides: Partial<OtApiResponse> = {}): OtApiResponse => ({
   id: 'ot1',

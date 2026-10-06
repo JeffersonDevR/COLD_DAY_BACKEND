@@ -1,5 +1,5 @@
 import { Rol } from '../core/models/common.models';
-import { environment } from '../../environments/environment';
+import { environment } from '../core/environment/environment';
 
 export interface MenuEntry {
   label: string;

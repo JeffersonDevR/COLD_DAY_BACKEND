@@ -24,7 +24,7 @@ import {
   Rol,
   TarifaFuente,
   TipoCliente,
-} from '../../../models/common.models';
+} from './common.models';
 
 /* ------------------------------------------------------------------ */
 /* usuarios                                                            */
