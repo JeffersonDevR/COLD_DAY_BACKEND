@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
-import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/alertas/toast.service';
+import { EstadoBadge } from '../../../shared/estado-badge/estado-badge';
+import { EmptyState } from '../../../shared/empty-state/empty-state';
+import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../../core/models/common.models';
+import { environment } from '../../../core/environment/environment';
 
 @Component({
   selector: 'app-panel-tecnico-page',

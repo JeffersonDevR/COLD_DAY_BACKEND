@@ -1,0 +1,10 @@
+
+    @keyframes radarSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-radar-spin {
+      animation: radarSpin 4s linear infinite;
+      transform-origin: 200px 200px;
+    }
+  

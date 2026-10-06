@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { ApiConfig } from '../../../core/service/api.config';
+import { MockDbService } from '../../../core/service/mock-db.service';
 import {
   ActaGarantia,
   OtResponse,
@@ -11,23 +11,23 @@ import {
   HistorialOtItem,
   Point,
   TarifaEstimadaResponse,
-} from '../../../core/shared/domain/models/common.models';
+} from '../../../core/models/common.models';
 import {
   ActaGarantiaApiResponse,
   HistorialEstadoApiResponse,
   OtApiResponse,
   TarifaEstimadaApiResponse,
-} from '../../../core/shared/infrastructure/api/backend.dto';
+} from '../../../core/models/backend.dto';
 import {
   aActaGarantia,
   aDiagnosticoApiRequest,
   aHistorialOtItem,
   aOtResponse,
   aTarifaEstimadaResponse,
-} from '../../../core/shared/infrastructure/api/backend.mappers';
+} from '../../../core/service/backend.mappers';
 import { Observable, of } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
-import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
+import { pendienteBackend } from '../../../core/errorStatus/pendiente-backend';
 
 @Injectable({
   providedIn: 'root'

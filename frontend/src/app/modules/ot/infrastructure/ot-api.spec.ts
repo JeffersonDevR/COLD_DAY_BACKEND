@@ -3,9 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { OtApi } from './ot-api';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { OtApiResponse } from '../../../core/shared/infrastructure/api/backend.dto';
+import { ApiConfig } from '../../../core/service/api.config';
+import { MockDbService } from '../../../core/service/mock-db.service';
+import { OtApiResponse } from '../../../core/models/backend.dto';
 
 function otDto(overrides: Partial<OtApiResponse> = {}): OtApiResponse {
   return {

@@ -80,7 +80,7 @@
               "src/main.ts",
               "src/main.server.ts",
               "src/server.ts",
-              "src/environments/**",
+              "src/app/core/environment/**",
               "src/**/*.spec.ts"
             ]
           }

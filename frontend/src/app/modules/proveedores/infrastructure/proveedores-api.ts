@@ -1,14 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
+import { ApiConfig } from '../../../core/service/api.config';
+import { MockDbService } from '../../../core/service/mock-db.service';
 import {
   DocumentoProveedorResponse,
   OfertaInsumoResponse,
   ProveedorRequest,
   ProveedorResponse,
   SolicitudInsumoResponse,
-} from '../../../core/shared/domain/models/common.models';
+} from '../../../core/models/common.models';
 import {
   DocumentoProveedorApiResponse,
   OfertaInsumoApiResponse,
@@ -16,12 +16,12 @@ import {
   ProveedorApiResponse,
   SolicitudInsumoApiResponse,
   ValidacionProveedorApiRequest,
-} from '../../../core/shared/infrastructure/api/backend.dto';
+} from '../../../core/models/backend.dto';
 import {
   aOfertaInsumoResponse,
   aProveedorResponse,
   aSolicitudInsumoResponse,
-} from '../../../core/shared/infrastructure/api/backend.mappers';
+} from '../../../core/service/backend.mappers';
 import { Observable, defer, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

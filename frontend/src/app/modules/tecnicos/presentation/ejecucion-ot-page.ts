@@ -1,17 +1,17 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { MockDbService } from '../../../core/service/mock-db.service';
+import { ApiConfig } from '../../../core/service/api.config';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { TecnicoTrackingService } from '../infrastructure/tecnico-tracking.service';
-import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
+import { MapsApi } from '../../../core/service/maps-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrastructure/ot-carga';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common.models';
+import { ToastService } from '../../../core/alertas/toast.service';
+import { EstadoBadge } from '../../../shared/estado-badge/estado-badge';
+import { OtResponse, MedioPago } from '../../../core/models/common.models';
 
 @Component({
   selector: 'app-ejecucion-ot-page',

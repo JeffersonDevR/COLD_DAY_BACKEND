@@ -1,0 +1,381 @@
+
+    @if (ot(); as orden) {
+      <div class="space-y-6 max-w-5xl mx-auto">
+        <!-- Top header con ID y volver -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <a routerLink="/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
+              <i class="pi pi-arrow-left text-xs"></i> Volver al Panel
+            </a>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">
+                OT: {{ orden.id }}
+              </h1>
+              <app-estado-badge [estado]="orden.estado" />
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Creada el {{ orden.fechaCreacion | date:'medium' }} • {{ orden.barrio || orden.direccion }}
+            </p>
+          </div>
+
+          <!-- Acciones Contextuales -->
+          <div class="flex items-center gap-2">
+            @if (orden.estado === 'EN_DIAGNOSTICO' && orden.diagnostico) {
+              <a
+                [routerLink]="['/cliente/ot', orden.id, 'diagnostico']"
+                class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-colors animate-bounce"
+              >
+                <i class="pi pi-comment text-sm"></i>
+                Revisar Presupuesto ($ {{ (orden.presupuesto?.total || 0).toLocaleString('es-CO') }})
+              </a>
+            }
+
+            @if (orden.estado === 'FINALIZADA') {
+              <a
+                [routerLink]="['/cliente/ot', orden.id, 'pago-acta']"
+                class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-colors"
+              >
+                <i class="pi pi-verified text-sm"></i>
+                Ver Acta y Pago
+              </a>
+
+              @if (!orden.calificacion) {
+                <a
+                  [routerLink]="['/cliente/ot', orden.id, 'calificar']"
+                  class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <i class="pi pi-star text-sm"></i>
+                  Calificar Servicio
+                </a>
+              }
+            }
+
+            <!-- Abrir disputa en fases de diagnóstico/reparación -->
+            @if (orden.estado === 'EN_DIAGNOSTICO' || orden.estado === 'EN_REPARACION') {
+              <button
+                type="button"
+                (click)="mostrarModalDisputa.set(true)"
+                class="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-semibold text-xs inline-flex items-center gap-1 transition-colors"
+              >
+                <i class="pi pi-shield text-sm"></i>
+                Abrir Disputa
+              </button>
+            }
+
+            <!-- Botón Cancelar si no está en reparación ni finalizada -->
+            @if (puedeCancelar()) {
+              <button
+                type="button"
+                (click)="mostrarModalCancelar.set(true)"
+                class="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-semibold text-xs inline-flex items-center gap-1 transition-colors"
+              >
+                <i class="pi pi-times-circle text-sm"></i>
+                Cancelar Solicitud
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- RF-F1-26: pago de la visita para reabrir el despacho tras rechazar el presupuesto -->
+        @if (puedePagarVisita()) {
+          <div class="p-5 rounded-3xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
+                <i class="pi pi-wallet"></i>
+              </div>
+              <div class="space-y-0.5">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Pagar la Visita y Reabrir el Despacho</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Quedó pendiente la tarifa de visita. Al pagarla, la orden vuelve a buscar un técnico disponible.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Medio de pago:</span>
+              <button
+                type="button"
+                (click)="medioPagoVisita.set('EFECTIVO')"
+                [class.bg-amber-600]="medioPagoVisita() === 'EFECTIVO'"
+                [class.border-amber-600]="medioPagoVisita() === 'EFECTIVO'"
+                [class.text-white]="medioPagoVisita() === 'EFECTIVO'"
+                [class.bg-white]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.dark:bg-slate-900]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.border-slate-300]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.dark:border-slate-700]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.text-slate-700]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.dark:text-slate-200]="medioPagoVisita() !== 'EFECTIVO'"
+                class="px-3.5 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+              >
+                <i class="pi pi-money-bill text-sm"></i>
+                Efectivo
+              </button>
+              <button
+                type="button"
+                (click)="medioPagoVisita.set('TRANSFERENCIA')"
+                [class.bg-amber-600]="medioPagoVisita() === 'TRANSFERENCIA'"
+                [class.border-amber-600]="medioPagoVisita() === 'TRANSFERENCIA'"
+                [class.text-white]="medioPagoVisita() === 'TRANSFERENCIA'"
+                [class.bg-white]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.dark:bg-slate-900]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.border-slate-300]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.dark:border-slate-700]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.text-slate-700]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.dark:text-slate-200]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                class="px-3.5 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+              >
+                <i class="pi pi-credit-card text-sm"></i>
+                Transferencia
+              </button>
+            </div>
+
+            <button
+              type="button"
+              [disabled]="pagandoVisita()"
+              (click)="pagarVisita()"
+              class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md inline-flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <i class="pi pi-check-circle text-sm"></i>
+              {{ pagandoVisita() ? 'Procesando pago...' : 'Pagar Visita y Reabrir Despacho' }}
+            </button>
+          </div>
+        }
+
+        <!-- Radar de Búsqueda SVG (si está en SOLICITADA o BUSCANDO_TECNICO) -->
+        @if (orden.estado === 'SOLICITADA' || orden.estado === 'BUSCANDO_TECNICO') {
+          <app-mapa-radar
+            [radioInicial]="orden.radioBusquedaKm || 10"
+            [isBuscando]="true"
+            [clienteUbicacionNombre]="orden.barrio || 'Tu Ubicación'"
+            [centroLat]="orden.punto?.latitud ?? 7.8939"
+            [centroLng]="orden.punto?.longitud ?? -72.5078"
+            [tecnicosExternos]="tecnicosCercanos()"
+            (radioCambiado)="actualizarRadio($event)"
+          />
+        }
+
+        <!-- Tarjeta de Técnico Asignado (si aplica) -->
+        @if (orden.tecnicoId) {
+          <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-300 flex items-center justify-center font-black text-xl shrink-0">
+                {{ orden.tecnicoNombre?.charAt(0) || 'T' }}
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ orden.tecnicoNombre }}</h3>
+                  <span class="inline-flex items-center gap-0.5 text-xs font-bold text-amber-500">
+                    <i class="pi pi-star text-xs" style="font-size: 14px; width: 14px; height: 14px;"></i>
+                    {{ orden.tecnicoReputacion || 4.9 }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500">Técnico Certificado Asignado • Móvil: {{ orden.tecnicoTelefono }}</p>
+                <div class="mt-1 flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400 font-semibold">
+                  <i class="pi pi-truck text-xs" style="font-size: 14px; width: 14px; height: 14px;"></i>
+                  @if (etaMin() !== null) {
+                    <span>En camino a tu ubicación (ETA: ~{{ etaMin() }} min · {{ distanciaKm() }} km)</span>
+                  } @else {
+                    <span>En camino a tu ubicación</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <a
+                [href]="'tel:' + orden.tecnicoTelefono"
+                class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-bold text-slate-800 dark:text-slate-200 inline-flex items-center gap-1.5 transition-colors"
+              >
+                <i class="pi pi-phone text-sm"></i>
+                Llamar
+              </a>
+              <a
+                [routerLink]="['/cliente/ot', orden.id, 'diagnostico']"
+                class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition-colors"
+              >
+                <i class="pi pi-comments text-sm"></i>
+                Chat / Presupuesto
+              </a>
+            </div>
+          </div>
+        }
+
+        <!-- Notificación del cargo de visita + diagnóstico (al aceptar el técnico) -->
+        @if (mostrarCargoVisita()) {
+          <app-cargo-visita [punto]="orden.punto" />
+        }
+
+        <!-- Detalle de la Solicitud y Falla -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="md:col-span-2 space-y-6">
+            <!-- Timeline de Estados -->
+            <app-ot-timeline
+              [estadoActual]="orden.estado"
+              [historial]="orden.historial || []"
+            />
+
+            <!-- Descripción de Falla y Evidencias -->
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+              <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                Detalle Técnico Reportado
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                {{ orden.descripcionFalla }}
+              </p>
+
+              @if (orden.evidenciaUrls && orden.evidenciaUrls!.length > 0) {
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <span class="text-xs font-bold text-slate-500 block mb-2">Evidencia Fotográfica:</span>
+                  <div class="flex gap-3 overflow-x-auto pb-2">
+                    @for (url of orden.evidenciaUrls; track url) {
+                      <img
+                        [src]="url"
+                        alt="Evidencia técnica de falla"
+                        class="w-32 h-24 object-cover rounded-xl border border-slate-200 dark:border-slate-700"
+                        referrerpolicy="no-referrer"
+                      />
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Columna Lateral: Resumen del Servicio -->
+          <div class="space-y-4">
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+              <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+                Ficha del Servicio
+              </h3>
+
+              <div class="space-y-2.5 text-xs">
+                <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                  <span class="text-slate-500">Línea:</span>
+                  <span class="font-bold text-slate-800 dark:text-slate-200">{{ orden.categoriaServicio.replace('_', ' ') }}</span>
+                </div>
+                <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                  <span class="text-slate-500">Dirección:</span>
+                  <span class="font-bold text-slate-800 dark:text-slate-200 text-right">{{ orden.direccion }}</span>
+                </div>
+                @if (etaMin() !== null) {
+                  <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Llegada estimada:</span>
+                    <span class="font-bold text-sky-600 dark:text-sky-400">{{ etaMin() }} min · {{ distanciaKm() }} km</span>
+                  </div>
+                }
+                <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                  <span class="text-slate-500">Barrio Cúcuta:</span>
+                  <span class="font-bold text-slate-800 dark:text-slate-200">{{ orden.barrio || 'Centro' }}</span>
+                </div>
+                <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                  <span class="text-slate-500">Garantía:</span>
+                  <span class="font-bold text-emerald-600 dark:text-emerald-400">90 días tras firma</span>
+                </div>
+                @if (orden.presupuesto) {
+                  <div class="flex justify-between py-2 bg-sky-50 dark:bg-sky-950/40 px-3 rounded-xl">
+                    <span class="text-sky-800 dark:text-sky-300 font-semibold">Total Cotizado:</span>
+                    <span class="font-extrabold text-sky-900 dark:text-sky-100">$ {{ orden.presupuesto.total.toLocaleString('es-CO') }} COP</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Regla de Cancelación Gratuita 10 min -->
+            <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+              <div class="flex items-center gap-1.5 font-bold">
+                <i class="pi pi-info-circle text-xs"></i>
+                Política de Cancelación
+              </div>
+              <p class="leading-relaxed opacity-90">
+                Dispones de 10 minutos de gracia tras la asignación para cancelar sin cargo. No es posible cancelar una vez iniciada la fase de reparación física.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal de Cancelación con Motivo -->
+        @if (mostrarModalCancelar()) {
+          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+            <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div class="flex items-center gap-3 text-rose-600">
+                <i class="pi pi-times-circle"></i>
+                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Cancelar Solicitud de OT</h3>
+              </div>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Indica el motivo de la cancelación. Recuerda que solo es admisible antes del inicio de la reparación.
+              </p>
+
+              <div>
+                <label for="motivoCancel" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Motivo de cancelación *
+                </label>
+                <textarea
+                  id="motivoCancel"
+                  rows="3"
+                  [formControl]="motivoControl"
+                  placeholder="Ej. Ya resolví el inconveniente, o debo salir de urgencia de la ciudad..."
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-rose-500"
+                ></textarea>
+              </div>
+
+              <div class="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="mostrarModalCancelar.set(false)"
+                  class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  [disabled]="motivoControl.invalid"
+                  (click)="confirmarCancelacion()"
+                  class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm"
+                >
+                  Confirmar Cancelación
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Modal de Disputa -->
+        @if (mostrarModalDisputa()) {
+          <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+            <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div class="flex items-center gap-3 text-purple-600">
+                <i class="pi pi-shield"></i>
+                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Abrir Disputa</h3>
+              </div>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Describe la discrepancia (costo, repuestos o calidad). El área administrativa mediará el caso.
+              </p>
+              <textarea
+                rows="3"
+                [formControl]="motivoDisputaControl"
+                placeholder="Explica el motivo de la disputa..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-purple-500"
+              ></textarea>
+              <div class="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  (click)="mostrarModalDisputa.set(false)"
+                  class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  [disabled]="motivoDisputaControl.invalid"
+                  (click)="confirmarDisputa()"
+                  class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm"
+                >
+                  Confirmar Disputa
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  

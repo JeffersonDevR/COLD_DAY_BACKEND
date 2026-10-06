@@ -3,9 +3,9 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { DisputasAdminPage } from './disputas-admin-page';
 import { AdminApi } from '../infrastructure/admin-api';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { DisputaResponse } from '../../../core/shared/domain/models/common.models';
+import { AuthService } from '../../../core/service/auth.service';
+import { ToastService } from '../../../core/alertas/toast.service';
+import { DisputaResponse } from '../../../core/models/common.models';
 
 const disputa: DisputaResponse = {
   id: 'DISP-1',

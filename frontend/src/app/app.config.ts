@@ -10,8 +10,8 @@ import {definePreset} from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 
 import {routes} from './app.routes';
-import {authInterceptor} from './core/shared/infrastructure/auth/auth.interceptor';
-import {errorInterceptor} from './core/shared/infrastructure/api/error.interceptor';
+import {authInterceptor} from './core/interceptos/auth.interceptor';
+import {errorInterceptor} from './core/interceptos/error.interceptor';
 
 /**
  * Preset Aura con la paleta corporativa de COLD DAY (sky-600 como primario),

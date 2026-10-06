@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/shared/infrastructure/auth/auth.guard';
-import { guestGuard } from './core/shared/infrastructure/auth/guest.guard';
-import { roleGuard } from './core/shared/infrastructure/auth/role.guard';
-import { PanelRedirectComponent } from './core/shared/presentation/panel-redirect';
+import { authGuard } from './core/auth.guard';
+import { guestGuard } from './core/guest.guard';
+import { roleGuard } from './core/role.guard';
+import { PanelRedirectComponent } from './core/navihationError/panel-redirect';
 
 export const routes: Routes = [
   // La landing pública vive en un proyecto separado (landing/); la app arranca en login.
@@ -10,19 +10,19 @@ export const routes: Routes = [
   {
     path: 'login',
     canActivate: [guestGuard],
-    loadComponent: () => import('./modules/usuarios/presentation/login-page').then(m => m.LoginPage),
+    loadComponent: () => import('./pages/login-page/login-page').then(m => m.LoginPage),
     title: 'Ingreso al Sistema - COLD DAY'
   },
   {
     path: 'registro',
     canActivate: [guestGuard],
-    loadComponent: () => import('./modules/usuarios/presentation/registro-page').then(m => m.RegistroPage),
+    loadComponent: () => import('./pages/registro-page/registro-page').then(m => m.RegistroPage),
     title: 'Registro de Cuenta - COLD DAY'
   },
   {
     path: 'recuperar',
     canActivate: [guestGuard],
-    loadComponent: () => import('./modules/usuarios/presentation/recuperar-page').then(m => m.RecuperarPage),
+    loadComponent: () => import('./pages/recuperar-page/recuperar-page').then(m => m.RecuperarPage),
     title: 'Recuperar Contraseña - COLD DAY'
   },
 
@@ -37,43 +37,43 @@ export const routes: Routes = [
   {
     path: 'cliente/panel',
     canActivate: [authGuard, roleGuard(['CLIENTE', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/clientes/presentation/panel-cliente-page').then(m => m.PanelClientePage),
+    loadComponent: () => import('./pages/panel-cliente-page/panel-cliente-page').then(m => m.PanelClientePage),
     title: 'Panel Cliente - COLD DAY'
   },
   {
     path: 'cliente/solicitar',
     canActivate: [authGuard, roleGuard(['CLIENTE', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/clientes/presentation/solicitar-servicio-page').then(m => m.SolicitarServicioPage),
+    loadComponent: () => import('./pages/solicitar-servicio-page/solicitar-servicio-page').then(m => m.SolicitarServicioPage),
     title: 'Solicitar Servicio Técnico - COLD DAY'
   },
   {
     path: 'cliente/ot/:id',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/seguimiento-ot-page').then(m => m.SeguimientoOtPage),
+    loadComponent: () => import('./pages/seguimiento-ot-page/seguimiento-ot-page').then(m => m.SeguimientoOtPage),
     title: 'Seguimiento de Orden de Trabajo'
   },
   {
     path: 'cliente/ot/:id/diagnostico',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/diagnostico-ot-page').then(m => m.DiagnosticoOtPage),
+    loadComponent: () => import('./pages/diagnostico-ot-page/diagnostico-ot-page').then(m => m.DiagnosticoOtPage),
     title: 'Aprobación de Presupuesto - COLD DAY'
   },
   {
     path: 'cliente/ot/:id/pago',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/pago-acta-page').then(m => m.PagoActaPage),
+    loadComponent: () => import('./pages/pago-acta-page/pago-acta-page').then(m => m.PagoActaPage),
     title: 'Acta de Entrega y Pago - COLD DAY'
   },
   {
     path: 'cliente/ot/:id/calificar',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/calificar-servicio-page').then(m => m.CalificarServicioPage),
+    loadComponent: () => import('./pages/calificar-servicio-page/calificar-servicio-page').then(m => m.CalificarServicioPage),
     title: 'Calificar Servicio - COLD DAY'
   },
   {
     path: 'cliente/equipos',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/historial-equipos-page').then(m => m.HistorialEquiposPage),
+    loadComponent: () => import('./pages/historial-equipos-page/historial-equipos-page').then(m => m.HistorialEquiposPage),
     title: 'Hoja de Vida de Equipos - COLD DAY'
   },
 

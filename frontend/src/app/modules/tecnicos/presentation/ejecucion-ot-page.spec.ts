@@ -2,15 +2,15 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { EjecucionOtPage } from './ejecucion-ot-page';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
+import { MockDbService } from '../../../core/service/mock-db.service';
+import { ApiConfig } from '../../../core/service/api.config';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { TecnicoTrackingService } from '../infrastructure/tecnico-tracking.service';
-import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
+import { MapsApi } from '../../../core/service/maps-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { ToastService } from '../../../core/alertas/toast.service';
+import { OtResponse } from '../../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
   return {

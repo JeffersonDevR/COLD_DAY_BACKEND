@@ -3,9 +3,9 @@ import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { LiquidacionResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/alertas/toast.service';
+import { LiquidacionResponse, TecnicoResponse } from '../../../core/models/common.models';
+import { environment } from '../../../core/environment/environment';
 
 @Component({
   selector: 'app-consignaciones-admin-page',

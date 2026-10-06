@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@a
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
+import { AuthService } from '../../../core/service/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { EstadoLiquidacion, LiquidacionResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
-import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../core/alertas/toast.service';
+import { EstadoLiquidacion, LiquidacionResponse, TecnicoResponse } from '../../../core/models/common.models';
+import { environment } from '../../../core/environment/environment';
 
 @Component({
   selector: 'app-liquidaciones-tecnico-page',
