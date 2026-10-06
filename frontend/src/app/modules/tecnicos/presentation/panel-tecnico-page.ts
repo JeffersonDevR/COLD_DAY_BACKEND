@@ -4,8 +4,8 @@ import { AuthService } from '../../../core/service/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { ToastService } from '../../../core/alertas/toast.service';
-import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
+import { EstadoBadge } from '../../../shared/estado-badge/estado-badge';
+import { EmptyState } from '../../../shared/empty-state/empty-state';
 import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../../core/models/common.models';
 import { environment } from '../../../core/environment/environment';
 

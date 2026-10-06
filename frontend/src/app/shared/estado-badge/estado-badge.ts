@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Tag } from 'primeng/tag';
-import { EstadoOt, EstadoOperativo, EstadoValidacion, EstadoLiquidacion, EstadoDisputa } from '../../../models/common.models';
+import { EstadoOt, EstadoOperativo, EstadoValidacion, EstadoLiquidacion, EstadoDisputa } from '../../core/models/common.models';
 
 type AnyEstado = EstadoOt | EstadoOperativo | EstadoValidacion | EstadoLiquidacion | EstadoDisputa;
 type TagSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';
@@ -9,14 +9,7 @@ type TagSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contr
   selector: 'app-estado-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Tag],
-  template: `
-    <p-tag
-      [value]="label()"
-      [severity]="severity()"
-      [icon]="showIcon() ? iconClass() : undefined"
-      [rounded]="true"
-    />
-  `
+  templateUrl: './estado-badge.html',
 })
 export class EstadoBadge {
   readonly estado = input.required<AnyEstado>();

@@ -15,7 +15,7 @@ import { ToastService } from '../../../core/alertas/toast.service';
 import { OtTimeline } from '../../ot/components/ot-timeline';
 import { MapaRadar } from '../../ot/components/mapa-radar';
 import { CargoVisitaDiagnostico } from '../../ot/components/cargo-visita';
-import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
+import { EstadoBadge } from '../../../shared/estado-badge/estado-badge';
 import { OtResponse, Point, TecnicoCercano, MedioPago } from '../../../core/models/common.models';
 
 @Component({

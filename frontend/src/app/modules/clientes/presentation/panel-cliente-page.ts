@@ -3,8 +3,8 @@ import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { AuthService } from '../../../core/service/auth.service';
-import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
+import { EstadoBadge } from '../../../shared/estado-badge/estado-badge';
+import { EmptyState } from '../../../shared/empty-state/empty-state';
 import { OtResponse } from '../../../core/models/common.models';
 
 @Component({

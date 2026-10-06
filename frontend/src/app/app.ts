@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/service/auth.service';
-import { ToastHost } from './core/shared/presentation/components/toast-host';
+import { ToastHost } from './shared/toast-host/toast-host';
 import { AppTopbar } from './layout/components/app-topbar';
 import { AppSidebar } from './layout/components/app-sidebar';
 import { AppFooter } from './layout/components/app-footer';

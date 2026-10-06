@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
-import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
+import { EstadoBadge } from '../../../shared/estado-badge/estado-badge';
 import { OtResponse } from '../../../core/models/common.models';
 
 @Component({
