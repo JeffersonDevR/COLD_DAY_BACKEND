@@ -75,6 +75,7 @@ public class MapsUseCase {
      * {@link #distancia(double, double, double, double)} this never raises
      * {@code MapsNoDisponibleException}.
      */
+    @SuppressWarnings("java:S7467")
     public Optional<RutaCalculada> distanciaOpcional(double oLat, double oLng, double dLat, double dLng) {
         Point o = new Point(oLat, oLng);
         Point d = new Point(dLat, dLng);

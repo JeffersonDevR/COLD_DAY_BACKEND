@@ -89,6 +89,7 @@ public class AuditoriaConfig {
      * {@link AuthenticatedUser} (the {@code "anonymousUser"} string, for
      * instance).
      */
+    @SuppressWarnings("java:S7467")
     private String resolveAuditor() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
