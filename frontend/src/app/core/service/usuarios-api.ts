@@ -1,18 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
-import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { aUsuarioResponse } from '../../../core/shared/infrastructure/api/backend.mappers';
+import { ApiConfig } from '../shared/infrastructure/api/api.config';
+import { MockDbService } from '../shared/infrastructure/mock/mock-db.service';
+import { aUsuarioResponse } from '../shared/infrastructure/api/backend.mappers';
 import {
   TokenApiResponse,
   UsuarioApiRequest,
   UsuarioApiResponse,
-} from '../../../core/shared/infrastructure/api/backend.dto';
+} from '../shared/infrastructure/api/backend.dto';
 import {
   TokenResponse,
   UsuarioRequest,
   UsuarioResponse,
-} from '../../../core/shared/domain/models/common.models';
+} from '../shared/domain/models/common.models';
 import { Observable, of, throwError } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

@@ -2,15 +2,15 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { RegistroPage } from './registro-page';
-import { UsuariosApi } from '../infrastructure/usuarios-api';
-import { ClientesApi } from '../../clientes/infrastructure/clientes-api';
-import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
-import { ProveedoresApi } from '../../proveedores/infrastructure/proveedores-api';
-import { ProveedorRegistroService } from '../../proveedores/infrastructure/proveedor-registro.service';
-import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
-import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { UsuarioResponse } from '../../../core/shared/domain/models/common.models';
+import { UsuariosApi } from '../../core/service/usuarios-api';
+import { ClientesApi } from '../../modules/clientes/infrastructure/clientes-api';
+import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { ProveedoresApi } from '../../modules/proveedores/infrastructure/proveedores-api';
+import { ProveedorRegistroService } from '../../modules/proveedores/infrastructure/proveedor-registro.service';
+import { ApiConfig } from '../../core/shared/infrastructure/api/api.config';
+import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
+import { ToastService } from '../../core/shared/presentation/toast.service';
+import { UsuarioResponse } from '../../core/shared/domain/models/common.models';
 
 const usuario: UsuarioResponse = {
   id: 3,

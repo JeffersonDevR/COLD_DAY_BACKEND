@@ -10,19 +10,19 @@ export const routes: Routes = [
   {
     path: 'login',
     canActivate: [guestGuard],
-    loadComponent: () => import('./modules/usuarios/presentation/login-page').then(m => m.LoginPage),
+    loadComponent: () => import('./pages/login-page/login-page').then(m => m.LoginPage),
     title: 'Ingreso al Sistema - COLD DAY'
   },
   {
     path: 'registro',
     canActivate: [guestGuard],
-    loadComponent: () => import('./modules/usuarios/presentation/registro-page').then(m => m.RegistroPage),
+    loadComponent: () => import('./pages/registro-page/registro-page').then(m => m.RegistroPage),
     title: 'Registro de Cuenta - COLD DAY'
   },
   {
     path: 'recuperar',
     canActivate: [guestGuard],
-    loadComponent: () => import('./modules/usuarios/presentation/recuperar-page').then(m => m.RecuperarPage),
+    loadComponent: () => import('./pages/recuperar-page/recuperar-page').then(m => m.RecuperarPage),
     title: 'Recuperar Contraseña - COLD DAY'
   },
 
