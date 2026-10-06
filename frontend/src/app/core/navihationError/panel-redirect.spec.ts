@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PanelRedirectComponent } from './panel-redirect';
-import { AuthService } from '../infrastructure/auth/auth.service';
-import { Rol, UsuarioResponse } from '../../models/common.models';
+import { AuthService } from '../shared/infrastructure/auth/auth.service';
+import { Rol, UsuarioResponse } from '../models/common.models';
 
 function usuario(rol: Rol): UsuarioResponse {
   return { id: 1, nombre: 'Test', correo: 't@x.co', rol, habeasDataAceptado: true, activo: true };

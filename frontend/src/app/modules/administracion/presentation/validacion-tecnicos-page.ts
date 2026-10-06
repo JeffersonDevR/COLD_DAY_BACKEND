@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { TecnicoResponse } from '../../../core/models/common.models';
 
 @Component({

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { SelectButton } from 'primeng/selectbutton';
 import { ToggleSwitch } from 'primeng/toggleswitch';
-import { ThemeService, ThemePresetName } from '../../core/shared/presentation/theme.service';
+import { ThemeService, ThemePresetName } from '../../core/service/theme.service';
 import { LayoutService, MenuMode } from '../service/layout.service';
 
 @Component({

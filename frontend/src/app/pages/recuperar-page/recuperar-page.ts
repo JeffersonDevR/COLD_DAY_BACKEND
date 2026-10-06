@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UsuariosApi } from '../../core/service/usuarios-api';
-import { ToastService } from '../../core/shared/presentation/toast.service';
+import { ToastService } from '../../core/alertas/toast.service';
 
 @Component({
   selector: 'app-recuperar-page',

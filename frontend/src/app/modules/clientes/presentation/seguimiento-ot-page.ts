@@ -11,7 +11,7 @@ import { OtApi } from '../../ot/infrastructure/ot-api';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrastructure/ot-carga';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { OtTimeline } from '../../ot/components/ot-timeline';
 import { MapaRadar } from '../../ot/components/mapa-radar';
 import { CargoVisitaDiagnostico } from '../../ot/components/cargo-visita';

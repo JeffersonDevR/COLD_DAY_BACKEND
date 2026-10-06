@@ -9,7 +9,7 @@ import { TecnicoTrackingService } from '../infrastructure/tecnico-tracking.servi
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { OtResponse } from '../../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {

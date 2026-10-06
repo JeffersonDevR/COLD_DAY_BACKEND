@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { AppTopbar } from './app-topbar';
 import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
-import { ThemeService } from '../../core/shared/presentation/theme.service';
-import { ToastService } from '../../core/shared/presentation/toast.service';
+import { ThemeService } from '../../core/service/theme.service';
+import { ToastService } from '../../core/alertas/toast.service';
 import { LayoutService } from '../service/layout.service';
 import { UsuarioResponse } from '../../core/models/common.models';
 

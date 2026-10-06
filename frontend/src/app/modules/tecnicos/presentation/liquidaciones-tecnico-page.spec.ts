@@ -5,7 +5,7 @@ import { LiquidacionesTecnicoPage } from './liquidaciones-tecnico-page';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { LiquidacionResponse, TecnicoResponse } from '../../../core/models/common.models';
 
 function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionResponse {

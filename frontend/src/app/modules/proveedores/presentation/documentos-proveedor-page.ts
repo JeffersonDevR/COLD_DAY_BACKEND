@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ProveedoresApi } from '../infrastructure/proveedores-api';
 import { ProveedorRegistroService } from '../infrastructure/proveedor-registro.service';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import {
   DocumentoProveedorResponse,
   EstadoValidacionProveedor,

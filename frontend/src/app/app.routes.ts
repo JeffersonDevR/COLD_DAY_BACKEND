@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/shared/infrastructure/auth/auth.guard';
 import { guestGuard } from './core/shared/infrastructure/auth/guest.guard';
 import { roleGuard } from './core/shared/infrastructure/auth/role.guard';
-import { PanelRedirectComponent } from './core/shared/presentation/panel-redirect';
+import { PanelRedirectComponent } from './core/navihationError/panel-redirect';
 
 export const routes: Routes = [
   // La landing pública vive en un proyecto separado (landing/); la app arranca en login.

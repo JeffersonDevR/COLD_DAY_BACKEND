@@ -3,7 +3,7 @@ import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { RecuperarPage } from './recuperar-page';
 import { UsuariosApi } from '../../core/service/usuarios-api';
-import { ToastService } from '../../core/shared/presentation/toast.service';
+import { ToastService } from '../../core/alertas/toast.service';
 
 function setup(solicitar: ReturnType<typeof vi.fn>, reset: ReturnType<typeof vi.fn>) {
   const toast = { info: vi.fn(), success: vi.fn(), error: vi.fn() };

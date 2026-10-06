@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { AppConfigurator } from './app-configurator';
-import { ThemeService } from '../../core/shared/presentation/theme.service';
+import { ThemeService } from '../../core/service/theme.service';
 import { LayoutService } from '../service/layout.service';
 
 function themeMock() {

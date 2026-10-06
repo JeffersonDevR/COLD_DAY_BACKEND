@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { ApiError } from '../../../models/common.models';
 import { AuthService } from '../auth/auth.service';
-import { ToastService } from '../../presentation/toast.service';
+import { ToastService } from '../../../alertas/toast.service';
 
 /**
  * Error normalizado para la UI. Conserva el status HTTP y los `fieldErrors`

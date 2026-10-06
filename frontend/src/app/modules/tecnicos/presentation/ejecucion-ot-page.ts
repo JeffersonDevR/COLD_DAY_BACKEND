@@ -9,7 +9,7 @@ import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrastructure/ot-carga';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { OtResponse, MedioPago } from '../../../core/models/common.models';
 

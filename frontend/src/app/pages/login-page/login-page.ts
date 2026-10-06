@@ -6,8 +6,8 @@ import { Password } from 'primeng/password';
 import { Button } from 'primeng/button';
 import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
 import { UsuariosApi } from '../../core/service/usuarios-api';
-import { ToastService } from '../../core/shared/presentation/toast.service';
-import { ThemeService } from '../../core/shared/presentation/theme.service';
+import { ToastService } from '../../core/alertas/toast.service';
+import { ThemeService } from '../../core/service/theme.service';
 
 import { Rol } from '../../core/models/common.models';
 

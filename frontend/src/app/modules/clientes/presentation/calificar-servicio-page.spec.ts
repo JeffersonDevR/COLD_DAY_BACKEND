@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { CalificarServicioPage } from './calificar-servicio-page';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { OtResponse } from '../../../core/models/common.models';
 
 const orden: OtResponse = {

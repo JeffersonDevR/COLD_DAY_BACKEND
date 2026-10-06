@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import { ToastService } from '../../presentation/toast.service';
+import { ToastService } from '../../../alertas/toast.service';
 import { Rol, UsuarioResponse } from '../../../models/common.models';
 
 const TOKEN_KEY = 'coldday.token';

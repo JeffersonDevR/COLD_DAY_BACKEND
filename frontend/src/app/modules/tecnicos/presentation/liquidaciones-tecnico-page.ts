@@ -6,7 +6,7 @@ import { AuthService } from '../../../core/shared/infrastructure/auth/auth.servi
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { EstadoLiquidacion, LiquidacionResponse, TecnicoResponse } from '../../../core/models/common.models';
 import { environment } from '../../../../environments/environment';
 

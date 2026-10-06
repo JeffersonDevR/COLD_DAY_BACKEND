@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { SolicitarServicioPage } from './solicitar-servicio-page';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { GeolocationService } from '../../../core/shared/infrastructure/geolocation/geolocation.service';
 import { OtResponse } from '../../../core/models/common.models';

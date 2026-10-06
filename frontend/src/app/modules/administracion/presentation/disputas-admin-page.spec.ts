@@ -4,7 +4,7 @@ import { of } from 'rxjs';
 import { DisputasAdminPage } from './disputas-admin-page';
 import { AdminApi } from '../infrastructure/admin-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { DisputaResponse } from '../../../core/models/common.models';
 
 const disputa: DisputaResponse = {

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ProveedoresApi } from '../infrastructure/proveedores-api';
-import { ToastService } from '../../../core/shared/presentation/toast.service';
+import { ToastService } from '../../../core/alertas/toast.service';
 import { ApiHttpError } from '../../../core/shared/infrastructure/api/error.interceptor';
 import {
   EstadoRequerimiento,

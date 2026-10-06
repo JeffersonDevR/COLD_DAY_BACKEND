@@ -10,7 +10,7 @@ import { ProveedoresApi } from '../../modules/proveedores/infrastructure/proveed
 import { ProveedorRegistroService } from '../../modules/proveedores/infrastructure/proveedor-registro.service';
 import { ApiConfig } from '../../core/shared/infrastructure/api/api.config';
 import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
-import { ToastService } from '../../core/shared/presentation/toast.service';
+import { ToastService } from '../../core/alertas/toast.service';
 import { Rol, CategoriaServicio, TokenResponse } from '../../core/models/common.models';
 
 @Component({
