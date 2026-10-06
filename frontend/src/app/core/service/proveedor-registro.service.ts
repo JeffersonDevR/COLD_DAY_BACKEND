@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { EstadoValidacionProveedor } from '../../../core/models/common.models';
+import { EstadoValidacionProveedor } from '../models/common.models';
 
 /**
  * Recordatorio del alta para el portal del proveedor.
