@@ -3,9 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { ClientesApi } from './clientes-api';
-import { ApiConfig } from '../../../core/service/api.config';
-import { OtApiResponse } from '../../../core/models/backend.dto';
-import { OtRequest } from '../../../core/models/common.models';
+import { ApiConfig } from './api.config';
+import { OtApiResponse } from '../models/backend.dto';
+import { OtRequest } from '../models/common.models';
 
 function otDto(overrides: Partial<OtApiResponse> = {}): OtApiResponse {
   return {

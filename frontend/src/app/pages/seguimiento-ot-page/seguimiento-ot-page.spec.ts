@@ -2,14 +2,14 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { SeguimientoOtPage } from './seguimiento-ot-page';
-import { ClientesApi } from '../infrastructure/clientes-api';
-import { OtApi } from '../../ot/infrastructure/ot-api';
-import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
-import { MapsApi } from '../../../core/service/maps-api';
-import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/service/mock-db.service';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { OtResponse } from '../../../core/models/common.models';
+import { ClientesApi } from '../../core/service/clientes-api';
+import { OtApi } from '../../modules/ot/infrastructure/ot-api';
+import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { MapsApi } from '../../core/service/maps-api';
+import { ApiConfig } from '../../core/service/api.config';
+import { MockDbService } from '../../core/service/mock-db.service';
+import { ToastService } from '../../core/alertas/toast.service';
+import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',

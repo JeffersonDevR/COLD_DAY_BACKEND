@@ -2,10 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { CalificarServicioPage } from './calificar-servicio-page';
-import { ClientesApi } from '../infrastructure/clientes-api';
-import { OtApi } from '../../ot/infrastructure/ot-api';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { OtResponse } from '../../../core/models/common.models';
+import { ClientesApi } from '../../core/service/clientes-api';
+import { OtApi } from '../../modules/ot/infrastructure/ot-api';
+import { ToastService } from '../../core/alertas/toast.service';
+import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',

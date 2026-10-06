@@ -2,9 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { PagoActaPage } from './pago-acta-page';
-import { OtApi } from '../../ot/infrastructure/ot-api';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { ActaGarantia, OtResponse } from '../../../core/models/common.models';
+import { OtApi } from '../../modules/ot/infrastructure/ot-api';
+import { ToastService } from '../../core/alertas/toast.service';
+import { ActaGarantia, OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',

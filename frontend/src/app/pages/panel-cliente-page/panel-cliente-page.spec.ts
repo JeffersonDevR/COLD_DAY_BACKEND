@@ -2,9 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { PanelClientePage } from './panel-cliente-page';
-import { ClientesApi } from '../infrastructure/clientes-api';
-import { AuthService } from '../../../core/service/auth.service';
-import { OtResponse } from '../../../core/models/common.models';
+import { ClientesApi } from '../../core/service/clientes-api';
+import { AuthService } from '../../core/service/auth.service';
+import { OtResponse } from '../../core/models/common.models';
 
 function ot(overrides: Partial<OtResponse>): OtResponse {
   return {

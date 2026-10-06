@@ -37,43 +37,43 @@ export const routes: Routes = [
   {
     path: 'cliente/panel',
     canActivate: [authGuard, roleGuard(['CLIENTE', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/clientes/presentation/panel-cliente-page').then(m => m.PanelClientePage),
+    loadComponent: () => import('./pages/panel-cliente-page/panel-cliente-page').then(m => m.PanelClientePage),
     title: 'Panel Cliente - COLD DAY'
   },
   {
     path: 'cliente/solicitar',
     canActivate: [authGuard, roleGuard(['CLIENTE', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/clientes/presentation/solicitar-servicio-page').then(m => m.SolicitarServicioPage),
+    loadComponent: () => import('./pages/solicitar-servicio-page/solicitar-servicio-page').then(m => m.SolicitarServicioPage),
     title: 'Solicitar Servicio Técnico - COLD DAY'
   },
   {
     path: 'cliente/ot/:id',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/seguimiento-ot-page').then(m => m.SeguimientoOtPage),
+    loadComponent: () => import('./pages/seguimiento-ot-page/seguimiento-ot-page').then(m => m.SeguimientoOtPage),
     title: 'Seguimiento de Orden de Trabajo'
   },
   {
     path: 'cliente/ot/:id/diagnostico',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/diagnostico-ot-page').then(m => m.DiagnosticoOtPage),
+    loadComponent: () => import('./pages/diagnostico-ot-page/diagnostico-ot-page').then(m => m.DiagnosticoOtPage),
     title: 'Aprobación de Presupuesto - COLD DAY'
   },
   {
     path: 'cliente/ot/:id/pago',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/pago-acta-page').then(m => m.PagoActaPage),
+    loadComponent: () => import('./pages/pago-acta-page/pago-acta-page').then(m => m.PagoActaPage),
     title: 'Acta de Entrega y Pago - COLD DAY'
   },
   {
     path: 'cliente/ot/:id/calificar',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/calificar-servicio-page').then(m => m.CalificarServicioPage),
+    loadComponent: () => import('./pages/calificar-servicio-page/calificar-servicio-page').then(m => m.CalificarServicioPage),
     title: 'Calificar Servicio - COLD DAY'
   },
   {
     path: 'cliente/equipos',
     canActivate: [authGuard],
-    loadComponent: () => import('./modules/clientes/presentation/historial-equipos-page').then(m => m.HistorialEquiposPage),
+    loadComponent: () => import('./pages/historial-equipos-page/historial-equipos-page').then(m => m.HistorialEquiposPage),
     title: 'Hoja de Vida de Equipos - COLD DAY'
   },
 

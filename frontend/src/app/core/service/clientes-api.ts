@@ -1,16 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/service/mock-db.service';
-import { DisputaResponse, MedioPago, OtRequest, OtResponse } from '../../../core/models/common.models';
+import { ApiConfig } from './api.config';
+import { MockDbService } from './mock-db.service';
+import { DisputaResponse, MedioPago, OtRequest, OtResponse } from '../models/common.models';
 import {
   ClienteApiRequest,
   ClienteApiResponse,
   DisputaApiResponse,
   OtApiResponse,
   UbicacionApiRequest,
-} from '../../../core/models/backend.dto';
-import { aDisputaResponse, aOtApiRequest, aOtResponse } from '../../../core/service/backend.mappers';
+} from '../models/backend.dto';
+import { aDisputaResponse, aOtApiRequest, aOtResponse } from './backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

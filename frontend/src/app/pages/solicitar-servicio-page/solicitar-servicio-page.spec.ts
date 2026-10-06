@@ -2,12 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { SolicitarServicioPage } from './solicitar-servicio-page';
-import { ClientesApi } from '../infrastructure/clientes-api';
-import { AuthService } from '../../../core/service/auth.service';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { MapsApi } from '../../../core/service/maps-api';
-import { GeolocationService } from '../../../core/service/geolocation.service';
-import { OtResponse } from '../../../core/models/common.models';
+import { ClientesApi } from '../../core/service/clientes-api';
+import { AuthService } from '../../core/service/auth.service';
+import { ToastService } from '../../core/alertas/toast.service';
+import { MapsApi } from '../../core/service/maps-api';
+import { GeolocationService } from '../../core/service/geolocation.service';
+import { OtResponse } from '../../core/models/common.models';
 
 const nuevaOt: OtResponse = {
   id: 'OT-99',
