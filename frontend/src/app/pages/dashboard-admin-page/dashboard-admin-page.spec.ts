@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { DashboardAdminPage } from './dashboard-admin-page';
-import { AdminApi } from '../infrastructure/admin-api';
-import { MetricasAdminResponse } from '../../../core/models/common.models';
+import { AdminApi } from '../../core/service/admin-api';
+import { MetricasAdminResponse } from '../../core/models/common.models';
 
 const metricas: MetricasAdminResponse = {
   serviciosEnEjecucion: 4,

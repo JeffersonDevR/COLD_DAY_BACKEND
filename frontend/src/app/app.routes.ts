@@ -113,37 +113,37 @@ export const routes: Routes = [
   {
     path: 'admin/dashboard',
     canActivate: [authGuard, roleGuard(['ADMINISTRADOR', 'CONTABLE'])],
-    loadComponent: () => import('./modules/administracion/presentation/dashboard-admin-page').then(m => m.DashboardAdminPage),
+    loadComponent: () => import('./pages/dashboard-admin-page/dashboard-admin-page').then(m => m.DashboardAdminPage),
     title: 'Torre de Control Administrativa - COLD DAY'
   },
   {
     path: 'admin/validacion-tecnicos',
     canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/administracion/presentation/validacion-tecnicos-page').then(m => m.ValidacionTecnicosPage),
+    loadComponent: () => import('./pages/validacion-tecnicos-page/validacion-tecnicos-page').then(m => m.ValidacionTecnicosPage),
     title: 'Auditoría de Técnicos - COLD DAY'
   },
   {
     path: 'admin/consignaciones',
     canActivate: [authGuard, roleGuard(['ADMINISTRADOR', 'CONTABLE'])],
-    loadComponent: () => import('./modules/administracion/presentation/consignaciones-admin-page').then(m => m.ConsignacionesAdminPage),
+    loadComponent: () => import('./pages/consignaciones-admin-page/consignaciones-admin-page').then(m => m.ConsignacionesAdminPage),
     title: 'Conciliación de Consignaciones - COLD DAY'
   },
   {
     path: 'admin/disputas',
     canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/administracion/presentation/disputas-admin-page').then(m => m.DisputasAdminPage),
+    loadComponent: () => import('./pages/disputas-admin-page/disputas-admin-page').then(m => m.DisputasAdminPage),
     title: 'Mesa de Mediación - COLD DAY'
   },
   {
     path: 'admin/monitoreo',
     canActivate: [authGuard, roleGuard(['ADMINISTRADOR', 'CONTABLE'])],
-    loadComponent: () => import('./modules/administracion/presentation/monitoreo-ot-page').then(m => m.MonitoreoOtPage),
+    loadComponent: () => import('./pages/monitoreo-ot-page/monitoreo-ot-page').then(m => m.MonitoreoOtPage),
     title: 'Monitoreo Global de OTs - COLD DAY'
   },
   {
     path: 'admin/proveedores',
     canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
-    loadComponent: () => import('./modules/administracion/presentation/proveedores-admin-page').then(m => m.ProveedoresAdminPage),
+    loadComponent: () => import('./pages/proveedores-admin-page/proveedores-admin-page').then(m => m.ProveedoresAdminPage),
     title: 'Proveedores Auxiliares - COLD DAY'
   },
 

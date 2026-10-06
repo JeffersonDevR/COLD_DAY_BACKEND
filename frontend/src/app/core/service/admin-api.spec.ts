@@ -3,9 +3,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { AdminApi } from './admin-api';
-import { ApiConfig } from '../../../core/service/api.config';
-import { MockDbService } from '../../../core/service/mock-db.service';
-import { MetricasAdminApiResponse } from '../../../core/models/backend.dto';
+import { ApiConfig } from './api.config';
+import { MockDbService } from './mock-db.service';
+import { MetricasAdminApiResponse } from '../models/backend.dto';
 
 function metricasDto(): MetricasAdminApiResponse {
   return {

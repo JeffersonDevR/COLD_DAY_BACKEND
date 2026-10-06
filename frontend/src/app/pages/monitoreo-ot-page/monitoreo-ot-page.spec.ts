@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { MonitoreoOtPage } from './monitoreo-ot-page';
-import { AdminApi } from '../infrastructure/admin-api';
-import { OtResponse } from '../../../core/models/common.models';
+import { AdminApi } from '../../core/service/admin-api';
+import { OtResponse } from '../../core/models/common.models';
 
 function ot(overrides: Partial<OtResponse>): OtResponse {
   return {
