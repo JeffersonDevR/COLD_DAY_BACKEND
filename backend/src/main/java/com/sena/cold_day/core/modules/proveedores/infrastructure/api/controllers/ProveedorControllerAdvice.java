@@ -2,6 +2,8 @@ package com.sena.cold_day.core.modules.proveedores.infrastructure.api.controller
 
 import java.util.List;
 
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,9 @@ import com.sena.cold_day.core.shared.errors.ApiError;
  * no supplier account is half-created.
  */
 @RestControllerAdvice(assignableTypes = ProveedorController.class)
+// Must outrank the global fallback for its own controller: both map
+// DataIntegrityViolationException, and equal @Order resolution is arbitrary.
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class ProveedorControllerAdvice {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
