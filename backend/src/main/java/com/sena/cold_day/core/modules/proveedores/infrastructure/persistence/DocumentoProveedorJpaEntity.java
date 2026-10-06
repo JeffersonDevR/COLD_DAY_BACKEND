@@ -1,7 +1,6 @@
 package com.sena.cold_day.core.modules.proveedores.infrastructure.persistence;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;

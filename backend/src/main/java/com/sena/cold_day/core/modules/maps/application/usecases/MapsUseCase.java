@@ -84,6 +84,8 @@ public class MapsUseCase {
         try {
             return maps.distancia(o.latitud(), o.longitud(), d.latitud(), d.longitud());
         } catch (RuntimeException ex) {
+            // ex es intencionalmente no usado: este método nunca debe lanzar
+            // excepción, así que se traga y se devuelve Optional.empty().
             return Optional.empty();
         }
     }
