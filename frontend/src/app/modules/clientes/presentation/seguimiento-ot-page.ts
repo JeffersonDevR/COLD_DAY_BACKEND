@@ -16,7 +16,7 @@ import { OtTimeline } from '../../ot/components/ot-timeline';
 import { MapaRadar } from '../../ot/components/mapa-radar';
 import { CargoVisitaDiagnostico } from '../../ot/components/cargo-visita';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/models/common.models';
+import { OtResponse, Point, TecnicoCercano, MedioPago } from '../../../core/shared/domain/models/common.models';
 
 @Component({
   selector: 'app-seguimiento-ot-page',
@@ -107,6 +107,71 @@ import { OtResponse, Point, TecnicoCercano } from '../../../core/shared/domain/m
             }
           </div>
         </div>
+
+        <!-- RF-F1-26: pago de la visita para reabrir el despacho tras rechazar el presupuesto -->
+        @if (puedePagarVisita()) {
+          <div class="p-5 rounded-3xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
+                <i class="pi pi-wallet"></i>
+              </div>
+              <div class="space-y-0.5">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Pagar la Visita y Reabrir el Despacho</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Quedó pendiente la tarifa de visita. Al pagarla, la orden vuelve a buscar un técnico disponible.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Medio de pago:</span>
+              <button
+                type="button"
+                (click)="medioPagoVisita.set('EFECTIVO')"
+                [class.bg-amber-600]="medioPagoVisita() === 'EFECTIVO'"
+                [class.border-amber-600]="medioPagoVisita() === 'EFECTIVO'"
+                [class.text-white]="medioPagoVisita() === 'EFECTIVO'"
+                [class.bg-white]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.dark:bg-slate-900]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.border-slate-300]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.dark:border-slate-700]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.text-slate-700]="medioPagoVisita() !== 'EFECTIVO'"
+                [class.dark:text-slate-200]="medioPagoVisita() !== 'EFECTIVO'"
+                class="px-3.5 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+              >
+                <i class="pi pi-money-bill text-sm"></i>
+                Efectivo
+              </button>
+              <button
+                type="button"
+                (click)="medioPagoVisita.set('TRANSFERENCIA')"
+                [class.bg-amber-600]="medioPagoVisita() === 'TRANSFERENCIA'"
+                [class.border-amber-600]="medioPagoVisita() === 'TRANSFERENCIA'"
+                [class.text-white]="medioPagoVisita() === 'TRANSFERENCIA'"
+                [class.bg-white]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.dark:bg-slate-900]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.border-slate-300]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.dark:border-slate-700]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.text-slate-700]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                [class.dark:text-slate-200]="medioPagoVisita() !== 'TRANSFERENCIA'"
+                class="px-3.5 py-2 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+              >
+                <i class="pi pi-credit-card text-sm"></i>
+                Transferencia
+              </button>
+            </div>
+
+            <button
+              type="button"
+              [disabled]="pagandoVisita()"
+              (click)="pagarVisita()"
+              class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md inline-flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <i class="pi pi-check-circle text-sm"></i>
+              {{ pagandoVisita() ? 'Procesando pago...' : 'Pagar Visita y Reabrir Despacho' }}
+            </button>
+          </div>
+        }
 
         <!-- Radar de Búsqueda SVG (si está en SOLICITADA o BUSCANDO_TECNICO) -->
         @if (orden.estado === 'SOLICITADA' || orden.estado === 'BUSCANDO_TECNICO') {
@@ -382,6 +447,19 @@ export class SeguimientoOtPage implements OnInit {
   readonly mostrarModalDisputa = signal<boolean>(false);
   readonly motivoDisputaControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
+  /** RF-F1-26: medio de pago de la visita y estado de la petición. */
+  readonly medioPagoVisita = signal<MedioPago>('EFECTIVO');
+  readonly pagandoVisita = signal<boolean>(false);
+
+  /**
+   * El pago de la visita solo aplica cuando el presupuesto quedó rechazado:
+   * `CANCELADA` contra el backend real y `DISPUTADA` en el MockDb.
+   */
+  readonly puedePagarVisita = computed<boolean>(() => {
+    const estado = this.ot()?.estado;
+    return estado === 'CANCELADA' || estado === 'DISPUTADA';
+  });
+
   ngOnInit(): void {
     cargarOtDesdeRuta(
       this.route,
@@ -495,6 +573,24 @@ export class SeguimientoOtPage implements OnInit {
         this.recargarOt();
       },
       error: (err: Error) => this.toast.error('No se pudo abrir la disputa', err.message),
+    });
+  }
+
+  /** RF-F1-26: paga la tarifa de visita y reabre el despacho. */
+  pagarVisita(): void {
+    if (this.pagandoVisita()) return;
+
+    this.pagandoVisita.set(true);
+    this.clientesApi.pagarVisita(this.otId(), this.medioPagoVisita()).subscribe({
+      next: () => {
+        this.pagandoVisita.set(false);
+        this.toast.success('Visita Pagada', 'Despacho reabierto: buscando un técnico disponible.');
+        this.recargarOt();
+      },
+      error: (err: Error) => {
+        this.pagandoVisita.set(false);
+        this.toast.error('No se pudo pagar la visita', err.message);
+      },
     });
   }
 }

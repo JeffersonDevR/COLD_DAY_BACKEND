@@ -233,6 +233,13 @@ export interface DocumentoProveedorApiResponse {
   fechaVencimiento: string | null;
 }
 
+/** ValidacionProveedorApiRequest.java: espeja ValidacionTecnicoApiRequest. */
+export interface ValidacionProveedorApiRequest {
+  /** El backend aprueba SOLO con "APROBAR"; cualquier otro valor rechaza. */
+  accion: 'APROBAR' | 'RECHAZAR';
+  motivo?: string;
+}
+
 /* ------------------------------------------------------------------ */
 /* ot                                                                  */
 /* ------------------------------------------------------------------ */

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
-import { DisputaResponse, OtRequest, OtResponse } from '../../../core/shared/domain/models/common.models';
+import { DisputaResponse, MedioPago, OtRequest, OtResponse } from '../../../core/shared/domain/models/common.models';
 import {
   ClienteApiRequest,
   ClienteApiResponse,
@@ -13,7 +13,6 @@ import {
 import { aDisputaResponse, aOtApiRequest, aOtResponse } from '../../../core/shared/infrastructure/api/backend.mappers';
 import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
-import { pendienteBackend } from '../../../core/shared/infrastructure/api/pendiente-backend';
 
 @Injectable({
   providedIn: 'root'
@@ -109,8 +108,8 @@ export class ClientesApi {
   }
 
   /**
-   * Placeholder de mutación: el backend NO expone POST /api/ot/{id}/calificar.
-   * Pendiente(backend): falta la calificación del servicio; la mutación lanza.
+   * POST /api/ot/{id}/calificar con {estrellas, comentario}; solo el cliente dueño
+   * de la OT (rol CLIENTE) puede calificar. El backend responde OtApiResponse.
    */
   calificarServicio(otId: string, estrellas: number, comentario: string): Observable<void> {
     if (this.apiConfig.useMocks()) {
@@ -118,7 +117,23 @@ export class ClientesApi {
       return of(undefined).pipe(delay(300));
     }
 
-    return pendienteBackend('calificación del servicio (POST /api/ot/{id}/calificar)');
+    return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/calificar`), { estrellas, comentario });
+  }
+
+  /**
+   * POST /api/ot/{id}/pagar-visita con {medioPago}: el cliente dueño de la OT
+   * paga la tarifa de visita, lo que reabre el despacho tras rechazar el
+   * presupuesto (RF-F1-26). Una segunda llamada se rechaza como doble cobro.
+   *
+   * En modo mock el MockDb no modela esta operación: es un no-op que solo
+   * simula el retardo de red.
+   */
+  pagarVisita(otId: string, medioPago: MedioPago): Observable<void> {
+    if (this.apiConfig.useMocks()) {
+      return of(undefined).pipe(delay(300));
+    }
+
+    return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/pagar-visita`), { medioPago });
   }
 
   /**

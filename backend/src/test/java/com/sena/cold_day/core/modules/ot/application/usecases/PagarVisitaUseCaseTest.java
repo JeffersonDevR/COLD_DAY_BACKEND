@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,10 +19,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
@@ -67,5 +70,30 @@ class PagarVisitaUseCaseTest {
         assertThat(resultado.visitaPagada()).isTrue();
         assertThat(resultado.medioPagoVisita()).isEqualTo("TARJETA");
         verify(iniciarBusqueda).iniciar(ot);
+    }
+
+    @Test
+    void reabreElDespachoDeUnaOtCanceladaPorRechazoTrasCobrarLaVisita() {
+        UsuarioId usuarioId = new UsuarioId(9L);
+        Ot ot = Ot.crear(ClienteId.nueva(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+                "Calle 1", new Point(7.89, -72.49), AHORA);
+        ot.iniciarBusqueda(10.0, AHORA.plusSeconds(60), ActorOt.CLIENTE, AHORA);
+        ot.cancelar(ActorOt.CLIENTE, MotivoCancelacion.RECHAZO_PRESUPUESTO, "Presupuesto alto",
+                AHORA.plusSeconds(10), null);
+
+        when(clienteRepository.findByUsuarioId(usuarioId)).thenReturn(Optional.of(cliente));
+        when(cliente.getId()).thenReturn(ot.getClienteId());
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(otRepository.save(ot)).thenReturn(ot);
+
+        var resultado = useCase.pagar(usuarioId, ot.getId(), "NEQUI");
+
+        assertThat(resultado.estado()).isEqualTo(EstadoOt.BUSCANDO_TECNICO);
+        assertThat(resultado.visitaPagada()).isTrue();
+        assertThat(ot.getMotivoCancelacion()).isNull();
+        // La reapertura no puede tomar el camino generico: reusa el primitivo
+        // de oferta con el radio inicial para reabrir la ventana de despacho.
+        verify(iniciarBusqueda).ofrecer(ot, IniciarBusquedaTecnicoUseCase.RADIO_INICIAL_KM, AHORA);
+        verify(iniciarBusqueda, never()).iniciar(ot);
     }
 }

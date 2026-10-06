@@ -68,12 +68,12 @@ describe('CalificarServicioPage', () => {
     expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'ot1']);
   });
 
-  it('muestra error si la calificación no está disponible', () => {
-    const calificar = vi.fn(() => throwError(() => new Error('pendiente backend')));
+  it('muestra error si la calificación falla en el backend', () => {
+    const calificar = vi.fn(() => throwError(() => new Error('Solo se puede calificar una OT FINALIZADA')));
     const { fixture, toast } = setup(calificar);
 
     fixture.componentInstance.enviarCalificacion();
 
-    expect(toast.error).toHaveBeenCalledWith('Calificación no disponible', 'pendiente backend');
+    expect(toast.error).toHaveBeenCalledWith('Calificación no disponible', 'Solo se puede calificar una OT FINALIZADA');
   });
 });

@@ -38,7 +38,10 @@ class TransicionesOtTest {
                 Arguments.of(EstadoOt.EN_REPARACION, EstadoOt.FINALIZADA),
                 Arguments.of(EstadoOt.EN_REPARACION, EstadoOt.DISPUTADA),
                 Arguments.of(EstadoOt.DISPUTADA, EstadoOt.FINALIZADA),
-                Arguments.of(EstadoOt.DISPUTADA, EstadoOt.CANCELADA));
+                Arguments.of(EstadoOt.DISPUTADA, EstadoOt.CANCELADA),
+                // RF-F1-20/26: unico borde de salida de CANCELADA, reservado a
+                // la reapertura por pago de visita (guarda en el agregado).
+                Arguments.of(EstadoOt.CANCELADA, EstadoOt.BUSCANDO_TECNICO));
     }
 
     @ParameterizedTest(name = "{0} -> {1} is legal")
@@ -63,13 +66,28 @@ class TransicionesOtTest {
 
     @Test
     void terminalStatesHaveNoAllowedExit() {
-        List<EstadoOt> terminales = List.of(EstadoOt.FINALIZADA, EstadoOt.CANCELADA,
-                EstadoOt.SIN_TECNICOS_DISPONIBLES);
+        List<EstadoOt> terminales = List.of(EstadoOt.FINALIZADA, EstadoOt.SIN_TECNICOS_DISPONIBLES);
 
         for (EstadoOt terminal : terminales) {
             for (EstadoOt destino : EstadoOt.values()) {
                 assertThatThrownBy(() -> TransicionesOt.validar(terminal, destino))
                         .as("%s -> %s must be rejected", terminal, destino)
+                        .isInstanceOf(TransicionOtInvalidaException.class);
+            }
+        }
+    }
+
+    @Test
+    void canceladaOnlyExitsThroughThePaidVisitReopen() {
+        // CANCELADA dejo de ser estrictamente terminal: su unico destino legal
+        // es BUSCANDO_TECNICO, y la guarda de motivo/pago la aplica el agregado.
+        for (EstadoOt destino : EstadoOt.values()) {
+            if (destino == EstadoOt.BUSCANDO_TECNICO) {
+                assertThatCode(() -> TransicionesOt.validar(EstadoOt.CANCELADA, destino))
+                        .doesNotThrowAnyException();
+            } else {
+                assertThatThrownBy(() -> TransicionesOt.validar(EstadoOt.CANCELADA, destino))
+                        .as("CANCELADA -> %s must be rejected", destino)
                         .isInstanceOf(TransicionOtInvalidaException.class);
             }
         }

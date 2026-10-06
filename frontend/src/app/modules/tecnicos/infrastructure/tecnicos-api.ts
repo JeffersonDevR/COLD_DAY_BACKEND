@@ -216,18 +216,18 @@ export class TecnicosApi {
   }
 
   /**
-   * No-op documentado: el backend NO expone POST /api/ot/{id}/llegada.
-   * Pendiente(backend): la transición a EN_DIAGNOSTICO se alcanza al llamar a
-   * `registrarDiagnostico` (POST /api/ot/{otId}/diagnostico).
+   * POST /api/ot/{otId}/llegada (sin cuerpo): el backend registra el hecho de la
+   * llegada del técnico (`llegadaEn`) de forma idempotente. Es TECNICO-only y
+   * resuelve al técnico desde el principal. No cambia `estado`: la OT sigue en
+   * EN_CAMINO y avanza a EN_DIAGNOSTICO al registrar el diagnóstico
+   * (POST /api/ot/{otId}/diagnostico).
    */
   llegarADomicilio(otId: string): Observable<void> {
     if (this.apiConfig.useMocks()) {
       this.mockDb.avanzarEstadoOt(otId, 'EN_DIAGNOSTICO', 'TECNICO', 'Técnico ha llegado al domicilio y comienza diagnóstico');
       return of(undefined).pipe(delay(200));
     }
-    return pendienteBackend(
-      'POST /api/ot/{id}/llegada (la OT pasa a EN_DIAGNOSTICO al registrar el diagnóstico)',
-    );
+    return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/llegada`), null);
   }
 
   /** POST /api/ot/{otId}/diagnostico con el body normalizado al contrato del backend. */

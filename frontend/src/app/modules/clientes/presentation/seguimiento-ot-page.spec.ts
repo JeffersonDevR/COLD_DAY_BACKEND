@@ -28,6 +28,7 @@ function setup(ot: OtResponse = orden) {
   const clientesApi = {
     cancelarOt: vi.fn(() => of(undefined)),
     abrirDisputa: vi.fn(() => of({ id: 'd1' })),
+    pagarVisita: vi.fn(() => of(undefined)),
   };
   const otApi = {
     getOtById: vi.fn(() => of(ot)),
@@ -44,7 +45,7 @@ function setup(ot: OtResponse = orden) {
   const mapsApi = {
     distancia: vi.fn(() => of({ distanciaKm: 3.2, duracionMin: 8, distanciaTexto: '3.2 km', duracionTexto: '8 min' })),
   };
-  const toast = { info: vi.fn(), warning: vi.fn(), error: vi.fn() };
+  const toast = { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() };
   TestBed.configureTestingModule({
     imports: [SeguimientoOtPage],
     providers: [
@@ -63,7 +64,7 @@ function setup(ot: OtResponse = orden) {
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(SeguimientoOtPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, toast, navigate };
+  return { fixture, clientesApi, otApi, toast, navigate };
 }
 
 describe('SeguimientoOtPage', () => {
@@ -130,5 +131,39 @@ describe('SeguimientoOtPage', () => {
     fixture.componentInstance.actualizarRadio(15);
     expect(fixture.componentInstance.ot()?.radioBusquedaKm).toBe(15);
     expect(toast.info).toHaveBeenCalled();
+  });
+
+  it('oculta el pago de la visita cuando no hay presupuesto rechazado', () => {
+    expect(setup({ ...orden, estado: 'EN_CAMINO' }).fixture.componentInstance.puedePagarVisita()).toBe(false);
+  });
+
+  it('muestra el pago de la visita con el presupuesto rechazado (CANCELADA real)', () => {
+    expect(setup({ ...orden, estado: 'CANCELADA' }).fixture.componentInstance.puedePagarVisita()).toBe(true);
+  });
+
+  it('muestra el pago de la visita con la disputa del mock (DISPUTADA)', () => {
+    expect(setup({ ...orden, estado: 'DISPUTADA' }).fixture.componentInstance.puedePagarVisita()).toBe(true);
+  });
+
+  it('paga la visita con el medio elegido, avisa y recarga la OT', () => {
+    const { fixture, clientesApi, otApi, toast } = setup({ ...orden, estado: 'CANCELADA' });
+    fixture.componentInstance.medioPagoVisita.set('TRANSFERENCIA');
+
+    fixture.componentInstance.pagarVisita();
+
+    expect(clientesApi.pagarVisita).toHaveBeenCalledWith('ot1', 'TRANSFERENCIA');
+    expect(toast.success).toHaveBeenCalledWith('Visita Pagada', 'Despacho reabierto: buscando un técnico disponible.');
+    expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.pagandoVisita()).toBe(false);
+  });
+
+  it('reporta el error del backend al pagar la visita', () => {
+    const { fixture, clientesApi, toast } = setup({ ...orden, estado: 'CANCELADA' });
+    clientesApi.pagarVisita.mockReturnValue(throwError(() => new Error('doble cobro')));
+
+    fixture.componentInstance.pagarVisita();
+
+    expect(toast.error).toHaveBeenCalledWith('No se pudo pagar la visita', 'doble cobro');
+    expect(fixture.componentInstance.pagandoVisita()).toBe(false);
   });
 });

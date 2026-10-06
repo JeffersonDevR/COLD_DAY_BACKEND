@@ -222,8 +222,21 @@ describe('TecnicosApi', () => {
     expect(await alias).toBe(true);
   });
 
-  it('llegarADomicilio lanza en modo real (pendiente backend)', async () => {
-    await expect(firstValueFrom(api.llegarADomicilio('ot1'))).rejects.toThrow('Pendiente en el backend');
+  it('llegarADomicilio hace POST /api/ot/{id}/llegada sin cuerpo', async () => {
+    const promise = firstValueFrom(api.llegarADomicilio('ot1'));
+    const req = http.expectOne('/api/ot/ot1/llegada');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toBeNull();
+    req.flush(null);
+    await promise;
+  });
+
+  it('llegarADomicilio en modo mock avanza la OT a EN_DIAGNOSTICO', async () => {
+    config.setUseMocks(true);
+    const mockDb = TestBed.inject(MockDbService);
+    const otId = mockDb.ordenesTrabajo()[0].id;
+    await firstValueFrom(api.llegarADomicilio(otId));
+    expect(mockDb.ordenesTrabajo().find(o => o.id === otId)?.estado).toBe('EN_DIAGNOSTICO');
   });
 
   it('registrarDiagnostico, finalizarServicio y subirDocumento usan sus endpoints', async () => {

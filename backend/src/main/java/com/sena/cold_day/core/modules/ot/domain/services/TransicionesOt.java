@@ -9,7 +9,16 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 /**
  * Explicit OT transition table mirroring SRS §5.2 (design D1). A single
  * validated table keeps every guard and RNF-09 audit path in one place.
- * Terminal states have no outgoing transitions.
+ *
+ * <p>{@code CANCELADA} is no longer strictly terminal (RF-F1-20/26): its ONLY
+ * permitted exit is the paid-visit reopen ({@code CANCELADA -> BUSCANDO_TECNICO}).
+ * That edge is declared here, but it is deliberately permissive: a static table
+ * cannot express the cancellation motive, so the real business gate (motive
+ * {@code RECHAZO_PRESUPUESTO} plus a recorded visit payment) lives in
+ * {@code Ot.reabrirDespachoTrasPagoVisita}. The generic {@code Ot.iniciarBusqueda}
+ * refuses any origin other than {@code SOLICITADA}, so this permissive edge is
+ * unreachable except through that guarded method. {@code FINALIZADA} and
+ * {@code SIN_TECNICOS_DISPONIBLES} remain terminal.
  */
 public final class TransicionesOt {
 
@@ -24,7 +33,7 @@ public final class TransicionesOt {
             Map.entry(EstadoOt.EN_REPARACION, Set.of(EstadoOt.FINALIZADA, EstadoOt.DISPUTADA)),
             Map.entry(EstadoOt.DISPUTADA, Set.of(EstadoOt.FINALIZADA, EstadoOt.CANCELADA)),
             Map.entry(EstadoOt.FINALIZADA, Set.of()),
-            Map.entry(EstadoOt.CANCELADA, Set.of()),
+            Map.entry(EstadoOt.CANCELADA, Set.of(EstadoOt.BUSCANDO_TECNICO)),
             Map.entry(EstadoOt.SIN_TECNICOS_DISPONIBLES, Set.of()));
 
     private TransicionesOt() {

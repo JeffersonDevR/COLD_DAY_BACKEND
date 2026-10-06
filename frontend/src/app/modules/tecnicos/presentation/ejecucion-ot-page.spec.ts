@@ -30,6 +30,7 @@ function orden(overrides: Partial<OtResponse> = {}): OtResponse {
 function setup(opts: { useMocks?: boolean; ot?: OtResponse } = {}) {
   const tecnicosApi = {
     iniciarDesplazamiento: vi.fn(() => of(undefined)),
+    llegarADomicilio: vi.fn(() => of(undefined)),
     registrarDiagnostico: vi.fn(() => of(undefined)),
     finalizarServicio: vi.fn(() => of(undefined)),
   };
@@ -73,8 +74,9 @@ describe('EjecucionOtPage', () => {
   });
 
   it('registra la llegada a sitio', () => {
-    const { fixture, toast } = setup();
+    const { fixture, tecnicosApi, toast } = setup();
     fixture.componentInstance.llegarADomicilio();
+    expect(tecnicosApi.llegarADomicilio).toHaveBeenCalledWith('ot1');
     expect(fixture.componentInstance.enSitio()).toBe(true);
     expect(toast.success).toHaveBeenCalled();
   });
