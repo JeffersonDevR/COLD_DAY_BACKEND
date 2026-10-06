@@ -15,13 +15,14 @@ import {
   ProveedorApiRequest,
   ProveedorApiResponse,
   SolicitudInsumoApiResponse,
+  ValidacionProveedorApiRequest,
 } from '../../../core/shared/infrastructure/api/backend.dto';
 import {
   aOfertaInsumoResponse,
   aProveedorResponse,
   aSolicitudInsumoResponse,
 } from '../../../core/shared/infrastructure/api/backend.mappers';
-import { Observable, of } from 'rxjs';
+import { Observable, defer, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 
 /**
@@ -89,6 +90,38 @@ export class ProveedoresApi {
       .pipe(map(doc => ({ ...doc, fechaVencimiento: doc.fechaVencimiento ?? undefined })));
   }
 
+  /**
+   * GET /api/proveedores/{id}/documentos: expediente de un proveedor puntual para
+   * que un administrador lo revise antes de aprobar o rechazar su validacion.
+   * El mock no tiene expedientes por proveedor arbitrario, asi que responde un
+   * arreglo vacio; el alta y la consulta propia usan getMisDocumentos.
+   */
+  getDocumentos(proveedorId: string): Observable<DocumentoProveedorApiResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      return of([]).pipe(delay(250));
+    }
+    return this.http.get<DocumentoProveedorApiResponse[]>(
+      this.apiConfig.url(`/proveedores/${proveedorId}/documentos`));
+  }
+
+  /**
+   * PATCH /api/proveedores/{id}/validacion → aprueba o rechaza el expediente.
+   * El backend resuelve el proveedor por el id del path y exige rol ADMINISTRADOR;
+   * responde 204, por eso el Observable emite void. `motivo` solo viaja cuando
+   * viene informado (el rechazo lo lleva; la aprobacion no).
+   */
+  validarDocumentacion(proveedorId: string, accion: 'APROBAR' | 'RECHAZAR', motivo?: string): Observable<void> {
+    if (this.apiConfig.useMocks()) {
+      // El mock no modela el estado de validacion del proveedor: no-op documentado.
+      return of(undefined).pipe(delay(300));
+    }
+    const body: ValidacionProveedorApiRequest = { accion };
+    if (motivo) {
+      body.motivo = motivo;
+    }
+    return this.http.patch<void>(this.apiConfig.url(`/proveedores/${proveedorId}/validacion`), body);
+  }
+
   /** GET /api/proveedores/me/solicitudes → ofertas con su requerimiento embebido. */
   getMisSolicitudes(): Observable<OfertaInsumoResponse[]> {
     if (this.apiConfig.useMocks()) {
@@ -105,7 +138,7 @@ export class ProveedoresApi {
    */
   aceptar(ofertaId: string): Observable<SolicitudInsumoResponse> {
     if (this.apiConfig.useMocks()) {
-      return of(this.mockDb.aceptarInsumo(ofertaId)).pipe(delay(300));
+      return defer(() => of(this.mockDb.aceptarInsumo(ofertaId))).pipe(delay(300));
     }
     return this.http
       .post<SolicitudInsumoApiResponse>(this.apiConfig.url(`/insumos/${ofertaId}/aceptar`), null)
@@ -115,7 +148,7 @@ export class ProveedoresApi {
   /** POST /api/insumos/{ofertaId}/rechazar → oferta `RECHAZADO`, sin vincular. */
   rechazar(ofertaId: string): Observable<OfertaInsumoResponse> {
     if (this.apiConfig.useMocks()) {
-      return of(this.mockDb.rechazarInsumo(ofertaId)).pipe(delay(300));
+      return defer(() => of(this.mockDb.rechazarInsumo(ofertaId))).pipe(delay(300));
     }
     return this.http
       .post<OfertaInsumoApiResponse>(this.apiConfig.url(`/insumos/${ofertaId}/rechazar`), null)
@@ -128,7 +161,7 @@ export class ProveedoresApi {
    */
   entregar(requerimientoId: string): Observable<SolicitudInsumoResponse> {
     if (this.apiConfig.useMocks()) {
-      return of(this.mockDb.entregarInsumo(requerimientoId)).pipe(delay(300));
+      return defer(() => of(this.mockDb.entregarInsumo(requerimientoId))).pipe(delay(300));
     }
     return this.http
       .post<SolicitudInsumoApiResponse>(this.apiConfig.url(`/insumos/${requerimientoId}/entregar`), null)
