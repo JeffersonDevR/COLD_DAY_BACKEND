@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ClientesApi } from './clientes-api';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { OtApiResponse } from '../../../core/shared/infrastructure/api/backend.dto';
-import { OtRequest } from '../../../core/shared/domain/models/common.models';
+import { OtRequest } from '../../../core/models/common.models';
 
 function otDto(overrides: Partial<OtApiResponse> = {}): OtApiResponse {
   return {

@@ -6,7 +6,7 @@ import { catchError, debounceTime, distinctUntilChanged, forkJoin, of, switchMap
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { CategoriaServicio, Point } from '../../../core/shared/domain/models/common.models';
+import { CategoriaServicio, Point } from '../../../core/models/common.models';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { GeolocationService } from '../../../core/shared/infrastructure/geolocation/geolocation.service';
 import { SugerenciaApiResponse } from '../../../core/shared/infrastructure/api/backend.dto';

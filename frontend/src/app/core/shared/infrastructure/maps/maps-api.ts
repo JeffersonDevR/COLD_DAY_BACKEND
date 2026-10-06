@@ -9,7 +9,7 @@ import {
   EstadoMapsApiResponse,
   SugerenciaApiResponse,
 } from '../api/backend.dto';
-import { Point } from '../../domain/models/common.models';
+import { Point } from '../../../models/common.models';
 
 /**
  * Fachada del proxy seguro /api/maps del backend (Google Maps Platform).

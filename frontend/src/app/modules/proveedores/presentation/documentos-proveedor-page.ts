@@ -8,7 +8,7 @@ import {
   DocumentoProveedorResponse,
   EstadoValidacionProveedor,
   TipoDocumentoProveedor,
-} from '../../../core/shared/domain/models/common.models';
+} from '../../../core/models/common.models';
 
 type TonoEstado = 'pendiente' | 'ok' | 'error';
 

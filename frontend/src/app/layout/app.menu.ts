@@ -1,4 +1,4 @@
-import { Rol } from '../core/shared/domain/models/common.models';
+import { Rol } from '../core/models/common.models';
 import { environment } from '../../environments/environment';
 
 export interface MenuEntry {

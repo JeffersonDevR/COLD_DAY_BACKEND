@@ -12,7 +12,7 @@ import {
   TokenResponse,
   UsuarioRequest,
   UsuarioResponse,
-} from '../shared/domain/models/common.models';
+} from '../models/common.models';
 import { Observable, of, throwError } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 

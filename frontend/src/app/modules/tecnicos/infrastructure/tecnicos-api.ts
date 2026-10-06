@@ -14,7 +14,7 @@ import {
   TipoDocumentoTecnico,
   CategoriaServicio,
   Point
-} from '../../../core/shared/domain/models/common.models';
+} from '../../../core/models/common.models';
 import {
   DocumentoTecnicoApiResponse,
   OfertaOtApiResponse,

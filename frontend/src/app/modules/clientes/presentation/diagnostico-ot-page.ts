@@ -6,7 +6,7 @@ import { OtApi } from '../../ot/infrastructure/ot-api';
 import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse, Point, TarifaEstimadaResponse } from '../../../core/models/common.models';
 
 interface ChatMensaje {
   emisor: 'CLIENTE' | 'TECNICO';

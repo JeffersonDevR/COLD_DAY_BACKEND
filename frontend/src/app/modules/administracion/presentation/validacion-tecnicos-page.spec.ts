@@ -5,7 +5,7 @@ import { ValidacionTecnicosPage } from './validacion-tecnicos-page';
 import { AdminApi } from '../infrastructure/admin-api';
 import { TecnicosApi } from '../../tecnicos/infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { TecnicoResponse } from '../../../core/shared/domain/models/common.models';
+import { TecnicoResponse } from '../../../core/models/common.models';
 
 const tecnico: TecnicoResponse = {
   id: 'TEC-1',

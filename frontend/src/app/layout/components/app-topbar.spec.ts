@@ -5,7 +5,7 @@ import { AuthService } from '../../core/shared/infrastructure/auth/auth.service'
 import { ThemeService } from '../../core/shared/presentation/theme.service';
 import { ToastService } from '../../core/shared/presentation/toast.service';
 import { LayoutService } from '../service/layout.service';
-import { UsuarioResponse } from '../../core/shared/domain/models/common.models';
+import { UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
   id: 3,

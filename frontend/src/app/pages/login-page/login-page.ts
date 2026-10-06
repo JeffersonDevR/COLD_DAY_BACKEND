@@ -9,7 +9,7 @@ import { UsuariosApi } from '../../core/service/usuarios-api';
 import { ToastService } from '../../core/shared/presentation/toast.service';
 import { ThemeService } from '../../core/shared/presentation/theme.service';
 
-import { Rol } from '../../core/shared/domain/models/common.models';
+import { Rol } from '../../core/models/common.models';
 
 @Component({
   selector: 'app-login-page',

@@ -5,7 +5,7 @@ import { OfertasPage } from './ofertas-page';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
+import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../../core/models/common.models';
 
 const ot: OtResponse = {
   id: 'OT-1',

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { EstadoOt, HistorialOtItem } from '../../../core/shared/domain/models/common.models';
+import { EstadoOt, HistorialOtItem } from '../../../core/models/common.models';
 
 interface TimelineStep {
   estado: EstadoOt;

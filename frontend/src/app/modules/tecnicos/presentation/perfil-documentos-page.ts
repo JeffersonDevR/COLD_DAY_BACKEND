@@ -5,7 +5,7 @@ import { AuthService } from '../../../core/shared/infrastructure/auth/auth.servi
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
+import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from '../../../core/models/common.models';
 
 @Component({
   selector: 'app-perfil-documentos-page',

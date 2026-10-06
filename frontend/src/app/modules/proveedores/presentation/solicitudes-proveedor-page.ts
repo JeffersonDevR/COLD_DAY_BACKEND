@@ -8,7 +8,7 @@ import {
   EstadoRequerimiento,
   OfertaInsumoEstado,
   OfertaInsumoResponse,
-} from '../../../core/shared/domain/models/common.models';
+} from '../../../core/models/common.models';
 
 type TonoBadge = 'pendiente' | 'ok' | 'error' | 'neutro';
 

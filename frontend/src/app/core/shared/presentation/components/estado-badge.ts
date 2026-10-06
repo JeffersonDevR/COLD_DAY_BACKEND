@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Tag } from 'primeng/tag';
-import { EstadoOt, EstadoOperativo, EstadoValidacion, EstadoLiquidacion, EstadoDisputa } from '../../domain/models/common.models';
+import { EstadoOt, EstadoOperativo, EstadoValidacion, EstadoLiquidacion, EstadoDisputa } from '../../../models/common.models';
 
 type AnyEstado = EstadoOt | EstadoOperativo | EstadoValidacion | EstadoLiquidacion | EstadoDisputa;
 type TagSeverity = 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast';

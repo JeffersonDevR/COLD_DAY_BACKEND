@@ -7,7 +7,7 @@ import { AuthService } from '../../../core/shared/infrastructure/auth/auth.servi
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { GeolocationService } from '../../../core/shared/infrastructure/geolocation/geolocation.service';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse } from '../../../core/models/common.models';
 
 const nuevaOt: OtResponse = {
   id: 'OT-99',

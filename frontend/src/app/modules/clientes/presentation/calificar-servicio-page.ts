@@ -5,7 +5,7 @@ import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse } from '../../../core/models/common.models';
 
 @Component({
   selector: 'app-calificar-servicio-page',

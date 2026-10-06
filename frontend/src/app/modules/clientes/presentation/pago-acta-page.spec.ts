@@ -4,7 +4,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { PagoActaPage } from './pago-acta-page';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { ActaGarantia, OtResponse } from '../../../core/shared/domain/models/common.models';
+import { ActaGarantia, OtResponse } from '../../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',

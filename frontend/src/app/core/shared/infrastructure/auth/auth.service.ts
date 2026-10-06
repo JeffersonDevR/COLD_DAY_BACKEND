@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { TokenStorageService } from './token-storage.service';
 import { ToastService } from '../../presentation/toast.service';
-import { Rol, TokenResponse, UsuarioResponse } from '../../domain/models/common.models';
+import { Rol, TokenResponse, UsuarioResponse } from '../../../models/common.models';
 
 @Injectable({
   providedIn: 'root'

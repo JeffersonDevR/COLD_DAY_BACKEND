@@ -3,7 +3,7 @@ import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/ro
 import { roleGuard } from './role.guard';
 import { AuthService } from './auth.service';
 import { TokenStorageService } from './token-storage.service';
-import { Rol } from '../../domain/models/common.models';
+import { Rol } from '../../../models/common.models';
 
 const route = {} as ActivatedRouteSnapshot;
 const state = {} as RouterStateSnapshot;

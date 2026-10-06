@@ -3,7 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { cargarOtDesdeRuta } from '../../ot/infrastructure/ot-carga';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
+import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../../core/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({

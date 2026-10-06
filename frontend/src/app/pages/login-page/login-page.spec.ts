@@ -6,7 +6,7 @@ import { UsuariosApi } from '../../core/service/usuarios-api';
 import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../core/shared/presentation/toast.service';
 import { ThemeService } from '../../core/shared/presentation/theme.service';
-import { UsuarioResponse } from '../../core/shared/domain/models/common.models';
+import { UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
   id: 3,

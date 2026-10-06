@@ -6,7 +6,7 @@ import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
 import { OtApi } from './ot-api';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse } from '../../../core/models/common.models';
 
 const ot: OtResponse = {
   id: 'ot1', categoriaServicio: 'REFRIGERACION', descripcionFalla: 'x', estado: 'EN_CAMINO', auxiliaresRequeridos: 0,

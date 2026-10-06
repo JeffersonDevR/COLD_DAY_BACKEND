@@ -3,7 +3,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { TecnicoTrackingService } from './tecnico-tracking.service';
 import { GeolocationService } from '../../../core/shared/infrastructure/geolocation/geolocation.service';
 import { TecnicosApi } from './tecnicos-api';
-import { Point } from '../../../core/shared/domain/models/common.models';
+import { Point } from '../../../core/models/common.models';
 
 describe('TecnicoTrackingService', () => {
   let posiciones: Subject<Point>;

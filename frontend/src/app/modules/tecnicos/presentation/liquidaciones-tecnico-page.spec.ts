@@ -6,7 +6,7 @@ import { AuthService } from '../../../core/shared/infrastructure/auth/auth.servi
 import { TecnicosApi } from '../infrastructure/tecnicos-api';
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { LiquidacionResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
+import { LiquidacionResponse, TecnicoResponse } from '../../../core/models/common.models';
 
 function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionResponse {
   return {

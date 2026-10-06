@@ -5,7 +5,7 @@ import { CalificarServicioPage } from './calificar-servicio-page';
 import { ClientesApi } from '../infrastructure/clientes-api';
 import { OtApi } from '../../ot/infrastructure/ot-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse } from '../../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',

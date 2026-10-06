@@ -11,7 +11,7 @@ import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../ot/infrast
 import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { OtResponse, MedioPago } from '../../../core/shared/domain/models/common.models';
+import { OtResponse, MedioPago } from '../../../core/models/common.models';
 
 @Component({
   selector: 'app-ejecucion-ot-page',

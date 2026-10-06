@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { OtApi } from '../../ot/infrastructure/ot-api';
-import { Point, TarifaEstimadaResponse } from '../../../core/shared/domain/models/common.models';
+import { Point, TarifaEstimadaResponse } from '../../../core/models/common.models';
 
 /**
  * Aviso del cargo "Visita y diagnóstico" que se notifica al cliente cuando el

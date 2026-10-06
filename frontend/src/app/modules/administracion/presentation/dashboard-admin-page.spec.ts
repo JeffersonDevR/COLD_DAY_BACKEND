@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { DashboardAdminPage } from './dashboard-admin-page';
 import { AdminApi } from '../infrastructure/admin-api';
-import { MetricasAdminResponse } from '../../../core/shared/domain/models/common.models';
+import { MetricasAdminResponse } from '../../../core/models/common.models';
 
 const metricas: MetricasAdminResponse = {
   serviciosEnEjecucion: 4,

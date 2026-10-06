@@ -27,7 +27,7 @@ import {
   TecnicoResponse,
   TipoDocumentoTecnico,
   UsuarioResponse,
-} from '../../domain/models/common.models';
+} from '../../../models/common.models';
 import {
   ActaGarantiaApiResponse,
   CertificacionApi,

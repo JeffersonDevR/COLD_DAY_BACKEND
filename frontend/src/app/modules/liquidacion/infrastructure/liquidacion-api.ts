@@ -5,7 +5,7 @@ import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.
 import {
   LiquidacionResponse,
   MedioPago,
-} from '../../../core/shared/domain/models/common.models';
+} from '../../../core/models/common.models';
 import {
   ComprobanteApiRequest,
   LiquidacionApiResponse,

@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiConfig } from '../../../core/shared/infrastructure/api/api.config';
 import { MockDbService } from '../../../core/shared/infrastructure/mock/mock-db.service';
 import { MapsApi } from '../../../core/shared/infrastructure/maps/maps-api';
-import { OtResponse, Point } from '../../../core/shared/domain/models/common.models';
+import { OtResponse, Point } from '../../../core/models/common.models';
 import { OtApi } from './ot-api';
 
 /**

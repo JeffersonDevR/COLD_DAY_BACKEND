@@ -6,7 +6,7 @@ import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
-import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../../core/shared/domain/models/common.models';
+import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../../core/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({

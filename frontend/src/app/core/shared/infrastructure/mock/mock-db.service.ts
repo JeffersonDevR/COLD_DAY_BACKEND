@@ -26,7 +26,7 @@ import {
   SolicitudInsumoResponse,
   OfertaInsumoResponse,
   TarifaEstimadaResponse,
-} from '../../domain/models/common.models';
+} from '../../../models/common.models';
 import { ApiHttpError } from '../api/error.interceptor';
 
 @Injectable({

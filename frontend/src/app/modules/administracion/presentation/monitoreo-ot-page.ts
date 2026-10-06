@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse } from '../../../core/models/common.models';
 
 @Component({
   selector: 'app-monitoreo-ot-page',

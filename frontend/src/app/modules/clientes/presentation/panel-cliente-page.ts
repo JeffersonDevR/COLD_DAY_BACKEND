@@ -5,7 +5,7 @@ import { ClientesApi } from '../infrastructure/clientes-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { EstadoBadge } from '../../../core/shared/presentation/components/estado-badge';
 import { EmptyState } from '../../../core/shared/presentation/components/empty-state';
-import { OtResponse } from '../../../core/shared/domain/models/common.models';
+import { OtResponse } from '../../../core/models/common.models';
 
 @Component({
   selector: 'app-panel-cliente-page',

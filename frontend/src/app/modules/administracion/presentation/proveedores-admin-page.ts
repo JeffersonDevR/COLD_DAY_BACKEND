@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { ProveedorResponse } from '../../../core/shared/domain/models/common.models';
+import { ProveedorResponse } from '../../../core/models/common.models';
 
 /**
  * Alta y listado de proveedores para el administrador. El rol PROVEEDOR y la

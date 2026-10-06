@@ -4,7 +4,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../infrastructure/admin-api';
 import { AuthService } from '../../../core/shared/infrastructure/auth/auth.service';
 import { ToastService } from '../../../core/shared/presentation/toast.service';
-import { DisputaResponse } from '../../../core/shared/domain/models/common.models';
+import { DisputaResponse } from '../../../core/models/common.models';
 
 @Component({
   selector: 'app-disputas-admin-page',

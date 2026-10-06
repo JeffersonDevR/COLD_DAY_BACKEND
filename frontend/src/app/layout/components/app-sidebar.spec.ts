@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { AppSidebar } from './app-sidebar';
 import { AuthService } from '../../core/shared/infrastructure/auth/auth.service';
 import { LayoutService } from '../service/layout.service';
-import { Rol } from '../../core/shared/domain/models/common.models';
+import { Rol } from '../../core/models/common.models';
 
 function setup(rol: Rol | null) {
   const layout = {

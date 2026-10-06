@@ -9,7 +9,7 @@ import {
   OtResponse,
   ProveedorRequest,
   ProveedorResponse,
-} from '../../../core/shared/domain/models/common.models';
+} from '../../../core/models/common.models';
 import {
   DisputaApiResponse,
   MetricasAdminApiResponse,

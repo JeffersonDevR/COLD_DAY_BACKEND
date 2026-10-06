@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminApi } from '../infrastructure/admin-api';
-import { CategoriaServicio, MetricasAdminResponse } from '../../../core/shared/domain/models/common.models';
+import { CategoriaServicio, MetricasAdminResponse } from '../../../core/models/common.models';
 import { environment } from '../../../../environments/environment';
 
 @Component({
