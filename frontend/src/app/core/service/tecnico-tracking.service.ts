@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Subscription, throttleTime } from 'rxjs';
-import { GeolocationService } from '../../../core/service/geolocation.service';
-import { Point } from '../../../core/models/common.models';
+import { GeolocationService } from './geolocation.service';
+import { Point } from '../models/common.models';
 import { TecnicosApi } from './tecnicos-api';
 
 /**

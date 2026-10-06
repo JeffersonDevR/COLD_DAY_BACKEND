@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
-import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { TecnicoResponse } from '../../core/models/common.models';
 

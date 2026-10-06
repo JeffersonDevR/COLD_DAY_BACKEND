@@ -9,7 +9,7 @@ import { ApiConfig } from '../../core/service/api.config';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../modules/ot/infrastructure/ot-api';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../modules/ot/infrastructure/ot-carga';
-import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { MapsApi } from '../../core/service/maps-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';

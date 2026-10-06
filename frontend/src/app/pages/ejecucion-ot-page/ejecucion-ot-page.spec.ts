@@ -2,15 +2,15 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { EjecucionOtPage } from './ejecucion-ot-page';
-import { MockDbService } from '../../../core/service/mock-db.service';
-import { ApiConfig } from '../../../core/service/api.config';
-import { TecnicosApi } from '../infrastructure/tecnicos-api';
-import { TecnicoTrackingService } from '../infrastructure/tecnico-tracking.service';
-import { MapsApi } from '../../../core/service/maps-api';
-import { OtApi } from '../../ot/infrastructure/ot-api';
-import { LiquidacionApi } from '../../liquidacion/infrastructure/liquidacion-api';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { OtResponse } from '../../../core/models/common.models';
+import { MockDbService } from '../../core/service/mock-db.service';
+import { ApiConfig } from '../../core/service/api.config';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
+import { MapsApi } from '../../core/service/maps-api';
+import { OtApi } from '../../modules/ot/infrastructure/ot-api';
+import { LiquidacionApi } from '../../modules/liquidacion/infrastructure/liquidacion-api';
+import { ToastService } from '../../core/alertas/toast.service';
+import { OtResponse } from '../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
   return {

@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { SeguimientoOtPage } from './seguimiento-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../modules/ot/infrastructure/ot-api';
-import { TecnicosApi } from '../../modules/tecnicos/infrastructure/tecnicos-api';
+import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { MapsApi } from '../../core/service/maps-api';
 import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';

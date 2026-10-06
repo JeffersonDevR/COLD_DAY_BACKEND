@@ -1,17 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AuthService } from '../../../core/service/auth.service';
-import { TecnicosApi } from '../infrastructure/tecnicos-api';
-import { cargarTecnicoAutenticado } from '../infrastructure/tecnico-sesion';
-import { ToastService } from '../../../core/alertas/toast.service';
-import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from '../../../core/models/common.models';
 
-@Component({
-  selector: 'app-perfil-documentos-page',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReactiveFormsModule],
-  template: `
     <div class="space-y-6 max-w-5xl mx-auto">
       <div>
         <a routerLink="/tecnico/panel" class="text-xs font-semibold text-sky-600 hover:text-sky-500 inline-flex items-center gap-1 mb-1">
@@ -136,47 +123,4 @@ import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from 
         </div>
       </div>
     </div>
-  `
-})
-export class PerfilDocumentosPage {
-  private readonly authService = inject(AuthService);
-  private readonly tecnicosApi = inject(TecnicosApi);
-  private readonly toast = inject(ToastService);
-
-  readonly mostrarForm = signal<boolean>(false);
-  readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
-  readonly documentos = signal<DocumentoTecnicoResponse[]>([]);
-
-  readonly docForm = new FormGroup({
-    tipo: new FormControl<TipoDocumentoTecnico>('CERTIFICACION_SENA', { nonNullable: true }),
-    fechaVencimiento: new FormControl('2027-12-31', { nonNullable: true, validators: [Validators.required] }),
-    archivoUrl: new FormControl('https://coldday.com.co/docs/certificacion.pdf', { nonNullable: true, validators: [Validators.required] })
-  });
-
-  constructor() {
-    cargarTecnicoAutenticado(this.authService, this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
-    this.cargarDocumentos();
-  }
-
-  private cargarDocumentos(): void {
-    this.tecnicosApi.getMisDocumentos().subscribe({
-      next: (documentos) => this.documentos.set(documentos),
-      error: () => this.documentos.set([]),
-    });
-  }
-
-  onSubirDoc(): void {
-    if (this.docForm.invalid) return;
-    const t = this.tecnico();
-    if (!t) return;
-
-    const val = this.docForm.getRawValue();
-    this.tecnicosApi.subirDocumento(t.id, val.tipo, val.archivoUrl, val.fechaVencimiento).subscribe({
-      next: () => {
-        this.toast.success('Documento Adjuntado', 'El archivo ha sido enviado para verificación del administrador.');
-        this.mostrarForm.set(false);
-        this.cargarDocumentos();
-      }
-    });
-  }
-}
+  
