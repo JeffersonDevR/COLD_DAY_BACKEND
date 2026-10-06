@@ -89,6 +89,7 @@ public class AuditoriaConfig {
      * {@link AuthenticatedUser} (the {@code "anonymousUser"} string, for
      * instance).
      */
+    @SuppressWarnings("java:S7467")
     private String resolveAuditor() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -103,6 +104,8 @@ public class AuditoriaConfig {
         } catch (RuntimeException ex) {
             // Auditing must never be the reason a background job or a public
             // registration fails; a wrong auditor is preferable to no write.
+            // ex es intencionalmente no usado: el fallback es siempre "system"
+            // independientemente del tipo de excepción.
             return AUDITOR_SYSTEM;
         }
     }

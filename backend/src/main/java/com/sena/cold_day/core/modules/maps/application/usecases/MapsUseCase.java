@@ -75,6 +75,7 @@ public class MapsUseCase {
      * {@link #distancia(double, double, double, double)} this never raises
      * {@code MapsNoDisponibleException}.
      */
+    @SuppressWarnings("java:S7467")
     public Optional<RutaCalculada> distanciaOpcional(double oLat, double oLng, double dLat, double dLng) {
         Point o = new Point(oLat, oLng);
         Point d = new Point(dLat, dLng);
@@ -84,6 +85,8 @@ public class MapsUseCase {
         try {
             return maps.distancia(o.latitud(), o.longitud(), d.latitud(), d.longitud());
         } catch (RuntimeException ex) {
+            // ex es intencionalmente no usado: este método nunca debe lanzar
+            // excepción, así que se traga y se devuelve Optional.empty().
             return Optional.empty();
         }
     }
