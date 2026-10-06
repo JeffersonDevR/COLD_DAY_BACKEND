@@ -2,6 +2,8 @@ package com.sena.cold_day.core.modules.clientes.infrastructure.api.controllers;
 
 import java.util.List;
 
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,15 @@ import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequer
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
+/**
+ * Explicit precedence is load-bearing: this advice must win over the global
+ * {@code GlobalControllerAdvice} fallback for its own controller. Both map
+ * {@link DataIntegrityViolationException}, and Spring documents equal
+ * {@code @Order} resolution as arbitrary, so without this annotation the
+ * generic global message could silently replace this module's specific one.
+ */
 @RestControllerAdvice(assignableTypes = ClienteController.class)
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class ClienteControllerAdvice {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

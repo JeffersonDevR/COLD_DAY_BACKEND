@@ -2,6 +2,8 @@ package com.sena.cold_day.core.modules.tecnicos.infrastructure.api.controllers;
 
 import java.util.List;
 
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,9 @@ import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequer
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 
 @RestControllerAdvice(assignableTypes = TecnicoController.class)
+// Must outrank the global fallback for its own controller: both map
+// DataIntegrityViolationException, and equal @Order resolution is arbitrary.
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class TecnicoControllerAdvice {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
