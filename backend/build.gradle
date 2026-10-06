@@ -42,6 +42,11 @@ dependencies {
     // Required to serialize/deserialize LocalDateTime in JSON arrays
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
+    // Cache acotada y con expiracion para el rate limit de auth
+    // (RateLimitFilter). Sin version explicita: la gestiona el BOM de Spring
+    // Boot (respalda spring-boot-starter-cache).
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	// Gestiona el esquema (ver db/migration).
