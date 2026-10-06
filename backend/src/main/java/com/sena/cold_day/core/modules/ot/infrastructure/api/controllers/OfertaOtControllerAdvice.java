@@ -50,7 +50,7 @@ public class OfertaOtControllerAdvice {
     @ExceptionHandler(ConteoAuxiliaresInvalidoException.class)
     ResponseEntity<ApiError> handleInvalidAuxiliares(ConteoAuxiliaresInvalidoException exception) {
         return ResponseEntity.badRequest()
-                .body(new ApiError(400, "Solicitud invalida", List.of(exception.getMessage())));
+                .body(new ApiError(400, MENSAJE_SOLICITUD_INVALIDA, List.of(exception.getMessage())));
     }
 
     /** Offer expired lazily (design D6): the accept is rejected, the OT is unaffected. */

@@ -103,7 +103,7 @@ class RequerimientoInsumoTest {
     void asignarMueveSolicitadoAAsignado() {
         RequerimientoInsumo requerimiento = crear();
 
-        requerimiento.asignar(EXPIRA.minusSeconds(1));
+        requerimiento.asignar();
 
         assertThat(requerimiento.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
         assertThat(requerimiento.esTerminal()).isFalse();
@@ -113,7 +113,7 @@ class RequerimientoInsumoTest {
     @Test
     void marcarEntregadoMueveAsignadoAEntregadoYQuedaTerminal() {
         RequerimientoInsumo requerimiento = crear();
-        requerimiento.asignar(AHORA.plusSeconds(1));
+        requerimiento.asignar();
 
         Instant entrega = AHORA.plusSeconds(60);
         requerimiento.marcarEntregado(entrega);
@@ -145,27 +145,27 @@ class RequerimientoInsumoTest {
 
         // ASIGNADO no puede ir a SIN_PROVEEDOR.
         RequerimientoInsumo asignado = crear();
-        asignado.asignar(AHORA);
+        asignado.asignar();
         assertThatThrownBy(() -> asignado.marcarSinProveedor(AHORA))
                 .isInstanceOf(TransicionRequerimientoInvalidaException.class);
         assertThat(asignado.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
 
         // ENTREGADO es terminal: ninguna salida.
         RequerimientoInsumo entregado = crear();
-        entregado.asignar(AHORA);
+        entregado.asignar();
         entregado.marcarEntregado(AHORA);
         for (EstadoRequerimiento destino : EstadoRequerimiento.values()) {
             assertThat(TransicionesRequerimiento.esPermitida(EstadoRequerimiento.ENTREGADO, destino))
                     .as("ENTREGADO -> %s debe rechazarse", destino)
                     .isFalse();
         }
-        assertThatThrownBy(() -> entregado.asignar(AHORA))
+        assertThatThrownBy(() -> entregado.asignar())
                 .isInstanceOf(TransicionRequerimientoInvalidaException.class);
 
         // SIN_PROVEEDOR no vuelve a ASIGNADO dentro de esta raiz.
         RequerimientoInsumo sinProveedor = crear();
         sinProveedor.marcarSinProveedor(AHORA);
-        assertThatThrownBy(() -> sinProveedor.asignar(AHORA))
+        assertThatThrownBy(() -> sinProveedor.asignar())
                 .isInstanceOf(TransicionRequerimientoInvalidaException.class);
         assertThat(sinProveedor.getEstado()).isEqualTo(EstadoRequerimiento.SIN_PROVEEDOR);
     }

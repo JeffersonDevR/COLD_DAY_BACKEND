@@ -96,7 +96,7 @@ public class RequerimientoInsumo {
     }
 
     /** Atomic first-accept gate (trigger: atomic gate, actor: PROVEEDOR). */
-    public void asignar(Instant ahora) {
+    public void asignar() {
         TransicionesRequerimiento.validar(estado, EstadoRequerimiento.ASIGNADO);
         this.estado = EstadoRequerimiento.ASIGNADO;
     }
