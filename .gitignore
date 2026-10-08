@@ -30,6 +30,7 @@ Especificacion_Requisitos_IEEE830_COLD_DAY_v3.3.md
 backend/.env
 frontend/.env
 frontend/src/app/core/environment/maps-key.ts
+frontend/src/app/core/environment/api-base-url.ts
 
 # Build / dependencias
 out/

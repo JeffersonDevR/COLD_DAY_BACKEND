@@ -1,13 +1,21 @@
 import { GOOGLE_MAPS_API_KEY } from './maps-key';
+import { API_BASE_URL } from './api-base-url';
 
 export const environment = {
   production: false,
   /**
-   * Ruta base de la API. En desarrollo '/api' se resuelve contra proxy.conf.json
-   * (que reenvía al backendUrl). En producción debe enrutarse al backend desde la
-   * infraestructura (mismo origen) o reemplazarse por la URL absoluta del backend.
+   * Ruta base de la API.
+   *
+   * NO se versiona: la inyecta en build scripts/generate-api-url.mjs a partir de
+   * API_BASE_URL (frontend/.env o variable de entorno), que genera
+   * src/app/core/environment/api-base-url.ts (gitignored).
+   *
+   * - Sin API_BASE_URL queda el default '/api', que en `ng serve` resuelve
+   *   proxy.conf.json contra backendUrl (dev local, mismo origen).
+   * - En producción (Vercel) no hay proxy: se define
+   *   API_BASE_URL=https://<backend>/api porque '/api' apuntaría al propio front.
    */
-  apiBaseUrl: '/api',
+  apiBaseUrl: API_BASE_URL,
   /**
    * URL del backend Spring Boot. La usa únicamente proxy.conf.json durante `ng serve`.
    * PLACEHOLDER: ajustar si el backend corre en otro host/puerto.
