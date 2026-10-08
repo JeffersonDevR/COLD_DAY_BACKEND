@@ -4,8 +4,9 @@
 .env*
 !.env.example
 
-# Key de Maps generada en build (nunca se versiona)
-src/environments/maps-key.ts
+# Config generada en build (nunca se versiona)
+src/app/core/environment/maps-key.ts
+src/app/core/environment/api-base-url.ts
 
 # Compiled output
 /dist
