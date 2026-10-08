@@ -31,6 +31,7 @@ import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaEstado;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
@@ -308,6 +309,57 @@ class OtVisitaCalificacionIT {
         assertThat(springDataHistorial.findByOtIdOrderByOcurridoEnAscIdAsc(ot.getId().valor()))
                 .extracting(h -> h.getEstadoDestino())
                 .contains(EstadoOt.CANCELADA, EstadoOt.BUSCANDO_TECNICO);
+    }
+
+    @Test
+    void reopeningDispatchAfterABudgetRejectionDoesNotDuplicateThePendingOffer() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-reopen-dup@example.com", Rol.CLIENTE);
+        crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("tecnico-reopen-dup@example.com", Rol.TECNICO);
+        TecnicoId tecnicoId = crearTecnico(tecnicoUsuario);
+        String token = jwt(clienteUsuario, Rol.CLIENTE);
+
+        // La OT nace despachando: el tecnico disponible recibe una oferta viva.
+        String body = mockMvc.perform(post("/api/ot")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"categoriaServicio\":\"REFRIGERACION\",\"descripcionFalla\":\"No enciende\","
+                                + "\"evidenciaUrls\":[],\"direccion\":\"Calle 1\","
+                                + "\"latitud\":7.8939,\"longitud\":-72.5078}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.estado").value("BUSCANDO_TECNICO"))
+                .andReturn().getResponse().getContentAsString();
+        String otId = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+        UUID otUuid = UUID.fromString(otId);
+        assertThat(springDataOfertas.findByOtIdAndEstadoOrderByCreadaEnAsc(otUuid, OfertaEstado.PENDIENTE))
+                .hasSize(1);
+
+        // Rechazo del presupuesto mientras la oferta sigue PENDIENTE: el rechazo
+        // no toca las ofertas, que es justo la precondicion del duplicado.
+        mockMvc.perform(post("/api/ot/" + otId + "/presupuesto/rechazar")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"motivo\":\"Muy caro\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("CANCELADA"))
+                .andExpect(jsonPath("$.motivoCancelacion").value("RECHAZO_PRESUPUESTO"));
+        assertThat(springDataOfertas.findByOtIdAndEstadoOrderByCreadaEnAsc(otUuid, OfertaEstado.PENDIENTE))
+                .hasSize(1);
+
+        // Pagar la visita reabre el despacho y re-oferta: la oferta vieja debe
+        // cerrarse antes, o el mismo tecnico queda con dos PENDIENTE para la OT.
+        mockMvc.perform(post("/api/ot/" + otId + "/pagar-visita")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"medioPago\":\"NEQUI\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("BUSCANDO_TECNICO"));
+
+        var pendientes = springDataOfertas.findByOtIdAndEstadoOrderByCreadaEnAsc(otUuid, OfertaEstado.PENDIENTE);
+        assertThat(pendientes).hasSize(1);
+        assertThat(pendientes).extracting(o -> o.getTecnicoId())
+                .doesNotHaveDuplicates()
+                .containsExactly(tecnicoId.valor());
+        assertThat(springDataOfertas.findByOtIdAndEstadoOrderByCreadaEnAsc(otUuid, OfertaEstado.EXPIRADA))
+                .hasSize(1);
     }
 
     @Test
