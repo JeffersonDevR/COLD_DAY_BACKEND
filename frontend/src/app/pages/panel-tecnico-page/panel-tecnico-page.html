@@ -82,6 +82,127 @@
         </div>
       </div>
 
+      <!-- Visibilidad en el radar de clientes -->
+      <div
+        class="p-6 rounded-3xl border shadow-xs bg-white dark:bg-slate-900"
+        [class.border-emerald-300]="radarVisible()"
+        [class.dark:border-emerald-800]="radarVisible()"
+        [class.border-amber-300]="!radarVisible()"
+        [class.dark:border-amber-700]="!radarVisible()"
+      >
+        <div class="flex items-start gap-3">
+          <div
+            class="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+            [class.bg-emerald-600]="radarVisible()"
+            [class.bg-amber-500]="!radarVisible()"
+          >
+            <i class="pi text-white" [class.pi-check-circle]="radarVisible()" [class.pi-eye]="!radarVisible()"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-black text-slate-900 dark:text-slate-100">Visibilidad en el radar</h2>
+            @if (radarVisible()) {
+              <p class="text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                Los clientes pueden encontrarte en el radar de cercanos.
+              </p>
+            } @else {
+              <p class="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                Mientras no cumplas todos los requisitos no aparecerás en el radar de los clientes.
+              </p>
+            }
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-3">
+          <!-- Requisito: validación de cuenta -->
+          <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+              <i
+                class="pi text-sm"
+                [class.pi-check-circle]="validacionAprobada()"
+                [class.text-emerald-600]="validacionAprobada()"
+                [class.pi-times-circle]="validacionRechazada()"
+                [class.text-rose-600]="validacionRechazada()"
+                [class.pi-clock]="!validacionAprobada() && !validacionRechazada()"
+                [class.text-amber-500]="!validacionAprobada() && !validacionRechazada()"
+              ></i>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Validación de cuenta</span>
+            </div>
+
+            @if (validacionAprobada()) {
+              <span class="text-xs font-bold text-emerald-600">APROBADO</span>
+            } @else if (validacionRechazada()) {
+              <span class="text-xs font-bold text-rose-600 text-right">
+                {{ tecnico()?.estadoValidacion }}
+                @if (tecnico()?.motivoRechazoValidacion) {
+                  — {{ tecnico()?.motivoRechazoValidacion }}
+                }
+              </span>
+            } @else {
+              <span class="text-xs font-bold text-amber-600 text-right">
+                {{ tecnico()?.estadoValidacion || 'Sin información' }} — un administrador debe aprobar tu cuenta.
+                <a routerLink="/tecnico/documentos" class="underline">Ver documentos</a>
+              </span>
+            }
+          </div>
+
+          <!-- Requisito: disponibilidad -->
+          <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+              <i
+                class="pi pi-circle text-sm"
+                [class.text-emerald-600]="disponibilidadAprobada()"
+                [class.text-amber-500]="!disponibilidadAprobada()"
+              ></i>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Disponibilidad</span>
+            </div>
+
+            @if (disponibilidadAprobada()) {
+              <span class="text-xs font-bold text-emerald-600">DISPONIBLE</span>
+            } @else if (tecnico()?.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION') {
+              <span class="text-xs font-bold text-rose-600 text-right">
+                BLOQUEADO POR LIQUIDACIÓN —
+                <a routerLink="/tecnico/liquidaciones" class="underline">legaliza tu consignación</a>
+              </span>
+            } @else {
+              <span class="text-xs font-bold text-amber-600 text-right">
+                {{ tecnico()?.estadoOperativo || 'Sin información' }} — debes estar DISPONIBLE.
+                @if (tecnico()?.estadoOperativo === 'FUERA_DE_SERVICIO') {
+                  <button
+                    type="button"
+                    (click)="cambiarEstadoOperativo('DISPONIBLE')"
+                    class="ml-1 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors"
+                  >
+                    Activar disponible
+                  </button>
+                }
+              </span>
+            }
+          </div>
+
+          <!-- Requisito: ubicación en vivo -->
+          <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+              <i
+                class="pi pi-map-marker text-sm"
+                [class.text-emerald-600]="ubicacionReportando()"
+                [class.text-amber-500]="!ubicacionReportando()"
+              ></i>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Ubicación en vivo</span>
+            </div>
+
+            @if (ubicacionReportando()) {
+              <span class="text-xs font-bold text-emerald-600">Se está reportando ahora</span>
+            } @else if (ubicacionMotivo()) {
+              <span class="text-xs font-bold text-rose-600 text-right">{{ ubicacionMotivo() }}</span>
+            } @else {
+              <span class="text-xs font-bold text-amber-600 text-right">
+                No se está reportando — se activa al ejecutar un servicio en curso con el permiso de ubicación habilitado.
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
       <!-- KPIs del Técnico -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
@@ -112,10 +233,28 @@
 
         <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
           <div class="text-xs font-semibold text-slate-500">Documentación</div>
-          <div class="text-base font-black text-emerald-600 mt-2 flex items-center gap-1">
-            <i class="pi pi-verified text-sm"></i>
-            {{ tecnico()?.estadoValidacion || 'APROBADO' }}
-          </div>
+
+          @if (validacionAprobada()) {
+            <div class="text-base font-black text-emerald-600 mt-2 flex items-center gap-1">
+              <i class="pi pi-verified text-sm"></i>
+              {{ tecnico()?.estadoValidacion }}
+            </div>
+          } @else if (validacionRechazada()) {
+            <div class="text-base font-black text-rose-600 mt-2 flex items-center gap-1">
+              <i class="pi pi-times text-sm"></i>
+              {{ tecnico()?.estadoValidacion }}
+            </div>
+            @if (tecnico()?.motivoRechazoValidacion) {
+              <p class="text-[11px] text-rose-500 mt-1 leading-snug">{{ tecnico()?.motivoRechazoValidacion }}</p>
+            }
+          } @else {
+            <div class="text-base font-black text-amber-500 mt-2 flex items-center gap-1">
+              <i class="pi pi-clock text-sm"></i>
+              {{ tecnico()?.estadoValidacion || 'Sin información' }}
+            </div>
+            <span class="text-[11px] text-amber-500">en revisión</span>
+          }
+
           <a routerLink="/tecnico/documentos" class="text-[11px] text-sky-600 hover:underline">Ver vigencias</a>
         </div>
       </div>
