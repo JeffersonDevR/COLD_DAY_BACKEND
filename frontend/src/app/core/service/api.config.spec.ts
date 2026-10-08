@@ -1,18 +1,31 @@
 import { TestBed } from '@angular/core/testing';
-import { ApiConfig } from './api.config';
-import { environment } from '../environment/environment';
+import { API_ORIGIN, ApiConfig } from './api.config';
 
 describe('ApiConfig', () => {
   let config: ApiConfig;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [{ provide: API_ORIGIN, useValue: 'http://test.local' }],
+    });
     config = TestBed.inject(ApiConfig);
   });
 
-  it('construye urls con y sin slash inicial', () => {
-    expect(config.url('/ot')).toBe(`${environment.apiBaseUrl}/ot`);
-    expect(config.url('ot')).toBe(`${environment.apiBaseUrl}/ot`);
+  it('compone el origen + /api + path con y sin slash inicial', () => {
+    expect(config.url('/ot')).toBe('http://test.local/api/ot');
+    expect(config.url('ot')).toBe('http://test.local/api/ot');
+  });
+
+  it('versioned compone la version explicita en la ruta', () => {
+    expect(config.versioned('v2', '/ot')).toBe('http://test.local/api/v2/ot');
+  });
+
+  it('versioned con version vacia deja la ruta sin segmento de version', () => {
+    expect(config.versioned('', '/ot')).toBe('http://test.local/api/ot');
+  });
+
+  it('expone el origen inyectable (token) y no el de environment', () => {
+    expect(config.origin()).toBe('http://test.local');
   });
 
   it('toggleMocks alterna el flag', () => {
@@ -29,8 +42,7 @@ describe('ApiConfig', () => {
     expect(config.useMocks()).toBe(false);
   });
 
-  it('expone baseUrl y alias useMock', () => {
-    expect(config.baseUrl).toBe(environment.apiBaseUrl);
+  it('expone el alias useMock', () => {
     expect(config.useMock()).toBe(config.useMocks());
   });
 });
