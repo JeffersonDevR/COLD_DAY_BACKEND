@@ -13,6 +13,7 @@ import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
+import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
@@ -24,13 +25,16 @@ public class PagarVisitaUseCase {
 
     private final ClienteRepository clienteRepository;
     private final OtRepository otRepository;
+    private final OfertaOtRepository ofertaRepository;
     private final IniciarBusquedaTecnicoUseCase iniciarBusqueda;
     private final Clock clock;
 
     public PagarVisitaUseCase(ClienteRepository clienteRepository, OtRepository otRepository,
-            IniciarBusquedaTecnicoUseCase iniciarBusqueda, Clock clock) {
+            OfertaOtRepository ofertaRepository, IniciarBusquedaTecnicoUseCase iniciarBusqueda,
+            Clock clock) {
         this.clienteRepository = clienteRepository;
         this.otRepository = otRepository;
+        this.ofertaRepository = ofertaRepository;
         this.iniciarBusqueda = iniciarBusqueda;
         this.clock = clock;
     }
@@ -62,6 +66,11 @@ public class PagarVisitaUseCase {
      * presupuesto y ya esta pagada) reusa el mismo primitivo de oferta que el
      * arranque normal, para que la reapertura produzca exactamente los mismos
      * efectos observables: ventana de despacho, ofertas y notificaciones push.
+     *
+     * <p>Antes de re-ofertar cierra las ofertas {@code PENDIENTE} que la orden
+     * todavia tuviera vivas (p. ej. si fue cancelada mientras despachaba), igual
+     * que {@link EscalarRadioUseCase}: sin ese cierre el mismo tecnico recibiria
+     * una segunda oferta {@code PENDIENTE} para la misma OT.
      */
     private Ot reabrirDespacho(Ot ot, Instant ahora) {
         if (ot.getEstado() != EstadoOt.CANCELADA) {
@@ -70,6 +79,7 @@ public class PagarVisitaUseCase {
         ot.reabrirDespachoTrasPagoVisita(IniciarBusquedaTecnicoUseCase.RADIO_INICIAL_KM,
                 ahora.plus(IniciarBusquedaTecnicoUseCase.VENTANA_BUSQUEDA), ActorOt.CLIENTE, ahora);
         Ot guardada = otRepository.save(ot);
+        ofertaRepository.expirarDe(guardada.getId(), ahora);
         iniciarBusqueda.ofrecer(guardada, IniciarBusquedaTecnicoUseCase.RADIO_INICIAL_KM, ahora);
         return guardada;
     }
