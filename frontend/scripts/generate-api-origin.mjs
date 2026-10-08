@@ -55,6 +55,30 @@ const fromEnv = String(process.env.API_ORIGIN || fileEnv.API_ORIGIN || '').trim(
 // Se normaliza en ambos casos para no generar una URL rota en silencio.
 const raw = fromEnv.replace(/^(['"])(.*)\1$/, '$2').trim();
 
+// API_BASE_URL quedo deprecada: antes llevaba el prefijo /api embebido en el
+// valor; ahora el prefijo lo agrega el codigo. Si el renombre quedo a medias y
+// caemos al default vacio, todas las llamadas salen relativas ('/api/...')
+// contra el hosting del front y dan 404. Mejor cortar el build y decirlo.
+const legacy = String(process.env.API_BASE_URL || fileEnv.API_BASE_URL || '')
+  .trim()
+  .replace(/^(['"])(.*)\1$/, '$2')
+  .trim();
+if (legacy) {
+  if (raw) {
+    console.warn(
+      `[api-origin] AVISO: API_BASE_URL="${legacy}" esta deprecada y se ignora. Podes borrarla.`,
+    );
+  } else {
+    console.error(
+      `[api-origin] ERROR: API_BASE_URL="${legacy}" esta deprecada y API_ORIGIN no esta definida.\n` +
+        'La variable se renombro a API_ORIGIN y ahora debe contener SOLO el origen,\n' +
+        "sin path y sin '/api' (el prefijo lo agrega el codigo).\n" +
+        'Ejemplo valido: API_ORIGIN=https://cold-day-backend.onrender.com',
+    );
+    process.exit(1);
+  }
+}
+
 // api.config.ts concatena `${origin}${API_PREFIX}${path}`, asi que una barra
 // final produciria '//api'. Se normaliza para tolerar el error humano.
 const origin = raw.replace(/\/+$/, '');
