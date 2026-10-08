@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -14,7 +13,6 @@ import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from 
   templateUrl: './perfil-documentos-page.html',
 })
 export class PerfilDocumentosPage {
-  private readonly authService = inject(AuthService);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
 
@@ -29,7 +27,7 @@ export class PerfilDocumentosPage {
   });
 
   constructor() {
-    cargarTecnicoAutenticado(this.authService, this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
+    cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
     this.cargarDocumentos();
   }
 

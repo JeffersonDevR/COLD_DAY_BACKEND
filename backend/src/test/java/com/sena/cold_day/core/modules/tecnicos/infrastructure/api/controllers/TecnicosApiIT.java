@@ -112,6 +112,33 @@ class TecnicosApiIT {
     }
 
     @Test
+    void tecnicoObtieneSuPropioPerfilEnMe() throws Exception {
+        String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
+                .content(validPayload("ME-1", "Ana"))).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode created = objectMapper.readTree(body);
+
+        // The TECNICO role resolves its own profile from the principal's JWT.
+        mockMvc.perform(get("/api/tecnicos/me").header("Authorization", "Bearer " + tecnicoJwt(created)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(created.get("id").asText()))
+                .andExpect(jsonPath("$.nombre").value("Ana"))
+                .andExpect(jsonPath("$.numeroIdentificacion").value("ME-1"));
+    }
+
+    @Test
+    void mePerfilRequiereAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/tecnicos/me")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void mePerfilRechazaAUnAdministradorSinPerfilDeTecnico() throws Exception {
+        // /me es TECNICO-only: un administrador no tiene perfil de tecnico.
+        mockMvc.perform(get("/api/tecnicos/me").header("Authorization", "Bearer " + adminJwt()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void validationGateBlocksOperativeChangesUntilAdminApproves() throws Exception {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
                 .content(validPayload("123", "Ana"))).andExpect(status().isCreated())

@@ -30,7 +30,7 @@ export class LiquidacionesTecnicoPage {
   readonly misLiquidaciones = signal<LiquidacionResponse[]>([]);
 
   constructor() {
-    cargarTecnicoAutenticado(this.authService, this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
+    cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
     this.cargarLiquidaciones(Number(this.authService.currentUser()?.id ?? 0));
   }
 

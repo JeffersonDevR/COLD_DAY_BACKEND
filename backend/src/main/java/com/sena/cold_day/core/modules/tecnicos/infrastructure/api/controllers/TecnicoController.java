@@ -167,6 +167,18 @@ public class TecnicoController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Perfil del tecnico autenticado. La identidad sale unicamente del
+     * principal (nunca de un path variable, query param o body), por lo que
+     * reemplaza el workaround anterior del front, que listaba GET
+     * /api/tecnicos y buscaba por usuarioId.
+     */
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('TECNICO')")
+    public TecnicoApiResponse miPerfil(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return TecnicoApiResponse.from(buscar.obtenerPorUsuarioId(principal.usuarioId()));
+    }
+
     /** Lists the OTs assigned to the authenticated technician. */
     @GetMapping("/me/ots")
     @PreAuthorize("hasRole('TECNICO')")

@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -14,7 +13,6 @@ import { environment } from '../../core/environment/environment';
   templateUrl: './ofertas-page.html',
 })
 export class OfertasPage {
-  private readonly authService = inject(AuthService);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -33,7 +31,6 @@ export class OfertasPage {
 
   constructor() {
     cargarTecnicoAutenticado(
-      this.authService,
       this.tecnicosApi,
       (tecnico) => {
         this.tecnico.set(tecnico);

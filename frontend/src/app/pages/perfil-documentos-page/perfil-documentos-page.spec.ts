@@ -11,7 +11,7 @@ const tecnico: TecnicoResponse = { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co'
 
 function setup(conTecnico = true) {
   const tecnicosApi = {
-    getTecnicoPorUsuarioId: vi.fn(() => of(conTecnico ? tecnico : undefined)),
+    getMiPerfil: vi.fn(() => of(conTecnico ? tecnico : undefined)),
     getMisDocumentos: vi.fn(() => of([{ id: 'DOC-1', tipo: 'CEDULA', nombre: 'c.pdf', estadoValidacion: 'APROBADO', semaforo: 'VERDE' }])),
     subirDocumento: vi.fn(() => of(undefined)),
   };
@@ -33,7 +33,7 @@ function setup(conTecnico = true) {
 describe('PerfilDocumentosPage', () => {
   it('carga el técnico y sus documentos', () => {
     const { fixture, tecnicosApi } = setup();
-    expect(tecnicosApi.getTecnicoPorUsuarioId).toHaveBeenCalledWith(6);
+    expect(tecnicosApi.getMiPerfil).toHaveBeenCalled();
     expect(fixture.componentInstance.tecnico()?.id).toBe('TEC-1');
     expect(fixture.componentInstance.documentos().length).toBe(1);
   });

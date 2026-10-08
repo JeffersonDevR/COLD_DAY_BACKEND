@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoResponse;
 import com.sena.cold_day.core.modules.tecnicos.application.mappers.TecnicoMapper;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
@@ -38,6 +39,17 @@ public class BuscarTecnicoUseCase {
 
         Tecnico tecnico = repository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new TecnicoNoEncontradoException(id));
+        return combinar(tecnico);
+    }
+
+    /**
+     * Perfil del tecnico autenticado, resuelto por el usuario del principal.
+     * Si el usuario no tiene un perfil de tecnico activo, lanza
+     * PerfilTecnicoNoEncontradoException para responder 404.
+     */
+    public TecnicoResponse obtenerPorUsuarioId(UsuarioId usuarioId) {
+        Tecnico tecnico = repository.findByUsuarioIdAndActivoTrue(usuarioId.valor())
+                .orElseThrow(() -> new PerfilTecnicoNoEncontradoException(usuarioId.valor()));
         return combinar(tecnico);
     }
 
