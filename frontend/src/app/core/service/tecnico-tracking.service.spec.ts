@@ -36,6 +36,13 @@ describe('TecnicoTrackingService', () => {
     expect(service.activo()).toBe(false);
   });
 
+  it('expone el motivo cuando la geolocalización no está disponible', () => {
+    disponible = false;
+    const service = setup();
+    service.iniciar();
+    expect(service.motivo()).toBe('La geolocalización no está disponible en este navegador.');
+  });
+
   it('publica la ubicación al recibir una posición', () => {
     const service = setup();
     service.iniciar();
@@ -67,6 +74,37 @@ describe('TecnicoTrackingService', () => {
     service.iniciar();
     posiciones.error(new Error('sin gps'));
     expect(service.activo()).toBe(false);
+  });
+
+  it('expone el mensaje del error del stream y se detiene', () => {
+    const service = setup();
+    service.iniciar();
+    posiciones.error(new Error('Permiso de ubicación denegado. Habilítalo en el navegador para continuar.'));
+    expect(service.activo()).toBe(false);
+    expect(service.motivo()).toBe('Permiso de ubicación denegado. Habilítalo en el navegador para continuar.');
+  });
+
+  it('limpia el motivo al recibir una posición válida', () => {
+    const service = setup();
+    service.iniciar();
+    posiciones.error(new Error('sin gps'));
+    expect(service.motivo()).toBe('sin gps');
+
+    // Un reintento exitoso no debe arrastrar el motivo anterior.
+    posiciones = new Subject<Point>();
+    service.iniciar();
+    expect(service.motivo()).toBeNull();
+
+    posiciones.next({ latitud: 3, longitud: 4 });
+    expect(service.motivo()).toBeNull();
+  });
+
+  it('detener de forma intencional limpia el motivo', () => {
+    const service = setup();
+    service.iniciar();
+    service.detener();
+    expect(service.activo()).toBe(false);
+    expect(service.motivo()).toBeNull();
   });
 
   it('no propaga errores de actualizarUbicacion', () => {
