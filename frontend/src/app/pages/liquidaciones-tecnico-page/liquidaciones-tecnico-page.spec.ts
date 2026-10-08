@@ -23,7 +23,7 @@ function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionRespon
 
 function setup(opts: { tecnico?: TecnicoResponse; liquidaciones?: LiquidacionResponse[] } = {}) {
   const tecnicosApi = {
-    getTecnicoPorUsuarioId: vi.fn(() => of(opts.tecnico ?? { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' })),
+    getMiPerfil: vi.fn(() => of(opts.tecnico ?? { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' })),
   };
   const liquidacionApi = {
     getLiquidacionesPorTecnico: vi.fn(() => of(opts.liquidaciones ?? [liquidacion({}), liquidacion({ id: 'L2', estado: 'APROBADA', comision: 5000 })])),

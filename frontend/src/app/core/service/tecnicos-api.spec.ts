@@ -135,41 +135,26 @@ describe('TecnicosApi', () => {
     expect((await promise)[0].nombre).toBe('Juan');
   });
 
-  it('getTecnicoPorUsuarioId busca por usuarioId', async () => {
-    const promise = firstValueFrom(api.getTecnicoPorUsuarioId(7));
-    http.expectOne('/api/tecnicos').flush([
-      {
-        id: 't1',
-        usuarioId: 6,
-        nombre: 'Juan',
-        correo: 'j@x.co',
-        telefono: null,
-        numeroIdentificacion: '123',
-        fotoUrl: null,
-        categoriasServicio: [],
-        estadoOperativo: 'DISPONIBLE',
-        estadoValidacion: 'APROBADO',
-        motivoRechazoValidacion: null,
-        certificaciones: [],
-        activo: true,
-      },
-      {
-        id: 't2',
-        usuarioId: 7,
-        nombre: 'Diego',
-        correo: 'd@x.co',
-        telefono: null,
-        numeroIdentificacion: '456',
-        fotoUrl: null,
-        categoriasServicio: [],
-        estadoOperativo: 'DISPONIBLE',
-        estadoValidacion: 'APROBADO',
-        motivoRechazoValidacion: null,
-        certificaciones: [],
-        activo: true,
-      },
-    ]);
-    expect((await promise)?.id).toBe('t2');
+  it('getMiPerfil hace GET /api/tecnicos/me y traduce la respuesta', async () => {
+    const promise = firstValueFrom(api.getMiPerfil());
+    const req = http.expectOne('/api/tecnicos/me');
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      id: 't1',
+      usuarioId: 6,
+      nombre: 'Juan',
+      correo: 'j@x.co',
+      telefono: null,
+      numeroIdentificacion: '123',
+      fotoUrl: null,
+      categoriasServicio: ['REFRIGERACION'],
+      estadoOperativo: 'DISPONIBLE',
+      estadoValidacion: 'APROBADO',
+      motivoRechazoValidacion: null,
+      certificaciones: [],
+      activo: true,
+    });
+    expect((await promise).id).toBe('t1');
   });
 
   it('getOfertasParaTecnico compone la OT anidada', async () => {

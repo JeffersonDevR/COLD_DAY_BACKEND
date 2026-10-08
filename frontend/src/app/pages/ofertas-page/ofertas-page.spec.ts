@@ -29,7 +29,7 @@ const oferta: OfertaTecnicoResponse = {
 
 function setup(tecnico: TecnicoResponse | undefined) {
   const tecnicosApi = {
-    getTecnicoPorUsuarioId: vi.fn(() => of(tecnico)),
+    getMiPerfil: vi.fn(() => of(tecnico)),
     getOfertasParaTecnico: vi.fn(() => of([oferta])),
     aceptarOferta: vi.fn(() => of(true)),
   };
@@ -99,7 +99,7 @@ describe('OfertasPage', () => {
 
   it('reporta error si no se carga el perfil', () => {
     const tecnicosApi = {
-      getTecnicoPorUsuarioId: vi.fn(() => throwError(() => new Error('sin red'))),
+      getMiPerfil: vi.fn(() => throwError(() => new Error('sin red'))),
       getOfertasParaTecnico: vi.fn(),
       aceptarOferta: vi.fn(),
     };

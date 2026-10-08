@@ -32,7 +32,7 @@ import {
   aTecnicoCercano,
   aTecnicoResponse,
 } from './backend.mappers';
-import { Observable, forkJoin, of } from 'rxjs';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
 import { delay, map, switchMap } from 'rxjs/operators';
 import { pendienteBackend } from '../errorStatus/pendiente-backend';
 
@@ -110,17 +110,20 @@ export class TecnicosApi {
   }
 
   /**
-   * Placeholder de composición: el backend NO expone GET /api/tecnicos/usuario/{id};
-   * se resuelve listando GET /api/tecnicos y buscando por usuarioId.
+   * GET /api/tecnicos/me → perfil del técnico autenticado. El backend lo
+   * resuelve desde el JWT, sin enviar ningún id en la petición.
    */
-  getTecnicoPorUsuarioId(usuarioId: number): Observable<TecnicoResponse | undefined> {
+  getMiPerfil(): Observable<TecnicoResponse> {
     if (this.apiConfig.useMocks()) {
-      const tec = this.mockDb.tecnicos().find(t => t.usuarioId === usuarioId);
-      return of(tec).pipe(delay(150));
+      const tecnico = this.mockDb.tecnicos().find(t => t.id === MOCK_TECNICO_PROPIO_ID);
+      if (!tecnico) {
+        return throwError(() => new Error('Perfil de técnico no disponible en mocks'));
+      }
+      return of(tecnico).pipe(delay(150));
     }
     return this.http
-      .get<TecnicoApiResponse[]>(this.apiConfig.url('/tecnicos'))
-      .pipe(map(list => list.map(aTecnicoResponse).find(t => t.usuarioId === usuarioId)));
+      .get<TecnicoApiResponse>(this.apiConfig.url('/tecnicos/me'))
+      .pipe(map(aTecnicoResponse));
   }
 
   /**

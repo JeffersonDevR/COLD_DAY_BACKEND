@@ -22,7 +22,7 @@ function ot(id: string, estado: OtResponse['estado']): OtResponse {
 
 function setup(opts: { tecnico?: TecnicoResponse | undefined; ots?: OtResponse[] } = {}) {
   const tecnicosApi = {
-    getTecnicoPorUsuarioId: vi.fn(() => of(opts.tecnico ?? tecnico)),
+    getMiPerfil: vi.fn(() => of(opts.tecnico ?? tecnico)),
     getMisOts: vi.fn(() => of(opts.ots ?? [ot('a', 'EN_CAMINO'), ot('b', 'FINALIZADA')])),
     actualizarEstadoOperativo: vi.fn(() => of(true)),
   };

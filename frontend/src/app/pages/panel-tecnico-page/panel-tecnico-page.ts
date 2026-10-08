@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -16,7 +15,6 @@ import { environment } from '../../core/environment/environment';
   templateUrl: './panel-tecnico-page.html',
 })
 export class PanelTecnicoPage {
-  readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
@@ -28,7 +26,7 @@ export class PanelTecnicoPage {
   readonly misOtsEnCurso = signal<OtResponse[]>([]);
 
   constructor() {
-    cargarTecnicoAutenticado(this.authService, this.tecnicosApi, (tecnico) => {
+    cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => {
       this.tecnico.set(tecnico);
       if (tecnico) {
         this.tecnicosApi.getMisOts().subscribe({
