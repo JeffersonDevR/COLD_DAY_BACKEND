@@ -4,8 +4,8 @@
   "scripts": {
     "ng": "ng",
     "maps-key": "node scripts/generate-maps-key.mjs",
-    "api-url": "node scripts/generate-api-url.mjs",
-    "gen:config": "npm run maps-key && npm run api-url",
+    "api-origin": "node scripts/generate-api-origin.mjs",
+    "gen:config": "npm run maps-key && npm run api-origin",
     "postinstall": "npm run gen:config",
     "prestart": "npm run gen:config",
     "start": "ng serve",
