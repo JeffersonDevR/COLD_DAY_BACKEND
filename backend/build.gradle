@@ -86,6 +86,10 @@ tasks.named('test') {
 	// los barridos deterministas sin tocar el producto.
 	systemProperty 'app.insumos.barrido-ms', '3600000'
 	systemProperty 'app.dispatch.escalamiento-ms', '3600000'
+	// SSE heartbeat and ticket purge are background sweeps; pushing them out of
+	// the test window keeps stream assertions deterministic.
+	systemProperty 'app.sse.heartbeat-ms', '3600000'
+	systemProperty 'app.sse.purge-ms', '3600000'
 	finalizedBy tasks.named('jacocoTestReport')
 }
 

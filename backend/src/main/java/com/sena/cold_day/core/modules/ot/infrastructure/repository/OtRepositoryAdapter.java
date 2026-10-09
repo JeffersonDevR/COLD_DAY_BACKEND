@@ -4,12 +4,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OtEstadoHistorial;
+import com.sena.cold_day.core.modules.ot.domain.events.OtEstadoCambiado;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtEstadoHistorialRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
@@ -29,11 +31,13 @@ public class OtRepositoryAdapter implements OtRepository {
 
     private final SpringDataOtRepository repository;
     private final OtEstadoHistorialRepository historialRepository;
+    private final ApplicationEventPublisher events;
 
     public OtRepositoryAdapter(SpringDataOtRepository repository,
-            OtEstadoHistorialRepository historialRepository) {
+            OtEstadoHistorialRepository historialRepository, ApplicationEventPublisher events) {
         this.repository = repository;
         this.historialRepository = historialRepository;
+        this.events = events;
     }
 
     @Override
@@ -51,6 +55,15 @@ public class OtRepositoryAdapter implements OtRepository {
 
         for (CambioEstado cambio : ot.drenarCambiosPendientes()) {
             historialRepository.append(OtEstadoHistorial.registrar(ot.getId(), cambio));
+            // Deliberate compromise: the domain should own event publication, but
+            // the aggregate cannot reach the publisher without a Spring dependency.
+            // This drain loop is the single choke point every state-changing save
+            // passes through, so publishing here covers the transitions that have
+            // no dedicated domain event (EN_CAMINO, EN_DIAGNOSTICO, EN_REPARACION)
+            // without touching a dozen use cases that would drift apart. The list
+            // only contains real changes, so nothing is published when the state
+            // did not change.
+            events.publishEvent(new OtEstadoCambiado(ot.getId(), cambio.origen(), cambio.destino()));
         }
         return persisted.toDomain();
     }
