@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import com.sena.cold_day.core.modules.ot.domain.events.OtEstadoCambiado;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtEstadoCambiadoSseApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.sse.SseEmitterRegistry;
 
 import tools.jackson.databind.ObjectMapper;
@@ -27,7 +28,21 @@ class OtEstadoCambiadoSseListenerTest {
         assertThat(registro.llamadas).isEqualTo(1);
         assertThat(registro.clave).isEqualTo(otId.valor().toString());
         assertThat(registro.evento).isEqualTo(OtEstadoCambiadoSseListener.EVENTO);
-        assertThat(registro.payload).isEqualTo(evento);
+        // The payload is the wire record, not the domain event: the identifier
+        // travels as a scalar string instead of nested as {"valor":"..."}.
+        assertThat(registro.payload).isEqualTo(
+                new OtEstadoCambiadoSseApiResponse(otId.valor().toString(), EstadoOt.ASIGNADA, EstadoOt.EN_CAMINO));
+    }
+
+    @Test
+    void serialisesThePayloadWithAScalarOtId() throws Exception {
+        OtId otId = OtId.nueva();
+        OtEstadoCambiado evento = new OtEstadoCambiado(otId, EstadoOt.ASIGNADA, EstadoOt.EN_CAMINO);
+        String json = new ObjectMapper().writeValueAsString(OtEstadoCambiadoSseApiResponse.de(evento));
+
+        assertThat(json).isEqualTo("{\"otId\":\"%s\",\"origen\":\"ASIGNADA\",\"destino\":\"EN_CAMINO\"}"
+                .formatted(otId.valor()));
+        assertThat(json).doesNotContain("\"valor\"");
     }
 
     /** Registry that records the publication instead of sending it. */
