@@ -22,7 +22,7 @@ import {
   LiquidacionApiResponse,
   MetricasAdminApiResponse,
   OfertaInsumoApiResponse,
-  OfertaOtApiResponse,
+  OfertaOtConResumen,
   OtApiResponse,
   ProveedorApiResponse,
   SolicitudInsumoApiResponse,
@@ -214,12 +214,26 @@ describe('backend.mappers — contratos existentes', () => {
       estadoOrigen: 'SOLICITADA', estadoDestino: 'ASIGNADA', actor: 'SISTEMA',
       ocurridoEn: '2026-01-01T00:00:00', motivo: 'asignada',
     })).toMatchObject({ estado: 'ASIGNADA', actor: 'SISTEMA', comentario: 'asignada' });
-    const oferta: OfertaOtApiResponse = {
+    const oferta: OfertaOtConResumen = {
       id: 'of1', otId: 'ot1', tecnicoId: 't1', radioKm: 10, estado: 'PENDIENTE',
       creadaEn: '2026-01-01T00:00:00', expiraEn: new Date(Date.now() + 60_000).toISOString(),
+      ot: {
+        id: 'ot1', estado: 'BUSCANDO_TECNICO', categoriaServicio: 'REFRIGERACION',
+        descripcionFalla: 'no enfría', direccion: 'calle 1', clienteNombre: 'Ana',
+        latitud: 4.6, longitud: -74.1,
+      },
     };
-    expect(aOfertaTecnico(oferta, aOtResponse(otDto())).segundosRestantes).toBeGreaterThan(0);
-    expect(aOfertaTecnico({ ...oferta, expiraEn: 'invalid' }, aOtResponse(otDto())).segundosRestantes).toBe(0);
+    const vm = aOfertaTecnico(oferta);
+    expect(vm.segundosRestantes).toBeGreaterThan(0);
+    // La OT embebida se puebla desde el resumen de la oferta, sin un
+    // GET /api/ot/{id} aparte.
+    expect(vm.ot).toMatchObject({
+      id: 'ot1', categoriaServicio: 'REFRIGERACION', descripcionFalla: 'no enfría',
+      direccion: 'calle 1', clienteNombre: 'Ana', estado: 'BUSCANDO_TECNICO',
+      punto: { latitud: 4.6, longitud: -74.1 }, auxiliaresRequeridos: 0,
+    });
+    expect(vm.ot.barrio).toBeUndefined();
+    expect(aOfertaTecnico({ ...oferta, expiraEn: 'invalid' }).segundosRestantes).toBe(0);
   });
 
   it('mapea liquidación, disputa y métricas administrativas', () => {

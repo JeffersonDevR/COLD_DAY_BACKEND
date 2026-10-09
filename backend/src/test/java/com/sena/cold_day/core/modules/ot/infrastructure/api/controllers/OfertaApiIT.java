@@ -207,7 +207,42 @@ class OfertaApiIT {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(vigente.getId().valor().toString()))
                 .andExpect(jsonPath("$[0].estado").value("PENDIENTE"))
-                .andExpect(jsonPath("$[0].otId").value(ot.getId().valor().toString()));
+                .andExpect(jsonPath("$[0].otId").value(ot.getId().valor().toString()))
+                .andExpect(jsonPath("$[0].ot.id").value(ot.getId().valor().toString()))
+                .andExpect(jsonPath("$[0].ot.estado").value("BUSCANDO_TECNICO"))
+                .andExpect(jsonPath("$[0].ot.categoriaServicio").value("REFRIGERACION"))
+                .andExpect(jsonPath("$[0].ot.descripcionFalla").value("No enciende"))
+                .andExpect(jsonPath("$[0].ot.direccion").value("Calle 1"))
+                .andExpect(jsonPath("$[0].ot.latitud").value(BOGOTA.latitud()))
+                .andExpect(jsonPath("$[0].ot.longitud").value(BOGOTA.longitud()))
+                .andExpect(jsonPath("$[0].ot.clienteNombre").value("Fixture"));
+    }
+
+    @Test
+    void theNestedOrderSummaryDoesNotLeakFieldsReservedForParticipants() throws Exception {
+        Long usuarioId = crearUsuario("tecnico-no-fuga@example.com");
+        TecnicoId tecnicoId = crearTecnicoDisponible(usuarioId);
+        Ot ot = crearOtBuscando();
+        Instant ahora = Instant.now();
+        ofertaRepository.save(OfertaOt.crear(ot.getId(), tecnicoId, 10.0,
+                ahora, ahora.plusSeconds(60)));
+
+        mockMvc.perform(get("/api/tecnicos/me/ofertas")
+                        .header("Authorization", "Bearer " + jwt(usuarioId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].ot").exists())
+                // Holding a pending offer is not participation: the summary must
+                // not carry anything that only makes sense after assignment or
+                // that leaks more than the offer decision needs.
+                .andExpect(jsonPath("$[0].ot.actaCodigoVerificacion").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.diagnostico").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.presupuesto").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.clienteId").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.tarifaVisita").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.medioPagoVisita").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.actaFirmada").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.calificacionEstrellas").doesNotExist())
+                .andExpect(jsonPath("$[0].ot.calificacionComentario").doesNotExist());
     }
 
     @Test

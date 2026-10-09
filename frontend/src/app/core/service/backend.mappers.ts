@@ -39,7 +39,7 @@ import {
   LiquidacionApiResponse,
   MetricasAdminApiResponse,
   OfertaInsumoApiResponse,
-  OfertaOtApiResponse,
+  OfertaOtConResumen,
   OtApiRequest,
   OtApiResponse,
   PresupuestoApi,
@@ -246,11 +246,28 @@ export function aHistorialOtItem(dto: HistorialEstadoApiResponse): HistorialOtIt
   };
 }
 
-export function aOfertaTecnico(dto: OfertaOtApiResponse, ot: OtResponse): OfertaTecnicoResponse {
+export function aOfertaTecnico(dto: OfertaOtConResumen): OfertaTecnicoResponse {
   return {
     id: dto.id,
     otId: dto.otId,
-    ot,
+    // La oferta embebe un resumen reducido de la OT: NO hay un GET /api/ot/{id}
+    // aparte (quien sostiene una oferta PENDIENTE no es participante de la orden
+    // y ese fetch devolvía 403, tumbando toda la lista). El OtResponse se arma
+    // con lo que el resumen sí expone.
+    ot: {
+      id: dto.ot.id,
+      categoriaServicio: dto.ot.categoriaServicio,
+      descripcionFalla: dto.ot.descripcionFalla,
+      direccion: dto.ot.direccion,
+      estado: dto.ot.estado,
+      clienteNombre: dto.ot.clienteNombre ?? undefined,
+      punto: { latitud: dto.ot.latitud, longitud: dto.ot.longitud },
+      // El resumen no expone `auxiliaresRequeridos`: el conteo real lo declara el
+      // técnico al aceptar, así que acá se parte de 0.
+      auxiliaresRequeridos: 0,
+      // `barrio` tampoco viaja en el resumen; queda undefined y la plantilla ya
+      // cae a 'Cúcuta' ({{ ot.barrio || 'Cúcuta' }}).
+    },
     tecnicoId: dto.tecnicoId,
     // Pendiente(backend): OfertaOtApiResponse no expone distancia; se usa el radio difundido.
     distanciaKm: 0,

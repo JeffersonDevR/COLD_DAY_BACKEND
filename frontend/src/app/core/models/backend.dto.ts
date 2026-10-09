@@ -385,6 +385,25 @@ export interface HistorialEstadoApiResponse {
   motivo: string | null;
 }
 
+/**
+ * Resumen reducido de la OT que viaja embebido en una oferta pendiente.
+ *
+ * NO es un OtApiResponse completo a propósito: quien sostiene una oferta
+ * PENDIENTE todavía no participa de la orden, así que los datos posteriores a
+ * la asignación (diagnostico, presupuesto, actaCodigoVerificacion, clienteId,
+ * tarifaVisita, calificacion*) quedan fuera y no se agregarán.
+ */
+export interface OfertaOtResumenApiResponse {
+  id: string;
+  estado: EstadoOt;
+  categoriaServicio: CategoriaServicio;
+  descripcionFalla: string;
+  direccion: string;
+  clienteNombre: string | null;
+  latitud: number;
+  longitud: number;
+}
+
 export interface OfertaOtApiResponse {
   id: string;
   otId: string;
@@ -393,7 +412,22 @@ export interface OfertaOtApiResponse {
   estado: OfertaEstado;
   creadaEn: string;
   expiraEn: string;
+  /**
+   * Resumen reducido de la OT embebido por el backend (ver OfertaOtResumenApiResponse).
+   *
+   * Puede llegar `null`: el backend mantiene una rama defensiva para una oferta
+   * cuyo orden no se pudo resolver. El consumidor DEBE descartar esa oferta en
+   * vez de leerla, o la lista entera se cae.
+   */
+  ot: OfertaOtResumenApiResponse | null;
 }
+
+/**
+ * Oferta con su resumen de OT garantizado. Es lo que el mapper necesita: el
+ * filtro de `getOfertasParaTecnico` descarta las ofertas sin orden, así que para
+ * cuando el mapper las ve, el resumen ya no puede ser null.
+ */
+export type OfertaOtConResumen = OfertaOtApiResponse & { ot: OfertaOtResumenApiResponse };
 
 export interface TarifaEstimarApiRequest {
   latitud: number;

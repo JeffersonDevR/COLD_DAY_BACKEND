@@ -1,8 +1,10 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
@@ -72,6 +74,19 @@ public class OtRepositoryAdapter implements OtRepository {
     @Transactional(readOnly = true)
     public Optional<Ot> buscarPorId(OtId id) {
         return repository.findById(id.valor()).map(OtJpaEntity::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Ot> buscarPorIds(Collection<OtId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> valores = ids.stream().filter(id -> id != null).map(OtId::valor).toList();
+        if (valores.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllById(valores).stream().map(OtJpaEntity::toDomain).toList();
     }
 
     @Override
