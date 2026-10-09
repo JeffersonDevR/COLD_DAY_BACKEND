@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { SeguimientoOtPage } from './seguimiento-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
@@ -8,6 +8,7 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { MapsApi } from '../../core/service/maps-api';
 import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';
+import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse } from '../../core/models/common.models';
 
@@ -46,6 +47,8 @@ function setup(ot: OtResponse = orden) {
     distancia: vi.fn(() => of({ distanciaKm: 3.2, duracionMin: 8, distanciaTexto: '3.2 km', duracionTexto: '8 min' })),
   };
   const toast = { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() };
+  const sseEventos = new Subject<OtEstadoCambiado>();
+  const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
   TestBed.configureTestingModule({
     imports: [SeguimientoOtPage],
     providers: [
@@ -57,6 +60,7 @@ function setup(ot: OtResponse = orden) {
       { provide: MapsApi, useValue: mapsApi },
       { provide: ApiConfig, useValue: { useMocks: () => false } },
       { provide: MockDbService, useValue: { ordenesTrabajo: () => [] } },
+      { provide: SseService, useValue: sse },
       { provide: ToastService, useValue: toast },
     ],
   });
@@ -64,7 +68,7 @@ function setup(ot: OtResponse = orden) {
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(SeguimientoOtPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, otApi, toast, navigate };
+  return { fixture, clientesApi, otApi, toast, navigate, sse, sseEventos };
 }
 
 describe('SeguimientoOtPage', () => {
@@ -184,5 +188,27 @@ describe('SeguimientoOtPage', () => {
   it('no sondea la ubicación en estados donde el técnico ya no se desplaza', () => {
     const { otApi } = setup({ ...orden, estado: 'FINALIZADA' });
     expect(otApi.getTecnicoUbicacion).not.toHaveBeenCalled();
+  });
+
+  it('abre el stream de cambios de estado de la OT cargada', () => {
+    const { sse } = setup();
+    expect(sse.abrirOtStream).toHaveBeenCalledWith('ot1');
+  });
+
+  it('recarga la OT al recibir un cambio de estado de la misma orden', () => {
+    const { otApi, sseEventos } = setup();
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+
+    sseEventos.next({ otId: 'ot1', origen: 'EN_CAMINO', destino: 'EN_DIAGNOSTICO' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignora un cambio de estado de otra orden', () => {
+    const { otApi, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot-ajena', origen: 'SOLICITADA', destino: 'ASIGNADA' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 });

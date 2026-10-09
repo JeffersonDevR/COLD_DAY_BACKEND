@@ -11,6 +11,7 @@ import { OtApi } from '../../core/service/ot-api';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { MapsApi } from '../../core/service/maps-api';
+import { SseService } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';
 import { MapaRadar } from '../../shared/mapa-radar/mapa-radar';
@@ -50,6 +51,7 @@ export class SeguimientoOtPage implements OnInit {
   private readonly otApi = inject(OtApi);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly mapsApi = inject(MapsApi);
+  private readonly sse = inject(SseService);
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
   private readonly toast = inject(ToastService);
@@ -102,6 +104,7 @@ export class SeguimientoOtPage implements OnInit {
       (id) => {
         this.otId.set(id);
         this.iniciarSeguimientoTecnico(id);
+        this.escucharCambiosDeEstado(id);
       },
       (orden) => {
         this._otRemoto.set(orden);
@@ -124,6 +127,27 @@ export class SeguimientoOtPage implements OnInit {
         this.cargarTecnicosCercanos();
       },
     });
+  }
+
+  /**
+   * Actualización en vivo: el backend empuja cada cambio de estado por SSE y acá
+   * se recarga la OT. Es solo una mejora: si el stream no está disponible (mock,
+   * SSR o caída de red) la página sigue funcionando con la recarga manual, por
+   * eso un fallo se silencia en vez de avisar al usuario.
+   */
+  private escucharCambiosDeEstado(id: string): void {
+    this.sse
+      .abrirOtStream(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (payload) => {
+          // Solo reacciona al cambio de la orden que se está viendo.
+          if (payload.otId === this.otId()) this.recargarOt();
+        },
+        error: () => {
+          // El stream es un extra: nunca rompe ni alerta a la página.
+        },
+      });
   }
 
   /** Técnicos disponibles dentro del radio de búsqueda para el radar. */

@@ -34,7 +34,12 @@ public final class RutasPublicas {
             // creation call is anonymous, while GET /api/proveedores (the roster)
             // and PATCH /api/proveedores/{id}/validacion (the operator decision)
             // stay behind ADMINISTRADOR.
-            "POST /api/proveedores");
+            "POST /api/proveedores",
+            // SSE stream: reached without a JWT by design, authenticated instead
+            // by a single-use ticket query parameter (EventSource cannot send the
+            // Authorization header). Only this exact path is open; the ticket
+            // endpoint POST /api/sse/ticket stays behind anyRequest().authenticated().
+            "GET /api/ot/{id}/stream");
 
     /** Prefixes that are intentionally anonymous, subtree included. */
     public static final List<String> PREFIJOS = List.of(

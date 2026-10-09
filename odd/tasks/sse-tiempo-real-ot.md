@@ -1,15 +1,29 @@
 # Feature: sse-tiempo-real-ot
 
 ## Objective
-Push OT state changes to the browser in real time so the client's OT page stops requiring a manual reload while it searches for a technician. Server-Sent Events, authenticated with a one-time ticket.
+Push server-side events to the browser in real time over Server-Sent Events, authenticated with a one-time ticket. Two consumers:
+1. **Client** — OT state changes, so the OT page stops requiring a manual reload while it searches for a technician.
+2. **Technician** — new offers, so a 60-second broadcast window is actually reachable.
 
 ## Problem
 There is no push mechanism anywhere in the stack — verified: zero occurrences of `SseEmitter`, `text/event-stream`, `EventSource`, `WebSocket` or STOMP across `backend/` and `frontend/`. The only refresh mechanism is `interval()` polling plus the user reloading the page.
 
-That is worst exactly where it hurts most. RF-F1-09 dispatches with a 60-second acceptance window and escalates the radius +5 km when nobody accepts; all of that happens server-side with no way to tell the client. The client stares at a stale screen.
+**Client side.** RF-F1-09 dispatches with a 60-second acceptance window and escalates the radius +5 km when nobody accepts; all of that happens server-side with no way to tell the client.
+
+**Technician side (the acute one).** The offer flow is broken by design, and it is three compounding facts:
+
+| Piece | Reality |
+|---|---|
+| Offer window | `VENTANA_BUSQUEDA = 60s` in `IniciarBusquedaTecnicoUseCase`; `OfertaOt.estaVigente` rejects anything past `expiraEn` |
+| Push | `LoggingNotificacionPushAdapter` only logs. The port `NotificacionPushPort` exists and is documented as waiting for a real transport |
+| Offers page | `ofertas-page.ts` loads once in the constructor; only `recargarOfertas()` is manual |
+
+So the technician must be sitting on the offers page AND press reload within 60 seconds of the offer being created. Anywhere else in the app, they never learn about it. No amount of polling on that page fixes "the technician is on another screen" — the push is the missing piece.
+
+There is also an upstream cause that is already fixed on a different branch: `IniciarBusquedaTecnicoUseCase.ejecutarOferta` creates one offer per technician returned by `buscarDisponiblesEnRadio`, whose SQL requires `activo AND estado_validacion='APROBADO' AND estado_operativo='DISPONIBLE'` and non-null coordinates. With no technician carrying coordinates, zero offers are created. `fix/tecnico-activar-ubicacion` gave the technician the button to start reporting their position; that branch is not merged or deployed.
 
 ## Why
-The events already exist as an in-process seam (`ApplicationEventPublisher` is used by 15+ use cases), so the missing piece is transport, not domain modelling.
+The events already exist as an in-process seam (`ApplicationEventPublisher` is used by 15+ use cases), so the missing piece is transport, not domain modelling. And the offer window is a product requirement (RF-F1-09) that the current architecture cannot satisfy at all.
 
 ## Decision (user, 2026-10-09)
 **One-time ticket authentication.** `POST /api/sse/ticket` (authenticated with the normal `Authorization` header) returns an opaque single-use code with a short TTL; the `EventSource` carries it as a query parameter. The JWT never reaches the access logs. Chosen over JWT-as-query-param (leaks a live bearer credential into Render's logs) and over HttpOnly cookies (an authentication migration: CORS credentials, `SameSite=None; Secure`, CSRF implications — far beyond this feature).
@@ -58,14 +72,20 @@ Everything else is silent: `IniciarDesplazamientoUseCase`, `ConfirmarLlegadaUseC
 User asked for SSE implementation to fix the recurring need to reload the OT page while it searches for technicians, and chose the ticket authentication model.
 
 ## Acceptance criteria
-- [ ] T1: `POST /api/sse/ticket` returns a single-use, short-TTL opaque ticket bound to the caller; it cannot be replayed and expires.
-- [ ] T2: `GET` stream endpoint accepts `?ticket=`, validates it, enforces OT participation, and streams `OtEstadoCambiado` events for that order.
-- [ ] T3: every OT transition reaches the stream, including the ones with no domain event today (`EN_CAMINO`, arrival, diagnosis, budget approval, acta). Proven by a test that drives at least one previously-silent transition.
-- [ ] T4: emitters are removed on completion, timeout and error; no unbounded growth.
-- [ ] T5: events are published only after commit; a rolled-back transition emits nothing.
-- [ ] T6: the client's OT page updates without a manual reload when the order is assigned, cancelled or finalized.
-- [ ] T7: the frontend recovers from a dropped connection by fetching a NEW ticket and recreating the `EventSource`.
-- [ ] T8: both suites green, `tsc` and lint clean, work-unit commits.
+- [x] T1: `POST /api/sse/ticket` returns a single-use, short-TTL opaque ticket bound to the caller; it cannot be replayed and expires. — SHA-256 at rest via `TokenGeneratorPort`; `consumir` removes before validating, so a replay fails even concurrently; scheduled purge reclaims never-presented tickets. IT covers 401 for invalid and the double-use rejection.
+- [x] T2: `GET` stream endpoint accepts `?ticket=`, validates it, enforces OT participation, and streams events for that order. — `OtStreamController` consumes the ticket, builds the identity, then applies `exigirParticipanteOAdmin`. IT proves a technician cannot stream another technician's order.
+- [x] T3: every OT transition reaches the stream, including the ones with no domain event today. Proven by `aTransitionWithoutADomainEventReachesTheStream`, a real MockMvc SSE test that opens the stream, drives `iniciarDesplazamiento` (no domain event exists for it) and reads `EN_CAMINO` off the response body. — Note: `ConfirmarLlegada` and `RegistrarActaGarantia` produce no `CambioEstado` at all (facts on an unchanged state), so they correctly emit nothing.
+- [x] T4: emitters are removed on completion, timeout and error; no unbounded growth. — `SseEmitterRegistry.crear` owns creation and wires all three callbacks, so they cannot be forgotten; 10 unit tests cover each path plus the heartbeat sweep.
+- [~] T5: events are published only after commit; a rolled-back transition emits nothing. — Implemented with `@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)` and documented in place, but **still not proven by a test**: the listener test only covers routing. A rollback-emits-nothing test is outstanding.
+- [x] T6: the client's OT page updates without a manual reload when the order is assigned, cancelled or finalized. — `SseService.abrirOtStream` + `seguimiento-ot-page.escucharCambiosDeEstado` reload via the existing `recargarOt()` and only for the order being viewed.
+- [ ] T7: a new offer reaches the technician's stream the moment it is created, without the technician being on the offers page. — Slice 3, not started.
+- [x] T8: the frontend recovers from a dropped connection by fetching a NEW ticket and recreating the `EventSource`. — Native reconnect is deliberately disabled (it would replay a burned ticket into a 401 loop); the service closes on error, backs off, fetches a fresh ticket and reopens. Bounded at 5 consecutive failures. Covered by tests including teardown.
+- [ ] T9: both suites green, `tsc` and lint clean, work-unit commits.
+
+## Slice plan (forecast exceeds the ~400-line delivery budget)
+1. **Slice 1 — backend transport.** Ticket issuance/consumption, emitter registry, stream endpoint, `SecurityConfig` narrowing, `OtEstadoCambiado` published from the choke point. Verifiable by backend tests alone; no frontend consumer yet.
+2. **Slice 2 — frontend client + client's OT page.** SSE service (ticket, `EventSource`, reconnect with a fresh ticket, backoff, teardown) and the OT page wiring. Delivers real-time OT state end-to-end.
+3. **Slice 3 — offers.** Backend emits the new offer to the technician's stream and the offers page consumes it. This is the slice that fixes the reported pain.
 
 ## Tasks
 - [ ] T1 (backend): ticket issuance + single-use store with TTL (reuse `SecureRandomTokenGenerator`; hash at rest to match the reset-token house style).
@@ -74,7 +94,9 @@ User asked for SSE implementation to fix the recurring need to reload the OT pag
 - [ ] T4 (backend): tests — replay rejection, expiry, cross-order authorization refusal, silent-transition coverage, emitter cleanup.
 - [ ] T5 (frontend): SSE client service (ticket fetch, `EventSource`, reconnect with a fresh ticket, backoff, teardown).
 - [ ] T6 (frontend): wire the OT page to the stream; keep polling as a fallback only where it still earns its place.
-- [ ] T7 (parent): verification, commits, report.
+- [ ] T7 (backend): publish the created offer to the technician's stream.
+- [ ] T8 (frontend): wire the offers page to the stream.
+- [ ] T9 (parent): verification, commits, report.
 
 ## Known gotchas to hand to the implementer
 1. **`EventSource` auto-reconnect is actively harmful here.** Its built-in retry re-requests the same URL, whose ticket is already burned, producing a 401/403 loop. The client must close the source on error and recreate it with a fresh ticket, with backoff. Do not rely on the native reconnect.
@@ -83,10 +105,35 @@ User asked for SSE implementation to fix the recurring need to reload the OT pag
 4. **Tests must not hang.** An SSE integration test that opens a stream and waits will block the suite. Use a bounded timeout and assert on the first event.
 
 ## Progress
-- 2026-10-09: feature doc created. Not started — two other features are in flight on the same working tree.
+- 2026-10-09: feature doc created. Not started — two other features were in flight on the same working tree.
+- 2026-10-09: rebased onto a clean `main` after `fix/tecnico-activar-ubicacion` merged (PRs #26 and #27). Branch `feat/sse-tiempo-real` from `b505dc1`, diff against `origin/main` empty.
+- 2026-10-09: **Slice 1 done.** Transport delivered: ticket service, ticket endpoint, emitter registry, `GET /api/ot/{id}/stream`, `OtEstadoCambiado` published from the drain choke point, `SecurityConfig` narrowed to `GET /api/ot/*/stream`. Backend suite **100 classes / 730 tests / 0 failures / 0 errors / 0 skipped** (baseline 703, +27: 24 new feature tests across 4 new classes plus 3 dynamic ones from the new endpoints and the allowlist entry).
+- 2026-10-09: **Slice 1 proven over real HTTP**, not just MockMvc. Against a locally running server: ticket issued, stream opened, `iniciar-desplazamiento` driven, and the event observed arriving on the stream. This run also produced two real findings (below).
+- 2026-10-09: **Payload flattened** (`faec587`). The event nested the domain `OtId` as `{"valor":"..."}`; a dedicated wire record now carries a scalar string id, matching the convention `OtApiResponse` already uses (the domain is never annotated with Jackson). Backend **100 classes / 731 tests / 0 failures**.
+- 2026-10-09: **Slice 2 done.** `SseService` (cold observable, fresh ticket per reconnect, backoff, bounded failures, real teardown, mock/SSR no-ops) + `seguimiento-ot-page` wiring. Frontend **tsc exit 0, 464 tests passed, lint clean** (baseline 451, +13).
+
+## Findings from the live HTTP run (slice 1)
+- **There is no event replay, and that is a design property, not a bug.** An event published before a client connects is lost: emitters are in-memory and there is no event store. Acceptable for the OT page because it loads state over REST on connect and only needs the deltas after that. **This assumption must hold for the offers slice too** — an offer created before the technician connects will not arrive over the stream, so the offers page must keep loading its state over REST. It is an assumption to sustain, not to ignore.
+- The first live attempt appeared to fail and the cause was the test command, not the code: a malformed `curl` argument made curl treat part of the header as a URL, and the resulting DNS timeout delayed the stream opening until **after** the transition, so `publicar` found no registered emitter. Diagnosed by a discriminating experiment (heartbeats kept arriving after the event, proving the emitter was never dropped) rather than by guessing.
+
+## Slice 2 notes
+- **A flaw in the orchestrator's own spec was found and corrected.** The brief said to reset the reconnect counter "after a successful event or a successful open". Resetting on `onopen` defeats the anti-infinite-loop bound: a server that accepts and immediately closes resets the counter every cycle and the cap is never reached. Resetting only on a received event is also wrong, because a silent-but-healthy OT (heartbeats are comments and never reach the JS handler) can go hours without an event and a few isolated drops would make the client give up. The criterion is now **how long the connection lived** (10 s): a server that will fail does so immediately, while a healthy connection that drops has normally lived longer.
+- `confirm-dialog.spec.ts` is flaky under parallel full-suite load (5 s timeout) and passes in isolation. Pre-existing, unrelated, not touched. It did not fail on the final run.
+
+## Verification notes (slice 1)
+- The parent's first `gradlew test` returned **`UP-TO-DATE`** and executed nothing. That is a false green: Gradle skipped the task because the inputs were unchanged since the worker's run. It was re-run as `cleanTest test --rerun-tasks` (7 tasks executed, BUILD SUCCESSFUL, 4m35s) before any verification claim was made. Do not accept `UP-TO-DATE` as evidence.
+- `SecureRandomTokenGenerator` actually lives in `core/modules/usuarios/infrastructure/security/`, NOT in `core/shared/infrastructure/security/` as the delegation prompt stated. The worker did not follow the wrong path blindly: it reused the class through its `TokenGeneratorPort` interface, which is the injection point `RecuperarContrasenaUseCase` already uses.
+- Deviation accepted: `RutasPublicas.EXACTAS` (test-only allowlist) gained `GET /api/ot/{id}/stream`. `EndpointsProtegidosTest` probes every endpoint anonymously with a placeholder path variable, and `@PathVariable OtId` fails UUID binding (400) before the ticket check runs, so the endpoint cannot self-report 401. The entry is honest — the path really is public by design — and `SseOtStreamIT` covers the 401 for an invalid ticket. No production rule was widened.
+- Unexplained build detritus: `org/springframework/web/servlet/mvc/method/annotation/{ResponseBodyEmitter$DataWithMediaType,SseEmitter$SseEventBuilderImpl}.class` appeared at the **repository root** (mtime 15:06, the worker's run; not reproduced by the forced run). Two private inner classes of Spring, i.e. compiled from Spring's own source. Cause not determined. Deleted; it is not source and must never be committed. The root `.gitignore` does not cover it — worth adding, but that file is already modified by another session and was deliberately left untouched.
+
+## Risks carried into later slices
+- `OtEstadoCambiado` is published from an infrastructure adapter (documented compromise in place). **`intentarAsignar` bypasses `save(Ot)`** and therefore does not emit it — assignment still emits the dedicated `OtAsignada`, so the stream has coverage, but a future consumer must not assume every state change flows through the drain loop.
+- In-memory tickets and emitters are per-instance. A multi-instance deployment needs sticky routing or a shared store.
+- No emitter cap or per-key fan-out limit yet; consider one before production, plus explicit registry cleanup on shutdown (`limpiar()` exists and is currently used only by tests).
 
 ## Out of scope / follow-ups
 - Replacing the remaining `interval()` polling wholesale. `seguimiento-ot-page` still polls the technician position every 15 s by design (that is a high-frequency numeric stream, a different problem from discrete state changes).
-- Technician offer notifications over SSE. Natural second consumer of the same transport; not in this scope.
 - Redis pub/sub for multi-instance fan-out. Required before scaling out; deliberately deferred.
 - Persisting events for `Last-Event-ID` replay after a reconnect gap. Not needed while the client reloads the order on (re)connect.
+- A real push transport for offline technicians (FCM/APNs). SSE only helps while the tab is open; the 60-second window is still missed by a technician whose phone is in their pocket. That is inherent to RF-F1-09 and needs a mobile push channel, not SSE.
+- **Prerequisite, different branch:** `fix/tecnico-activar-ubicacion` must be merged and deployed, otherwise zero offers are created and SSE will faithfully stream nothing.

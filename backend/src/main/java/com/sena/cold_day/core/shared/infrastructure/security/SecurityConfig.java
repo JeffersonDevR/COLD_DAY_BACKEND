@@ -82,6 +82,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/tecnicos/*/validacion")
                         .hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
+                        // SSE stream: EventSource cannot send the Authorization
+                        // header, so this single path is opened and authenticated
+                        // by a single-use ticket query parameter instead of the
+                        // JWT filter. It is the narrowest possible rule: the
+                        // ticket endpoint (/api/sse/ticket) stays behind
+                        // anyRequest().authenticated(), and no other /api/ot or
+                        // /api/sse path is widened.
+                        .requestMatchers(HttpMethod.GET, "/api/ot/*/stream").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 // Rate limit de los 4 endpoints publicos de auth: va antes del
