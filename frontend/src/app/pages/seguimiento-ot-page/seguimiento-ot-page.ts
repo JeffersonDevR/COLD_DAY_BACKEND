@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { interval, startWith, switchMap } from 'rxjs';
+import { interval, startWith, switchMap, Subscription } from 'rxjs';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { ClientesApi } from '../../core/service/clientes-api';
@@ -16,7 +16,19 @@ import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';
 import { MapaRadar } from '../../shared/mapa-radar/mapa-radar';
 import { CargoVisitaDiagnostico } from '../../shared/cargo-visita/cargo-visita';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
-import { OtResponse, Point, TecnicoCercano, MedioPago } from '../../core/models/common.models';
+import { OtResponse, Point, TecnicoCercano, MedioPago, EstadoOt } from '../../core/models/common.models';
+
+/**
+ * Estados en los que el técnico asignado debería estar desplazándose. Es la
+ * misma lista que gobierna el cargo de visita: mientras la OT no esté aquí, la
+ * última posición conocida ya no aporta nada al seguimiento.
+ */
+const ESTADOS_TECNICO_EN_MOVIMIENTO: readonly EstadoOt[] = [
+  'ASIGNADA',
+  'EN_CAMINO',
+  'EN_DIAGNOSTICO',
+  'EN_REPARACION',
+];
 
 @Component({
   selector: 'app-seguimiento-ot-page',
@@ -55,11 +67,14 @@ export class SeguimientoOtPage implements OnInit {
   readonly etaMin = signal<number | null>(null);
   readonly tecnicosCercanos = signal<TecnicoCercano[]>([]);
 
+  /** Sondeo de la última posición del técnico; `null` cuando no aplica. */
+  private suscripcionSeguimiento: Subscription | null = null;
+
   /** Muestra el cargo de visita + diagnóstico desde que hay técnico asignado. */
   readonly mostrarCargoVisita = computed<boolean>(() => {
     const orden = this.ot();
     if (!orden?.tecnicoId) return false;
-    return ['ASIGNADA', 'EN_CAMINO', 'EN_DIAGNOSTICO', 'EN_REPARACION'].includes(orden.estado);
+    return ESTADOS_TECNICO_EN_MOVIMIENTO.includes(orden.estado);
   });
 
   readonly mostrarModalCancelar = signal<boolean>(false);
@@ -90,6 +105,8 @@ export class SeguimientoOtPage implements OnInit {
       },
       (orden) => {
         this._otRemoto.set(orden);
+        // La orden llegó después del id: reevalúa si el sondeo aplica.
+        this.iniciarSeguimientoTecnico(this.otId());
         this.recalcularDistancia();
         this.cargarTecnicosCercanos();
       },
@@ -100,6 +117,9 @@ export class SeguimientoOtPage implements OnInit {
     this.otApi.getOtById(this.otId()).subscribe({
       next: (orden) => {
         this._otRemoto.set(orden);
+        // El estado pudo cambiar (p. ej. una disputa saca a la OT del
+        // seguimiento): reevalúa el sondeo con la orden recién cargada.
+        this.iniciarSeguimientoTecnico(this.otId());
         this.recalcularDistancia();
         this.cargarTecnicosCercanos();
       },
@@ -123,7 +143,20 @@ export class SeguimientoOtPage implements OnInit {
 
   /** Sondea la ubicación del técnico asignado y recalcula distancia/ETA. */
   private iniciarSeguimientoTecnico(id: string): void {
-    interval(15000)
+    // La OT se carga de forma asíncrona, así que este método se invoca tanto
+    // cuando entra el id como cuando llega la orden: es idempotente y reacciona
+    // a los dos órdenes posibles.
+    const debe = this.mostrarCargoVisita();
+    if (!debe) {
+      // Sin técnico asignado o en un estado donde nadie se está moviendo:
+      // `GET /api/ot/{id}/tecnico-ubicacion` responde 404. Se deja la última
+      // posición conocida tal como está y no se sondea.
+      this.detenerSeguimientoTecnico();
+      return;
+    }
+    if (this.suscripcionSeguimiento) return;
+
+    this.suscripcionSeguimiento = interval(15000)
       .pipe(
         startWith(0),
         switchMap(() => this.otApi.getTecnicoUbicacion(id)),
@@ -133,6 +166,11 @@ export class SeguimientoOtPage implements OnInit {
         this.tecnicoUbicacion.set(ubicacion);
         this.recalcularDistancia();
       });
+  }
+
+  private detenerSeguimientoTecnico(): void {
+    this.suscripcionSeguimiento?.unsubscribe();
+    this.suscripcionSeguimiento = null;
   }
 
   private recalcularDistancia(): void {

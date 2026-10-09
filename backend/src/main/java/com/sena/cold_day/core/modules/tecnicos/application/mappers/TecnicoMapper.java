@@ -26,6 +26,7 @@ public class TecnicoMapper {
         return new TecnicoResponse(tecnico.getId(), usuario.getId(), usuario.getNombre(), usuario.getCorreo(),
                 usuario.getTelefono(), tecnico.getNumeroIdentificacion(), usuario.getFotoUrl(),
                 tecnico.getCategoriasServicio(), tecnico.getEstadoOperativo(), tecnico.getEstadoValidacion(),
-                tecnico.getMotivoRechazoValidacion(), tecnico.getCertificaciones(), tecnico.isActivo());
+                tecnico.getMotivoRechazoValidacion(), tecnico.getCertificaciones(), tecnico.isActivo(),
+                tecnico.getUbicacion(), tecnico.getUbicacionActualizadaEn());
     }
 }

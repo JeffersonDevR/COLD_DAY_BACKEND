@@ -1,7 +1,8 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -24,12 +25,14 @@ public class ConsultarOtUseCase {
     private final OtRepository otRepository;
     private final OtEstadoHistorialRepository historialRepository;
     private final TecnicoRepository tecnicoRepository;
+    private final Clock clock;
 
     public ConsultarOtUseCase(OtRepository otRepository, OtEstadoHistorialRepository historialRepository,
-            TecnicoRepository tecnicoRepository) {
+            TecnicoRepository tecnicoRepository, Clock clock) {
         this.otRepository = otRepository;
         this.historialRepository = historialRepository;
         this.tecnicoRepository = tecnicoRepository;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -46,8 +49,12 @@ public class ConsultarOtUseCase {
     }
 
     /**
-     * Última ubicación conocida del técnico asignado a la OT (RF-F1-27 live
-     * tracking). Vacío si la OT no tiene técnico o éste no ha reportado posición.
+     * Last known location of the technician assigned to the OT (RF-F1-27 live
+     * tracking). Empty when the OT has no technician, when the technician never
+     * reported a position, or when the stored position is older than
+     * {@link Tecnico#UBICACION_VIGENCIA}: a stale position is not reporting, so
+     * the client must not keep drawing it. The coordinates themselves stay
+     * persisted in the aggregate for audit.
      */
     @Transactional(readOnly = true)
     public Optional<Point> ubicacionTecnico(OtId id) {
@@ -55,8 +62,9 @@ public class ConsultarOtUseCase {
         if (ot.getTecnicoId() == null) {
             return Optional.empty();
         }
+        Instant ahora = clock.instant();
         return tecnicoRepository.findByIdAndActivoTrue(ot.getTecnicoId())
-                .map(Tecnico::getUbicacion)
-                .filter(Objects::nonNull);
+                .filter(tecnico -> tecnico.reportaUbicacionVigente(ahora))
+                .map(Tecnico::getUbicacion);
     }
 }

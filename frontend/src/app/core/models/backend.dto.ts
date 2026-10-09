@@ -139,6 +139,13 @@ export interface TecnicoApiResponse {
   motivoRechazoValidacion: string | null;
   certificaciones: CertificacionApi[];
   activo: boolean;
+  /**
+   * Última posición guardada por el técnico (PUT /api/tecnicos/me/ubicacion).
+   * `null` mientras nunca haya reportado una.
+   */
+  ubicacion: Point | null;
+  /** Instante ISO-8601 de `ubicacion`; `null` si nunca reportó. */
+  ubicacionActualizadaEn: string | null;
 }
 
 export interface TecnicoCercanoApiResponse {

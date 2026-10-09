@@ -1,10 +1,13 @@
 package com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +24,11 @@ import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteReposito
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.listeners.DesactivarTrackingListener;
+import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
+import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
+import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -45,6 +53,9 @@ class GeolocalizacionApiIT {
 
     @Autowired MockMvc mockMvc;
     @Autowired TecnicoRepository tecnicoRepository;
+    @Autowired OtRepository otRepository;
+    @Autowired SpringDataOtRepository springDataOt;
+    @Autowired SpringDataOtEstadoHistorialRepository springDataHistorial;
     @Autowired ClienteRepository clienteRepository;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired JwtTokenIssuer tokenIssuer;
@@ -53,6 +64,8 @@ class GeolocalizacionApiIT {
     @BeforeEach
     @AfterEach
     void cleanup() {
+        springDataHistorial.deleteAll();
+        springDataOt.deleteAll();
         clienteRepository.deleteAll();
         tecnicoRepository.deleteAll();
         usuarioRepository.deleteAll();
@@ -176,6 +189,62 @@ class GeolocalizacionApiIT {
             assertThat(found.getUbicacion()).isEqualTo(new Point(4.65, -74.05));
             assertThat(found.getUbicacionActualizadaEn()).isNotNull();
         });
+    }
+
+    /**
+     * Live-tracking reading path (RF-F1-27): the endpoint serves the assigned
+     * technician's last pushed position while it is still inside
+     * {@link Tecnico#UBICACION_VIGENCIA}, and the owning client is the reader.
+     */
+    @Test
+    void servesTheLivePositionOfTheAssignedTechnicianWhileItIsFresh() throws Exception {
+        Long usuarioId = crearUsuario("cliente-radar@example.com", Rol.CLIENTE);
+        Tecnico tecnico = crearTecnico(crearUsuario("tecnico-radar@example.com", Rol.TECNICO),
+                CategoriaServicio.REFRIGERACION);
+        var otId = crearOtAsignada(usuarioId, tecnico);
+        // A push 30 s ago: comfortably inside the 2-minute validity window.
+        tecnico.actualizarUbicacion(new Point(4.65, -74.05), Instant.now().minusSeconds(30));
+        tecnicoRepository.save(tecnico);
+
+        mockMvc.perform(get("/api/ot/" + otId.valor() + "/tecnico-ubicacion")
+                        .header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.latitud").value(4.65))
+                .andExpect(jsonPath("$.longitud").value(-74.05));
+    }
+
+    /**
+     * The mirror of the case above: coordinates stored but older than
+     * {@link Tecnico#UBICACION_VIGENCIA} are NOT "reporting", so the endpoint
+     * answers 404 even though the aggregate keeps them for audit. Without this
+     * rule a closed browser tab would leave a frozen pin on the map forever.
+     */
+    @Test
+    void aStoredPositionOlderThanTheValidityWindowIsNoLongerServed() throws Exception {
+        Long usuarioId = crearUsuario("cliente-stale@example.com", Rol.CLIENTE);
+        Tecnico tecnico = crearTecnico(crearUsuario("tecnico-stale@example.com", Rol.TECNICO),
+                CategoriaServicio.REFRIGERACION);
+        var otId = crearOtAsignada(usuarioId, tecnico);
+        tecnico.actualizarUbicacion(new Point(4.65, -74.05),
+                Instant.now().minus(Tecnico.UBICACION_VIGENCIA.multipliedBy(3)));
+        tecnicoRepository.save(tecnico);
+
+        mockMvc.perform(get("/api/ot/" + otId.valor() + "/tecnico-ubicacion")
+                        .header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE)))
+                .andExpect(status().isNotFound());
+    }
+
+    /** OT in BUSCANDO_TECNICO assigned to the technician, as dispatch would. */
+    private com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId crearOtAsignada(Long usuarioClienteId,
+            Tecnico tecnico) {
+        Cliente cliente = crearCliente(usuarioClienteId);
+        Instant ahora = Instant.now();
+        Ot ot = Ot.crear(cliente.getId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+                "Calle 1", new Point(4.6, -74.0), ahora);
+        ot.iniciarBusqueda(10.0, ahora.plusSeconds(60), ActorOt.CLIENTE, ahora);
+        var persistida = otRepository.save(ot);
+        otRepository.intentarAsignar(persistida.getId(), tecnico.getId(), ahora, 10.0);
+        return persistida.getId();
     }
 
     private Long crearUsuario(String correo, Rol rol) {

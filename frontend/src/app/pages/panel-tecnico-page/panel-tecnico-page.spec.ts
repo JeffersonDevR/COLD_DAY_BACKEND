@@ -62,6 +62,12 @@ function setup(opts: {
   return { fixture, tecnicosApi, toast, navigate, tracking };
 }
 
+/** Botón de la tarjeta de radar por su nombre accesible. */
+function botonRadar(fixture: { nativeElement: HTMLElement }, etiqueta: string): HTMLButtonElement | undefined {
+  const botones = Array.from(fixture.nativeElement.querySelectorAll<HTMLButtonElement>('button'));
+  return botones.find((b) => b.textContent?.trim() === etiqueta);
+}
+
 describe('PanelTecnicoPage', () => {
   it('carga el técnico y filtra las OTs en curso', () => {
     const { fixture, tecnicosApi } = setup();
@@ -145,5 +151,73 @@ describe('PanelTecnicoPage', () => {
     });
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Los clientes pueden encontrarte en el radar de cercanos');
+  });
+
+  it('activa el reporte de ubicación en vivo', () => {
+    const { fixture, tracking, toast } = setup({
+      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+    });
+    const boton = botonRadar(fixture, 'Activar ubicación');
+    expect(boton).toBeDefined();
+
+    boton?.click();
+
+    expect(tracking.iniciar).toHaveBeenCalled();
+    expect(toast.info).toHaveBeenCalledWith(
+      'Ubicación activada',
+      'Los clientes pueden verte en el radar mientras reportes tu posición.',
+    );
+  });
+
+  it('detiene el reporte de ubicación en vivo', () => {
+    const { fixture, tracking, toast } = setup({
+      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+      trackingActivo: true,
+    });
+
+    botonRadar(fixture, 'Detener')?.click();
+
+    expect(tracking.detener).toHaveBeenCalled();
+    expect(toast.info).toHaveBeenCalledWith(
+      'Ubicación desactivada',
+      'Ya no aparecerás en el radar de clientes hasta que la vuelvas a activar.',
+    );
+  });
+
+  it('ofrece reintentar cuando el permiso fue denegado', () => {
+    const { fixture, tracking } = setup({
+      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO' }),
+      trackingMotivo: 'Permiso de ubicación denegado. Habilítalo en el navegador para continuar.',
+    });
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('Permiso de ubicación denegado');
+
+    botonRadar(fixture, 'Reintentar')?.click();
+
+    expect(tracking.iniciar).toHaveBeenCalled();
+  });
+
+  it('no ofrece activar cuando ya está reportando', () => {
+    const { fixture, tracking } = setup({
+      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+      trackingActivo: true,
+    });
+    expect(botonRadar(fixture, 'Activar ubicación')).toBeUndefined();
+    expect(botonRadar(fixture, 'Reintentar')).toBeUndefined();
+    expect(fixture.componentInstance.puedeActivarUbicacion()).toBe(false);
+    expect(tracking.iniciar).not.toHaveBeenCalled();
+  });
+
+  it('informa la última posición guardada cuando no se reporta en vivo', () => {
+    const { fixture } = setup({
+      tecnico: tecnicoCon({
+        estadoValidacion: 'APROBADO',
+        ubicacionActual: { latitud: 7.8939, longitud: -72.5078 },
+        ubicacionActualizadaEn: '2026-09-15T09:00:00Z',
+      }),
+    });
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('Tenés una ubicación guardada');
+    expect(texto).toContain('Última actualización:');
   });
 });

@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.application.dto;
 
+import java.time.Instant;
 import java.util.Set;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
@@ -7,6 +8,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServ
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * Flat view exposed to the HTTP client; it combines Usuario (identity) and
@@ -25,5 +27,7 @@ public record TecnicoResponse(
         EstadoValidacion estadoValidacion,
         String motivoRechazoValidacion,
         Set<Certificacion> certificaciones,
-        boolean activo) {
+        boolean activo,
+        Point ubicacion,
+        Instant ubicacionActualizadaEn) {
 }
