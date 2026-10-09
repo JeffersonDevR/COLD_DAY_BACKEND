@@ -166,4 +166,23 @@ describe('SeguimientoOtPage', () => {
     expect(toast.error).toHaveBeenCalledWith('No se pudo pagar la visita', 'doble cobro');
     expect(fixture.componentInstance.pagandoVisita()).toBe(false);
   });
+
+  it('sondea la ubicación del técnico cuando la OT está asignada', () => {
+    const { fixture, otApi } = setup();
+    // El primer sondeo es inmediato (`startWith(0)`) y alimenta distancia/ETA.
+    expect(otApi.getTecnicoUbicacion).toHaveBeenCalledWith('ot1');
+    expect(fixture.componentInstance.tecnicoUbicacion()).toEqual({ latitud: 7.9, longitud: -72.5 });
+  });
+
+  it('no sondea la ubicación cuando la OT no tiene técnico asignado', () => {
+    const { fixture, otApi } = setup({ ...orden, tecnicoId: null });
+    expect(otApi.getTecnicoUbicacion).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.tecnicoUbicacion()).toBeNull();
+    expect(fixture.componentInstance.mostrarCargoVisita()).toBe(false);
+  });
+
+  it('no sondea la ubicación en estados donde el técnico ya no se desplaza', () => {
+    const { otApi } = setup({ ...orden, estado: 'FINALIZADA' });
+    expect(otApi.getTecnicoUbicacion).not.toHaveBeenCalled();
+  });
 });

@@ -148,10 +148,19 @@ describe('backend.mappers — contratos existentes', () => {
       estadoOperativo: 'DISPONIBLE', estadoValidacion: 'APROBADO', motivoRechazoValidacion: null,
       certificaciones: [{ nombre: 'SENA', institucion: 'SENA', fechaObtencion: null, fechaVencimiento: null }],
       activo: true,
+      ubicacion: { latitud: 7.8939, longitud: -72.5078 },
+      ubicacionActualizadaEn: '2026-09-15T09:00:00Z',
     };
     expect(aTecnicoResponse(dto)).toMatchObject({
       id: 't1', cedula: '123456', categorias: ['REFRIGERACION'], deudaLiquidacion: 0,
       certificaciones: [{ nombre: 'SENA' }], documentos: [],
+      ubicacionActual: { latitud: 7.8939, longitud: -72.5078 },
+      ubicacionActualizadaEn: '2026-09-15T09:00:00Z',
+    });
+    // Sin posición reportada el backend manda `null` y el modelo debe quedar vacío.
+    expect(aTecnicoResponse({ ...dto, ubicacion: null, ubicacionActualizadaEn: null })).toMatchObject({
+      ubicacionActual: undefined,
+      ubicacionActualizadaEn: undefined,
     });
   });
 

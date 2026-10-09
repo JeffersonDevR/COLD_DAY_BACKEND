@@ -99,6 +99,9 @@ export function aTecnicoResponse(dto: TecnicoApiResponse): TecnicoResponse {
     motivoRechazoValidacion: dto.motivoRechazoValidacion ?? undefined,
     certificaciones: (dto.certificaciones ?? []).map(aCertificacion),
     activo: dto.activo,
+    // `null` en la wire significa "nunca reportó": se modela como ausencia.
+    ubicacionActual: dto.ubicacion ?? undefined,
+    ubicacionActualizadaEn: dto.ubicacionActualizadaEn ?? undefined,
     // Pendiente(backend): el backend aún no expone deuda ni documentos en TecnicoApiResponse.
     deudaLiquidacion: 0,
     deudaComisionCop: 0,

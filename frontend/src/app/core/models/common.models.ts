@@ -190,6 +190,8 @@ export interface TecnicoResponse {
   deudaLiquidacion?: number; // en COP
   deudaComisionCop?: number;
   ubicacionActual?: Point;
+  /** Instante ISO-8601 de la última posición reportada (nullable en el backend). */
+  ubicacionActualizadaEn?: string;
 }
 
 /** Técnico disponible dentro de un radio (radar del cliente). */

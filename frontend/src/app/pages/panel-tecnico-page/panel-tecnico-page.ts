@@ -37,11 +37,21 @@ export class PanelTecnicoPage {
   /** El radar solo lista técnicos DISPONIBLE; OCUPADO también queda excluido. */
   readonly disponibilidadAprobada = computed(() => this.tecnico()?.estadoOperativo === 'DISPONIBLE');
   /**
-   * El front no conoce la ubicación guardada en el servidor, así que solo puede
-   * reportar el estado LOCAL del tracking: activo y sin un motivo de fallo.
+   * Estado LOCAL del tracking: activo y sin un motivo de fallo. Es lo único que
+   * decide si en este momento está saliendo posición; la posición guardada en el
+   * servidor (`ubicacionGuardada`) es un hecho distinto y no implica reporte.
    */
   readonly ubicacionReportando = computed(() => this.tracking.activo() && !this.tracking.motivo());
   readonly ubicacionMotivo = computed(() => this.tracking.motivo());
+  /** Última posición que el servidor tiene guardada del técnico. */
+  readonly ubicacionGuardada = computed(() => this.tecnico()?.ubicacionActual ?? null);
+  /** Instante de esa última posición, tal como lo emite el backend. */
+  readonly ultimaUbicacionEn = computed(() => this.tecnico()?.ubicacionActualizadaEn ?? null);
+  /**
+   * Mientras el reporte ya está vivo no se ofrece volver a activarlo; la tarjeta
+   * muestra en su lugar la acción de detenerlo.
+   */
+  readonly puedeActivarUbicacion = computed(() => !this.ubicacionReportando());
   /** Los tres requisitos locales se cumplen. */
   readonly radarVisible = computed(
     () => this.validacionAprobada() && this.disponibilidadAprobada() && this.ubicacionReportando(),
@@ -80,5 +90,43 @@ export class PanelTecnicoPage {
 
   irAOfertas(): void {
     void this.router.navigate(['/tecnico/ofertas']);
+  }
+
+  /**
+   * Arranca el reporte de ubicación desde el panel. El servicio es un singleton
+   * de root y NO se detiene al navegar: el técnico quiere seguir visible en el
+   * radar mientras mira ofertas o ejecuta un servicio.
+   *
+   * `motivo()` solo se setea de forma sincrónica cuando el navegador no soporta
+   * geolocalización; la denegación del permiso llega por el watch de forma
+   * asíncrona y ya la explica la tarjeta, así que no se toast-ea aquí.
+   */
+  activarUbicacion(): void {
+    this.tracking.iniciar();
+    const motivo = this.tracking.motivo();
+    if (motivo) {
+      this.toast.error('No se pudo activar la ubicación', motivo);
+      return;
+    }
+    this.toast.info(
+      'Ubicación activada',
+      'Los clientes pueden verte en el radar mientras reportes tu posición.',
+    );
+  }
+
+  /** Parada explícita pedida por el técnico desde el panel. */
+  detenerUbicacion(): void {
+    this.tracking.detener();
+    this.toast.info(
+      'Ubicación desactivada',
+      'Ya no aparecerás en el radar de clientes hasta que la vuelvas a activar.',
+    );
+  }
+
+  /** Fecha legible de la última posición conocida; vacío si nunca reportó. */
+  formatearUltimaUbicacion(iso: string | null): string {
+    if (!iso) return '';
+    const fecha = new Date(iso);
+    return Number.isNaN(fecha.getTime()) ? '' : fecha.toLocaleString('es-CO');
   }
 }
