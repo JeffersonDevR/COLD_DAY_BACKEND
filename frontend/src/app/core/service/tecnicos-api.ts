@@ -18,6 +18,7 @@ import {
 import {
   DocumentoTecnicoApiResponse,
   OfertaOtApiResponse,
+  OfertaOtConResumen,
   OtApiResponse,
   TecnicoApiRequest,
   TecnicoApiResponse,
@@ -32,8 +33,8 @@ import {
   aTecnicoCercano,
   aTecnicoResponse,
 } from './backend.mappers';
-import { Observable, forkJoin, of, throwError } from 'rxjs';
-import { delay, map, switchMap } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { delay, map } from 'rxjs/operators';
 import { pendienteBackend } from '../errorStatus/pendiente-backend';
 
 /**
@@ -42,6 +43,17 @@ import { pendienteBackend } from '../errorStatus/pendiente-backend';
  * the principal, so no id travels in the request.
  */
 const MOCK_TECNICO_PROPIO_ID = 'TEC-001';
+
+/**
+ * Descarta las ofertas cuyo orden no vino en la respuesta (`ot: null`, rama
+ * defensiva del backend). Además le dice a TypeScript que después del filtro el
+ * resumen es no-null, así el mapper no necesita comprobarlo de nuevo.
+ */
+function conOrden(
+  oferta: OfertaOtApiResponse,
+): oferta is OfertaOtConResumen {
+  return oferta.ot !== null;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -127,30 +139,25 @@ export class TecnicosApi {
   }
 
   /**
-   * GET /api/tecnicos/me/ofertas devuelve OfertaOtApiResponse[] SIN la OT anidada,
-   * por eso se compone la unión real: por cada oferta se consulta GET /api/ot/{otId}
-   * y se mapea con `aOfertaTecnico`. `tecnicoId` no lo usa el backend (sale del JWT).
+   * GET /api/tecnicos/me/ofertas → ofertas del técnico autenticado. El backend
+   * embebe un resumen reducido de la OT en cada oferta, así que NO se consulta
+   * GET /api/ot/{id} por oferta: quien sostiene una oferta PENDIENTE no es
+   * participante de la orden y ese fetch devolvía 403, perdiendo toda la lista.
+   * `tecnicoId` no lo usa el backend (sale del JWT).
    */
   getOfertasParaTecnico(tecnicoId: string): Observable<OfertaTecnicoResponse[]> {
     if (this.apiConfig.useMocks()) {
       const ofertas = this.mockDb.ofertas().filter(o => o.tecnicoId === tecnicoId && o.estado === 'PENDIENTE');
       return of(ofertas).pipe(delay(200));
     }
-    return this.http.get<OfertaOtApiResponse[]>(this.apiConfig.url('/tecnicos/me/ofertas')).pipe(
-      switchMap(ofertas => {
-        if (ofertas.length === 0) {
-          // forkJoin([]) completa sin emitir; se evita el caso degenerado.
-          return of<OfertaTecnicoResponse[]>([]);
-        }
-        return forkJoin(
-          ofertas.map(oferta =>
-            this.http
-              .get<OtApiResponse>(this.apiConfig.url(`/ot/${oferta.otId}`))
-              .pipe(map(otDto => aOfertaTecnico(oferta, aOtResponse(otDto))))
-          )
-        );
-      })
-    );
+    return this.http
+      .get<OfertaOtApiResponse[]>(this.apiConfig.url('/tecnicos/me/ofertas'))
+      .pipe(
+        // Una oferta sin orden resuelta no se puede renderizar: el backend la
+        // emite con `ot: null` en un caso defensivo y se descarta acá para no
+        // tumbar la lista completa.
+        map(ofertas => ofertas.filter(conOrden).map(aOfertaTecnico)),
+      );
   }
 
   /**

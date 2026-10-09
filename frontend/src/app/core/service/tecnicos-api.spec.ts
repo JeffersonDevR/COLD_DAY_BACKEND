@@ -157,9 +157,11 @@ describe('TecnicosApi', () => {
     expect((await promise).id).toBe('t1');
   });
 
-  it('getOfertasParaTecnico compone la OT anidada', async () => {
+  it('getOfertasParaTecnico hace UNA sola petición y mapea la OT anidada', async () => {
     const promise = firstValueFrom(api.getOfertasParaTecnico('TEC-001'));
-    http.expectOne('/api/tecnicos/me/ofertas').flush([
+    const req = http.expectOne('/api/tecnicos/me/ofertas');
+    expect(req.request.method).toBe('GET');
+    req.flush([
       {
         id: 'of1',
         otId: 'ot1',
@@ -168,11 +170,61 @@ describe('TecnicosApi', () => {
         estado: 'PENDIENTE',
         creadaEn: '2026-01-01T00:00:00',
         expiraEn: new Date(Date.now() + 60_000).toISOString(),
+        ot: {
+          id: 'ot1',
+          estado: 'BUSCANDO_TECNICO',
+          categoriaServicio: 'REFRIGERACION',
+          descripcionFalla: 'no enfría',
+          direccion: 'calle 1',
+          clienteNombre: 'Ana',
+          latitud: 4.6,
+          longitud: -74.1,
+        },
       },
     ]);
-    http.expectOne('/api/ot/ot1').flush(otDto());
     const ofertas = await promise;
     expect(ofertas[0].otId).toBe('ot1');
+    expect(ofertas[0].ot.id).toBe('ot1');
+    expect(ofertas[0].ot.categoriaServicio).toBe('REFRIGERACION');
+    expect(ofertas[0].ot.clienteNombre).toBe('Ana');
+    // Guarda de regresión: quien sostiene una oferta PENDIENTE no es
+    // participante de la OT, así que NUNCA se consulta GET /api/ot/{id}
+    // (devolvía 403 y tumbaba toda la lista).
+    http.expectNone((r) => r.url.startsWith('/api/ot/'));
+  });
+
+  it('getOfertasParaTecnico descarta la oferta sin orden en vez de romper la lista', async () => {
+    const promise = firstValueFrom(api.getOfertasParaTecnico('TEC-001'));
+    const base = {
+      tecnicoId: 'TEC-001',
+      radioKm: 10,
+      estado: 'PENDIENTE',
+      creadaEn: '2026-01-01T00:00:00',
+      expiraEn: new Date(Date.now() + 60_000).toISOString(),
+    };
+    http.expectOne('/api/tecnicos/me/ofertas').flush([
+      // Rama defensiva del backend: la oferta existe pero su orden no se pudo
+      // resolver. Leer `ot.id` acá tumbaría TODA la lista.
+      { ...base, id: 'sin-orden', otId: 'ot-x', ot: null },
+      {
+        ...base,
+        id: 'con-orden',
+        otId: 'ot1',
+        ot: {
+          id: 'ot1',
+          estado: 'BUSCANDO_TECNICO',
+          categoriaServicio: 'REFRIGERACION',
+          descripcionFalla: 'no enfría',
+          direccion: 'calle 1',
+          clienteNombre: 'Ana',
+          latitud: 4.6,
+          longitud: -74.1,
+        },
+      },
+    ]);
+
+    const ofertas = await promise;
+    expect(ofertas.map((o) => o.id)).toEqual(['con-orden']);
     expect(ofertas[0].ot.id).toBe('ot1');
   });
 

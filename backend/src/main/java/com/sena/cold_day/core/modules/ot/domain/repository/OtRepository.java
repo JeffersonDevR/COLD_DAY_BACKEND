@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.domain.repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,14 @@ public interface OtRepository {
     Ot save(Ot ot);
 
     Optional<Ot> buscarPorId(OtId id);
+
+    /**
+     * Batch lookup by id. Read paths that must enrich several offers with their
+     * order use this instead of looping {@link #buscarPorId(OtId)}, so the
+     * enrichment stays a single query. Unknown ids are simply absent from the
+     * result; callers must tolerate missing entries.
+     */
+    List<Ot> buscarPorIds(Collection<OtId> ids);
 
     List<Ot> buscarPorEstado(EstadoOt estado);
 
