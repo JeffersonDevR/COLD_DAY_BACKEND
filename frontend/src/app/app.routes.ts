@@ -85,6 +85,12 @@ export const routes: Routes = [
     title: 'Panel Operativo Técnico - COLD DAY'
   },
   {
+    path: 'tecnico/perfil',
+    canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
+    loadComponent: () => import('./pages/mi-perfil-tecnico-page/mi-perfil-tecnico-page').then(m => m.MiPerfilTecnicoPage),
+    title: 'Mi Perfil - COLD DAY'
+  },
+  {
     path: 'tecnico/ofertas',
     canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
     loadComponent: () => import('./pages/ofertas-page/ofertas-page').then(m => m.OfertasPage),

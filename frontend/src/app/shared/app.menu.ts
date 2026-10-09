@@ -27,6 +27,7 @@ const SECTIONS: MenuSection[] = [
   {
     label: 'Técnico',
     items: [
+      { label: 'Mi Perfil', icon: 'pi pi-user', routerLink: '/tecnico/perfil', roles: ['TECNICO'] },
       { label: 'Mi Panel', icon: 'pi pi-th-large', routerLink: '/tecnico/panel', roles: ['TECNICO'] },
       { label: 'Radar de Ofertas', icon: 'pi pi-compass', routerLink: '/tecnico/ofertas', roles: ['TECNICO'] },
       { label: 'Documentación', icon: 'pi pi-id-card', routerLink: '/tecnico/documentos', roles: ['TECNICO'] },

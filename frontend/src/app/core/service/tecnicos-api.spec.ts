@@ -207,6 +207,43 @@ describe('TecnicosApi', () => {
     expect(await alias).toBe(true);
   });
 
+  it('actualizarMisEspecialidades hace PUT /api/tecnicos/me/perfil con el cuerpo exacto', async () => {
+    const promise = firstValueFrom(api.actualizarMisEspecialidades(['REFRIGERACION', 'ELECTRICIDAD']));
+    const req = http.expectOne('/api/tecnicos/me/perfil');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ categoriasServicio: ['REFRIGERACION', 'ELECTRICIDAD'] });
+    req.flush({
+      id: 't1',
+      usuarioId: 6,
+      nombre: 'Juan',
+      correo: 'j@x.co',
+      telefono: null,
+      numeroIdentificacion: '123',
+      fotoUrl: null,
+      categoriasServicio: ['REFRIGERACION', 'ELECTRICIDAD'],
+      estadoOperativo: 'DISPONIBLE',
+      estadoValidacion: 'APROBADO',
+      motivoRechazoValidacion: null,
+      certificaciones: [],
+      activo: true,
+      ubicacion: null,
+      ubicacionActualizadaEn: null,
+    });
+    const tecnico = await promise;
+    expect(tecnico.id).toBe('t1');
+    expect(tecnico.categoriasServicio).toEqual(['REFRIGERACION', 'ELECTRICIDAD']);
+  });
+
+  it('actualizarMisEspecialidades en modo mock muta el técnico en sesión', async () => {
+    config.setUseMocks(true);
+    const mockDb = TestBed.inject(MockDbService);
+    const actualizado = await firstValueFrom(api.actualizarMisEspecialidades(['ELECTRODOMESTICOS']));
+    expect(actualizado.categoriasServicio).toEqual(['ELECTRODOMESTICOS']);
+    expect(mockDb.tecnicos().find(t => t.id === 'TEC-001')?.categoriasServicio).toEqual([
+      'ELECTRODOMESTICOS',
+    ]);
+  });
+
   it('llegarADomicilio hace POST /api/ot/{id}/llegada sin cuerpo', async () => {
     const promise = firstValueFrom(api.llegarADomicilio('ot1'));
     const req = http.expectOne('/api/ot/ot1/llegada');
