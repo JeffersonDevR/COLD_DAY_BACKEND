@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.infrastructure.api.controllers;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -135,6 +136,42 @@ class TecnicosApiIT {
     void mePerfilRechazaAUnAdministradorSinPerfilDeTecnico() throws Exception {
         // /me es TECNICO-only: un administrador no tiene perfil de tecnico.
         mockMvc.perform(get("/api/tecnicos/me").header("Authorization", "Bearer " + adminJwt()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void tecnicoActualizaSusEspecialidadesEnMePerfil() throws Exception {
+        String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
+                .content(validPayload("PERFIL-1", "Ana"))).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode created = objectMapper.readTree(body);
+
+        mockMvc.perform(put("/api/tecnicos/me/perfil").header("Authorization", "Bearer " + tecnicoJwt(created))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"categoriasServicio\":[\"ELECTRICIDAD\",\"AIRE_ACONDICIONADO\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.categoriasServicio",
+                        containsInAnyOrder("ELECTRICIDAD", "AIRE_ACONDICIONADO")));
+    }
+
+    @Test
+    void mePerfilRechazaUnaListaVaciaDeEspecialidades() throws Exception {
+        String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
+                .content(validPayload("PERFIL-2", "Ana"))).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode created = objectMapper.readTree(body);
+
+        mockMvc.perform(put("/api/tecnicos/me/perfil").header("Authorization", "Bearer " + tecnicoJwt(created))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"categoriasServicio\":[]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors").isNotEmpty());
+    }
+
+    @Test
+    void mePerfilRechazaAUnPrincipalSinRolTecnico() throws Exception {
+        mockMvc.perform(put("/api/tecnicos/me/perfil").header("Authorization", "Bearer " + adminJwt())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"categoriasServicio\":[\"ELECTRICIDAD\"]}"))
                 .andExpect(status().isForbidden());
     }
 

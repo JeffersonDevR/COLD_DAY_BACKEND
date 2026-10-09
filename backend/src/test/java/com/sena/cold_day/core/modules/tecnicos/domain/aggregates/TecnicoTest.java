@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
 import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.EspecialidadesRequeridasException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -296,5 +297,43 @@ class TecnicoTest {
 
         assertThatThrownBy(() -> tecnico.reportaUbicacionVigente(null))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void actualizarEspecialidadesRejectsANullSet() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+
+        assertThatThrownBy(() -> tecnico.actualizarEspecialidades(null))
+                .isInstanceOf(EspecialidadesRequeridasException.class);
+        assertThat(tecnico.getCategoriasServicio()).containsExactly(CategoriaServicio.REFRIGERACION);
+    }
+
+    @Test
+    void actualizarEspecialidadesRejectsAnEmptySet() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+
+        assertThatThrownBy(() -> tecnico.actualizarEspecialidades(Set.of()))
+                .isInstanceOf(EspecialidadesRequeridasException.class);
+        assertThat(tecnico.getCategoriasServicio()).containsExactly(CategoriaServicio.REFRIGERACION);
+    }
+
+    @Test
+    void actualizarEspecialidadesReplacesTheSet() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+
+        tecnico.actualizarEspecialidades(
+                Set.of(CategoriaServicio.ELECTRICIDAD, CategoriaServicio.ELECTRODOMESTICOS));
+
+        assertThat(tecnico.getCategoriasServicio()).containsExactlyInAnyOrder(
+                CategoriaServicio.ELECTRICIDAD, CategoriaServicio.ELECTRODOMESTICOS);
+    }
+
+    @Test
+    void actualizarEspecialidadesAcceptsASingleElement() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+
+        tecnico.actualizarEspecialidades(Set.of(CategoriaServicio.AIRE_ACONDICIONADO));
+
+        assertThat(tecnico.getCategoriasServicio()).containsExactly(CategoriaServicio.AIRE_ACONDICIONADO);
     }
 }

@@ -43,21 +43,28 @@ The technician cannot manage their own specializations, and those specialization
 User asked for the profile page ("algo que realmente esta faltando es el perfil del tecnico... nombre completo, correo y pueda agregar, quitar o desactivar las especializaciones") and answered the blocking design question. Push / PR / merge stay user decisions.
 
 ## Acceptance criteria
-- [ ] T1: `Tecnico` exposes a guarded specialization update that rejects an empty or null set; `reemplazarCategorias` unchanged and all existing tests still green.
-- [ ] T2: `PUT /api/tecnicos/me/perfil` is owner-scoped, resolves the technician from the principal, returns the updated profile, and rejects an empty specialization set with 400. No path `{id}`.
-- [ ] T3: `/tecnico/perfil` renders full name, email, identification and current specializations, and lets the technician add/remove them with a save action; it prevents saving an empty selection client-side and surfaces the backend 400 honestly. — DONE, commit pending
-- [ ] T4: menu entry + route + `TecnicosApi` method with mock parity; specs cover save, blocked-empty and error paths. — DONE, commit pending
-- [ ] T5: both suites green, `tsc` and lint clean, each task closed with a work-unit commit.
+- [x] T1: `Tecnico` exposes a guarded specialization update that rejects an empty or null set; `reemplazarCategorias` unchanged and all existing tests still green. — `actualizarEspecialidades(Set)` delegates to `reemplazarCategorias` after the guard; `reemplazarCategorias` is byte-identical.
+- [x] T2: `PUT /api/tecnicos/me/perfil` is owner-scoped, resolves the technician from the principal, returns the updated profile, and rejects an empty specialization set with 400. No path `{id}`. — IT proves 200, 400 and 403 (admin principal).
+- [x] T3: `/tecnico/perfil` renders full name, email, identification and current specializations, and lets the technician add/remove them with a save action; it prevents saving an empty selection client-side and surfaces the backend 400 honestly. (commit `5425c19`)
+- [x] T4: menu entry + route + `TecnicosApi` method with mock parity; specs cover save, blocked-empty and error paths. (commit `5425c19`)
+- [x] T5: both suites green, `tsc` and lint clean, each task closed with a work-unit commit. — frontend 64 files / 451 tests, `tsc` exit 0, lint clean; backend 96 classes / **703 tests / 0 failures / 0 errors / 0 skipped**.
 
 ## Tasks
-- [ ] T1 (backend, delegated): domain rule for specialization updates.
-- [ ] T2 (backend, delegated): self-service endpoint + request DTO + use case + advice mapping.
-- [ ] T3 (frontend, delegated): the profile page.
-- [ ] T4 (frontend, delegated): route, menu, API method, mocks, specs.
-- [ ] T5 (parent): verification, commits, report.
+- [x] T1 (backend, delegated): domain rule for specialization updates.
+- [x] T2 (backend, delegated): self-service endpoint + request DTO + use case + advice mapping.
+- [x] T3 (frontend, delegated): the profile page. (commit `5425c19`)
+- [x] T4 (frontend, delegated): route, menu, API method, mocks, specs. (commit `5425c19`)
+- [x] T5 (parent): verification, commits, report.
 
 ## Progress
 - 2026-10-09: feature doc created.
+- 2026-10-09: T3+T4 done and committed (`5425c19`, 10 files). Parent spot check: full frontend suite 64 files / 451 tests, `tsc` exit 0, lint clean.
+- 2026-10-09: T1+T2 code complete; verified by the parent file by file. The delegated worker's Gradle run was identified as still alive at the process level (PID in the main worktree) after its session stopped reporting, then completed on its own at 14:36:47.
+
+## Verification notes
+- Backend delta: 10 new `@Test` methods (4 domain, 3 use case, 3 IT). **No test was removed** (checked the diff for deleted `@Test`/`void` lines) and there are no parameterized tests in the touched classes.
+- The reported total moved 692 → 703 (+11) while the diff adds 10 methods. The +1 is **unexplained and benign**: nothing was deleted and the suite is fully green. Note that the 692 baseline came from a worker's report and was never independently verified by the parent, so the comparison itself is the weaker half of this evidence.
+- Process-level verification was necessary because the delegated session stopped reporting while its Gradle process kept running. The run was identified by inspecting `Win32_Process` command lines (`-Dapp.*` flags, main worktree path) rather than trusting the session state.
 
 ## Out of scope / follow-ups
 - `TecnicoApiRequest` is overloaded between registration and update; splitting it (and killing the dead `password` on the update path) is a separate, contract-changing commit.

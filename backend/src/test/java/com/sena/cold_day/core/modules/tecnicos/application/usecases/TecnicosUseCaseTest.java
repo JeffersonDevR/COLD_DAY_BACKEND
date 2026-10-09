@@ -21,11 +21,14 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import com.sena.cold_day.core.modules.tecnicos.application.dto.MiPerfilTecnicoRequest;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoRequest;
 import com.sena.cold_day.core.modules.tecnicos.application.mappers.TecnicoMapper;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.EspecialidadesRequeridasException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.DocumentoTecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -45,6 +48,7 @@ class TecnicosUseCaseTest {
     @InjectMocks RegistrarTecnicoUseCase registrar;
     @InjectMocks BuscarTecnicoUseCase buscar;
     @InjectMocks ActualizarTecnicoUseCase actualizar;
+    @InjectMocks ActualizarMiPerfilTecnicoUseCase actualizarMiPerfil;
     @InjectMocks EliminarTecnicoUseCase eliminar;
     @InjectMocks CambiarDisponibilidadUseCase cambiarDisponibilidad;
     @InjectMocks ValidarDocumentacionTecnicoUseCase validarDocumentacion;
@@ -216,5 +220,43 @@ class TecnicosUseCaseTest {
         assertThatThrownBy(() -> validarDocumentacion.aprobar(tecnicoId))
                 .isInstanceOf(DocumentacionIncompletaException.class);
         assertThat(existing.getEstadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
+    }
+
+    @Test
+    void actualizarMiPerfilReplacesTheSpecializationsOfThePrincipal() {
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(CategoriaServicio.REFRIGERACION),
+                null, EstadoValidacion.PENDIENTE, null, Set.of(), true, null, false, null);
+        when(repository.findByUsuarioIdAndActivoTrue(5L)).thenReturn(Optional.of(existing));
+        when(usuarioRepository.buscarPorId(new UsuarioId(5L))).thenReturn(Optional.of(usuario(5L)));
+        when(repository.save(any(Tecnico.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = actualizarMiPerfil.actualizar(new UsuarioId(5L),
+                new MiPerfilTecnicoRequest(Set.of(CategoriaServicio.ELECTRICIDAD)));
+
+        assertThat(response.categoriasServicio()).containsExactly(CategoriaServicio.ELECTRICIDAD);
+        verify(repository).save(existing);
+    }
+
+    @Test
+    void actualizarMiPerfilRejectsAnEmptySpecializationSet() {
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(CategoriaServicio.REFRIGERACION),
+                null, EstadoValidacion.PENDIENTE, null, Set.of(), true, null, false, null);
+        when(repository.findByUsuarioIdAndActivoTrue(5L)).thenReturn(Optional.of(existing));
+        when(usuarioRepository.buscarPorId(new UsuarioId(5L))).thenReturn(Optional.of(usuario(5L)));
+
+        assertThatThrownBy(() -> actualizarMiPerfil.actualizar(new UsuarioId(5L),
+                new MiPerfilTecnicoRequest(Set.of())))
+                .isInstanceOf(EspecialidadesRequeridasException.class);
+    }
+
+    @Test
+    void actualizarMiPerfilRequiresAnActiveTechnicianProfile() {
+        when(repository.findByUsuarioIdAndActivoTrue(5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> actualizarMiPerfil.actualizar(new UsuarioId(5L),
+                new MiPerfilTecnicoRequest(Set.of(CategoriaServicio.ELECTRICIDAD))))
+                .isInstanceOf(PerfilTecnicoNoEncontradoException.class);
     }
 }

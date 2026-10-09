@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.entities.Certificacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.EspecialidadesRequeridasException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -188,6 +189,27 @@ public class Tecnico {
         if (categorias != null) {
             categoriasServicio.addAll(categorias);
         }
+    }
+
+    /**
+     * Replaces the service categories of an existing technician, refusing a
+     * null or empty set.
+     * <p>
+     * A technician with no specializations can never satisfy the radar filter
+     * ({@code coincideCategoria}, RF-F1-04), so they would become silently
+     * invisible to every client. Because this backs a self-service edit, the
+     * rule is enforced here instead of letting the caller remove their last
+     * specialization.
+     * <p>
+     * Kept separate from {@link #reemplazarCategorias(Set)}: that method is used
+     * by creation and persistence rehydration, which must stay permissive
+     * (including the empty set) to reconstruct incomplete or legacy profiles.
+     */
+    public void actualizarEspecialidades(Set<CategoriaServicio> categorias) {
+        if (categorias == null || categorias.isEmpty()) {
+            throw new EspecialidadesRequeridasException(id);
+        }
+        reemplazarCategorias(categorias);
     }
 
     public void reemplazarCertificaciones(Set<Certificacion> certificaciones) {
