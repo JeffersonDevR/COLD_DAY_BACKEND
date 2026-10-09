@@ -1,15 +1,29 @@
 # Feature: sse-tiempo-real-ot
 
 ## Objective
-Push OT state changes to the browser in real time so the client's OT page stops requiring a manual reload while it searches for a technician. Server-Sent Events, authenticated with a one-time ticket.
+Push server-side events to the browser in real time over Server-Sent Events, authenticated with a one-time ticket. Two consumers:
+1. **Client** — OT state changes, so the OT page stops requiring a manual reload while it searches for a technician.
+2. **Technician** — new offers, so a 60-second broadcast window is actually reachable.
 
 ## Problem
 There is no push mechanism anywhere in the stack — verified: zero occurrences of `SseEmitter`, `text/event-stream`, `EventSource`, `WebSocket` or STOMP across `backend/` and `frontend/`. The only refresh mechanism is `interval()` polling plus the user reloading the page.
 
-That is worst exactly where it hurts most. RF-F1-09 dispatches with a 60-second acceptance window and escalates the radius +5 km when nobody accepts; all of that happens server-side with no way to tell the client. The client stares at a stale screen.
+**Client side.** RF-F1-09 dispatches with a 60-second acceptance window and escalates the radius +5 km when nobody accepts; all of that happens server-side with no way to tell the client.
+
+**Technician side (the acute one).** The offer flow is broken by design, and it is three compounding facts:
+
+| Piece | Reality |
+|---|---|
+| Offer window | `VENTANA_BUSQUEDA = 60s` in `IniciarBusquedaTecnicoUseCase`; `OfertaOt.estaVigente` rejects anything past `expiraEn` |
+| Push | `LoggingNotificacionPushAdapter` only logs. The port `NotificacionPushPort` exists and is documented as waiting for a real transport |
+| Offers page | `ofertas-page.ts` loads once in the constructor; only `recargarOfertas()` is manual |
+
+So the technician must be sitting on the offers page AND press reload within 60 seconds of the offer being created. Anywhere else in the app, they never learn about it. No amount of polling on that page fixes "the technician is on another screen" — the push is the missing piece.
+
+There is also an upstream cause that is already fixed on a different branch: `IniciarBusquedaTecnicoUseCase.ejecutarOferta` creates one offer per technician returned by `buscarDisponiblesEnRadio`, whose SQL requires `activo AND estado_validacion='APROBADO' AND estado_operativo='DISPONIBLE'` and non-null coordinates. With no technician carrying coordinates, zero offers are created. `fix/tecnico-activar-ubicacion` gave the technician the button to start reporting their position; that branch is not merged or deployed.
 
 ## Why
-The events already exist as an in-process seam (`ApplicationEventPublisher` is used by 15+ use cases), so the missing piece is transport, not domain modelling.
+The events already exist as an in-process seam (`ApplicationEventPublisher` is used by 15+ use cases), so the missing piece is transport, not domain modelling. And the offer window is a product requirement (RF-F1-09) that the current architecture cannot satisfy at all.
 
 ## Decision (user, 2026-10-09)
 **One-time ticket authentication.** `POST /api/sse/ticket` (authenticated with the normal `Authorization` header) returns an opaque single-use code with a short TTL; the `EventSource` carries it as a query parameter. The JWT never reaches the access logs. Chosen over JWT-as-query-param (leaks a live bearer credential into Render's logs) and over HttpOnly cookies (an authentication migration: CORS credentials, `SameSite=None; Secure`, CSRF implications — far beyond this feature).
@@ -59,13 +73,19 @@ User asked for SSE implementation to fix the recurring need to reload the OT pag
 
 ## Acceptance criteria
 - [ ] T1: `POST /api/sse/ticket` returns a single-use, short-TTL opaque ticket bound to the caller; it cannot be replayed and expires.
-- [ ] T2: `GET` stream endpoint accepts `?ticket=`, validates it, enforces OT participation, and streams `OtEstadoCambiado` events for that order.
+- [ ] T2: `GET` stream endpoint accepts `?ticket=`, validates it, enforces OT participation, and streams events for that order.
 - [ ] T3: every OT transition reaches the stream, including the ones with no domain event today (`EN_CAMINO`, arrival, diagnosis, budget approval, acta). Proven by a test that drives at least one previously-silent transition.
 - [ ] T4: emitters are removed on completion, timeout and error; no unbounded growth.
 - [ ] T5: events are published only after commit; a rolled-back transition emits nothing.
 - [ ] T6: the client's OT page updates without a manual reload when the order is assigned, cancelled or finalized.
-- [ ] T7: the frontend recovers from a dropped connection by fetching a NEW ticket and recreating the `EventSource`.
-- [ ] T8: both suites green, `tsc` and lint clean, work-unit commits.
+- [ ] T7: a new offer reaches the technician's stream the moment it is created, without the technician being on the offers page.
+- [ ] T8: the frontend recovers from a dropped connection by fetching a NEW ticket and recreating the `EventSource`.
+- [ ] T9: both suites green, `tsc` and lint clean, work-unit commits.
+
+## Slice plan (forecast exceeds the ~400-line delivery budget)
+1. **Slice 1 — backend transport.** Ticket issuance/consumption, emitter registry, stream endpoint, `SecurityConfig` narrowing, `OtEstadoCambiado` published from the choke point. Verifiable by backend tests alone; no frontend consumer yet.
+2. **Slice 2 — frontend client + client's OT page.** SSE service (ticket, `EventSource`, reconnect with a fresh ticket, backoff, teardown) and the OT page wiring. Delivers real-time OT state end-to-end.
+3. **Slice 3 — offers.** Backend emits the new offer to the technician's stream and the offers page consumes it. This is the slice that fixes the reported pain.
 
 ## Tasks
 - [ ] T1 (backend): ticket issuance + single-use store with TTL (reuse `SecureRandomTokenGenerator`; hash at rest to match the reset-token house style).
@@ -74,7 +94,9 @@ User asked for SSE implementation to fix the recurring need to reload the OT pag
 - [ ] T4 (backend): tests — replay rejection, expiry, cross-order authorization refusal, silent-transition coverage, emitter cleanup.
 - [ ] T5 (frontend): SSE client service (ticket fetch, `EventSource`, reconnect with a fresh ticket, backoff, teardown).
 - [ ] T6 (frontend): wire the OT page to the stream; keep polling as a fallback only where it still earns its place.
-- [ ] T7 (parent): verification, commits, report.
+- [ ] T7 (backend): publish the created offer to the technician's stream.
+- [ ] T8 (frontend): wire the offers page to the stream.
+- [ ] T9 (parent): verification, commits, report.
 
 ## Known gotchas to hand to the implementer
 1. **`EventSource` auto-reconnect is actively harmful here.** Its built-in retry re-requests the same URL, whose ticket is already burned, producing a 401/403 loop. The client must close the source on error and recreate it with a fresh ticket, with backoff. Do not rely on the native reconnect.
@@ -87,6 +109,7 @@ User asked for SSE implementation to fix the recurring need to reload the OT pag
 
 ## Out of scope / follow-ups
 - Replacing the remaining `interval()` polling wholesale. `seguimiento-ot-page` still polls the technician position every 15 s by design (that is a high-frequency numeric stream, a different problem from discrete state changes).
-- Technician offer notifications over SSE. Natural second consumer of the same transport; not in this scope.
 - Redis pub/sub for multi-instance fan-out. Required before scaling out; deliberately deferred.
 - Persisting events for `Last-Event-ID` replay after a reconnect gap. Not needed while the client reloads the order on (re)connect.
+- A real push transport for offline technicians (FCM/APNs). SSE only helps while the tab is open; the 60-second window is still missed by a technician whose phone is in their pocket. That is inherent to RF-F1-09 and needs a mobile push channel, not SSE.
+- **Prerequisite, different branch:** `fix/tecnico-activar-ubicacion` must be merged and deployed, otherwise zero offers are created and SSE will faithfully stream nothing.
