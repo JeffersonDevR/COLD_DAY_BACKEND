@@ -15,8 +15,9 @@ describe('buildMenu — accesos por rol', () => {
   it('muestra la sección técnica y la comisión', () => {
     const menu = buildMenu('TECNICO');
     expect(menu).toHaveLength(1);
-    expect(menu[0].items).toHaveLength(4);
-    expect(menu[0].items[3].label).toContain('Liquidaciones (');
+    expect(menu[0].items).toHaveLength(5);
+    expect(menu[0].items[0].routerLink).toBe('/tecnico/perfil');
+    expect(menu[0].items[4].label).toContain('Liquidaciones (');
   });
 
   it('expone el portal de insumos solo al PROVEEDOR', () => {

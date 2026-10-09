@@ -209,6 +209,35 @@ export class TecnicosApi {
     return this.cambiarEstadoOperativo(nuevoEstado);
   }
 
+  /**
+   * PUT /api/tecnicos/me/perfil con {categoriasServicio}: el endpoint es
+   * owner-only y resuelve el técnico desde el principal, así que no viaja ningún
+   * id en la ruta ni en el cuerpo. Devuelve el perfil actualizado ya mapeado al
+   * modelo de vista.
+   */
+  actualizarMisEspecialidades(categorias: CategoriaServicio[]): Observable<TecnicoResponse> {
+    if (this.apiConfig.useMocks()) {
+      const tecnico = this.mockDb.tecnicos().find(t => t.id === MOCK_TECNICO_PROPIO_ID);
+      if (!tecnico) {
+        return throwError(() => new Error('Perfil de técnico no disponible en mocks'));
+      }
+      const actualizado: TecnicoResponse = {
+        ...tecnico,
+        categorias,
+        categoriasServicio: categorias,
+      };
+      this.mockDb.tecnicos.update(list =>
+        list.map(t => (t.id === MOCK_TECNICO_PROPIO_ID ? actualizado : t)),
+      );
+      return of(actualizado).pipe(delay(200));
+    }
+    return this.http
+      .put<TecnicoApiResponse>(this.apiConfig.url('/tecnicos/me/perfil'), {
+        categoriasServicio: categorias,
+      })
+      .pipe(map(aTecnicoResponse));
+  }
+
   /** POST /api/ot/{otId}/iniciar-desplazamiento (sin cuerpo). */
   iniciarDesplazamiento(otId: string): Observable<void> {
     if (this.apiConfig.useMocks()) {

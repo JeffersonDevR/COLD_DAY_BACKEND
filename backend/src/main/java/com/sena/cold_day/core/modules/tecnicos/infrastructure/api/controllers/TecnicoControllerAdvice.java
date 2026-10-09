@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sena.cold_day.core.shared.errors.ApiError;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.DocumentacionIncompletaException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.EspecialidadesRequeridasException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
@@ -86,6 +87,12 @@ public class TecnicoControllerAdvice {
     @ExceptionHandler(DocumentacionIncompletaException.class)
     ResponseEntity<ApiError> handleDocumentacion(DocumentacionIncompletaException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** A self-service specialization edit cannot leave the technician with none. */
+    @ExceptionHandler(EspecialidadesRequeridasException.class)
+    ResponseEntity<ApiError> handleEspecialidadesRequeridas(EspecialidadesRequeridasException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

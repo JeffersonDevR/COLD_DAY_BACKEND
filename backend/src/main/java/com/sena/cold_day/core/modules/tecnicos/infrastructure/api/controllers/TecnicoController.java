@@ -19,8 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sena.cold_day.core.modules.tecnicos.application.dto.MiPerfilTecnicoRequest;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoRequest;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoResponse;
+import com.sena.cold_day.core.modules.tecnicos.application.usecases.ActualizarMiPerfilTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.ActualizarTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.BuscarTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.CambiarDisponibilidadUseCase;
@@ -30,6 +32,7 @@ import com.sena.cold_day.core.modules.tecnicos.application.usecases.RegistrarTec
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.ValidarDocumentacionTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.DocumentoTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.EstadoOperativoApiRequest;
+import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.MiPerfilTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.TecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.ValidacionTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.DocumentoTecnicoApiResponse;
@@ -58,6 +61,7 @@ public class TecnicoController {
 
     private final RegistrarTecnicoUseCase registrar;
     private final ActualizarTecnicoUseCase actualizar;
+    private final ActualizarMiPerfilTecnicoUseCase actualizarMiPerfil;
     private final BuscarTecnicoUseCase buscar;
     private final EliminarTecnicoUseCase eliminar;
     private final CambiarDisponibilidadUseCase cambiarDisponibilidad;
@@ -71,6 +75,7 @@ public class TecnicoController {
 
     @SuppressWarnings("java:S107") // Superficie REST cohesiva de /api/tecnicos; dividir rompería la cohesión por recurso.
     public TecnicoController(RegistrarTecnicoUseCase registrar, ActualizarTecnicoUseCase actualizar,
+            ActualizarMiPerfilTecnicoUseCase actualizarMiPerfil,
             BuscarTecnicoUseCase buscar, EliminarTecnicoUseCase eliminar,
             CambiarDisponibilidadUseCase cambiarDisponibilidad,
             ValidarDocumentacionTecnicoUseCase validarDocumentacion,
@@ -81,6 +86,7 @@ public class TecnicoController {
             AutorizacionPropietario autorizacion) {
         this.registrar = registrar;
         this.actualizar = actualizar;
+        this.actualizarMiPerfil = actualizarMiPerfil;
         this.buscar = buscar;
         this.eliminar = eliminar;
         this.cambiarDisponibilidad = cambiarDisponibilidad;
@@ -177,6 +183,22 @@ public class TecnicoController {
     @PreAuthorize("hasRole('TECNICO')")
     public TecnicoApiResponse miPerfil(@AuthenticationPrincipal AuthenticatedUser principal) {
         return TecnicoApiResponse.from(buscar.obtenerPorUsuarioId(principal.usuarioId()));
+    }
+
+    /**
+     * Self-service specialization update for the authenticated technician
+     * (RF-F1-04). The profile is resolved from the principal, so there is no
+     * {@code {id}} to tamper with. This path can only edit service categories:
+     * identity fields are owned by Usuario, and email/password changes are
+     * deliberately out of scope here because they have their own flows.
+     */
+    @PutMapping("/me/perfil")
+    @PreAuthorize("hasRole('TECNICO')")
+    public TecnicoApiResponse actualizarMiPerfil(@AuthenticationPrincipal AuthenticatedUser principal,
+            @Valid @RequestBody MiPerfilTecnicoApiRequest request) {
+        TecnicoResponse updated = actualizarMiPerfil.actualizar(principal.usuarioId(),
+                new MiPerfilTecnicoRequest(request.categoriasServicio()));
+        return TecnicoApiResponse.from(updated);
     }
 
     /** Lists the OTs assigned to the authenticated technician. */
