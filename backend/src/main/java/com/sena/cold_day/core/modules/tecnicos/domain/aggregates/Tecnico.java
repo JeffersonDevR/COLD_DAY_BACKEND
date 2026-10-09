@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.tecnicos.domain.aggregates;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -17,6 +18,17 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
 
 public class Tecnico {
+
+    /**
+     * Validity window of the last reported position (RF-F1-27 live tracking).
+     * <p>
+     * The frontend pushes a position every 15 s while the tracking panel is open,
+     * so 2 minutes tolerates browser tab throttling (a backgrounded tab may delay
+     * or coalesce its pushes) while still expiring a closed tab: past this window
+     * the stored coordinates are treated as "not reporting" even though
+     * {@code trackingActivo} stays {@code true} for audit purposes.
+     */
+    public static final Duration UBICACION_VIGENCIA = Duration.ofMinutes(2);
 
 
     private TecnicoId id;
@@ -223,6 +235,24 @@ public class Tecnico {
 
     public void activarTracking() {
         this.trackingActivo = true;
+    }
+
+    /**
+     * True only when the technician is actually reporting a live position, that
+     * is: tracking is on, coordinates exist and the last update falls inside
+     * {@link #UBICACION_VIGENCIA} of {@code ahora}. Coordinates that merely sit
+     * in the aggregate (a closed tab, a terminal OT) are retained for audit but
+     * are deliberately NOT fresh, so a reader of the live endpoint must not draw
+     * a technician who has stopped moving.
+     */
+    public boolean reportaUbicacionVigente(Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("The reference instant is required");
+        }
+        return trackingActivo
+                && ubicacion != null
+                && ubicacionActualizadaEn != null
+                && ubicacionActualizadaEn.isAfter(ahora.minus(UBICACION_VIGENCIA));
     }
 
     public boolean isActivo() { return activo; }

@@ -32,18 +32,26 @@ The technician's own panel is the only place that can break the loop. Everything
 User authorized the fix ("dale un boton para que active la ubicacion que tiene") and chose the live-tracking semantics.
 
 ## Acceptance criteria
-- [ ] T1: `Tecnico.reportaUbicacionVigente(ahora)` exists as a domain rule; `ConsultarOtUseCase.ubicacionTecnico` only returns a vigent position. Backend tests cover fresh / stale / never-reported.
-- [ ] T2: `TecnicoResponse` + `TecnicoApiResponse` expose `ubicacion` and `ubicacionActualizadaEn`; mapper maps them; no other construction site breaks.
-- [ ] T3: the radar card offers "Activar ubicación" / "Detener" and reflects the real tracking state; it distinguishes "never reported" from "stored but not live".
-- [ ] T4: `seguimiento-ot-page` only polls the technician position when the OT actually has a technician assigned and is in a state where a live position exists.
-- [ ] T5: frontend `npm test`, `tsc --noEmit`, `lint` and backend `gradlew test` green; each task closed with a work-unit commit.
+- [x] T1: `Tecnico.reportaUbicacionVigente(ahora)` exists as a domain rule; `ConsultarOtUseCase.ubicacionTecnico` only returns a vigent position. Backend tests cover fresh / stale / never-reported. (96 classes / 692 tests / 0 failures; baseline was 683, +9 new)
+- [x] T2: `TecnicoResponse` + `TecnicoApiResponse` expose `ubicacion` and `ubicacionActualizadaEn`; mapper maps them; no other construction site breaks.
+- [x] T3: the radar card offers "Activar ubicación" / "Detener" / "Reintentar" and distinguishes never-reported / stored-but-not-live / reporting. (commit `63935ad`; frontend 63 files / 444 tests, tsc + lint green)
+- [x] T4: `seguimiento-ot-page` only polls the technician position when the OT has a technician assigned and is in `ASIGNADA/EN_CAMINO/EN_DIAGNOSTICO/EN_REPARACION`. (commit `63935ad`)
+- [ ] T5: frontend + backend suites green and each task closed with a work-unit commit. (frontend done; backend final commit pending)
 
 ## Tasks
-- [ ] T1 (backend, delegated): freshness domain rule + use case — route: delegated-direct (writer trigger: 2+ non-trivial files across `tecnicos` and `ot`).
-- [ ] T2 (backend, delegated): expose location freshness on the technician read model.
-- [ ] T3 (frontend, delegated): activate/stop buttons + truthful radar card.
-- [ ] T4 (frontend, delegated): gate the live-position polling.
-- [ ] T5 (parent): verification + work-unit commits + final report.
+- [x] T1 (backend, delegated): freshness domain rule + use case — route: delegated-direct. Evidence: `Tecnico.UBICACION_VIGENCIA` (2 min, documented) + `reportaUbicacionVigente(Instant)`; `ConsultarOtUseCase` now injects `Clock` (bean `ClockConfig`, no `Instant.now()`) and filters through the rule; `OtController` byte-identical. Tests: +7 in `TecnicoTest` (incl. the exact-TTL-edge case) and +2 in `GeolocalizacionApiIT` (fresh → 200, stale → 404).
+- [x] T2 (backend, delegated): expose location freshness on the technician read model. Evidence: two fields appended to `TecnicoResponse` and `TecnicoApiResponse`, mapped in `TecnicoMapper`. Wire shape verified against the frontend: `Point(latitud, longitud)` ↔ `{latitud, longitud}`.
+- [x] T3 (frontend, delegated): activate/stop buttons + truthful radar card.
+- [x] T4 (frontend, delegated): gate the live-position polling. Also extracted `ESTADOS_TECNICO_EN_MOVIMIENTO`, previously duplicated between `mostrarCargoVisita` and the new poll guard.
+- [ ] T5 (parent): final commit + report.
 
 ## Progress
-- 2026-10-09: feature doc created on `fix/tecnico-activar-ubicacion`.
+- 2026-10-09: feature doc created on `fix/tecnico-activar-ubicacion` (based on `fix/panel-tecnico-visibilidad`, `d9b0b35`).
+- 2026-10-09: T3+T4 done and committed (`63935ad`, 10 files, +310/−11). Parent spot check: full frontend suite 63 files / 444 tests (baseline 421), `tsc` exit 0, lint clean.
+- 2026-10-09: T1+T2 done. Backend full suite 96 classes / 692 tests / 0 failures (baseline 683).
+
+## Out of scope / follow-ups
+- Known sticky-boolean class of bug elsewhere: `Cliente`/`DireccionPrincipal` location has no timestamp at all, and `PostgisTecnicoDisponibilidadIT`'s eligibility query does not filter on freshness. Not touched by this feature.
+- `Tecnico.java` and `ConsultarOtUseCase.java` now mix English (new) and Spanish (pre-existing) comments. A normalisation pass is a separate commit, deliberately not bundled here.
+- Comment language convention is NOT uniform in this repo: `backend/` → English, `frontend/` → Spanish. Recorded here so future features do not re-litigate it.
+- `UBICACION_VIGENCIA` is a hard-coded 2 min constant, not configuration. If mobile browsers throttle harder than expected in production it is the single knob to widen — promote it to `@ConfigurationProperties` only if it actually needs tuning.

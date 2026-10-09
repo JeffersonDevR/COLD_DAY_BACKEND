@@ -230,4 +230,71 @@ class TecnicoTest {
         assertThat(tecnico.isTrackingActivo()).isFalse();
         assertThat(tecnico.getUbicacionActualizadaEn()).isNull();
     }
+
+    @Test
+    void aPositionReportedInsideTheTtlReportsAsFresh() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), Instant.parse("2026-01-01T10:00:00Z"));
+
+        // One push before the window closes: still live tracking.
+        assertThat(tecnico.reportaUbicacionVigente(Instant.parse("2026-01-01T10:01:30Z"))).isTrue();
+    }
+
+    @Test
+    void aPositionOlderThanTheTtlDoesNotReport() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), Instant.parse("2026-01-01T10:00:00Z"));
+
+        assertThat(tecnico.reportaUbicacionVigente(Instant.parse("2026-01-01T10:05:00Z"))).isFalse();
+    }
+
+    @Test
+    void aPositionReportedWithTrackingOffDoesNotReport() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), Instant.parse("2026-01-01T10:00:00Z"));
+        tecnico.desactivarTracking();
+
+        assertThat(tecnico.reportaUbicacionVigente(Instant.parse("2026-01-01T10:00:30Z"))).isFalse();
+    }
+
+    @Test
+    void aStoredCoordinatesWithNoTimestampDoesNotReport() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        // Reconstructed from persistence with a position but no timestamp, and
+        // tracking may be on: without an instant freshness cannot be decided.
+        Tecnico reconstituido = Tecnico.reconstituir(tecnico.getId(), 7L, "123", Set.of(), null, null, null,
+                Set.of(), true, new Point(4.6, -74.0), true, null);
+
+        assertThat(reconstituido.reportaUbicacionVigente(Instant.parse("2026-01-01T10:00:00Z"))).isFalse();
+    }
+
+    @Test
+    void aPositionReportedAtTheExactTtlEdgeAlreadyCountsAsStale() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        Instant reportado = Instant.parse("2026-01-01T10:00:00Z");
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), reportado);
+
+        // The rule requires the timestamp to be strictly AFTER the cut-off, so an
+        // age of exactly UBICACION_VIGENCIA is already stale.
+        assertThat(tecnico.reportaUbicacionVigente(reportado.plus(Tecnico.UBICACION_VIGENCIA))).isFalse();
+        // One nanosecond inside the window still reports.
+        assertThat(tecnico.reportaUbicacionVigente(
+                reportado.plus(Tecnico.UBICACION_VIGENCIA).minusNanos(1))).isTrue();
+    }
+
+    @Test
+    void aFreshTechnicianDoesNotReportALocation() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+
+        assertThat(tecnico.reportaUbicacionVigente(Instant.parse("2026-01-01T10:00:00Z"))).isFalse();
+    }
+
+    @Test
+    void rejectsANullReferenceInstantWhenDecidingFreshness() {
+        Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(), Set.of());
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), Instant.parse("2026-01-01T10:00:00Z"));
+
+        assertThatThrownBy(() -> tecnico.reportaUbicacionVigente(null))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }
