@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.administracion.infrastructure.api.requests;
 
+import com.sena.cold_day.core.shared.domain.TextoPlano;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,4 +13,8 @@ import jakarta.validation.constraints.Size;
 public record ResolverDisputaApiRequest(
         @NotNull Boolean conAcuerdo,
         @NotBlank @Size(max = 1000) String resolucion) {
+
+    public ResolverDisputaApiRequest {
+        resolucion = TextoPlano.limpiar(resolucion);
+    }
 }

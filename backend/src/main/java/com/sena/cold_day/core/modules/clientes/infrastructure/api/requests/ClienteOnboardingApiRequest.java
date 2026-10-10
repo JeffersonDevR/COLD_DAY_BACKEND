@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.clientes.infrastructure.api.requests;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
 import com.sena.cold_day.core.shared.domain.Point;
+import com.sena.cold_day.core.shared.domain.TextoPlano;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -25,4 +26,14 @@ public record ClienteOnboardingApiRequest(
         String barrio,
         Point ubicacion,
         @NotNull Boolean aceptaHabeasData) {
+
+    public ClienteOnboardingApiRequest {
+        // Free-text normalization only: password stays byte-for-byte intact.
+        nombre = TextoPlano.limpiar(nombre);
+        correo = TextoPlano.limpiar(correo);
+        telefono = TextoPlano.limpiar(telefono);
+        calle = TextoPlano.limpiar(calle);
+        ciudad = TextoPlano.limpiar(ciudad);
+        barrio = TextoPlano.limpiar(barrio);
+    }
 }

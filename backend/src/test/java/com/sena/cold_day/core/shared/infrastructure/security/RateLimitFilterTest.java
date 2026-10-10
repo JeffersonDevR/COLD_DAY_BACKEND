@@ -2,6 +2,8 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -80,6 +82,69 @@ class RateLimitFilterTest {
         assertThat(response.getContentAsString())
                 .contains("\"status\":429")
                 .contains("Demasiadas solicitudes. Reintente mas tarde.");
+    }
+
+    @Test
+    void cadaUnaDeLasCuatroRutasDeAuthSeLimitaConSuPropioCupo() throws Exception {
+        List<String> rutas = List.of(
+                "/api/usuarios",
+                "/api/usuarios/login",
+                "/api/usuarios/recuperar-contrasena",
+                "/api/usuarios/reset-contrasena");
+        int indice = 0;
+        for (String ruta : rutas) {
+            // Cada ruta estrena bucket: se agota con su propia IP remota.
+            RateLimitFilter filter = new RateLimitFilter(new RateLimitProperties(true, 1, 60), MAPPER);
+            String ip = "10.20.0." + (++indice);
+
+            ChainStub primero = new ChainStub();
+            filter.doFilter(request("POST", ruta, ip), new MockHttpServletResponse(), primero);
+            assertThat(primero.invoked).as("primer intento en %s", ruta).isTrue();
+
+            MockHttpServletResponse respuesta = new MockHttpServletResponse();
+            ChainStub segundo = new ChainStub();
+            filter.doFilter(request("POST", ruta, ip), respuesta, segundo);
+            assertThat(segundo.invoked).as("segundo intento en %s", ruta).isFalse();
+            assertThat(respuesta.getStatus()).as("%s supera el cupo", ruta).isEqualTo(429);
+        }
+    }
+
+    @Test
+    void agotarUnaRutaNoBloqueaAOtraDesdeLaMismaIp() throws Exception {
+        RateLimitFilter filter = new RateLimitFilter(new RateLimitProperties(true, 1, 60), MAPPER);
+        String ip = "10.30.0.7";
+
+        filter.doFilter(request("POST", LOGIN, ip), new MockHttpServletResponse(), new ChainStub());
+        MockHttpServletResponse bloqueado = new MockHttpServletResponse();
+        filter.doFilter(request("POST", LOGIN, ip), bloqueado, new ChainStub());
+        assertThat(bloqueado.getStatus()).isEqualTo(429);
+
+        // Misma IP, otra ruta: su bucket arranca de cero.
+        ChainStub otraRuta = new ChainStub();
+        filter.doFilter(request("POST", "/api/usuarios", ip), new MockHttpServletResponse(), otraRuta);
+        assertThat(otraRuta.invoked).isTrue();
+    }
+
+    @Test
+    void xForwardedForNoEvitaElCupoPorqueLaClaveEsLaIpReal() throws Exception {
+        RateLimitFilter filter = new RateLimitFilter(new RateLimitProperties(true, 1, 60), MAPPER);
+        String ipReal = "10.40.0.5";
+
+        MockHttpServletRequest primero = request("POST", LOGIN, ipReal);
+        primero.addHeader("X-Forwarded-For", "1.1.1.1");
+        ChainStub primeraCadena = new ChainStub();
+        filter.doFilter(primero, new MockHttpServletResponse(), primeraCadena);
+        assertThat(primeraCadena.invoked).isTrue();
+
+        // Misma IP real, X-Forwarded-For falsificado distinto: el filtro lo ignora,
+        // el bucket sigue siendo el de ipReal y el segundo intento corta.
+        MockHttpServletRequest segundo = request("POST", LOGIN, ipReal);
+        segundo.addHeader("X-Forwarded-For", "2.2.2.2");
+        MockHttpServletResponse respuesta = new MockHttpServletResponse();
+        ChainStub segundaCadena = new ChainStub();
+        filter.doFilter(segundo, respuesta, segundaCadena);
+        assertThat(segundaCadena.invoked).isFalse();
+        assertThat(respuesta.getStatus()).isEqualTo(429);
     }
 
     private static MockHttpServletRequest request(String method, String path, String remoteAddr) {

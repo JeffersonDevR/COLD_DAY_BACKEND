@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests;
 
 import com.sena.cold_day.core.modules.proveedores.application.dto.ProveedorRequest;
+import com.sena.cold_day.core.shared.domain.TextoPlano;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +30,15 @@ public record ProveedorApiRequest(
         @NotBlank String razonSocial,
         @NotBlank String nit,
         @NotNull Boolean aceptaHabeasData) {
+
+    public ProveedorApiRequest {
+        // Free-text normalization only: password stays byte-for-byte intact.
+        nombre = TextoPlano.limpiar(nombre);
+        correo = TextoPlano.limpiar(correo);
+        telefono = TextoPlano.limpiar(telefono);
+        razonSocial = TextoPlano.limpiar(razonSocial);
+        nit = TextoPlano.limpiar(nit);
+    }
 
     public ProveedorRequest toApplicationRequest() {
         return new ProveedorRequest(nombre, correo, password, telefono, razonSocial, nit,

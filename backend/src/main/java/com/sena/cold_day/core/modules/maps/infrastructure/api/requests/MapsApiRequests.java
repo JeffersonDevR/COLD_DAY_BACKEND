@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.maps.infrastructure.api.requests;
 
+import com.sena.cold_day.core.shared.domain.TextoPlano;
+
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -12,6 +14,10 @@ public final class MapsApiRequests {
     }
 
     public record GeocodeApiRequest(@NotBlank String direccion) {
+
+        public GeocodeApiRequest {
+            direccion = TextoPlano.limpiar(direccion);
+        }
     }
 
     public record DistanciaApiRequest(

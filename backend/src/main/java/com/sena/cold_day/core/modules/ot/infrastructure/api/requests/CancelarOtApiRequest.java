@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.api.requests;
 
+import com.sena.cold_day.core.shared.domain.TextoPlano;
+
 import jakarta.validation.constraints.Size;
 
 /**
@@ -9,4 +11,8 @@ import jakarta.validation.constraints.Size;
  */
 public record CancelarOtApiRequest(
         @Size(max = 500) String motivo) {
+
+    public CancelarOtApiRequest {
+        motivo = TextoPlano.limpiar(motivo);
+    }
 }

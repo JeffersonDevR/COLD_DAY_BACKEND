@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.api.requests;
 
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.InsumoLinea;
+import com.sena.cold_day.core.shared.domain.TextoPlano;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -17,6 +18,10 @@ import jakarta.validation.constraints.Size;
 public record InsumoLineaApiRequest(
         @NotBlank @Size(max = 500) String descripcion,
         @Min(1) int cantidad) {
+
+    public InsumoLineaApiRequest {
+        descripcion = TextoPlano.limpiar(descripcion);
+    }
 
     /** Maps the validated wire line to the despacho domain value object. */
     public InsumoLinea toDomain() {

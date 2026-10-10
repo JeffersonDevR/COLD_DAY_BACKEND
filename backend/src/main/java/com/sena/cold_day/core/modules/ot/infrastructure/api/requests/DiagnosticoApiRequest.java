@@ -3,6 +3,8 @@ package com.sena.cold_day.core.modules.ot.infrastructure.api.requests;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.sena.cold_day.core.shared.domain.TextoPlano;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -21,4 +23,9 @@ public record DiagnosticoApiRequest(
         @NotNull @DecimalMin("0.0") BigDecimal costoManoObra,
         @NotNull @DecimalMin("0.0") BigDecimal costoRepuestos,
         @Valid List<InsumoLineaApiRequest> insumos) {
+
+    public DiagnosticoApiRequest {
+        fallaDetectada = TextoPlano.limpiar(fallaDetectada);
+        observaciones = TextoPlano.limpiar(observaciones);
+    }
 }

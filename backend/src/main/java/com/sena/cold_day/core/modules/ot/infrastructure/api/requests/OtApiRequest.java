@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.shared.domain.Point;
+import com.sena.cold_day.core.shared.domain.TextoPlano;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -23,6 +24,12 @@ public record OtApiRequest(
         @NotBlank @Size(max = 500) String direccion,
         @NotNull @DecimalMin("-90.0") @DecimalMax("90.0") Double latitud,
         @NotNull @DecimalMin("-180.0") @DecimalMax("180.0") Double longitud) {
+
+    public OtApiRequest {
+        descripcionFalla = TextoPlano.limpiar(descripcionFalla);
+        direccion = TextoPlano.limpiar(direccion);
+        evidenciaUrls = TextoPlano.limpiarCada(evidenciaUrls);
+    }
 
     public Point toPoint() {
         return new Point(latitud, longitud);
