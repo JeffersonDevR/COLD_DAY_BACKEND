@@ -26,6 +26,8 @@ export class PanelTecnicoPage {
 
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
   readonly misOtsEnCurso = signal<OtResponse[]>([]);
+  /** La carga de OTs falló: la tarjeta debe decirlo en vez de mostrar vacío. */
+  readonly otsError = signal<boolean>(false);
 
   /** El técnico no aparece en el radar de clientes si una cuenta no está aprobada. */
   readonly validacionAprobada = computed(() => this.tecnico()?.estadoValidacion === 'APROBADO');
@@ -58,17 +60,32 @@ export class PanelTecnicoPage {
   );
 
   constructor() {
-    cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => {
-      this.tecnico.set(tecnico);
-      if (tecnico) {
-        this.tecnicosApi.getMisOts().subscribe({
-          next: (ots) => this.misOtsEnCurso.set(
-            ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado))
-          ),
-          error: () => this.misOtsEnCurso.set([]),
-        });
-      }
+    // Perfil y OTs se cargan por separado: si falla el perfil, las OTs igual
+    // se piden y la tarjeta puede reflejar el error en vez de quedar muda.
+    cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
+    this.cargarOts();
+  }
+
+  /** Carga las OTs en curso del técnico autenticado. */
+  private cargarOts(): void {
+    this.tecnicosApi.getMisOts().subscribe({
+      next: (ots) => {
+        this.otsError.set(false);
+        this.misOtsEnCurso.set(
+          ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado))
+        );
+      },
+      error: () => {
+        this.misOtsEnCurso.set([]);
+        this.otsError.set(true);
+      },
     });
+  }
+
+  /** Reintento manual pedido desde la tarjeta de servicios asignados. */
+  reintentarOts(): void {
+    this.otsError.set(false);
+    this.cargarOts();
   }
 
   cambiarEstadoOperativo(nuevo: EstadoOperativo): void {

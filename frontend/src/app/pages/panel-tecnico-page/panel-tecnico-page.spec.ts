@@ -28,13 +28,21 @@ function ot(id: string, estado: OtResponse['estado']): OtResponse {
 
 function setup(opts: {
   tecnico?: TecnicoResponse | undefined;
+  perfilFalla?: boolean;
   ots?: OtResponse[];
+  otsFalla?: boolean;
   trackingActivo?: boolean;
   trackingMotivo?: string | null;
 } = {}) {
   const tecnicosApi = {
-    getMiPerfil: vi.fn(() => of(opts.tecnico ?? tecnico)),
-    getMisOts: vi.fn(() => of(opts.ots ?? [ot('a', 'EN_CAMINO'), ot('b', 'FINALIZADA')])),
+    getMiPerfil: vi.fn(() =>
+      opts.perfilFalla ? throwError(() => new Error('perfil')) : of(opts.tecnico ?? tecnico),
+    ),
+    getMisOts: vi.fn(() =>
+      opts.otsFalla
+        ? throwError(() => new Error('ots'))
+        : of(opts.ots ?? [ot('a', 'EN_CAMINO'), ot('b', 'FINALIZADA')]),
+    ),
     actualizarEstadoOperativo: vi.fn(() => of(true)),
   };
   const tracking = {
@@ -72,6 +80,32 @@ describe('PanelTecnicoPage', () => {
   it('carga el técnico y filtra las OTs en curso', () => {
     const { fixture, tecnicosApi } = setup();
     expect(tecnicosApi.getMisOts).toHaveBeenCalled();
+    expect(fixture.componentInstance.misOtsEnCurso().map((o) => o.id)).toEqual(['a']);
+  });
+
+  it('carga las OTs aunque falle el perfil del técnico', () => {
+    const { fixture, tecnicosApi } = setup({ perfilFalla: true });
+    expect(tecnicosApi.getMisOts).toHaveBeenCalled();
+    expect(fixture.componentInstance.misOtsEnCurso().map((o) => o.id)).toEqual(['a']);
+  });
+
+  it('expone el error de OTs y no muestra el estado vacío', () => {
+    const { fixture } = setup({ otsFalla: true });
+    expect(fixture.componentInstance.otsError()).toBe(true);
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('No pudimos cargar tus servicios');
+    expect(texto).not.toContain('No tienes servicios asignados');
+  });
+
+  it('reintenta la carga de OTs', () => {
+    const { fixture, tecnicosApi } = setup({ otsFalla: true });
+    expect(fixture.componentInstance.otsError()).toBe(true);
+
+    tecnicosApi.getMisOts.mockReturnValue(of([ot('a', 'EN_CAMINO')]));
+    fixture.componentInstance.reintentarOts();
+
+    expect(tecnicosApi.getMisOts).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.otsError()).toBe(false);
     expect(fixture.componentInstance.misOtsEnCurso().map((o) => o.id)).toEqual(['a']);
   });
 

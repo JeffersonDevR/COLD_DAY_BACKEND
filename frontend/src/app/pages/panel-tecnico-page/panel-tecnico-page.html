@@ -345,7 +345,25 @@
           </div>
         </div>
 
-        @if (misOtsEnCurso().length === 0) {
+        @if (otsError()) {
+          <div
+            class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex flex-wrap items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-2">
+              <i class="pi pi-exclamation-triangle text-rose-600 dark:text-rose-400 text-sm"></i>
+              <span class="text-xs font-bold text-rose-700 dark:text-rose-300">
+                No pudimos cargar tus servicios. Reintenta en unos segundos.
+              </span>
+            </div>
+            <button
+              type="button"
+              (click)="reintentarOts()"
+              class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        } @else if (misOtsEnCurso().length === 0) {
           <app-empty-state
             icon="pi pi-compass"
             title="No tienes servicios asignados en este momento"
