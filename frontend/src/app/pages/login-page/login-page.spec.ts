@@ -47,6 +47,7 @@ describe('LoginPage', () => {
     const login = vi.fn(() => of({ token: 't', expiracion: 'e', rol: 'CLIENTE', usuario }));
     const { fixture, auth, toast, navigate } = setup(login);
 
+    fixture.componentInstance.loginForm.setValue({ correo: 'maria.gomez@gmail.com', password: 'demo1234' });
     fixture.componentInstance.onSubmit();
 
     expect(login).toHaveBeenCalledWith('maria.gomez@gmail.com', 'demo1234');
@@ -70,29 +71,10 @@ describe('LoginPage', () => {
     const login = vi.fn(() => throwError(() => new Error('Credenciales inválidas')));
     const { fixture, toast } = setup(login);
 
+    fixture.componentInstance.loginForm.setValue({ correo: 'maria.gomez@gmail.com', password: 'demo1234' });
     fixture.componentInstance.onSubmit();
 
     expect(toast.error).toHaveBeenCalledWith('Error de autenticación', 'Credenciales inválidas');
     expect(fixture.componentInstance.loading()).toBe(false);
-  });
-
-  it('quickLogin usa demo1234 y navega al panel del rol', () => {
-    const login = vi.fn(() => of({ token: 't', expiracion: 'e', rol: 'CLIENTE', usuario }));
-    const { fixture, navigate, toast } = setup(login);
-
-    fixture.componentInstance.quickLogin('maria.gomez@gmail.com', 'CLIENTE');
-
-    expect(login).toHaveBeenCalledWith('maria.gomez@gmail.com', 'demo1234');
-    expect(toast.success).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(['/panel']);
-  });
-
-  it('quickLogin maneja el error', () => {
-    const login = vi.fn(() => throwError(() => new Error('sin red')));
-    const { fixture, toast } = setup(login);
-
-    fixture.componentInstance.quickLogin('x@x.co', 'TECNICO');
-
-    expect(toast.error).toHaveBeenCalledWith('Acceso Demo', 'sin red');
   });
 });

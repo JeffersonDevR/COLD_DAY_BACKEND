@@ -9,8 +9,6 @@ import { UsuariosApi } from '../../core/service/usuarios-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ThemeService } from '../../core/service/theme.service';
 
-import { Rol } from '../../core/models/common.models';
-
 @Component({
   selector: 'app-login-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,11 +26,11 @@ export class LoginPage {
   readonly loading = signal<boolean>(false);
 
   readonly loginForm = new FormGroup({
-    correo: new FormControl('maria.gomez@gmail.com', {
+    correo: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.email]
     }),
-    password: new FormControl('demo1234', {
+    password: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.minLength(6)]
     })
@@ -58,23 +56,6 @@ export class LoginPage {
         this.loading.set(false);
         this.toast.error('Error de autenticación', err.message || 'Verifica tus credenciales');
       }
-    });
-  }
-
-  /** Acceso rápido contra la API real usando las credenciales del seed (demo1234). */
-  quickLogin(correo: string, rol: Rol): void {
-    this.loading.set(true);
-    this.usuariosApi.login(correo, 'demo1234').subscribe({
-      next: (res) => {
-        this.loading.set(false);
-        const usuario = this.authService.establecerSesionDesdeToken(res, correo, res.usuario);
-        this.toast.success(`Acceso Demo (${rol})`, `Ingresaste como ${usuario.nombre}`);
-        this.router.navigate([this.authService.getDashboardRouteForRole(usuario.rol)]);
-      },
-      error: (err: Error) => {
-        this.loading.set(false);
-        this.toast.error('Acceso Demo', err.message || 'No se pudo iniciar sesión demo');
-      },
     });
   }
 }
