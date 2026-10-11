@@ -1,0 +1,150 @@
+# Backend CI — verifies the Spring Boot API on every pull request and on main.
+#
+# Branch protection on `main` must require these status checks (configured in
+# the GitHub UI, not in this file):
+#   - "Backend CI / build-and-test"
+#   - "Backend CI / migration-dry-run"
+#   - "Backend CI / migrations-append-only"
+#   - "Frontend CI / build-and-test"
+# A red check blocks the merge.
+name: Backend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Full test suite. Testcontainers starts its own PostGIS container using the
+  # runner's Docker daemon, so the DB-backed suite finally runs in a shared
+  # environment (this closes the local verification gap).
+  build-and-test:
+    name: build-and-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build and run the full test suite
+        run: ./gradlew build --console=plain
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/build/reports/jacoco/test/html
+          if-no-files-found: ignore
+
+  # Pre-merge migration dry-run: boots the app so Spring Boot's Flyway
+  # autoconfiguration applies db/migration (V1..latest) against a PostGIS
+  # service container, exactly like production does on Railway. This is the
+  # boot-based path rather than the Flyway Gradle plugin because the plugin
+  # cannot see flyway-database-postgresql (it is runtimeOnly) without a brittle
+  # buildscript classpath hack, and booting additionally exercises
+  # spring.jpa.hibernate.ddl-auto=validate against the freshly migrated schema.
+  migration-dry-run:
+    name: migration-dry-run
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: cold_day
+          POSTGRES_USER: cold_day
+          POSTGRES_PASSWORD: cold_day
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cold_day -d cold_day"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      SPRING_PROFILES_ACTIVE: dev
+      PORT: '8090'
+      POSTGRES_URL: jdbc:postgresql://localhost:5432/cold_day
+      POSTGRES_USER: cold_day
+      POSTGRES_PASSWORD: cold_day
+      APP_SEED_ENABLED: 'false'
+      DEV_AUTH_BYPASS: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+      - name: Apply db/migration by booting the app against PostGIS
+        run: |
+          set -euo pipefail
+          ./gradlew bootRun --console=plain > /tmp/boot.log 2>&1 &
+          gradle_pid=$!
+          trap 'kill "$gradle_pid" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 180); do
+            if curl -fsS http://localhost:8090/actuator/health >/dev/null 2>&1; then
+              echo "Flyway applied db/migration and the app started against PostGIS."
+              exit 0
+            fi
+            if ! kill -0 "$gradle_pid" 2>/dev/null; then
+              echo "::error::bootRun exited before the app became healthy — migration or startup failed"
+              tail -n 250 /tmp/boot.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::Timed out waiting for the app to start"
+          tail -n 250 /tmp/boot.log
+          exit 1
+
+  # Flyway is forward-only: an already-applied V*.sql must never change, or
+  # environments that ran it diverge. Only brand-new V*.sql files are allowed.
+  migrations-append-only:
+    name: migrations-append-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fail if an existing V*.sql migration was modified or deleted
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+            base="${PR_BASE_SHA}"
+          else
+            base="${PUSH_BEFORE_SHA}"
+          fi
+          if [ -z "${base}" ] || [ "${base}" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base commit to compare against; skipping the append-only guard."
+            exit 0
+          fi
+          changed="$(git diff --name-status "${base}" HEAD -- 'backend/src/main/resources/db/migration/V*.sql' || true)"
+          echo "Changed migration files (if any):"
+          echo "${changed:-<none>}"
+          if echo "${changed}" | grep -Eq '^[MDR]'; then
+            echo "::error::Existing Flyway migrations are append-only. Only new V*.sql files may be added; an edit or delete was detected."
+            exit 1
+          fi
