@@ -8,11 +8,12 @@ function usuario(rol: Rol): UsuarioResponse {
   return { id: 1, nombre: 'Test', correo: 't@x.co', rol, habeasDataAceptado: true, activo: true };
 }
 
-function setup(user: UsuarioResponse | null) {
+function setup(user: UsuarioResponse | null, roles?: Rol[]) {
   const router = { navigate: vi.fn() };
+  const effective = new Set<Rol>(roles ?? (user ? [user.rol] : []));
   TestBed.configureTestingModule({
     providers: [
-      { provide: AuthService, useValue: { currentUser: () => user } },
+      { provide: AuthService, useValue: { currentUser: () => user, userRoles: () => effective } },
       { provide: Router, useValue: router },
     ],
   });
@@ -40,6 +41,16 @@ describe('PanelRedirectComponent', () => {
 
   it('redirige al dashboard del contable', () => {
     expect(setup(usuario('CONTABLE')).navigate).toHaveBeenCalledWith(['/admin/dashboard']);
+  });
+
+  it('con doble rol usa el panel del rol primario', () => {
+    expect(setup(usuario('CLIENTE'), ['CLIENTE', 'TECNICO']).navigate).toHaveBeenCalledWith(['/cliente/panel']);
+  });
+
+  it('con rol primario no enrutable cae al primer rol enrutable del conjunto', () => {
+    expect(
+      setup(usuario('DESCONOCIDO' as unknown as Rol), ['DESCONOCIDO' as Rol, 'TECNICO']).navigate,
+    ).toHaveBeenCalledWith(['/tecnico/panel']);
   });
 
   it('redirige a la raíz con un rol desconocido', () => {

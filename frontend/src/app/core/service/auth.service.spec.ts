@@ -77,6 +77,25 @@ describe('AuthService', () => {
     expect(service.currentUser()).toBeNull();
   });
 
+  it('sin sesión el conjunto de roles está vacío', () => {
+    expect(create().userRoles().size).toBe(0);
+  });
+
+  it('expone el conjunto de roles desde el claim roles del JWT (doble rol)', () => {
+    window.localStorage.setItem(
+      TOKEN_KEY,
+      tokenWith({ sub: '5', rol: 'CLIENTE', roles: ['CLIENTE', 'TECNICO'], exp: expEn(3600) }),
+    );
+    const service = create();
+    expect([...service.userRoles()].sort()).toEqual(['CLIENTE', 'TECNICO']);
+    expect(service.userRole()).toBe('CLIENTE');
+  });
+
+  it('userRoles cae al rol primario cuando no hay claim roles', () => {
+    window.localStorage.setItem(TOKEN_KEY, tokenWith({ sub: '5', rol: 'CLIENTE', exp: expEn(3600) }));
+    expect([...create().userRoles()]).toEqual(['CLIENTE']);
+  });
+
   it('setCurrentUser guarda token y usuario', () => {
     const service = create();
     service.setCurrentUser(adminUser);
@@ -112,6 +131,19 @@ describe('AuthService', () => {
       adminUser,
     );
     expect(usuario).toBe(adminUser);
+  });
+
+  it('establecerSesionDesdeToken propaga el conjunto de roles del JWT', () => {
+    const service = create();
+    service.establecerSesionDesdeToken(
+      {
+        token: tokenWith({ sub: '9', rol: 'CLIENTE', roles: ['CLIENTE', 'TECNICO'], exp: expEn(3600) }),
+        expiracion: '',
+        rol: 'CLIENTE',
+      },
+      'dual@x.co',
+    );
+    expect([...service.userRoles()].sort()).toEqual(['CLIENTE', 'TECNICO']);
   });
 
   it('logout limpia la sesión y navega al login', () => {

@@ -134,6 +134,11 @@ export interface UsuarioResponse {
   telefono?: string;
   fotoUrl?: string;
   rol: Rol;
+  /**
+   * Conjunto de roles derivado del perfil (claim `roles` del JWT). Un usuario
+   * dual (Cliente + Técnico) lo trae con ambos; `rol` sigue siendo el primario.
+   */
+  roles?: Rol[];
   fechaRegistro?: string;
   habeasDataAceptado: boolean;
   activo: boolean;
@@ -149,6 +154,11 @@ export interface TokenResponse {
   token: string;
   expiracion: string;
   rol: Rol;
+  /**
+   * Conjunto de roles derivado del perfil (TokenResponse.roles del backend,
+   * slice 4). Ausente en tokens legados: en ese caso se cae a `[rol]`.
+   */
+  roles?: Rol[];
   /**
    * Solo lo rellena el MOCK local. El backend real NO devuelve el perfil en el
    * login; en ese caso se reconstruye desde los claims del JWT (sub = usuarioId, rol).

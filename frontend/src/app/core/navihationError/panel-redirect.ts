@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../service/auth.service';
+import { Rol } from '../models/common.models';
 
 @Component({
   selector: 'app-panel-redirect',
@@ -24,22 +25,37 @@ export class PanelRedirectComponent implements OnInit {
       return;
     }
 
-    switch (user.rol) {
+    this.router.navigate([this.routeForUser(user.rol, this.auth.userRoles())]);
+  }
+
+  /**
+   * Ruta del panel por defecto. Un usuario dual (Cliente + Técnico) entra por su
+   * rol PRIMARIO; si ese rol no tiene panel (p. ej. un valor desconocido), se
+   * usa el primer rol del conjunto que sí lo tenga. Sin coincidencias, raíz.
+   */
+  private routeForUser(primary: Rol, roles: ReadonlySet<Rol>): string {
+    const primaryRoute = this.routeFor(primary);
+    if (primaryRoute) return primaryRoute;
+    for (const rol of roles) {
+      const route = this.routeFor(rol);
+      if (route) return route;
+    }
+    return '/';
+  }
+
+  private routeFor(rol: Rol): string | null {
+    switch (rol) {
       case 'CLIENTE':
-        this.router.navigate(['/cliente/panel']);
-        break;
+        return '/cliente/panel';
       case 'TECNICO':
-        this.router.navigate(['/tecnico/panel']);
-        break;
+        return '/tecnico/panel';
       case 'ADMINISTRADOR':
       case 'CONTABLE':
-        this.router.navigate(['/admin/dashboard']);
-        break;
+        return '/admin/dashboard';
       case 'PROVEEDOR':
-        this.router.navigate(['/proveedor/panel']);
-        break;
+        return '/proveedor/panel';
       default:
-        this.router.navigate(['/']);
+        return null;
     }
   }
 }

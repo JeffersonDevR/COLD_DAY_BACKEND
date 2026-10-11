@@ -16,7 +16,7 @@ export class AppSidebar {
   readonly layout = inject(LayoutService);
   private readonly auth = inject(AuthService);
 
-  readonly sections = computed(() => buildMenu(this.auth.userRole()));
+  readonly sections = computed(() => buildMenu(this.auth.userRoles()));
   readonly isStatic = computed(() => this.layout.menuMode() === 'static');
 
   onNavigate(): void {

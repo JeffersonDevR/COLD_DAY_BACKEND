@@ -29,8 +29,8 @@ describe('UsuariosApi', () => {
     const req = http.expectOne('/api/usuarios/login');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ correo: 'a@x.co', password: 'secreta' });
-    req.flush({ token: 't', expiracion: 'e', rol: 'CLIENTE' });
-    expect(await promise).toEqual({ token: 't', expiracion: 'e', rol: 'CLIENTE' });
+    req.flush({ token: 't', expiracion: 'e', rol: 'CLIENTE', roles: ['CLIENTE', 'TECNICO'] });
+    expect(await promise).toEqual({ token: 't', expiracion: 'e', rol: 'CLIENTE', roles: ['CLIENTE', 'TECNICO'] });
   });
 
   it('registro hace POST /api/usuarios y traduce la respuesta', async () => {
@@ -82,6 +82,13 @@ describe('UsuariosApi', () => {
     const res = await firstValueFrom(api.login('maria.gomez@gmail.com', 'x'));
     expect(res.token).toContain('mock-jwt-token-3');
     expect(res.rol).toBe('CLIENTE');
+  });
+
+  it('login en modo mock propaga el conjunto de roles del perfil', async () => {
+    config.setUseMocks(true);
+    const res = await firstValueFrom(api.login('sofia.dual@coldday.com.co', 'x'));
+    expect(res.rol).toBe('CLIENTE');
+    expect([...(res.usuario?.roles ?? [])].sort()).toEqual(['CLIENTE', 'TECNICO']);
   });
 
   it('login en modo mock rechaza credenciales desconocidas', async () => {
