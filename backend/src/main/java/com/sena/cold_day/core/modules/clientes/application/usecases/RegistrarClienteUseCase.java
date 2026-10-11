@@ -81,6 +81,11 @@ public class RegistrarClienteUseCase {
                 usuario.getUsuarioId(), request.tipoCliente(), DireccionPrincipal.con(request.calle(), request.ciudad(), request.barrio(), request.ubicacion())
         ));
 
+        // Second-profile acquisition: bump the token version so the new
+        // CLIENTE capability is honored at the next login (design D3).
+        usuario.incrementarTokenVersion();
+        usuarioRepository.save(usuario);
+
         return clienteMapper.toResponse(usuario, cliente);
     }
 }

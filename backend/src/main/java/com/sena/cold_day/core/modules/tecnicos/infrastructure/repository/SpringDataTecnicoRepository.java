@@ -14,6 +14,7 @@ public interface SpringDataTecnicoRepository extends JpaRepository<TecnicoJpaEnt
     List<TecnicoJpaEntity> findByActivoTrue();
     Optional<TecnicoJpaEntity> findByIdAndActivoTrue(UUID id);
     Optional<TecnicoJpaEntity> findByUsuarioIdAndActivoTrue(Long usuarioId);
+    Optional<TecnicoJpaEntity> findByUsuarioId(Long usuarioId);
 
     /**
      * Spatial pre-filter for the geolocalizacion module: a lat/long bounding

@@ -18,6 +18,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.exception.EspecialidadesRe
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
@@ -50,6 +51,12 @@ public class TecnicoControllerAdvice {
 
     @ExceptionHandler(NumeroIdentificacionDuplicadoException.class)
     ResponseEntity<ApiError> handleDuplicate(NumeroIdentificacionDuplicadoException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** The principal already owns a technician profile (second-profile acquisition). */
+    @ExceptionHandler(TecnicoDuplicadoException.class)
+    ResponseEntity<ApiError> handleTecnicoDuplicado(TecnicoDuplicadoException exception) {
         return error(HttpStatus.CONFLICT, exception);
     }
 
