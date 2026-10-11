@@ -1,3 +1,14 @@
+pluginManagement {
+	// El portal de plugins solo sirve los marcadores; las dependencias
+	// transitivas de los plugins (spring-boot-gradle-plugin, sonarqube, etc.)
+	// viven en Maven Central. Sin este repositorio, un cache de Gradle limpio
+	// (p. ej. CI) no puede resolverlas.
+	repositories {
+		gradlePluginPortal()
+		mavenCentral()
+	}
+}
+
 plugins {
 	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
