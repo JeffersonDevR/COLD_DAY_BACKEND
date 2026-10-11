@@ -1,0 +1,42 @@
+# Frontend CI — builds and tests the Angular app on every pull request and on
+# main. The required status checks for branch protection on `main` are listed in
+# backend-ci.yml.
+name: Frontend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: build-and-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate build config (maps key + api origin)
+        run: npm run gen:config
+      - name: Build (production)
+        run: npx ng build
+      # angular.json enables coverage by default; @vitest/coverage-v8 is a
+      # devDependency pinned in package-lock.json, so `npm ci` installs it.
+      - name: Unit tests with coverage
+        run: npx ng test --watch=false --coverage
