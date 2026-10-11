@@ -18,10 +18,11 @@ export class DashboardAdminPage implements OnInit {
   readonly metricas = signal<MetricasAdminResponse | null>(null);
 
   private readonly coloresCategoria: Record<CategoriaServicio, string> = {
+    CAMARAS_VIGILANCIA: '#8b5cf6',
     AIRE_ACONDICIONADO: '#0284c7',
     REFRIGERACION: '#06b6d4',
     ELECTRICIDAD: '#f59e0b',
-    ELECTRODOMESTICOS: '#10b981',
+    LAVADORAS: '#10b981',
   };
 
   /** Segmentos de la dona calculados a partir de la distribución real. */

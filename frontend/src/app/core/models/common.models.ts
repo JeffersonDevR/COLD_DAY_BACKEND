@@ -2,10 +2,11 @@
 export type Rol = 'CLIENTE' | 'TECNICO' | 'ADMINISTRADOR' | 'CONTABLE' | 'PROVEEDOR';
 
 export type CategoriaServicio =
+  | 'CAMARAS_VIGILANCIA'
   | 'REFRIGERACION'
   | 'AIRE_ACONDICIONADO'
-  | 'ELECTRICIDAD'
-  | 'ELECTRODOMESTICOS';
+  | 'LAVADORAS'
+  | 'ELECTRICIDAD';
 
 /** Tipo de cliente del backend (TipoCliente.java). */
 export type TipoCliente = 'B2B' | 'B2C';

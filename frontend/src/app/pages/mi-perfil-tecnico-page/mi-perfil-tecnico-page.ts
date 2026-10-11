@@ -14,10 +14,11 @@ import { CategoriaServicio, TecnicoResponse } from '../../core/models/common.mod
  * mismo vocabulario sin refactorizar las demás páginas.
  */
 const ETIQUETAS_CATEGORIA: Record<CategoriaServicio, string> = {
+  CAMARAS_VIGILANCIA: 'Cámaras de Vigilancia',
   REFRIGERACION: 'Refrigeración',
   AIRE_ACONDICIONADO: 'Aire Acondicionado',
+  LAVADORAS: 'Lavadoras',
   ELECTRICIDAD: 'Electricidad',
-  ELECTRODOMESTICOS: 'Electrodomésticos',
 };
 
 @Component({
@@ -32,10 +33,11 @@ export class MiPerfilTecnicoPage {
 
   /** Orden canónico de las categorías, alineado al enum del backend. */
   readonly todasLasCategorias: CategoriaServicio[] = [
+    'CAMARAS_VIGILANCIA',
     'REFRIGERACION',
     'AIRE_ACONDICIONADO',
+    'LAVADORAS',
     'ELECTRICIDAD',
-    'ELECTRODOMESTICOS',
   ];
 
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
