@@ -58,7 +58,7 @@ class VerificarVigenciaDocumentalUseCaseTest {
         Tecnico tecnico = aprobado(Set.of());
         when(tecnicoRepository.findByActivoTrue()).thenReturn(List.of(tecnico));
         when(documentoRepository.buscarPorTecnico(TECNICO_ID))
-                .thenReturn(List.of(new DocumentoTecnico(1L, TECNICO_ID, "Cedula", hoy.plusDays(30))));
+                .thenReturn(List.of(new DocumentoTecnico(1L, TECNICO_ID, "Cedula", hoy.minusYears(1), hoy.plusDays(30))));
 
         useCase.ejecutar(hoy);
 
@@ -80,7 +80,7 @@ class VerificarVigenciaDocumentalUseCaseTest {
         Tecnico tecnico = aprobado(Set.of());
         when(tecnicoRepository.findByActivoTrue()).thenReturn(List.of(tecnico));
         when(documentoRepository.buscarPorTecnico(TECNICO_ID))
-                .thenReturn(List.of(new DocumentoTecnico(1L, TECNICO_ID, "Cedula", hoy.plusDays(31))));
+                .thenReturn(List.of(new DocumentoTecnico(1L, TECNICO_ID, "Cedula", hoy.minusYears(1), hoy.plusDays(31))));
 
         useCase.ejecutar(hoy);
 
@@ -93,7 +93,7 @@ class VerificarVigenciaDocumentalUseCaseTest {
         Tecnico tecnico = aprobado(Set.of());
         when(tecnicoRepository.findByActivoTrue()).thenReturn(List.of(tecnico));
         when(documentoRepository.buscarPorTecnico(TECNICO_ID))
-                .thenReturn(List.of(new DocumentoTecnico(1L, TECNICO_ID, "Cedula", hoy.minusDays(1))));
+                .thenReturn(List.of(new DocumentoTecnico(1L, TECNICO_ID, "Cedula", hoy.minusYears(1), hoy.minusDays(1))));
 
         useCase.ejecutar(hoy);
 

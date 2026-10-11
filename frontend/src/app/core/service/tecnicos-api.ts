@@ -293,7 +293,8 @@ export class TecnicosApi {
   }
 
   /**
-   * POST /api/tecnicos/{tecnicoId}/documentos con {tipo, fechaVencimiento}.
+   * POST /api/tecnicos/{tecnicoId}/documentos con {tipo, fechaExpedicion, fechaVencimiento}.
+   * `fechaExpedicion` es obligatoria (backend @NotNull); `fechaVencimiento` es opcional.
    * Pendiente(backend): el backend NO acepta `archivoUrl` en DocumentoTecnicoApiRequest,
    * así que la URL del archivo no se persiste.
    */
@@ -301,15 +302,17 @@ export class TecnicosApi {
     tecnicoId: string,
     tipo: TipoDocumentoTecnico,
     archivoUrl: string,
+    fechaExpedicion: string,
     fechaVencimiento?: string
   ): Observable<void> {
     if (this.apiConfig.useMocks()) {
-      this.mockDb.subirDocumentoTecnico(tecnicoId, tipo, archivoUrl, fechaVencimiento);
+      this.mockDb.subirDocumentoTecnico(tecnicoId, tipo, archivoUrl, fechaExpedicion, fechaVencimiento);
       return of(undefined).pipe(delay(300));
     }
     return this.http
       .post<DocumentoTecnicoApiResponse>(this.apiConfig.url(`/tecnicos/${tecnicoId}/documentos`), {
         tipo,
+        fechaExpedicion,
         fechaVencimiento,
       })
       .pipe(map(() => undefined));

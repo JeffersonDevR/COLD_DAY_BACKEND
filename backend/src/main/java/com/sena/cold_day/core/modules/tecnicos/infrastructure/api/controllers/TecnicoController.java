@@ -250,7 +250,8 @@ public class TecnicoController {
     public ResponseEntity<DocumentoTecnicoApiResponse> registrarDocumento(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable TecnicoId id, @Valid @RequestBody DocumentoTecnicoApiRequest request) {
         autorizacion.exigirTecnicoOAdmin(principal, id);
-        var documento = validarDocumentacion.registrarDocumento(id, request.tipo(), request.fechaVencimiento());
+        var documento = validarDocumentacion.registrarDocumento(id, request.tipo(), request.fechaExpedicion(),
+                request.fechaVencimiento());
         return ResponseEntity.created(URI.create("/api/tecnicos/" + id + "/documentos"))
                 .body(DocumentoTecnicoApiResponse.from(documento));
     }

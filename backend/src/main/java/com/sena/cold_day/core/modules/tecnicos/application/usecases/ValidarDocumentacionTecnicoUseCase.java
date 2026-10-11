@@ -61,9 +61,10 @@ public class ValidarDocumentacionTecnicoUseCase {
     }
 
     @Transactional
-    public DocumentoTecnico registrarDocumento(TecnicoId tecnicoId, String tipo, java.time.LocalDate fechaVencimiento) {
+    public DocumentoTecnico registrarDocumento(TecnicoId tecnicoId, String tipo,
+            java.time.LocalDate fechaExpedicion, java.time.LocalDate fechaVencimiento) {
         tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
                 .orElseThrow(() -> new TecnicoNoEncontradoException(tecnicoId));
-        return documentoRepository.save(new DocumentoTecnico(null, tecnicoId, tipo, fechaVencimiento));
+        return documentoRepository.save(new DocumentoTecnico(null, tecnicoId, tipo, fechaExpedicion, fechaVencimiento));
     }
 }

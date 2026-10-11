@@ -1495,7 +1495,7 @@ export class MockDbService {
     return 2 * radioTierraKm * Math.asin(Math.sqrt(h));
   }
 
-  subirDocumentoTecnico(tecnicoId: string, tipo: TipoDocumentoTecnico, archivoUrl: string, fechaVencimiento?: string, nombre?: string): void {
+  subirDocumentoTecnico(tecnicoId: string, tipo: TipoDocumentoTecnico, archivoUrl: string, fechaExpedicion?: string, fechaVencimiento?: string, nombre?: string): void {
     this.tecnicos.update(list =>
       list.map(t => {
         if (t.id === tecnicoId) {
@@ -1504,6 +1504,7 @@ export class MockDbService {
             tipo,
             nombre: nombre || `${tipo}_documento.pdf`,
             archivoUrl,
+            fechaExpedicion,
             fechaVencimiento,
             estadoValidacion: 'PENDIENTE',
             semaforo: 'AMARILLO'

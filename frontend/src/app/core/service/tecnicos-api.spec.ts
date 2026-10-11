@@ -75,7 +75,7 @@ describe('TecnicosApi', () => {
   it('getMisDocumentos traduce documentos', async () => {
     const promise = firstValueFrom(api.getMisDocumentos());
     http.expectOne('/api/tecnicos/me/documentos').flush([
-      { id: 1, tecnicoId: { valor: 't1' }, tipo: 'CEDULA', fechaVencimiento: null, vigente: true },
+      { id: 1, tecnicoId: { valor: 't1' }, tipo: 'CEDULA', fechaExpedicion: '2024-01-01', fechaVencimiento: null, vigente: true },
     ]);
     const docs = await promise;
     expect(docs[0].id).toBe('1');
@@ -324,10 +324,10 @@ describe('TecnicosApi', () => {
     http.expectOne('/api/ot/ot1/finalizar').flush(null);
     await fin;
 
-    const doc = firstValueFrom(api.subirDocumento('TEC-001', 'CEDULA', 'url', '2027-01-01'));
+    const doc = firstValueFrom(api.subirDocumento('TEC-001', 'CEDULA', 'url', '2025-01-01', '2027-01-01'));
     const docReq = http.expectOne('/api/tecnicos/TEC-001/documentos');
-    expect(docReq.request.body).toEqual({ tipo: 'CEDULA', fechaVencimiento: '2027-01-01' });
-    docReq.flush({ id: 1, tecnicoId: { valor: 'TEC-001' }, tipo: 'CEDULA', fechaVencimiento: null, vigente: true });
+    expect(docReq.request.body).toEqual({ tipo: 'CEDULA', fechaExpedicion: '2025-01-01', fechaVencimiento: '2027-01-01' });
+    docReq.flush({ id: 1, tecnicoId: { valor: 'TEC-001' }, tipo: 'CEDULA', fechaExpedicion: '2025-01-01', fechaVencimiento: null, vigente: true });
     expect(await doc).toBeUndefined();
   });
 

@@ -177,9 +177,11 @@ describe('backend.mappers — contratos existentes', () => {
 
   it('traduce vigencia de documento a estado y semáforo', () => {
     const dto: DocumentoTecnicoApiResponse = {
-      id: 1, tecnicoId: { valor: 't1' }, tipo: 'CEDULA', fechaVencimiento: null, vigente: true,
+      id: 1, tecnicoId: { valor: 't1' }, tipo: 'CEDULA', fechaExpedicion: '2024-01-01', fechaVencimiento: null, vigente: true,
     };
-    expect(aDocumentoTecnico(dto)).toMatchObject({ id: '1', estadoValidacion: 'APROBADO', semaforo: 'VERDE' });
+    expect(aDocumentoTecnico(dto)).toMatchObject({
+      id: '1', fechaExpedicion: '2024-01-01', estadoValidacion: 'APROBADO', semaforo: 'VERDE',
+    });
     expect(aDocumentoTecnico({ ...dto, vigente: false })).toMatchObject({ estadoValidacion: 'RECHAZADO', semaforo: 'ROJO' });
   });
 

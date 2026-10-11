@@ -204,7 +204,7 @@ class TecnicosApiIT {
         // Register a vigente document and approve
         mockMvc.perform(post("/api/tecnicos/" + id + "/documentos")
                 .header("Authorization", "Bearer " + adminToken).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"tipo\":\"Cedula\",\"fechaVencimiento\":\"2030-01-01\"}"))
+                .content("{\"tipo\":\"Cedula\",\"fechaExpedicion\":\"2024-01-01\",\"fechaVencimiento\":\"2030-01-01\"}"))
                 .andExpect(status().isCreated());
         mockMvc.perform(patch("/api/tecnicos/" + id + "/validacion")
                 .header("Authorization", "Bearer " + adminToken).contentType(MediaType.APPLICATION_JSON)
@@ -227,7 +227,7 @@ class TecnicosApiIT {
 
         mockMvc.perform(post("/api/tecnicos/" + id + "/documentos")
                 .header("Authorization", "Bearer " + adminToken).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"tipo\":\"Cedula\",\"fechaVencimiento\":\"2029-01-01\"}"))
+                .content("{\"tipo\":\"Cedula\",\"fechaExpedicion\":\"2024-01-01\",\"fechaVencimiento\":\"2029-01-01\"}"))
                 .andExpect(status().isCreated());
         mockMvc.perform(patch("/api/tecnicos/" + id + "/validacion")
                 .header("Authorization", "Bearer " + adminToken).contentType(MediaType.APPLICATION_JSON)
@@ -290,7 +290,7 @@ class TecnicosApiIT {
         String adminToken = adminJwt();
         mockMvc.perform(post("/api/tecnicos/" + id + "/documentos").header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"tipo\":\"Cedula\",\"fechaVencimiento\":\"2030-01-01\"}"))
+                .content("{\"tipo\":\"Cedula\",\"fechaExpedicion\":\"2024-01-01\",\"fechaVencimiento\":\"2030-01-01\"}"))
                 .andExpect(status().isCreated());
         mockMvc.perform(patch("/api/tecnicos/" + id + "/validacion").header("Authorization", "Bearer " + adminToken)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"accion\":\"APROBAR\"}"))

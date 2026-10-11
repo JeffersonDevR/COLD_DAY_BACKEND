@@ -169,12 +169,43 @@ class TecnicosUseCaseTest {
 
         when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
                 new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, tecnicoId, "IMG",
-                        LocalDate.of(2027, 1, 31))));
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2027, 1, 31))));
         when(repository.save(existing)).thenReturn(existing);
 
         validarDocumentacion.aprobar(tecnicoId);
         assertThat(existing.getEstadoValidacion()).isEqualTo(EstadoValidacion.APROBADO);
         verify(events).publishEvent(new com.sena.cold_day.core.modules.tecnicos.domain.events.TecnicoValidado(tecnicoId));
+    }
+
+    @Test
+    void aprobarRequiresExpedicionOnEveryDocument() {
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
+                null, Set.of(), true, null, false, null);
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
+        when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
+                new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, tecnicoId, "IMG",
+                        null, LocalDate.of(2027, 1, 31))));
+
+        assertThatThrownBy(() -> validarDocumentacion.aprobar(tecnicoId))
+                .isInstanceOf(DocumentacionIncompletaException.class);
+        assertThat(existing.getEstadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
+    }
+
+    @Test
+    void aprobarAllowsDocumentWithNullVencimiento() {
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
+                null, Set.of(), true, null, false, null);
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
+        when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
+                new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, tecnicoId, "IMG",
+                        LocalDate.of(2024, 1, 1), null)));
+        when(repository.save(existing)).thenReturn(existing);
+
+        validarDocumentacion.aprobar(tecnicoId);
+
+        assertThat(existing.getEstadoValidacion()).isEqualTo(EstadoValidacion.APROBADO);
     }
 
     @Test
@@ -185,7 +216,7 @@ class TecnicosUseCaseTest {
         when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
         when(documentoRepository.buscarPorTecnico(tecnicoId)).thenReturn(List.of(
                 new com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico(1L, tecnicoId, "IMG",
-                        LocalDate.of(2020, 1, 31))));
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2020, 1, 31))));
 
         assertThatThrownBy(() -> validarDocumentacion.aprobar(tecnicoId))
                 .isInstanceOf(DocumentacionIncompletaException.class);

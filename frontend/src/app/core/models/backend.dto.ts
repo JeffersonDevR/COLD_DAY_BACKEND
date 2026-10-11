@@ -184,6 +184,8 @@ export interface EstadoOperativoApiRequest {
 
 export interface DocumentoTecnicoApiRequest {
   tipo: string;
+  /** Fecha de expedición: obligatoria en el backend (@NotNull). */
+  fechaExpedicion: string;
   fechaVencimiento?: string;
 }
 
@@ -192,6 +194,7 @@ export interface DocumentoTecnicoApiResponse {
   /** El backend serializa TecnicoId como {"valor": "<uuid>"}. */
   tecnicoId: { valor: string } | string;
   tipo: string;
+  fechaExpedicion: string | null;
   fechaVencimiento: string | null;
   vigente: boolean;
 }
