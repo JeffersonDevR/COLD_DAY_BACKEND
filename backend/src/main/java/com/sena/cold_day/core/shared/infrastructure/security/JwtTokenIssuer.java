@@ -2,6 +2,7 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -27,7 +28,7 @@ public class JwtTokenIssuer implements TokenIssuer {
     }
 
     @Override
-    public Token emitir(UsuarioId usuarioId, Rol rol, int tokenVersion) {
+    public Token emitir(UsuarioId usuarioId, Set<Rol> roles, Rol rolPrincipal, int tokenVersion) {
         Instant ahora = Instant.now();
         Instant expira = ahora.plusMillis(expiracionMs);
         // JWT NumericDate (RFC 7519) en segundos: 100% java.time, sin
@@ -35,9 +36,15 @@ public class JwtTokenIssuer implements TokenIssuer {
         // todos modos, asi que el formato en el token es identico; solo se
         // pierde precision sub-segundo en un TTL de 1 hora. Verificado con
         // SeguridadIT (login, expiracion y revocacion).
+        //
+        // Option C: "roles" lleva el conjunto derivado (autoridades); "rol" se
+        // mantiene como rol primario para display/back-compat y para que los
+        // tokens antiguos (sin "roles") sigan autenticando via el fallback del
+        // filtro.
         String jwt = Jwts.builder()
                 .subject(usuarioId.valor().toString())
-                .claim("rol", rol.name())
+                .claim("rol", rolPrincipal.name())
+                .claim("roles", roles.stream().map(Enum::name).toList())
                 .claim("ver", tokenVersion)
                 .claim("iat", ahora.getEpochSecond())
                 .claim("exp", expira.getEpochSecond())

@@ -3,6 +3,8 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -51,5 +53,16 @@ class JwtTokenIssuerTest {
         Token token = issuer.emitir(new UsuarioId(1L), Rol.ADMINISTRADOR, 0);
 
         assertThat(parse(token.valor()).get("ver", Integer.class)).isZero();
+    }
+
+    @Test
+    void embedsTheExpandedRoleSetWhileKeepingThePrimaryRolClaim() {
+        JwtTokenIssuer issuer = new JwtTokenIssuer(new JwtProperties(SECRET, 60_000));
+
+        Token token = issuer.emitir(new UsuarioId(9L), Set.of(Rol.CLIENTE, Rol.TECNICO), Rol.CLIENTE, 0);
+
+        Claims claims = parse(token.valor());
+        assertThat(claims.get("roles", List.class)).containsExactlyInAnyOrder("CLIENTE", "TECNICO");
+        assertThat(claims.get("rol", String.class)).isEqualTo("CLIENTE");
     }
 }

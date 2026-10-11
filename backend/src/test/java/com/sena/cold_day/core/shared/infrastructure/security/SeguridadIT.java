@@ -2,13 +2,16 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import java.util.Set;
 import java.util.UUID;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,6 +98,44 @@ class SeguridadIT {
     void invalidTokensAreRejected() throws Exception {
         mockMvc.perform(get("/api/tecnicos").header("Authorization", "Bearer no-es-un-jwt"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ------------------------------------------------------------------ WS1 dual-role --
+
+    @Test
+    void dualRoleTokenPassesBothClienteAndTecnicoGates() throws Exception {
+        String dual = tokenIssuer.emitir(new UsuarioId(7L), Set.of(Rol.CLIENTE, Rol.TECNICO), Rol.CLIENTE, 0).valor();
+
+        // TECNICO gate: authorization lets the request through (404 because the
+        // subject owns no technician profile), never 403.
+        mockMvc.perform(get("/api/tecnicos/me").header("Authorization", "Bearer " + dual))
+                .andExpect(result -> Assertions.assertThat(result.getResponse().getStatus()).isNotEqualTo(403));
+
+        // CLIENTE gate: likewise past authorization (404 unknown OT), never 403.
+        mockMvc.perform(post("/api/ot/" + UUID.randomUUID() + "/presupuesto/aprobar")
+                        .header("Authorization", "Bearer " + dual))
+                .andExpect(result -> Assertions.assertThat(result.getResponse().getStatus()).isNotEqualTo(403));
+    }
+
+    @Test
+    void dualRoleTokenNeverReachesTheAdministradorGate() throws Exception {
+        String dual = tokenIssuer.emitir(new UsuarioId(7L), Set.of(Rol.CLIENTE, Rol.TECNICO), Rol.CLIENTE, 0).valor();
+
+        mockMvc.perform(patch("/api/tecnicos/" + UUID.randomUUID() + "/validacion")
+                        .header("Authorization", "Bearer " + dual)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"accion\":\"APROBAR\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void userWithoutTheProfileFailsTheCorrespondingGate() throws Exception {
+        // Only a CLIENTE capability (no technician profile row): the derived set
+        // is {CLIENTE}, so the TECNICO gate must still reject it.
+        String soloCliente = tokenIssuer.emitir(new UsuarioId(8L), Set.of(Rol.CLIENTE), Rol.CLIENTE, 0).valor();
+
+        mockMvc.perform(get("/api/tecnicos/me").header("Authorization", "Bearer " + soloCliente))
+                .andExpect(status().isForbidden());
     }
 
     @Test

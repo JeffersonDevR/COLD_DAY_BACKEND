@@ -2,7 +2,9 @@ package com.sena.cold_day.core.shared.infrastructure.security;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -49,13 +51,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 UsuarioId usuarioId = new UsuarioId(Long.parseLong(claims.getSubject()));
                 Rol rol = Rol.valueOf(claims.get("rol", String.class));
+                Set<Rol> roles = rolesDelToken(claims, rol);
 
                 if (!versionVigente(usuarioId, claims.get("ver"))) {
                     // Stale ver → revoked by a password reset (design D11).
                     SecurityContextHolder.clearContext();
                 } else {
-                    AuthenticatedUser principal = new AuthenticatedUser(usuarioId, rol);
-                    var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
+                    AuthenticatedUser principal = new AuthenticatedUser(usuarioId, rol, roles);
+                    // Option C: exactly one authority per role in the set, so every
+                    // existing hasRole(...) gate keeps working unchanged.
+                    var authorities = roles.stream()
+                            .map(r -> new SimpleGrantedAuthority("ROLE_" + r.name()))
+                            .toList();
                     var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
@@ -65,6 +72,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Reads the Option C {@code roles} claim (one authority per role). Legacy
+     * tokens without it fall back to the single {@code rol} claim, preserving
+     * back-compat. An unknown literal surfaces as an {@code IllegalArgumentException}
+     * that the caller turns into "anonymous".
+     */
+    private Set<Rol> rolesDelToken(Claims claims, Rol rolPrimario) {
+        Object raw = claims.get("roles");
+        if (raw instanceof List<?> lista) {
+            Set<Rol> roles = new LinkedHashSet<>();
+            for (Object item : lista) {
+                if (item != null) {
+                    roles.add(Rol.valueOf(item.toString()));
+                }
+            }
+            if (!roles.isEmpty()) {
+                return roles;
+            }
+        }
+        return Set.of(rolPrimario);
     }
 
     /**

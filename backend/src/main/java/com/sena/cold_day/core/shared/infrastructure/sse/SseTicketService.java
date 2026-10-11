@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -53,7 +54,8 @@ public class SseTicketService {
     public String emitir(AuthenticatedUser principal) {
         String codigo = tokenGenerator.generar();
         tickets.put(tokenGenerator.hash(codigo),
-                new TicketPendiente(principal.usuarioId(), principal.rol(), clock.instant().plus(ttl)));
+                new TicketPendiente(principal.usuarioId(), principal.rol(), principal.roles(),
+                        clock.instant().plus(ttl)));
         return codigo;
     }
 
@@ -70,7 +72,7 @@ public class SseTicketService {
         if (pendiente == null || !pendiente.expiraEn().isAfter(clock.instant())) {
             return Optional.empty();
         }
-        return Optional.of(new TicketConsumido(pendiente.usuarioId(), pendiente.rol()));
+        return Optional.of(new TicketConsumido(pendiente.usuarioId(), pendiente.rol(), pendiente.roles()));
     }
 
     /** TTL in whole seconds, for the ticket response. */
@@ -94,6 +96,6 @@ public class SseTicketService {
         return tickets.size();
     }
 
-    private record TicketPendiente(UsuarioId usuarioId, Rol rol, Instant expiraEn) {
+    private record TicketPendiente(UsuarioId usuarioId, Rol rol, Set<Rol> roles, Instant expiraEn) {
     }
 }
