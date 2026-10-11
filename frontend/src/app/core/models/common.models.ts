@@ -79,6 +79,7 @@ export interface DocumentoTecnico {
   tipo: TipoDocumentoTecnico;
   nombre: string;
   archivoUrl?: string;
+  fechaExpedicion?: string;
   fechaVencimiento?: string;
   estadoValidacion: EstadoValidacion;
   observaciones?: string;

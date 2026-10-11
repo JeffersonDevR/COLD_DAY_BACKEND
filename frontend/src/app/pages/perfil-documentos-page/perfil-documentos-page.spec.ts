@@ -38,7 +38,7 @@ describe('PerfilDocumentosPage', () => {
     expect(fixture.componentInstance.documentos().length).toBe(1);
   });
 
-  it('sube un documento y recarga', () => {
+  it('sube un documento con fecha de expedición y vencimiento opcional', () => {
     const { fixture, tecnicosApi, toast } = setup();
     fixture.componentInstance.onSubirDoc();
 
@@ -46,10 +46,35 @@ describe('PerfilDocumentosPage', () => {
       'TEC-1',
       'CERTIFICACION_SENA',
       'https://coldday.com.co/docs/certificacion.pdf',
-      '2027-12-31',
+      '2025-01-01',
+      undefined,
     );
     expect(toast.success).toHaveBeenCalled();
     expect(fixture.componentInstance.mostrarForm()).toBe(false);
+  });
+
+  it('reenvía la fecha de vencimiento cuando se indica', () => {
+    const { fixture, tecnicosApi } = setup();
+    fixture.componentInstance.docForm.controls.fechaVencimiento.setValue('2027-12-31');
+
+    fixture.componentInstance.onSubirDoc();
+
+    expect(tecnicosApi.subirDocumento).toHaveBeenCalledWith(
+      'TEC-1',
+      'CERTIFICACION_SENA',
+      'https://coldday.com.co/docs/certificacion.pdf',
+      '2025-01-01',
+      '2027-12-31',
+    );
+  });
+
+  it('no sube si falta la fecha de expedición', () => {
+    const { fixture, tecnicosApi } = setup();
+    fixture.componentInstance.docForm.controls.fechaExpedicion.setValue('');
+
+    fixture.componentInstance.onSubirDoc();
+
+    expect(tecnicosApi.subirDocumento).not.toHaveBeenCalled();
   });
 
   it('no sube si el formulario es inválido', () => {

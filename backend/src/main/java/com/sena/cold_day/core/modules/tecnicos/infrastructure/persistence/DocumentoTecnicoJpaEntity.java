@@ -35,6 +35,9 @@ public class DocumentoTecnicoJpaEntity {
     @Column(nullable = false)
     private String tipo;
 
+    @Column(name = "fecha_expedicion")
+    private java.time.LocalDate fechaExpedicion;
+
     @Column(name = "fecha_vencimiento")
     private java.time.LocalDate fechaVencimiento;
 
@@ -43,11 +46,12 @@ public class DocumentoTecnicoJpaEntity {
         target.id = documento.getId();
         target.tecnicoId = documento.getTecnicoId().valor();
         target.tipo = documento.getTipo();
+        target.fechaExpedicion = documento.getFechaExpedicion();
         target.fechaVencimiento = documento.getFechaVencimiento();
         return target;
     }
 
     public DocumentoTecnico toDomain() {
-        return new DocumentoTecnico(id, TecnicoId.desde(tecnicoId), tipo, fechaVencimiento);
+        return new DocumentoTecnico(id, TecnicoId.desde(tecnicoId), tipo, fechaExpedicion, fechaVencimiento);
     }
 }

@@ -22,7 +22,8 @@ export class PerfilDocumentosPage {
 
   readonly docForm = new FormGroup({
     tipo: new FormControl<TipoDocumentoTecnico>('CERTIFICACION_SENA', { nonNullable: true }),
-    fechaVencimiento: new FormControl('2027-12-31', { nonNullable: true, validators: [Validators.required] }),
+    fechaExpedicion: new FormControl('2025-01-01', { nonNullable: true, validators: [Validators.required] }),
+    fechaVencimiento: new FormControl('', { nonNullable: true }),
     archivoUrl: new FormControl('https://coldday.com.co/docs/certificacion.pdf', { nonNullable: true, validators: [Validators.required] })
   });
 
@@ -44,7 +45,9 @@ export class PerfilDocumentosPage {
     if (!t) return;
 
     const val = this.docForm.getRawValue();
-    this.tecnicosApi.subirDocumento(t.id, val.tipo, val.archivoUrl, val.fechaVencimiento).subscribe({
+    this.tecnicosApi
+      .subirDocumento(t.id, val.tipo, val.archivoUrl, val.fechaExpedicion, val.fechaVencimiento || undefined)
+      .subscribe({
       next: () => {
         this.toast.success('Documento Adjuntado', 'El archivo ha sido enviado para verificación del administrador.');
         this.mostrarForm.set(false);

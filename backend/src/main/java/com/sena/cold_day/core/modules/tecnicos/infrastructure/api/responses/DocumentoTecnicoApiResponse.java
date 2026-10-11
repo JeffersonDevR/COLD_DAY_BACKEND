@@ -4,11 +4,12 @@ import com.sena.cold_day.core.modules.tecnicos.domain.entities.DocumentoTecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
 public record DocumentoTecnicoApiResponse(Long id, TecnicoId tecnicoId, String tipo,
-                                          java.time.LocalDate fechaVencimiento, boolean vigente) {
+                                          java.time.LocalDate fechaExpedicion, java.time.LocalDate fechaVencimiento,
+                                          boolean vigente) {
 
     public static DocumentoTecnicoApiResponse from(DocumentoTecnico documento) {
         return new DocumentoTecnicoApiResponse(documento.getId(), documento.getTecnicoId(), documento.getTipo(),
-                documento.getFechaVencimiento(),
+                documento.getFechaExpedicion(), documento.getFechaVencimiento(),
                 documento.estaVigente(java.time.LocalDate.now(java.time.ZoneId.systemDefault())));
     }
 }

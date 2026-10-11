@@ -128,6 +128,7 @@ export function aDocumentoTecnico(dto: DocumentoTecnicoApiResponse): DocumentoTe
     id: String(dto.id),
     tipo: dto.tipo as TipoDocumentoTecnico,
     nombre: dto.tipo,
+    fechaExpedicion: dto.fechaExpedicion ?? undefined,
     fechaVencimiento: dto.fechaVencimiento ?? undefined,
     // Pendiente(backend): DocumentoTecnicoApiResponse solo expone `vigente`,
     // no una validación por documento; se aproxima con el semáforo.

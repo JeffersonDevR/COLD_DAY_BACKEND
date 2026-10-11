@@ -68,7 +68,7 @@
                     <span class="font-medium text-slate-800 dark:text-slate-200">{{ doc.tipo.replace('_', ' ') }}</span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="text-[11px] text-slate-400">Vence: {{ doc.fechaVencimiento }}</span>
+                    <span class="text-[11px] text-slate-400">Expide: {{ doc.fechaExpedicion || '—' }} · Vence: {{ doc.fechaVencimiento || '—' }}</span>
                     <a [href]="doc.archivoUrl" target="_blank" class="text-sky-600 hover:underline text-[11px]">Ver</a>
                   </div>
                 </div>
