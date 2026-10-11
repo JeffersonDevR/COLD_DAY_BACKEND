@@ -66,4 +66,16 @@ describe('TokenStorageService', () => {
     expect(decoded?.nombre).toBe('Ana');
     expect(decoded?.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
   });
+
+  it('createMockJwt incluye el claim roles cuando se entrega el conjunto', () => {
+    const token = service.createMockJwt({
+      id: 3,
+      nombre: 'Ana',
+      correo: 'ana@coldday.co',
+      rol: 'CLIENTE',
+      roles: ['CLIENTE', 'TECNICO'],
+    });
+    service.saveToken(token);
+    expect(service.getDecodedToken()?.roles).toEqual(['CLIENTE', 'TECNICO']);
+  });
 });

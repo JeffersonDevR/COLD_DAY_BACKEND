@@ -13,6 +13,8 @@ export interface DecodedToken {
   nombre?: string;
   correo?: string;
   rol?: Rol;
+  /** Conjunto de roles derivado del perfil (claim `roles` del JWT, slice 4). */
+  roles?: Rol[];
   ver?: number;
   exp?: number;
   iat?: number;
@@ -72,7 +74,7 @@ export class TokenStorageService {
     }
   }
 
-  createMockJwt(user: { id: string | number; nombre: string; correo: string; rol: Rol }): string {
+  createMockJwt(user: { id: string | number; nombre: string; correo: string; rol: Rol; roles?: Rol[] }): string {
     const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const payload = btoa(
       JSON.stringify({
@@ -81,6 +83,7 @@ export class TokenStorageService {
         nombre: user.nombre,
         correo: user.correo,
         rol: user.rol,
+        ...(user.roles ? { roles: user.roles } : {}),
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 86400 * 7 // 7 días
       })

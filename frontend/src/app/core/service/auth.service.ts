@@ -23,6 +23,20 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this._currentUser() || !!this.tokenStorage.currentToken());
   readonly userRole = computed<Rol | null>(() => this._currentUser()?.rol ?? this.tokenStorage.getDecodedToken()?.rol ?? null);
 
+  /**
+   * Conjunto de roles del usuario (claim `roles` del JWT). Un usuario dual
+   * (Cliente + Técnico) lo trae con ambos; `userRole` sigue siendo el primario.
+   * Cae a `[rol]` cuando el token es legado o el mock no declara el conjunto.
+   */
+  readonly userRoles = computed<Set<Rol>>(() => {
+    const fromUser = this._currentUser()?.roles;
+    const fromToken = this.tokenStorage.getDecodedToken()?.roles;
+    const roles = fromUser?.length ? fromUser : fromToken?.length ? fromToken : null;
+    if (roles) return new Set(roles);
+    const primary = this.userRole();
+    return primary ? new Set<Rol>([primary]) : new Set<Rol>();
+  });
+
   constructor() {
     this.restoreSession();
     this.programarExpiracionSesion();
@@ -44,6 +58,7 @@ export class AuthService {
       nombre: decoded.nombre ?? decoded.correo ?? 'Usuario',
       correo: decoded.correo ?? '',
       rol: decoded.rol,
+      roles: decoded.roles,
       habeasDataAceptado: true,
       activo: true,
     });
@@ -88,6 +103,7 @@ export class AuthService {
       nombre: user.nombre,
       correo: user.correo,
       rol: user.rol,
+      roles: user.roles,
     });
     this.tokenStorage.saveToken(jwt);
     this._currentUser.set(user);
@@ -111,14 +127,23 @@ export class AuthService {
   ): UsuarioResponse {
     this.tokenStorage.saveToken(res.token);
     const decoded = this.tokenStorage.getDecodedToken();
-    const usuario: UsuarioResponse = usuarioCompleto ?? {
-      id: Number(decoded?.id ?? decoded?.sub ?? 0),
-      nombre: decoded?.nombre ?? correoIngresado,
-      correo: decoded?.correo ?? correoIngresado,
-      rol: decoded?.rol ?? res.rol,
-      habeasDataAceptado: true,
-      activo: true,
-    };
+    const roles = decoded?.roles ?? res.roles;
+    let usuario: UsuarioResponse;
+    if (usuarioCompleto) {
+      usuario = !usuarioCompleto.roles?.length && roles?.length
+        ? { ...usuarioCompleto, roles }
+        : usuarioCompleto;
+    } else {
+      usuario = {
+        id: Number(decoded?.id ?? decoded?.sub ?? 0),
+        nombre: decoded?.nombre ?? correoIngresado,
+        correo: decoded?.correo ?? correoIngresado,
+        rol: decoded?.rol ?? res.rol,
+        roles,
+        habeasDataAceptado: true,
+        activo: true,
+      };
+    }
     this._currentUser.set(usuario);
     this.programarExpiracionSesion();
     return usuario;

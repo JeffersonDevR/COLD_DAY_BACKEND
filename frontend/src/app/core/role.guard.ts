@@ -11,19 +11,26 @@ export const roleGuard = (expectedRoles: Rol[]): CanActivateFn => {
     const router = inject(Router);
 
     const decoded = tokenStorage.getDecodedToken();
-    const currentRole = authService.userRole() ?? decoded?.rol;
+    // Autoriza por PERTENENCIA al conjunto: un usuario dual (Cliente + Técnico)
+    // pasa tanto una ruta de Cliente como una de Técnico. Respaldo al token
+    // cuando el servicio aún no tiene sesión materializada.
+    const roles = authService.userRoles();
+    const effective = roles.size > 0
+      ? roles
+      : new Set<Rol>(decoded?.roles?.length ? decoded.roles : decoded?.rol ? [decoded.rol] : []);
 
-    if (!currentRole) {
+    if (effective.size === 0) {
       router.navigate(['/login']);
       return false;
     }
 
-    if (expectedRoles.includes(currentRole)) {
+    if (expectedRoles.some((rol) => effective.has(rol))) {
       return true;
     }
 
-    // Rol no autorizado -> redirigir a su panel
-    const safeRoute = authService.getDashboardRouteForRole(currentRole);
+    // Ningún rol del conjunto está autorizado -> redirigir a su panel primario.
+    const primaryRole = authService.userRole() ?? decoded?.rol ?? [...effective][0];
+    const safeRoute = authService.getDashboardRouteForRole(primaryRole);
     router.navigate([safeRoute]);
     return false;
   };

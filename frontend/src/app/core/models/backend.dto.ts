@@ -46,6 +46,8 @@ export interface TokenApiResponse {
   token: string;
   expiracion: string;
   rol: Rol;
+  /** Conjunto de roles derivado del perfil (TokenResponse.java, slice 4). */
+  roles: Rol[];
 }
 
 export interface UsuarioApiRequest {

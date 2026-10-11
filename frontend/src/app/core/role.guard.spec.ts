@@ -8,13 +8,22 @@ import { Rol } from './models/common.models';
 const route = {} as ActivatedRouteSnapshot;
 const state = {} as RouterStateSnapshot;
 
-function run(expected: Rol[], userRole: Rol | null, decoded: { rol?: Rol } | null) {
+function run(
+  expected: Rol[],
+  userRole: Rol | null,
+  decoded: { rol?: Rol; roles?: Rol[] } | null,
+  userRoles?: Rol[],
+) {
   const router = { navigate: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
       {
         provide: AuthService,
-        useValue: { userRole: () => userRole, getDashboardRouteForRole: (rol: Rol) => `/panel-${rol}` },
+        useValue: {
+          userRole: () => userRole,
+          userRoles: () => new Set<Rol>(userRoles ?? (userRole ? [userRole] : [])),
+          getDashboardRouteForRole: (rol: Rol) => `/panel-${rol}`,
+        },
       },
       { provide: TokenStorageService, useValue: { getDecodedToken: () => decoded } },
       { provide: Router, useValue: router },
@@ -35,13 +44,21 @@ describe('roleGuard', () => {
     expect(run(['ADMINISTRADOR', 'CONTABLE'], 'ADMINISTRADOR', null).result).toBe(true);
   });
 
-  it('redirige al panel seguro si el rol no está autorizado', () => {
+  it('autoriza por pertenencia al conjunto, no por rol primario (doble rol)', () => {
+    expect(run(['TECNICO'], 'CLIENTE', null, ['CLIENTE', 'TECNICO']).result).toBe(true);
+  });
+
+  it('redirige al panel seguro si ningún rol del conjunto está autorizado', () => {
     const { result, router } = run(['ADMINISTRADOR'], 'CLIENTE', null);
     expect(result).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/panel-CLIENTE']);
   });
 
-  it('usa el rol del token cuando userRole es null', () => {
+  it('usa los roles del token cuando userRoles está vacío', () => {
     expect(run(['TECNICO'], null, { rol: 'TECNICO' }).result).toBe(true);
+  });
+
+  it('usa el conjunto roles del token como respaldo', () => {
+    expect(run(['TECNICO'], null, { rol: 'CLIENTE', roles: ['CLIENTE', 'TECNICO'] }).result).toBe(true);
   });
 });

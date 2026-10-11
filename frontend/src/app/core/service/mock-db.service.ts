@@ -124,6 +124,17 @@ export class MockDbService {
       habeasDataAceptado: true,
       activo: true,
       fechaRegistro: '2025-03-28',
+    },
+    {
+      id: 10,
+      nombre: 'Sofía Ramírez',
+      correo: 'sofia.dual@coldday.com.co',
+      telefono: '3205551234',
+      rol: 'CLIENTE',
+      roles: ['CLIENTE', 'TECNICO'],
+      habeasDataAceptado: true,
+      activo: true,
+      fechaRegistro: '2025-04-15',
     }
   ]);
 

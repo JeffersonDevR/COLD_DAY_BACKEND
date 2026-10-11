@@ -5,7 +5,7 @@ import { AuthService } from '../../core/service/auth.service';
 import { LayoutService } from '../../core/service/layout.service';
 import { Rol } from '../../core/models/common.models';
 
-function setup(rol: Rol | null) {
+function setup(roles: Rol[] | null) {
   const layout = {
     menuMode: () => 'static',
     sidebarCollapsed: () => false,
@@ -17,7 +17,7 @@ function setup(rol: Rol | null) {
     imports: [AppSidebar],
     providers: [
       provideRouter([]),
-      { provide: AuthService, useValue: { userRole: () => rol } },
+      { provide: AuthService, useValue: { userRoles: () => new Set<Rol>(roles ?? []) } },
       { provide: LayoutService, useValue: layout },
     ],
   });
@@ -32,24 +32,32 @@ describe('AppSidebar', () => {
   });
 
   it('muestra el menú del cliente', () => {
-    const { fixture } = setup('CLIENTE');
+    const { fixture } = setup(['CLIENTE']);
     expect(fixture.componentInstance.sections()[0].label).toBe('Cliente');
     expect(fixture.nativeElement.textContent).toContain('Mis Órdenes');
   });
 
   it('muestra el menú del técnico', () => {
-    const { fixture } = setup('TECNICO');
+    const { fixture } = setup(['TECNICO']);
+    expect(fixture.nativeElement.textContent).toContain('Radar de Ofertas');
+  });
+
+  it('un usuario con doble rol ve las secciones Cliente y Técnico a la vez', () => {
+    const { fixture } = setup(['CLIENTE', 'TECNICO']);
+    const labels = fixture.componentInstance.sections().map((seccion) => seccion.label);
+    expect(labels).toEqual(['Cliente', 'Técnico']);
+    expect(fixture.nativeElement.textContent).toContain('Mis Órdenes');
     expect(fixture.nativeElement.textContent).toContain('Radar de Ofertas');
   });
 
   it('onNavigate cierra los overlays', () => {
-    const { fixture, layout } = setup('CLIENTE');
+    const { fixture, layout } = setup(['CLIENTE']);
     fixture.componentInstance.onNavigate();
     expect(layout.closeOverlays).toHaveBeenCalled();
   });
 
   it('isStatic refleja el modo de menú', () => {
-    const { fixture } = setup('ADMINISTRADOR');
+    const { fixture } = setup(['ADMINISTRADOR']);
     expect(fixture.componentInstance.isStatic()).toBe(true);
   });
 });

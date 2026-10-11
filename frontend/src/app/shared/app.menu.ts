@@ -53,13 +53,21 @@ const SECTIONS: MenuSection[] = [
   },
 ];
 
-/** Devuelve las secciones de menú visibles para el rol indicado. */
-export function buildMenu(rol: Rol | null): MenuSection[] {
-  if (!rol) return [];
+/**
+ * Devuelve las secciones de menú visibles para el conjunto de roles indicado.
+ *
+ * Un usuario dual (Cliente + Técnico) recibe AMBAS secciones simultáneamente:
+ * cada ítem se muestra si alguno de sus roles pertenece al conjunto. No hay
+ * selector de "rol activo".
+ */
+export function buildMenu(roles: Iterable<Rol> | null): MenuSection[] {
+  if (!roles) return [];
+  const set = new Set(roles);
+  if (set.size === 0) return [];
   return SECTIONS
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => !item.roles || item.roles.includes(rol)),
+      items: section.items.filter((item) => !item.roles || item.roles.some((rol) => set.has(rol))),
     }))
     .filter((section) => section.items.length > 0);
 }
