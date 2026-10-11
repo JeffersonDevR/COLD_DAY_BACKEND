@@ -289,10 +289,10 @@ describe('TecnicosApi', () => {
   it('actualizarMisEspecialidades en modo mock muta el técnico en sesión', async () => {
     config.setUseMocks(true);
     const mockDb = TestBed.inject(MockDbService);
-    const actualizado = await firstValueFrom(api.actualizarMisEspecialidades(['ELECTRODOMESTICOS']));
-    expect(actualizado.categoriasServicio).toEqual(['ELECTRODOMESTICOS']);
+    const actualizado = await firstValueFrom(api.actualizarMisEspecialidades(['LAVADORAS']));
+    expect(actualizado.categoriasServicio).toEqual(['LAVADORAS']);
     expect(mockDb.tecnicos().find(t => t.id === 'TEC-001')?.categoriasServicio).toEqual([
-      'ELECTRODOMESTICOS',
+      'LAVADORAS',
     ]);
   });
 

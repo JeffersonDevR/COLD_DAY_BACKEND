@@ -86,7 +86,7 @@ public class DevDataSeeder implements ApplicationRunner {
                 new TecnicoSeed("Carlos Rojas", "tecnico3@coldday.com.co", "3023456789", "1098765003",
                         Set.of(CategoriaServicio.ELECTRICIDAD), new Point(7.8750, -72.4850)),
                 new TecnicoSeed("Héctor Mora", "tecnico4@coldday.com.co", "3034567890", "1098765004",
-                        Set.of(CategoriaServicio.ELECTRODOMESTICOS), new Point(7.8420, -72.5080)),
+                        Set.of(CategoriaServicio.LAVADORAS), new Point(7.8420, -72.5080)),
                 new TecnicoSeed("Diego Castillo", "tecnico5@coldday.com.co", "3045678901", "1098765005",
                         Set.of(CategoriaServicio.AIRE_ACONDICIONADO, CategoriaServicio.ELECTRICIDAD), new Point(7.8915, -72.4885)));
 

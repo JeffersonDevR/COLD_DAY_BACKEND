@@ -65,7 +65,7 @@ export class AdminApi {
           { categoria: 'AIRE_ACONDICIONADO', cantidad: 38, porcentaje: 45 },
           { categoria: 'REFRIGERACION', cantidad: 25, porcentaje: 30 },
           { categoria: 'ELECTRICIDAD', cantidad: 12, porcentaje: 15 },
-          { categoria: 'ELECTRODOMESTICOS', cantidad: 8, porcentaje: 10 }
+          { categoria: 'LAVADORAS', cantidad: 8, porcentaje: 10 }
         ],
         historicoSemanal: [
           { dia: 'Lun', completadas: 8, canceladas: 1 },

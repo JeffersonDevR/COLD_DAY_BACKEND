@@ -322,10 +322,10 @@ class TecnicoTest {
         Tecnico tecnico = Tecnico.crear(7L, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
 
         tecnico.actualizarEspecialidades(
-                Set.of(CategoriaServicio.ELECTRICIDAD, CategoriaServicio.ELECTRODOMESTICOS));
+                Set.of(CategoriaServicio.ELECTRICIDAD, CategoriaServicio.LAVADORAS));
 
         assertThat(tecnico.getCategoriasServicio()).containsExactlyInAnyOrder(
-                CategoriaServicio.ELECTRICIDAD, CategoriaServicio.ELECTRODOMESTICOS);
+                CategoriaServicio.ELECTRICIDAD, CategoriaServicio.LAVADORAS);
     }
 
     @Test
