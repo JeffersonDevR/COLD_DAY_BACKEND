@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -96,6 +97,17 @@ class SseTicketServiceTest {
 
         assertThat(servicio.pendientes()).isEqualTo(1);
         assertThat(servicio.consumir(vigente)).isPresent();
+    }
+
+    @Test
+    void aDualRoleTicketCarriesTheWholeRoleSetNotJustThePrimaryRole() {
+        String codigo = servicio.emitir(new AuthenticatedUser(new UsuarioId(30L), Rol.CLIENTE,
+                Set.of(Rol.CLIENTE, Rol.TECNICO)));
+
+        assertThat(servicio.consumir(codigo)).hasValueSatisfying(t -> {
+            assertThat(t.rol()).isEqualTo(Rol.CLIENTE);
+            assertThat(t.roles()).containsExactlyInAnyOrder(Rol.CLIENTE, Rol.TECNICO);
+        });
     }
 
     /** Controllable {@link Clock} so expiry is deterministic without sleeps. */

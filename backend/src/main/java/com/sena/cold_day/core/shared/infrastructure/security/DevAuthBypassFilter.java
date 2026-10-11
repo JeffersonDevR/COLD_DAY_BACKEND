@@ -1,7 +1,7 @@
 package com.sena.cold_day.core.shared.infrastructure.security;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
@@ -18,6 +18,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
+import com.sena.cold_day.core.modules.usuarios.domain.services.RolesDePerfilPort;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 import jakarta.servlet.FilterChain;
@@ -52,9 +54,11 @@ public class DevAuthBypassFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(DevAuthBypassFilter.class);
 
     private final UsuarioRepository usuarioRepository;
+    private final RolesDePerfilPort rolesDePerfil;
     private final String correoPorDefecto;
 
-    public DevAuthBypassFilter(UsuarioRepository usuarioRepository, Environment environment,
+    public DevAuthBypassFilter(UsuarioRepository usuarioRepository, RolesDePerfilPort rolesDePerfil,
+            Environment environment,
             @Value("${app.security.dev-bypass.correo:admin@coldday.com.co}") String correoPorDefecto) {
         if (environment.acceptsProfiles(Profiles.of("prod"))) {
             throw new IllegalStateException(
@@ -62,6 +66,7 @@ public class DevAuthBypassFilter extends OncePerRequestFilter {
                             + "desactiva la autenticacion solo en desarrollo local.");
         }
         this.usuarioRepository = usuarioRepository;
+        this.rolesDePerfil = rolesDePerfil;
         this.correoPorDefecto = correoPorDefecto;
         log.warn("AUTENTICACION DESACTIVADA (dev-bypass): las peticiones sin JWT se ejecutan como '{}' "
                 + "o como el usuario del header {}. Solo para desarrollo local.", correoPorDefecto, HEADER_USUARIO);
@@ -85,8 +90,14 @@ public class DevAuthBypassFilter extends OncePerRequestFilter {
     }
 
     private void autenticarComo(Usuario usuario) {
-        var principal = new AuthenticatedUser(new UsuarioId(usuario.getId()), usuario.getRol());
-        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+        UsuarioId usuarioId = new UsuarioId(usuario.getId());
+        // Option C: same derivation as production login, so a dual-role dev user
+        // exercises the same expanded authority set as a real dual user.
+        Set<Rol> roles = rolesDePerfil.resolver(usuarioId, usuario.getRol());
+        var principal = new AuthenticatedUser(usuarioId, usuario.getRol(), roles);
+        var authorities = roles.stream()
+                .map(r -> new SimpleGrantedAuthority("ROLE_" + r.name()))
+                .toList();
         SecurityContextHolder.getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, authorities));
     }

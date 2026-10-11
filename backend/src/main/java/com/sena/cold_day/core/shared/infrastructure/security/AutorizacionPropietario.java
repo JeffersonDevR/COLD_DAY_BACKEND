@@ -43,7 +43,7 @@ public class AutorizacionPropietario {
 
     /** ADMINISTRADOR, or the technician identified by {@code tecnicoId} is the caller's. */
     public boolean esTecnicoOAdmin(AuthenticatedUser principal, TecnicoId tecnicoId) {
-        if (principal.rol() == Rol.ADMINISTRADOR) {
+        if (principal.tieneRol(Rol.ADMINISTRADOR)) {
             return true;
         }
         return esTecnicoDe(principal, tecnicoId);
@@ -84,7 +84,7 @@ public class AutorizacionPropietario {
      * location.
      */
     public boolean esParticipanteOAdmin(AuthenticatedUser principal, OtResponse ot) {
-        if (principal.rol() == Rol.ADMINISTRADOR) {
+        if (principal.tieneRol(Rol.ADMINISTRADOR)) {
             return true;
         }
         if (clienteRepository.findByUsuarioId(principal.usuarioId())
@@ -118,7 +118,7 @@ public class AutorizacionPropietario {
 
     /** ADMINISTRADOR, or the supplier identified by {@code proveedorId} is the caller's. */
     public boolean esProveedorOAdmin(AuthenticatedUser principal, ProveedorId proveedorId) {
-        if (principal.rol() == Rol.ADMINISTRADOR) {
+        if (principal.tieneRol(Rol.ADMINISTRADOR)) {
             return true;
         }
         return esProveedorDe(principal, proveedorId);

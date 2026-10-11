@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,7 @@ import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
+import com.sena.cold_day.core.modules.usuarios.domain.services.RolesDePerfilPort;
 import com.sena.cold_day.core.modules.usuarios.domain.services.TokenIssuer;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Token;
@@ -33,6 +35,7 @@ class AutenticarUsuarioUseCaseTest {
     @Mock UsuarioRepository usuarioRepository;
     @Mock PasswordEncoderPort passwordEncoder;
     @Mock TokenIssuer tokenIssuer;
+    @Mock RolesDePerfilPort rolesDePerfil;
     @InjectMocks AutenticarUsuarioUseCase autenticar;
 
     private Usuario usuario() {
@@ -44,15 +47,32 @@ class AutenticarUsuarioUseCaseTest {
     void onlyValidCredentialsReachTheTokenIssuer() {
         when(usuarioRepository.buscarPorCorreo("ana@example.com")).thenReturn(java.util.Optional.of(usuario()));
         when(passwordEncoder.matches("secreto", "hash")).thenReturn(true);
-        when(tokenIssuer.emitir(new UsuarioId(10L), Rol.TECNICO, 0))
+        when(rolesDePerfil.resolver(new UsuarioId(10L), Rol.TECNICO)).thenReturn(Set.of(Rol.TECNICO));
+        when(tokenIssuer.emitir(new UsuarioId(10L), Set.of(Rol.TECNICO), Rol.TECNICO, 0))
                 .thenReturn(Token.de("jwt", Instant.now().plusSeconds(60)));
 
         TokenResponse response = autenticar.autenticar("ana@example.com", "secreto");
 
         assertThat(response.token()).isEqualTo("jwt");
         assertThat(response.rol()).isEqualTo("TECNICO");
+        assertThat(response.roles()).containsExactly(Rol.TECNICO);
         assertThat(response.expiracion()).isNotNull();
-        verify(tokenIssuer).emitir(new UsuarioId(10L), Rol.TECNICO, 0);
+        verify(tokenIssuer).emitir(new UsuarioId(10L), Set.of(Rol.TECNICO), Rol.TECNICO, 0);
+    }
+
+    @Test
+    void theDerivedSetTravelsIntoTokensAndResponse() {
+        when(usuarioRepository.buscarPorCorreo("ana@example.com")).thenReturn(java.util.Optional.of(usuario()));
+        when(passwordEncoder.matches("secreto", "hash")).thenReturn(true);
+        when(rolesDePerfil.resolver(new UsuarioId(10L), Rol.TECNICO))
+                .thenReturn(Set.of(Rol.TECNICO, Rol.CLIENTE));
+        when(tokenIssuer.emitir(new UsuarioId(10L), Set.of(Rol.TECNICO, Rol.CLIENTE), Rol.TECNICO, 0))
+                .thenReturn(Token.de("jwt", Instant.now().plusSeconds(60)));
+
+        TokenResponse response = autenticar.autenticar("ana@example.com", "secreto");
+
+        assertThat(response.roles()).containsExactlyInAnyOrder(Rol.TECNICO, Rol.CLIENTE);
+        verify(tokenIssuer).emitir(new UsuarioId(10L), Set.of(Rol.TECNICO, Rol.CLIENTE), Rol.TECNICO, 0);
     }
 
     @Test
@@ -62,7 +82,7 @@ class AutenticarUsuarioUseCaseTest {
 
         assertThatThrownBy(() -> autenticar.autenticar("ana@example.com", "mal"))
                 .isInstanceOf(CredencialesInvalidasException.class);
-        verify(tokenIssuer, never()).emitir(any(), any(), anyInt());
+        verify(tokenIssuer, never()).emitir(any(), any(), any(), anyInt());
     }
 
     @Test
@@ -71,6 +91,6 @@ class AutenticarUsuarioUseCaseTest {
 
         assertThatThrownBy(() -> autenticar.autenticar("na@example.com", "secreto"))
                 .isInstanceOf(CredencialesInvalidasException.class);
-        verify(tokenIssuer, never()).emitir(any(), any(), anyInt());
+        verify(tokenIssuer, never()).emitir(any(), any(), any(), anyInt());
     }
 }

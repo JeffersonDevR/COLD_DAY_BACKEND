@@ -54,7 +54,7 @@ public class OtStreamController {
     public SseEmitter stream(@PathVariable OtId id,
             @RequestParam(value = "ticket", required = false) String ticket) {
         TicketConsumido consumido = tickets.consumir(ticket).orElseThrow(TicketSseInvalidoException::new);
-        AuthenticatedUser principal = new AuthenticatedUser(consumido.usuarioId(), consumido.rol());
+        AuthenticatedUser principal = new AuthenticatedUser(consumido.usuarioId(), consumido.rol(), consumido.roles());
         OtResponse ot = consultar.consultar(id);
         autorizacion.exigirParticipanteOAdmin(principal, ot);
         return registry.crear(OtEstadoCambiadoSseListener.clave(id));
