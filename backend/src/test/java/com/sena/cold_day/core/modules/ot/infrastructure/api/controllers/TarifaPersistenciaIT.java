@@ -101,7 +101,7 @@ class TarifaPersistenciaIT {
         Ot ot = otEnEstado(f.clienteId(), f.tecnicoId(), EstadoOt.ASIGNADA,
                 Instant.now().minus(Duration.ofMinutes(20)));
 
-        cancelarOtUseCase.cancelar(new UsuarioId(f.clienteUsuario()), Rol.CLIENTE, ot.getId(), "Tarde");
+        cancelarOtUseCase.cancelar(new UsuarioId(f.clienteUsuario()), ot.getId(), "Tarde", null);
 
         assertThat(otRepository.buscarPorId(ot.getId())).hasValueSatisfying(persisted -> {
             assertThat(persisted.getEstado()).isEqualTo(EstadoOt.CANCELADA);
@@ -116,7 +116,7 @@ class TarifaPersistenciaIT {
         Fixture f = fixture();
         Ot ot = otEnEstado(f.clienteId(), f.tecnicoId(), EstadoOt.ASIGNADA, Instant.now());
 
-        cancelarOtUseCase.cancelar(new UsuarioId(f.clienteUsuario()), Rol.CLIENTE, ot.getId(), "Me arrepenti");
+        cancelarOtUseCase.cancelar(new UsuarioId(f.clienteUsuario()), ot.getId(), "Me arrepenti", null);
 
         assertThat(otRepository.buscarPorId(ot.getId())).hasValueSatisfying(persisted -> {
             assertThat(persisted.getEstado()).isEqualTo(EstadoOt.CANCELADA);

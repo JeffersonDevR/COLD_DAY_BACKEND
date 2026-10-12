@@ -34,7 +34,7 @@ import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.events.OtCancelada;
 import com.sena.cold_day.core.modules.ot.domain.exception.MotivoRequeridoException;
-import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
@@ -48,21 +48,25 @@ import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoReposito
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
-import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.shared.domain.Point;
 
 /**
- * RF-F1-21 cancellation (task 7.6): mandatory reason, blocked after repair
- * starts, 10-minute free window from assignment, actor attribution without a
- * technician penalty in this change, and technician release on every terminal
- * path.
+ * RF-F1-21 cancellation (task 7.6 / slice 8): mandatory reason, blocked after
+ * repair starts, 10-minute free window from assignment, technician release on
+ * every terminal path, and resource-based actor attribution (design D5 / M4).
+ *
+ * <p>Attribution no longer comes from the caller's single {@code rol}: the actor
+ * is inferred from the OT's cliente/tecnico rows when unambiguous, and an
+ * explicit {@code actorRol} is mandatory when the same user is both the owning
+ * client and the assigned technician of the same OT.
  */
 @ExtendWith(MockitoExtension.class)
 class CancelarOtUseCaseTest {
 
     private static final Instant AHORA = Instant.parse("2026-09-14T10:00:00Z");
     private static final long USUARIO_ID = 7L;
+    private static final long OTRO_USUARIO_ID = 99L;
     private static final UsuarioId PRINCIPAL = new UsuarioId(USUARIO_ID);
 
     @Mock OtRepository otRepository;
@@ -81,13 +85,101 @@ class CancelarOtUseCaseTest {
     }
 
     @Test
+    void infersClientAttributionFromTheOwningClientRowWhenUnambiguous() {
+        Cliente cliente = cliente();
+        Tecnico tecnicoAjeno = tecnicoOcupado(OTRO_USUARIO_ID);
+        Ot ot = otAsignada(cliente.getId(), tecnicoAjeno.getId(), AHORA);
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(tecnicoRepository.findByIdAndActivoTrue(tecnicoAjeno.getId()))
+                .thenReturn(Optional.of(tecnicoAjeno));
+
+        OtResponse response = useCase.cancelar(PRINCIPAL, ot.getId(), "Ya no la necesito", null);
+
+        assertThat(response.estado()).isEqualTo(EstadoOt.CANCELADA);
+        assertThat(response.canceladaPor()).isEqualTo(ActorOt.CLIENTE);
+        assertThat(response.motivoCancelacion()).isEqualTo(MotivoCancelacion.CANCELACION_CLIENTE);
+    }
+
+    @Test
+    void infersTechnicianAttributionFromTheAssignedTechnicianRowWhenUnambiguous() {
+        // The caller holds a client profile, but this OT belongs to another client.
+        Cliente clienteDelCaller = cliente();
+        Tecnico tecnicoAsignado = tecnicoOcupado(USUARIO_ID);
+        Ot ot = otAsignada(ClienteId.nueva(), tecnicoAsignado.getId(), AHORA);
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(clienteDelCaller));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID))
+                .thenReturn(Optional.of(tecnicoAsignado));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(tecnicoRepository.findByIdAndActivoTrue(tecnicoAsignado.getId()))
+                .thenReturn(Optional.of(tecnicoAsignado));
+
+        OtResponse response = useCase.cancelar(PRINCIPAL, ot.getId(), "No puedo atender", null);
+
+        assertThat(response.estado()).isEqualTo(EstadoOt.CANCELADA);
+        assertThat(response.canceladaPor()).isEqualTo(ActorOt.TECNICO);
+        assertThat(response.motivoCancelacion()).isEqualTo(MotivoCancelacion.CANCELACION_TECNICO);
+    }
+
+    @Test
+    void rejectsAnAmbiguousCancellationWithoutAnExplicitActorRol() {
+        Cliente cliente = cliente();
+        Tecnico tecnico = tecnicoOcupado(USUARIO_ID);
+        Ot ot = otAsignada(cliente.getId(), tecnico.getId(), AHORA);
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        var otId = ot.getId();
+
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, otId, "No se", null))
+                .isInstanceOf(OtAccesoNoPermitidoException.class);
+
+        verify(otRepository, never()).save(any());
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.ASIGNADA);
+    }
+
+    @Test
+    void attributesAnAmbiguousCancellationToTheExplicitActorRol() {
+        Cliente cliente = cliente();
+        Tecnico tecnico = tecnicoOcupado(USUARIO_ID);
+        Ot ot = otAsignada(cliente.getId(), tecnico.getId(), AHORA);
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(tecnicoRepository.findByIdAndActivoTrue(tecnico.getId())).thenReturn(Optional.of(tecnico));
+
+        OtResponse response = useCase.cancelar(PRINCIPAL, ot.getId(), "No puedo atender", ActorOt.TECNICO);
+
+        assertThat(response.canceladaPor()).isEqualTo(ActorOt.TECNICO);
+        assertThat(response.motivoCancelacion()).isEqualTo(MotivoCancelacion.CANCELACION_TECNICO);
+    }
+
+    @Test
+    void rejectsAnExplicitActorRolTheCallerDoesNotHoldOnThisOt() {
+        Cliente cliente = cliente();
+        Tecnico tecnicoAjeno = tecnicoOcupado(OTRO_USUARIO_ID);
+        Ot ot = otAsignada(cliente.getId(), tecnicoAjeno.getId(), AHORA);
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
+        var otId = ot.getId();
+
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, otId, "No puedo", ActorOt.TECNICO))
+                .isInstanceOf(OtAccesoNoPermitidoException.class);
+
+        verify(otRepository, never()).save(any());
+    }
+
+    @Test
     void clientCancelsInsideTheFreeWindowWithoutVisitFee() {
         Cliente cliente = cliente();
-        Tecnico tecnico = tecnicoOcupado();
+        Tecnico tecnico = tecnicoOcupado(USUARIO_ID);
         Ot ot = otAsignada(cliente.getId(), tecnico.getId(), AHORA);
         cuandoResuelveCliente(cliente, ot, tecnico);
 
-        OtResponse response = useCase.cancelar(PRINCIPAL, Rol.CLIENTE, ot.getId(), "Ya no la necesito");
+        OtResponse response = useCase.cancelar(PRINCIPAL, ot.getId(), "Ya no la necesito", ActorOt.CLIENTE);
 
         assertThat(response.estado()).isEqualTo(EstadoOt.CANCELADA);
         assertThat(response.canceladaPor()).isEqualTo(ActorOt.CLIENTE);
@@ -101,11 +193,11 @@ class CancelarOtUseCaseTest {
     @Test
     void clientCancelsOutsideTheFreeWindowChargingTheVisitFee() {
         Cliente cliente = cliente();
-        Tecnico tecnico = tecnicoOcupado();
+        Tecnico tecnico = tecnicoOcupado(USUARIO_ID);
         Ot ot = otAsignada(cliente.getId(), tecnico.getId(), AHORA.minus(Duration.ofMinutes(20)));
         cuandoResuelveCliente(cliente, ot, tecnico);
 
-        OtResponse response = useCase.cancelar(PRINCIPAL, Rol.CLIENTE, ot.getId(), "Tarde");
+        OtResponse response = useCase.cancelar(PRINCIPAL, ot.getId(), "Tarde", ActorOt.CLIENTE);
 
         assertThat(response.estado()).isEqualTo(EstadoOt.CANCELADA);
         assertThat(response.tarifaVisita()).isEqualByComparingTo("30000");
@@ -116,13 +208,13 @@ class CancelarOtUseCaseTest {
     @Test
     void cancelRejectsAMissingReasonAndPersistsNothing() {
         Cliente cliente = cliente();
-        Tecnico tecnico = tecnicoOcupado();
+        Tecnico tecnico = tecnicoOcupado(USUARIO_ID);
         Ot ot = otAsignada(cliente.getId(), tecnico.getId(), AHORA);
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(clienteRepository.findByUsuarioId(PRINCIPAL)).thenReturn(Optional.of(cliente));
         var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.CLIENTE, otId, "  "))
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, otId, "  ", ActorOt.CLIENTE))
                 .isInstanceOf(MotivoRequeridoException.class);
 
         verify(otRepository, never()).save(any());
@@ -138,7 +230,7 @@ class CancelarOtUseCaseTest {
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.CLIENTE, otId, "Ya no"))
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, otId, "Ya no", null))
                 .isInstanceOf(TransicionOtInvalidaException.class);
 
         verify(otRepository, never()).save(any());
@@ -147,14 +239,14 @@ class CancelarOtUseCaseTest {
 
     @Test
     void technicianCancelsWithoutVisitFeeAndIsReleased() {
-        Tecnico tecnico = tecnicoOcupado();
+        Tecnico tecnico = tecnicoOcupado(USUARIO_ID);
         Ot ot = otAsignada(ClienteId.nueva(), tecnico.getId(), AHORA);
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
         when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(tecnicoRepository.findByIdAndActivoTrue(tecnico.getId())).thenReturn(Optional.of(tecnico));
 
-        OtResponse response = useCase.cancelar(PRINCIPAL, Rol.TECNICO, ot.getId(), "No puedo atender");
+        OtResponse response = useCase.cancelar(PRINCIPAL, ot.getId(), "No puedo atender", null);
 
         assertThat(response.estado()).isEqualTo(EstadoOt.CANCELADA);
         assertThat(response.motivoCancelacion()).isEqualTo(MotivoCancelacion.CANCELACION_TECNICO);
@@ -167,15 +259,15 @@ class CancelarOtUseCaseTest {
     }
 
     @Test
-    void cancelRejectsANonAssignedTechnician() {
-        Tecnico tecnico = tecnicoOcupado();
+    void cancelRejectsACallerThatIsNeitherTheOwningClientNorTheAssignedTechnician() {
+        Tecnico tecnico = tecnicoOcupado(USUARIO_ID);
         Ot ot = otAsignada(ClienteId.nueva(), TecnicoId.nueva(), AHORA);
         when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
         var otId = ot.getId();
 
-        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, Rol.TECNICO, otId, "No puedo"))
-                .isInstanceOf(TecnicoNoAsignadoException.class);
+        assertThatThrownBy(() -> useCase.cancelar(PRINCIPAL, otId, "No puedo", null))
+                .isInstanceOf(OtAccesoNoPermitidoException.class);
 
         verify(otRepository, never()).save(any());
     }
@@ -192,8 +284,8 @@ class CancelarOtUseCaseTest {
                 DireccionPrincipal.sinUbicacion("Calle 1", "Bogota", "Centro"));
     }
 
-    private Tecnico tecnicoOcupado() {
-        Tecnico tecnico = Tecnico.crear(USUARIO_ID, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+    private Tecnico tecnicoOcupado(long usuarioId) {
+        Tecnico tecnico = Tecnico.crear(usuarioId, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
         tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
         tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
         tecnico.aceptarOrden();

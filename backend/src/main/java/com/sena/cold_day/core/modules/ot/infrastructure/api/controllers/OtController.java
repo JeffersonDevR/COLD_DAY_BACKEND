@@ -30,6 +30,7 @@ import com.sena.cold_day.core.modules.ot.application.usecases.PagarVisitaUseCase
 import com.sena.cold_day.core.modules.ot.application.usecases.RechazarPresupuestoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarActaGarantiaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarDiagnosticoUseCase;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CalificarOtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CancelarOtApiRequest;
@@ -193,14 +194,16 @@ public class OtController {
     /**
      * RF-F1-21: cancellation with a mandatory reason, rejected once repair has
      * started. The owning client (free window) or the assigned technician may
-     * cancel.
+     * cancel. A dual-role user that is both must send {@code actorRol} (design
+     * D5 / M4); otherwise the actor is inferred from the OT's rows.
      */
     @PostMapping("/{id}/cancelar")
     @PreAuthorize("hasAnyRole('CLIENTE','TECNICO')")
     public OtApiResponse cancelar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id,
             @RequestBody(required = false) CancelarOtApiRequest request) {
         String razon = request == null ? null : request.motivo();
-        return OtApiResponse.from(cancelar.cancelar(principal.usuarioId(), principal.rol(), id, razon));
+        ActorOt actorRol = request == null ? null : request.actorRol();
+        return OtApiResponse.from(cancelar.cancelar(principal.usuarioId(), id, razon, actorRol));
     }
 
     /**

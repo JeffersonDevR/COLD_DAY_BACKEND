@@ -2,13 +2,13 @@ package com.sena.cold_day.core.modules.ot.application.usecases;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
-import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
@@ -16,7 +16,6 @@ import com.sena.cold_day.core.modules.ot.domain.events.OtCancelada;
 import com.sena.cold_day.core.modules.ot.domain.exception.MotivoRequeridoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
-import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
@@ -24,10 +23,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
-import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
-import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 /**
@@ -45,6 +42,13 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
  *   <li>Any terminal path releases the assigned technician to
  *       {@code DISPONIBLE} and publishes {@link OtCancelada} for tracking.</li>
  * </ul>
+ *
+ * <p>Attribution is resource-based (design D5): with dual roles a caller may own
+ * the OT's cliente row, be its assigned technician, or both. The actor is
+ * inferred from the OT's rows when unambiguous; when the same user is both the
+ * owning client and the assigned technician of the same OT, the cancellation is
+ * genuinely ambiguous and an explicit {@code actorRol} is mandatory (M4) — the
+ * system never guesses.
  */
 @Service
 public class CancelarOtUseCase {
@@ -67,33 +71,21 @@ public class CancelarOtUseCase {
         this.estimarTarifa = estimarTarifa;
     }
 
+    /**
+     * @param actorRol the explicit actor for a dual user, or {@code null} to infer
+     *                 it from the OT's cliente/tecnico rows.
+     */
     @Transactional
-    public OtResponse cancelar(UsuarioId usuarioId, Rol rol, OtId otId, String razon) {
+    public OtResponse cancelar(UsuarioId usuarioId, OtId otId, String razon, ActorOt actorRol) {
         Ot ot = otRepository.buscarPorId(otId).orElseThrow(() -> new OtNoEncontradoException(otId));
 
         // The state machine is the primary guard: repair-phase/terminal rejections are conflicts.
         TransicionesOt.validar(ot.getEstado(), EstadoOt.CANCELADA);
 
-        ActorOt actor;
-        MotivoCancelacion motivo;
-        if (rol == Rol.CLIENTE) {
-            Cliente cliente = clienteRepository.findByUsuarioId(usuarioId)
-                    .orElseThrow(() -> new ClienteNoEncontradoException(
-                            "No existe un perfil de cliente para el usuario: " + usuarioId.valor()));
-            if (!cliente.getId().equals(ot.getClienteId())) {
-                throw new OtAccesoNoPermitidoException(otId);
-            }
-            actor = ActorOt.CLIENTE;
-            motivo = MotivoCancelacion.CANCELACION_CLIENTE;
-        } else {
-            Tecnico tecnico = tecnicoRepository.findByUsuarioIdAndActivoTrue(usuarioId.valor())
-                    .orElseThrow(() -> new PerfilTecnicoNoEncontradoException(usuarioId.valor()));
-            if (!tecnico.getId().equals(ot.getTecnicoId())) {
-                throw new TecnicoNoAsignadoException(otId, tecnico.getId());
-            }
-            actor = ActorOt.TECNICO;
-            motivo = MotivoCancelacion.CANCELACION_TECNICO;
-        }
+        ActorOt actor = resolverActor(ot, otId, usuarioId, actorRol);
+        MotivoCancelacion motivo = actor == ActorOt.CLIENTE
+                ? MotivoCancelacion.CANCELACION_CLIENTE
+                : MotivoCancelacion.CANCELACION_TECNICO;
 
         if (razon == null || razon.isBlank()) {
             throw new MotivoRequeridoException();
@@ -112,6 +104,42 @@ public class CancelarOtUseCase {
         liberarTecnico(saved.getTecnicoId());
         events.publishEvent(new OtCancelada(otId, actor, motivo, saved.getTecnicoId()));
         return OtResponse.fromDomain(saved);
+    }
+
+    /**
+     * Resolves the cancellation actor from the resource. An explicit
+     * {@code actorRol} is honored only when the caller actually holds that role on
+     * this OT; otherwise the actor is inferred — owning client first, then the
+     * assigned technician. When the caller is both, attribution is ambiguous and
+     * the request is rejected rather than guessed (M4).
+     */
+    private ActorOt resolverActor(Ot ot, OtId otId, UsuarioId usuarioId, ActorOt actorRol) {
+        boolean esClientePropietario = clienteRepository.findByUsuarioId(usuarioId)
+                .map(cliente -> cliente.getId().equals(ot.getClienteId()))
+                .orElse(false);
+        boolean esTecnicoAsignado = tecnicoRepository.findByUsuarioIdAndActivoTrue(usuarioId.valor())
+                .map(tecnico -> tecnico.getId().equals(ot.getTecnicoId()))
+                .orElse(false);
+
+        if (actorRol != null) {
+            if (actorRol == ActorOt.CLIENTE && esClientePropietario) {
+                return ActorOt.CLIENTE;
+            }
+            if (actorRol == ActorOt.TECNICO && esTecnicoAsignado) {
+                return ActorOt.TECNICO;
+            }
+            throw new OtAccesoNoPermitidoException(otId);
+        }
+        if (esClientePropietario && esTecnicoAsignado) {
+            throw new OtAccesoNoPermitidoException(otId);
+        }
+        if (esClientePropietario) {
+            return ActorOt.CLIENTE;
+        }
+        if (esTecnicoAsignado) {
+            return ActorOt.TECNICO;
+        }
+        throw new OtAccesoNoPermitidoException(otId);
     }
 
     /**
