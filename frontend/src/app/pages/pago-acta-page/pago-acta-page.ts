@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnDestroy, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { OtApi } from '../../core/service/ot-api';
+import { SseService } from '../../core/service/sse.service';
 import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../core/models/common.models';
@@ -12,9 +14,10 @@ import { environment } from '../../core/environment/environment';
   imports: [RouterLink],
   templateUrl: './pago-acta-page.html'
 })
-export class PagoActaPage implements OnInit, AfterViewInit {
+export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly otApi = inject(OtApi);
+  private readonly sse = inject(SseService);
   private readonly toast = inject(ToastService);
 
   /** Expuesto al template para derivar comisión y monto líquido. */
@@ -25,6 +28,9 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   readonly otId = signal<string>('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
   readonly ot = computed<OtResponse | undefined>(() => this._otRemoto());
+
+  /** Suscripción al stream de cambios de estado; se corta al destruir la página. */
+  private suscripcionEstado: Subscription | null = null;
 
   readonly medioPago = signal<MedioPago>('EFECTIVO');
   readonly hasFirma = signal<boolean>(false);
@@ -66,12 +72,44 @@ export class PagoActaPage implements OnInit, AfterViewInit {
     cargarOtDesdeRuta(
       this.route,
       this.otApi,
-      (id) => this.otId.set(id),
-      (orden) => {
-        this._otRemoto.set(orden);
-        this.cargarEstimacion(orden?.punto);
+      (id) => {
+        this.otId.set(id);
+        this.escucharCambiosDeEstado(id);
       },
+      (orden) => this.aplicarOt(orden),
     );
+  }
+
+  ngOnDestroy(): void {
+    this.suscripcionEstado?.unsubscribe();
+    this.suscripcionEstado = null;
+  }
+
+  /** Refresca la OT observada junto con su estimación de tarifa de visita. */
+  private aplicarOt(orden: OtResponse | undefined): void {
+    this._otRemoto.set(orden);
+    this.cargarEstimacion(orden?.punto);
+  }
+
+  private recargarOt(): void {
+    this.otApi.getOtById(this.otId()).subscribe({ next: (orden) => this.aplicarOt(orden) });
+  }
+
+  /**
+   * Actualización en vivo (WS6): recarga la OT cuando el backend empuja un cambio
+   * de estado de la misma orden, así el acta/monto reflejan lo que hizo la otra
+   * parte sin recargar a mano. El stream es un extra: un fallo se silencia.
+   */
+  private escucharCambiosDeEstado(id: string): void {
+    this.suscripcionEstado?.unsubscribe();
+    this.suscripcionEstado = this.sse.abrirOtStream(id).subscribe({
+      next: (payload) => {
+        if (payload.otId === this.otId()) this.recargarOt();
+      },
+      error: () => {
+        // El stream es solo una mejora: nunca rompe ni alerta a la página.
+      },
+    });
   }
 
   /** Consulta la tarifa de visita por distancia para el punto de servicio. */

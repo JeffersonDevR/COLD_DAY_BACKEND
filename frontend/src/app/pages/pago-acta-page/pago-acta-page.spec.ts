@@ -3,6 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { of, Subject, throwError } from 'rxjs';
 import { PagoActaPage } from './pago-acta-page';
 import { OtApi } from '../../core/service/ot-api';
+import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ActaGarantia, OtResponse } from '../../core/models/common.models';
 
@@ -47,25 +48,26 @@ function setup(firmarActaGarantia: ReturnType<typeof vi.fn>, ordenRespuesta: OtR
     tarifa: 35000,
     fueraDeRango: false,
   };
+  const otApi = {
+    getOtById: vi.fn(() => of(ordenRespuesta)),
+    estimarTarifa: vi.fn(() => of(estimacion)),
+    firmarActaGarantia,
+  };
+  const sseEventos = new Subject<OtEstadoCambiado>();
+  const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
   TestBed.configureTestingModule({
     imports: [PagoActaPage],
     providers: [
       provideRouter([]),
       { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'ot1' })) } },
-      {
-        provide: OtApi,
-        useValue: {
-          getOtById: () => of(ordenRespuesta),
-          estimarTarifa: () => of(estimacion),
-          firmarActaGarantia,
-        },
-      },
+      { provide: OtApi, useValue: otApi },
+      { provide: SseService, useValue: sse },
       { provide: ToastService, useValue: toast },
     ],
   });
   const fixture = TestBed.createComponent(PagoActaPage);
   fixture.detectChanges();
-  return { fixture, toast, ctxStub };
+  return { fixture, toast, ctxStub, otApi, sse, sseEventos };
 }
 
 /** Deja el componente en el estado previo a firmar: hubo trazo en el canvas. */
@@ -267,5 +269,40 @@ describe('PagoActaPage', () => {
     expect(firmarActaGarantia).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('abre el stream de cambios de estado de la OT cargada', () => {
+    const { sse } = setup(vi.fn(() => of(undefined)));
+    expect(sse.abrirOtStream).toHaveBeenCalledWith('ot1');
+  });
+
+  it('recarga la OT y su estimación al recibir un cambio de estado de la misma orden', () => {
+    const { otApi, sseEventos } = setup(vi.fn(() => of(undefined)));
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+    expect(otApi.estimarTarifa).toHaveBeenCalledTimes(1);
+
+    sseEventos.next({ otId: 'ot1', origen: 'EN_REPARACION', destino: 'FINALIZADA' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+    expect(otApi.estimarTarifa).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignora un cambio de estado de otra orden', () => {
+    const { otApi, sseEventos } = setup(vi.fn(() => of(undefined)));
+
+    sseEventos.next({ otId: 'ot-ajena', origen: 'SOLICITADA', destino: 'ASIGNADA' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('corta el stream al destruir la página (sin fugas)', () => {
+    const { fixture, otApi, sseEventos } = setup(vi.fn(() => of(undefined)));
+    expect(sseEventos.observed).toBe(true);
+
+    fixture.destroy();
+
+    expect(sseEventos.observed).toBe(false);
+    sseEventos.next({ otId: 'ot1', origen: 'EN_REPARACION', destino: 'FINALIZADA' });
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 });
