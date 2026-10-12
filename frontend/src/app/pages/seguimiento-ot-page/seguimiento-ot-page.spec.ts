@@ -149,6 +149,43 @@ describe('SeguimientoOtPage', () => {
     expect(setup({ ...orden, estado: 'DISPUTADA' }).fixture.componentInstance.puedePagarVisita()).toBe(true);
   });
 
+  it('ofrece pagar la visita cuando la OT está ASIGNADA y sin pago (WS5)', () => {
+    const { fixture } = setup({ ...orden, estado: 'ASIGNADA', visitaPagada: false });
+
+    expect(fixture.componentInstance.puedePagarVisita()).toBe(true);
+    // Pagar una ASIGNADA no reabre el despacho: solo habilita el desplazamiento.
+    expect(fixture.componentInstance.pagoVisitaReabreDespacho()).toBe(false);
+  });
+
+  it('no ofrece pagar la visita cuando la OT ASIGNADA ya está pagada', () => {
+    const { fixture } = setup({ ...orden, estado: 'ASIGNADA', visitaPagada: true });
+
+    expect(fixture.componentInstance.puedePagarVisita()).toBe(false);
+  });
+
+  it('marca el pago de la visita como reapertura en CANCELADA', () => {
+    expect(setup({ ...orden, estado: 'CANCELADA' }).fixture.componentInstance.pagoVisitaReabreDespacho()).toBe(true);
+  });
+
+  it('marca el pago de la visita como reapertura en DISPUTADA', () => {
+    expect(setup({ ...orden, estado: 'DISPUTADA' }).fixture.componentInstance.pagoVisitaReabreDespacho()).toBe(true);
+  });
+
+  it('no marca reapertura cuando se paga una OT ASIGNADA', () => {
+    const { fixture } = setup({ ...orden, estado: 'ASIGNADA', visitaPagada: false });
+    expect(fixture.componentInstance.pagoVisitaReabreDespacho()).toBe(false);
+  });
+
+  it('avisa que el desplazamiento queda habilitado al pagar una OT ASIGNADA', () => {
+    const { fixture, clientesApi, toast } = setup({ ...orden, estado: 'ASIGNADA', visitaPagada: false });
+    fixture.componentInstance.medioPagoVisita.set('TRANSFERENCIA');
+
+    fixture.componentInstance.pagarVisita();
+
+    expect(clientesApi.pagarVisita).toHaveBeenCalledWith('ot1', 'TRANSFERENCIA');
+    expect(toast.success).toHaveBeenCalledWith('Visita Pagada', 'Ya puedes iniciar el desplazamiento.');
+  });
+
   it('paga la visita con el medio elegido, avisa y recarga la OT', () => {
     const { fixture, clientesApi, otApi, toast } = setup({ ...orden, estado: 'CANCELADA' });
     fixture.componentInstance.medioPagoVisita.set('TRANSFERENCIA');

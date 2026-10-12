@@ -307,6 +307,8 @@ export interface OtApiResponse {
   canceladaPor: ActorOt | null;
   motivoCancelacion: string | null;
   tarifaVisita: number | null;
+  /** WS5: el backend expone si la tarifa de visita ya fue cobrada. */
+  visitaPagada: boolean;
   diagnostico: DiagnosticoApi | null;
   presupuesto: PresupuestoApi | null;
   latitud: number | null;

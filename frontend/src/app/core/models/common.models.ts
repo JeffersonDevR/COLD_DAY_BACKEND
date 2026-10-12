@@ -396,6 +396,15 @@ export interface OtResponse {
    * and the mock DB literals carry it explicitly.
    */
   auxiliaresRequeridos: number;
+  /**
+   * WS5: estado del cobro de la visita tal como lo reporta el backend.
+   *
+   * Opcional a propósito: los fixtures del MockDb y las OTs de versiones
+   * anteriores del backend no lo traen. La guarda real de la puerta de
+   * desplazamiento vive en el servidor (409), así que la UI solo bloquea
+   * cuando el servidor afirma explícitamente `false`.
+   */
+  visitaPagada?: boolean;
   // Acta de Garantía y firma
   firmaClienteUrl?: string;
   actaGarantiaGenerada?: boolean;

@@ -40,11 +40,14 @@ public class PagarVisitaUseCase {
     }
 
     /**
-     * RF-F1-26: cobra la visita y deja la OT despachando. Desde {@code SOLICITADA}
-     * la busqueda arranca con {@link IniciarBusquedaTecnicoUseCase#iniciar}; desde
-     * una {@code CANCELADA} por rechazo de presupuesto la reapertura pasa por
-     * {@link Ot#reabrirDespachoTrasPagoVisita}, nunca por el camino generico, para
-     * que la guarda de motivo/pago no se pueda saltar.
+     * RF-F1-26: cobra la visita y aplica el efecto que corresponda al estado.
+     * Desde {@code SOLICITADA} la busqueda arranca con
+     * {@link IniciarBusquedaTecnicoUseCase#iniciar}; desde una {@code CANCELADA}
+     * por rechazo de presupuesto la reapertura pasa por
+     * {@link Ot#reabrirDespachoTrasPagoVisita}, nunca por el camino generico,
+     * para que la guarda de motivo/pago no se pueda saltar. Desde
+     * {@code ASIGNADA} (WS5) solo se registra el cobro: no hay transicion y la
+     * OT sigue asignada, pero el tecnico ya puede iniciar el desplazamiento.
      */
     @Transactional
     public OtResponse pagar(UsuarioId usuarioId, OtId otId, String medioPago) {
@@ -57,11 +60,12 @@ public class PagarVisitaUseCase {
         }
         Instant ahora = clock.instant();
         ot.registrarPagoVisita(medioPago, ahora);
-        return OtResponse.fromDomain(reabrirDespacho(ot, ahora));
+        return OtResponse.fromDomain(aplicarEfectosDelPago(ot, ahora));
     }
 
     /**
-     * Elige el camino de reapertura segun el estado de la OT. Una
+     * Elige el efecto del pago segun el estado de la OT. Una {@code ASIGNADA}
+     * solo registra el cobro (WS5: sin transicion, el estado no avanza). Una
      * {@code CANCELADA} (que el agregado solo reabre si fue por rechazo de
      * presupuesto y ya esta pagada) reusa el mismo primitivo de oferta que el
      * arranque normal, para que la reapertura produzca exactamente los mismos
@@ -72,7 +76,10 @@ public class PagarVisitaUseCase {
      * que {@link EscalarRadioUseCase}: sin ese cierre el mismo tecnico recibiria
      * una segunda oferta {@code PENDIENTE} para la misma OT.
      */
-    private Ot reabrirDespacho(Ot ot, Instant ahora) {
+    private Ot aplicarEfectosDelPago(Ot ot, Instant ahora) {
+        if (ot.getEstado() == EstadoOt.ASIGNADA) {
+            return otRepository.save(ot);
+        }
         if (ot.getEstado() != EstadoOt.CANCELADA) {
             return iniciarBusqueda.iniciar(ot);
         }

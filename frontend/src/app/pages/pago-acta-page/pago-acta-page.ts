@@ -49,6 +49,19 @@ export class PagoActaPage implements OnInit, AfterViewInit {
     return (this.ot()?.presupuesto?.total || 0) + (this.estimacion()?.tarifa ?? 0);
   });
 
+  /** WS5: estado del cobro de la visita reportado por el backend. */
+  readonly visitaPagada = computed<boolean>(() => this.ot()?.visitaPagada === true);
+
+  /**
+   * WS5: una OT `ASIGNADA` sin pago mantiene al técnico detenido. La página lo
+   * muestra para que el cliente entienda por qué el servicio no arranca; el
+   * bloqueo efectivo lo impone el backend (409).
+   */
+  readonly visitaPendienteDePago = computed<boolean>(() => {
+    const orden = this.ot();
+    return orden?.estado === 'ASIGNADA' && orden.visitaPagada === false;
+  });
+
   ngOnInit(): void {
     cargarOtDesdeRuta(
       this.route,

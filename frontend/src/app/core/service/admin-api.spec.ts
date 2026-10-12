@@ -66,6 +66,7 @@ describe('AdminApi', () => {
         canceladaPor: null,
         motivoCancelacion: null,
         tarifaVisita: null,
+        visitaPagada: false,
         diagnostico: null,
         presupuesto: null,
         latitud: null,

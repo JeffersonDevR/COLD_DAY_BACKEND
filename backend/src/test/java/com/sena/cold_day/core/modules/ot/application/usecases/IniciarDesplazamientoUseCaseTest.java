@@ -26,6 +26,7 @@ import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.VisitaNoPagadaException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
@@ -102,6 +103,21 @@ class IniciarDesplazamientoUseCaseTest {
                 .isInstanceOf(OtNoEncontradoException.class);
     }
 
+    @Test
+    void iniciarRejectsAnUnpaidAssignedOrderWithoutAdvancingTheState() {
+        // WS5/M6: la visita debe estar pagada para arrancar el desplazamiento.
+        Tecnico tecnico = tecnico();
+        Ot ot = otAsignadaSinPago(tecnico.getId());
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+
+        assertThatThrownBy(() -> useCase.iniciar(PRINCIPAL, ot.getId()))
+                .isInstanceOf(VisitaNoPagadaException.class);
+
+        verify(otRepository, never()).save(any());
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.ASIGNADA);
+    }
+
     private Tecnico tecnico() {
         Tecnico tecnico = Tecnico.crear(USUARIO_ID, "123", Set.of(CategoriaServicio.REFRIGERACION), Set.of());
         tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
@@ -110,6 +126,12 @@ class IniciarDesplazamientoUseCaseTest {
     }
 
     private Ot otAsignada(TecnicoId tecnicoId) {
+        Ot ot = otAsignadaSinPago(tecnicoId);
+        ot.registrarPagoVisita("TARJETA", AHORA);
+        return ot;
+    }
+
+    private Ot otAsignadaSinPago(TecnicoId tecnicoId) {
         return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
                 "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0), EstadoOt.ASIGNADA, 10.0,
                 AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);

@@ -177,6 +177,7 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
     clienteNombre: dto.clienteNombre ?? undefined,
     tecnicoNombre: dto.tecnicoNombre ?? undefined,
     auxiliaresRequeridos: dto.auxiliaresRequeridos,
+    visitaPagada: dto.visitaPagada,
     evidenciaUrls: [],
     // Acta firmada (V11). El código se muestra tal cual lo emitió el
     // servidor; acá no se deriva ni se recalcula nada.

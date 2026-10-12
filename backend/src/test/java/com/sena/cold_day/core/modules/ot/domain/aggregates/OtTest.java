@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.VisitaNoPagadaException;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
@@ -169,7 +170,7 @@ class OtTest {
 
     @Test
     void iniciarDesplazamientoMovesFromAsignadaToEnCamino() {
-        Ot ot = crearAsignada(AHORA);
+        Ot ot = crearAsignadaPagada(AHORA);
         ot.drenarCambiosPendientes();
 
         ot.iniciarDesplazamiento(ActorOt.TECNICO, AHORA.plusSeconds(30));
@@ -181,6 +182,40 @@ class OtTest {
             assertThat(cambio.actor()).isEqualTo(ActorOt.TECNICO);
             assertThat(cambio.ocurridoEn()).isEqualTo(AHORA.plusSeconds(30));
         });
+    }
+
+    @Test
+    void iniciarDesplazamientoRequiereLaVisitaPagada() {
+        // WS5/M6: la guarda de pago vive en el borde ASIGNADA -> EN_CAMINO.
+        Ot ot = crearAsignada(AHORA);
+        ot.drenarCambiosPendientes();
+
+        assertThatThrownBy(() -> ot.iniciarDesplazamiento(ActorOt.TECNICO, AHORA.plusSeconds(30)))
+                .isInstanceOf(VisitaNoPagadaException.class);
+
+        // La guarda no avanza el estado ni deja un cambio pendiente.
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.ASIGNADA);
+        assertThat(ot.drenarCambiosPendientes()).isEmpty();
+    }
+
+    @Test
+    void unaOtYaEnCaminoNoQuedaBloqueadaPorLaGuardaDePago() {
+        // OT en curso cuando la guarda entra en vigor: sin pago registrado
+        // (legacy) debe seguir avanzando. La guarda solo aplica al borde
+        // ASIGNADA -> EN_CAMINO, asi que el grandfathering es por construccion
+        // (M6): una OT ya pasada de ASIGNADA nunca re-entra a ASIGNADA.
+        Ot ot = crearEnCaminoSinPago();
+        ot.drenarCambiosPendientes();
+
+        ot.registrarDiagnostico(new Diagnostico("Compresor averiado", null, AHORA.plusSeconds(60)),
+                ActorOt.TECNICO, AHORA.plusSeconds(60));
+
+        assertThat(ot.getEstado()).isEqualTo(EstadoOt.EN_DIAGNOSTICO);
+
+        // Desde EN_CAMINO el borde de desplazamiento ni se evalua: es una
+        // transicion invalida, no un bloqueo por pago no registrado.
+        assertThatThrownBy(() -> ot.iniciarDesplazamiento(ActorOt.TECNICO, AHORA.plusSeconds(30)))
+                .isInstanceOf(TransicionOtInvalidaException.class);
     }
 
     @Test
@@ -407,10 +442,28 @@ class OtTest {
                 AHORA.plusSeconds(60), AHORA, asignadaEn, null, null, null, null, null, null);
     }
 
-    private Ot crearEnCamino() {
-        Ot ot = crearAsignada(AHORA);
-        ot.iniciarDesplazamiento(ActorOt.TECNICO, AHORA.plusSeconds(30));
+    /** OT asignada con la visita ya cobrada: el unico camino para desplazarse. */
+    private Ot crearAsignadaPagada(Instant asignadaEn) {
+        Ot ot = crearAsignada(asignadaEn);
+        ot.registrarPagoVisita("NEQUI", asignadaEn.plusSeconds(5));
         return ot;
+    }
+
+    /**
+     * OT legacy ya en curso (EN_CAMINO) sin pago registrado: representa una
+     * orden que ya paso ASIGNADA cuando la guarda entro en vigor.
+     */
+    private Ot crearEnCaminoSinPago() {
+        return Ot.reconstituir(OtId.nueva(), CLIENTE, TECNICO, CategoriaServicio.REFRIGERACION,
+                "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0), EstadoOt.EN_CAMINO, 10.0,
+                AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);
+    }
+
+    private Ot crearEnCamino() {
+        // OT ya en curso. Se reconstituye directo (no via iniciarDesplazamiento)
+        // porque una OT pasada de ASIGNADA puede ser legacy sin cobro de visita:
+        // la guarda de pago solo mira el borde ASIGNADA -> EN_CAMINO (M6).
+        return crearEnCaminoSinPago();
     }
 
     private Ot crearEnDiagnostico() {

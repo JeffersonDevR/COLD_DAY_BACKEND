@@ -107,6 +107,28 @@ describe('PagoActaPage', () => {
     expect(fixture.componentInstance.medioPago()).toBe('TRANSFERENCIA');
   });
 
+  it('refleja la visita pagada cuando el backend la reporta (WS5)', () => {
+    const { fixture } = setup(vi.fn(() => of(undefined)), {
+      ...orden,
+      estado: 'ASIGNADA',
+      visitaPagada: true,
+    });
+
+    expect(fixture.componentInstance.visitaPagada()).toBe(true);
+    expect(fixture.componentInstance.visitaPendienteDePago()).toBe(false);
+  });
+
+  it('marca la visita como pendiente de pago en una OT ASIGNADA sin pago (WS5)', () => {
+    const { fixture } = setup(vi.fn(() => of(undefined)), {
+      ...orden,
+      estado: 'ASIGNADA',
+      visitaPagada: false,
+    });
+
+    expect(fixture.componentInstance.visitaPagada()).toBe(false);
+    expect(fixture.componentInstance.visitaPendienteDePago()).toBe(true);
+  });
+
   it('no muestra ningún código de verificación antes de firmar', () => {
     const { fixture } = setup(vi.fn(() => of(undefined)));
     // El código se armaba en el template como `CD-SEC-{{ orden.id }}`. Sin

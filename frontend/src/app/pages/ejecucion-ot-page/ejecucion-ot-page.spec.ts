@@ -73,6 +73,37 @@ describe('EjecucionOtPage', () => {
     expect(toast.info).toHaveBeenCalled();
   });
 
+  it('bloquea el desplazamiento cuando la visita no está pagada (WS5)', () => {
+    const { fixture, tecnicosApi, toast } = setup({
+      ot: orden({ estado: 'ASIGNADA', visitaPagada: false }),
+    });
+
+    expect(fixture.componentInstance.desplazamientoBloqueadoPorPago()).toBe(true);
+
+    fixture.componentInstance.iniciarDesplazamiento();
+
+    expect(tecnicosApi.iniciarDesplazamiento).not.toHaveBeenCalled();
+    expect(toast.info).toHaveBeenCalledWith('Visita pendiente de pago', expect.any(String));
+  });
+
+  it('permite el desplazamiento cuando la visita está pagada (WS5)', () => {
+    const { fixture, tecnicosApi } = setup({
+      ot: orden({ estado: 'ASIGNADA', visitaPagada: true }),
+    });
+
+    expect(fixture.componentInstance.desplazamientoBloqueadoPorPago()).toBe(false);
+
+    fixture.componentInstance.iniciarDesplazamiento();
+
+    expect(tecnicosApi.iniciarDesplazamiento).toHaveBeenCalledWith('ot1');
+  });
+
+  it('no bloquea si el backend no reporta el estado de pago (mock/legacy)', () => {
+    const { fixture } = setup({ ot: orden({ estado: 'ASIGNADA' }) });
+
+    expect(fixture.componentInstance.desplazamientoBloqueadoPorPago()).toBe(false);
+  });
+
   it('registra la llegada a sitio', () => {
     const { fixture, tecnicosApi, toast } = setup();
     fixture.componentInstance.llegarADomicilio();
