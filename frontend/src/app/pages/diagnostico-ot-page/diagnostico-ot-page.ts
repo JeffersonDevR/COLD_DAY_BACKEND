@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
+import { SseService } from '../../core/service/sse.service';
 import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -20,11 +22,12 @@ interface ChatMensaje {
   imports: [RouterLink, ReactiveFormsModule],
   templateUrl: './diagnostico-ot-page.html'
 })
-export class DiagnosticoOtPage implements OnInit {
+export class DiagnosticoOtPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly clientesApi = inject(ClientesApi);
   private readonly otApi = inject(OtApi);
+  private readonly sse = inject(SseService);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
 
@@ -33,6 +36,9 @@ export class DiagnosticoOtPage implements OnInit {
   readonly ot = computed<OtResponse | undefined>(() => {
     return this._otRemoto();
   });
+
+  /** Suscripción al stream de cambios de estado; se corta al destruir la página. */
+  private suscripcionEstado: Subscription | null = null;
 
   readonly mostrarRechazo = signal<boolean>(false);
   readonly motivoRechazoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
@@ -56,12 +62,44 @@ export class DiagnosticoOtPage implements OnInit {
     cargarOtDesdeRuta(
       this.route,
       this.otApi,
-      (id) => this.otId.set(id),
-      (orden) => {
-        this._otRemoto.set(orden);
-        this.cargarEstimacion(orden?.punto);
+      (id) => {
+        this.otId.set(id);
+        this.escucharCambiosDeEstado(id);
       },
+      (orden) => this.aplicarOt(orden),
     );
+  }
+
+  ngOnDestroy(): void {
+    this.suscripcionEstado?.unsubscribe();
+    this.suscripcionEstado = null;
+  }
+
+  /** Refresca la OT observada junto con su estimación de tarifa de visita. */
+  private aplicarOt(orden: OtResponse | undefined): void {
+    this._otRemoto.set(orden);
+    this.cargarEstimacion(orden?.punto);
+  }
+
+  private recargarOt(): void {
+    this.otApi.getOtById(this.otId()).subscribe({ next: (orden) => this.aplicarOt(orden) });
+  }
+
+  /**
+   * Actualización en vivo (WS6): recarga la OT cuando el backend empuja un cambio
+   * de estado de la misma orden, así el presupuesto refleja lo que hizo el
+   * técnico sin recargar a mano. El stream es un extra: un fallo se silencia.
+   */
+  private escucharCambiosDeEstado(id: string): void {
+    this.suscripcionEstado?.unsubscribe();
+    this.suscripcionEstado = this.sse.abrirOtStream(id).subscribe({
+      next: (payload) => {
+        if (payload.otId === this.otId()) this.recargarOt();
+      },
+      error: () => {
+        // El stream es solo una mejora: nunca rompe ni alerta a la página.
+      },
+    });
   }
 
   /** Consulta la tarifa de visita por distancia para el punto de servicio. */

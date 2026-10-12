@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
 import { MapsApi } from '../../core/service/maps-api';
 import { OtApi } from '../../core/service/ot-api';
+import { SseService } from '../../core/service/sse.service';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -29,9 +31,13 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   private readonly otApi = inject(OtApi);
   private readonly liquidacionApi = inject(LiquidacionApi);
   private readonly toast = inject(ToastService);
+  private readonly sse = inject(SseService);
 
   readonly otId = signal<string>('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
+
+  /** Suscripción al stream de cambios de estado; se corta al destruir la página. */
+  private suscripcionEstado: Subscription | null = null;
 
   /** En mock lee del MockDb (reactivo); contra el backend usa la OT cargada por API. */
   readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
@@ -101,6 +107,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       (id) => {
         this.otId.set(id);
         this.enSitio.set(false);
+        this.escucharCambiosDeEstado(id);
       },
       (orden) => this._otRemoto.set(orden),
     );
@@ -109,6 +116,8 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.suscripcionEstado?.unsubscribe();
+    this.suscripcionEstado = null;
     this.tracking.detener();
   }
 
@@ -175,6 +184,26 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   private recargarOt(): void {
     this.otApi.getOtById(this.otId()).subscribe({
       next: (orden) => this._otRemoto.set(orden),
+    });
+  }
+
+  /**
+   * Actualización en vivo (WS6): el backend empuja cada cambio de estado por SSE
+   * y acá se recarga la OT, así la pantalla refleja lo que hizo la otra parte sin
+   * recargar a mano. Es solo una mejora: si el stream no está disponible (mock,
+   * SSR o caída de red) la página sigue funcionando, por eso un fallo se
+   * silencia en vez de avisar al usuario.
+   */
+  private escucharCambiosDeEstado(id: string): void {
+    this.suscripcionEstado?.unsubscribe();
+    this.suscripcionEstado = this.sse.abrirOtStream(id).subscribe({
+      next: (payload) => {
+        // Solo reacciona al cambio de la orden que se está viendo.
+        if (payload.otId === this.otId()) this.recargarOt();
+      },
+      error: () => {
+        // El stream es un extra: nunca rompe ni alerta a la página.
+      },
     });
   }
 

@@ -1,9 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { DiagnosticoOtPage } from './diagnostico-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
+import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse } from '../../core/models/common.models';
@@ -32,13 +33,17 @@ function setup() {
     tarifa: 35000,
     fueraDeRango: false,
   };
+  const otApi = { getOtById: vi.fn(() => of(orden)), estimarTarifa: vi.fn(() => of(estimacion)) };
+  const sseEventos = new Subject<OtEstadoCambiado>();
+  const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
   TestBed.configureTestingModule({
     imports: [DiagnosticoOtPage],
     providers: [
       provideRouter([]),
       { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'ot1' })) } },
-      { provide: OtApi, useValue: { getOtById: () => of(orden), estimarTarifa: () => of(estimacion) } },
+      { provide: OtApi, useValue: otApi },
       { provide: ClientesApi, useValue: clientesApi },
+      { provide: SseService, useValue: sse },
       { provide: AuthService, useValue: { currentUser: () => ({ id: 3 }) } },
       { provide: ToastService, useValue: toast },
     ],
@@ -47,7 +52,7 @@ function setup() {
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(DiagnosticoOtPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, toast, navigate };
+  return { fixture, clientesApi, toast, navigate, otApi, sse, sseEventos };
 }
 
 describe('DiagnosticoOtPage', () => {
@@ -101,5 +106,40 @@ describe('DiagnosticoOtPage', () => {
     const antes = fixture.componentInstance.chatMensajes().length;
     fixture.componentInstance.enviarMensaje();
     expect(fixture.componentInstance.chatMensajes().length).toBe(antes);
+  });
+
+  it('abre el stream de cambios de estado de la OT cargada', () => {
+    const { sse } = setup();
+    expect(sse.abrirOtStream).toHaveBeenCalledWith('ot1');
+  });
+
+  it('recarga la OT y su estimación al recibir un cambio de estado de la misma orden', () => {
+    const { otApi, sseEventos } = setup();
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+    expect(otApi.estimarTarifa).toHaveBeenCalledTimes(1);
+
+    sseEventos.next({ otId: 'ot1', origen: 'EN_DIAGNOSTICO', destino: 'EN_REPARACION' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+    expect(otApi.estimarTarifa).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignora un cambio de estado de otra orden', () => {
+    const { otApi, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot-ajena', origen: 'SOLICITADA', destino: 'ASIGNADA' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('corta el stream al destruir la página (sin fugas)', () => {
+    const { fixture, otApi, sseEventos } = setup();
+    expect(sseEventos.observed).toBe(true);
+
+    fixture.destroy();
+
+    expect(sseEventos.observed).toBe(false);
+    sseEventos.next({ otId: 'ot1', origen: 'EN_DIAGNOSTICO', destino: 'EN_REPARACION' });
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 });

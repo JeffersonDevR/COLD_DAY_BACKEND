@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { EjecucionOtPage } from './ejecucion-ot-page';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
@@ -8,6 +8,7 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
 import { MapsApi } from '../../core/service/maps-api';
 import { OtApi } from '../../core/service/ot-api';
+import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse } from '../../core/models/common.models';
@@ -38,6 +39,8 @@ function setup(opts: { useMocks?: boolean; ot?: OtResponse } = {}) {
   const otApi = { getOtById: vi.fn(() => of(opts.ot ?? orden())) };
   const liquidacionApi = { registrarPago: vi.fn(() => of(undefined)) };
   const toast = { info: vi.fn(), success: vi.fn(), error: vi.fn() };
+  const sseEventos = new Subject<OtEstadoCambiado>();
+  const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
 
   TestBed.configureTestingModule({
     imports: [EjecucionOtPage],
@@ -50,13 +53,14 @@ function setup(opts: { useMocks?: boolean; ot?: OtResponse } = {}) {
       { provide: TecnicoTrackingService, useValue: tracking },
       { provide: MapsApi, useValue: { distancia: () => of({ distanciaKm: 1, duracionMin: 3 }) } },
       { provide: OtApi, useValue: otApi },
+      { provide: SseService, useValue: sse },
       { provide: LiquidacionApi, useValue: liquidacionApi },
       { provide: ToastService, useValue: toast },
     ],
   });
   const fixture = TestBed.createComponent(EjecucionOtPage);
   fixture.detectChanges();
-  return { fixture, tecnicosApi, tracking, liquidacionApi, toast };
+  return { fixture, tecnicosApi, tracking, liquidacionApi, toast, otApi, sse, sseEventos };
 }
 
 describe('EjecucionOtPage', () => {
@@ -150,5 +154,38 @@ describe('EjecucionOtPage', () => {
     const { fixture, tracking } = setup();
     fixture.destroy();
     expect(tracking.detener).toHaveBeenCalled();
+  });
+
+  it('abre el stream de cambios de estado de la OT cargada', () => {
+    const { sse } = setup();
+    expect(sse.abrirOtStream).toHaveBeenCalledWith('ot1');
+  });
+
+  it('recarga la OT al recibir un cambio de estado de la misma orden', () => {
+    const { otApi, sseEventos } = setup();
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+
+    sseEventos.next({ otId: 'ot1', origen: 'ASIGNADA', destino: 'EN_CAMINO' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignora un cambio de estado de otra orden', () => {
+    const { otApi, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot-ajena', origen: 'SOLICITADA', destino: 'ASIGNADA' });
+
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('corta el stream al destruir la página (sin fugas)', () => {
+    const { fixture, otApi, sseEventos } = setup();
+    expect(sseEventos.observed).toBe(true);
+
+    fixture.destroy();
+
+    expect(sseEventos.observed).toBe(false);
+    sseEventos.next({ otId: 'ot1', origen: 'ASIGNADA', destino: 'EN_CAMINO' });
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 });
