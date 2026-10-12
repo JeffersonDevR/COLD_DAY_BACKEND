@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UsuariosApi } from '../../core/service/usuarios-api';
@@ -16,7 +16,13 @@ export class RecuperarPage {
   private readonly router = inject(Router);
 
   readonly paso = signal<1 | 2>(1);
+  /**
+   * Código de demostración. SÓLO se rellena con la respuesta del modo mock; el
+   * backend real nunca lo entrega (el token viaja por correo), por eso la UI no
+   * debe prefigurar ni mostrar ningún token fabricado.
+   */
   readonly tokenSimulado = signal<string>('');
+  readonly modoDemo = computed(() => this.tokenSimulado().length > 0);
   readonly loading = signal<boolean>(false);
 
   readonly solicitarForm = new FormGroup({
@@ -40,10 +46,15 @@ export class RecuperarPage {
     this.usuariosApi.solicitarRecuperacion(correo).subscribe({
       next: (res) => {
         this.loading.set(false);
-        this.tokenSimulado.set(res.tokenSimulado || 'CD-RESET-884920');
-        this.resetForm.patchValue({ token: res.tokenSimulado || 'CD-RESET-884920' });
+        const tokenDemo = res.tokenSimulado ?? '';
+        this.tokenSimulado.set(tokenDemo);
+        this.resetForm.patchValue({ token: tokenDemo });
         this.paso.set(2);
-        this.toast.info('Código Enviado', 'Usa el código generado en pantalla para restablecer tu clave.');
+        if (tokenDemo) {
+          this.toast.info('Código de demo', 'Usa el código mostrado en pantalla para restablecer tu clave.');
+        } else {
+          this.toast.info('Revisa tu correo', 'Te enviamos las instrucciones y el código de restablecimiento.');
+        }
       },
       error: () => {
         this.loading.set(false);

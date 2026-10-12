@@ -1,9 +1,13 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { RecuperarPage } from './recuperar-page';
 import { UsuariosApi } from '../../core/service/usuarios-api';
 import { ToastService } from '../../core/alertas/toast.service';
+
+function texto(fixture: ComponentFixture<RecuperarPage>): string {
+  return (fixture.nativeElement as HTMLElement).textContent ?? '';
+}
 
 function setup(solicitar: ReturnType<typeof vi.fn>, reset: ReturnType<typeof vi.fn>) {
   const toast = { info: vi.fn(), success: vi.fn(), error: vi.fn() };
@@ -35,13 +39,28 @@ describe('RecuperarPage', () => {
     expect(toast.info).toHaveBeenCalled();
   });
 
-  it('usa un token por defecto si la API no lo entrega', () => {
+  it('no prefigura ni muestra un token fabricado cuando la API no lo entrega', () => {
     const solicitar = vi.fn(() => of({ mensaje: 'ok' }));
     const { fixture } = setup(solicitar, vi.fn());
 
     fixture.componentInstance.onSolicitarToken();
+    fixture.detectChanges();
 
-    expect(fixture.componentInstance.tokenSimulado()).toContain('CD-RESET-');
+    expect(fixture.componentInstance.tokenSimulado()).toBe('');
+    expect(fixture.componentInstance.resetForm.controls.token.value).toBe('');
+    expect(texto(fixture)).toContain('Revisa tu correo');
+    expect(texto(fixture)).not.toContain('CD-RESET-');
+  });
+
+  it('en modo demo rellena el token y solo entonces lo muestra en pantalla', () => {
+    const solicitar = vi.fn(() => of({ mensaje: 'ok', tokenSimulado: 'CD-RESET-123456' }));
+    const { fixture } = setup(solicitar, vi.fn());
+
+    fixture.componentInstance.onSolicitarToken();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.resetForm.controls.token.value).toBe('CD-RESET-123456');
+    expect(texto(fixture)).toContain('CD-RESET-123456');
   });
 
   it('maneja el error al solicitar', () => {

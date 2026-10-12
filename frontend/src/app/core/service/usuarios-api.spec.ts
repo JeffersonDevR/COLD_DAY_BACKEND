@@ -61,12 +61,14 @@ describe('UsuariosApi', () => {
     expect(usuario.telefono).toBeUndefined();
   });
 
-  it('solicitarRecuperacion sintetiza el mensaje', async () => {
+  it('solicitarRecuperacion en modo real pide revisar el correo y no devuelve token', async () => {
     const promise = firstValueFrom(api.solicitarRecuperacion('a@x.co'));
     const req = http.expectOne('/api/usuarios/recuperar-contrasena');
     expect(req.request.method).toBe('POST');
     req.flush(null);
-    expect((await promise).mensaje).toContain('instrucciones');
+    const res = await promise;
+    expect(res.mensaje).toContain('Revisa tu correo');
+    expect(res.tokenSimulado).toBeUndefined();
   });
 
   it('resetPassword envía nuevaPassword', async () => {
