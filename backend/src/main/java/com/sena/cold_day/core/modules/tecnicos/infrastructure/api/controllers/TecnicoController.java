@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sena.cold_day.core.modules.tecnicos.application.dto.MiPerfilTecnicoRequest;
+import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoPerfilRequest;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoRequest;
 import com.sena.cold_day.core.modules.tecnicos.application.dto.TecnicoResponse;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.ActualizarMiPerfilTecnicoUseCase;
@@ -29,11 +30,13 @@ import com.sena.cold_day.core.modules.tecnicos.application.usecases.CambiarDispo
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.EliminarTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.ListarDocumentosTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.RegistrarTecnicoUseCase;
+import com.sena.cold_day.core.modules.tecnicos.application.usecases.RegistrarPerfilTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.application.usecases.ValidarDocumentacionTecnicoUseCase;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.DocumentoTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.EstadoOperativoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.MiPerfilTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.TecnicoApiRequest;
+import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.TecnicoPerfilApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.ValidacionTecnicoApiRequest;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.DocumentoTecnicoApiResponse;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.responses.TecnicoApiResponse;
@@ -60,6 +63,7 @@ import jakarta.validation.constraints.DecimalMin;
 public class TecnicoController {
 
     private final RegistrarTecnicoUseCase registrar;
+    private final RegistrarPerfilTecnicoUseCase registrarPerfil;
     private final ActualizarTecnicoUseCase actualizar;
     private final ActualizarMiPerfilTecnicoUseCase actualizarMiPerfil;
     private final BuscarTecnicoUseCase buscar;
@@ -83,6 +87,7 @@ public class TecnicoController {
             BuscarTecnicosCercanosUseCase buscarCercanos, ListarOtUseCase listarOts,
             ListarLiquidacionesTecnicoUseCase listarLiquidaciones,
             ListarDocumentosTecnicoUseCase listarDocumentos,
+            RegistrarPerfilTecnicoUseCase registrarPerfil,
             AutorizacionPropietario autorizacion) {
         this.registrar = registrar;
         this.actualizar = actualizar;
@@ -96,6 +101,7 @@ public class TecnicoController {
         this.listarOts = listarOts;
         this.listarLiquidaciones = listarLiquidaciones;
         this.listarDocumentos = listarDocumentos;
+        this.registrarPerfil = registrarPerfil;
         this.autorizacion = autorizacion;
     }
 
@@ -103,6 +109,25 @@ public class TecnicoController {
     public ResponseEntity<TecnicoApiResponse> crear(@Valid @RequestBody TecnicoApiRequest request) {
         TecnicoResponse created = registrar.registrar(toApplicationRequest(request));
         return ResponseEntity.created(URI.create("/api/tecnicos/" + created.id()))
+                .body(TecnicoApiResponse.from(created));
+    }
+
+    /**
+     * Second-profile acquisition (WS2): an authenticated usuario adds a
+     * technician profile. The target usuario is the principal — never a path id
+     * or body field — and the created role is TECNICO by construction, never
+     * from the body (M5). On success the principal's tokenVersion is bumped, so
+     * the new capability is honored at the next login. A second attempt is
+     * rejected with 409.
+     */
+    @PostMapping("/perfil")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TecnicoApiResponse> crearMiPerfil(@AuthenticationPrincipal AuthenticatedUser principal,
+            @Valid @RequestBody TecnicoPerfilApiRequest request) {
+        TecnicoResponse created = registrarPerfil.registrar(principal.usuarioId(),
+                new TecnicoPerfilRequest(request.numeroIdentificacion(), request.categoriasServicio(),
+                        request.certificaciones()));
+        return ResponseEntity.created(URI.create("/api/tecnicos/" + created.id().valor()))
                 .body(TecnicoApiResponse.from(created));
     }
 

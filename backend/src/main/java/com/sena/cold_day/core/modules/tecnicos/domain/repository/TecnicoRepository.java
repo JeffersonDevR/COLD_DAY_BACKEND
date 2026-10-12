@@ -17,5 +17,12 @@ public interface TecnicoRepository {
 
     Optional<Tecnico> findByUsuarioIdAndActivoTrue(Long usuarioId);
 
+    /**
+     * Any technician row of the usuario, active or not. Duplicate detection for
+     * second-profile acquisition must see a soft-deleted profile too, so a
+     * deactivated technician cannot acquire a second one.
+     */
+    Optional<Tecnico> findByUsuarioId(Long usuarioId);
+
     void deleteAll();
 }

@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sena.cold_day.core.modules.clientes.application.dto.ClienteOnboardingRequest;
+import com.sena.cold_day.core.modules.clientes.application.dto.ClienteRequest;
 import com.sena.cold_day.core.modules.clientes.application.dto.ClienteResponse;
 import com.sena.cold_day.core.modules.clientes.application.usecases.RegistrarClienteUseCase;
 import com.sena.cold_day.core.modules.clientes.infrastructure.api.requests.ClienteOnboardingApiRequest;
+import com.sena.cold_day.core.modules.clientes.infrastructure.api.requests.ClientePerfilApiRequest;
 import com.sena.cold_day.core.modules.clientes.infrastructure.api.responses.ClienteApiResponse;
 import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.ActualizarUbicacionClienteUseCase;
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
@@ -49,6 +51,26 @@ public class ClienteController {
     @PostMapping
     public ResponseEntity<ClienteApiResponse> crear(@Valid @RequestBody ClienteOnboardingApiRequest request) {
         ClienteResponse created = registrar.registrarNuevo(toApplicationRequest(request));
+        return ResponseEntity.created(URI.create("/api/clientes/" + created.id().valor()))
+                .body(ClienteApiResponse.from(created));
+    }
+
+    /**
+     * Second-profile acquisition (WS2): an authenticated usuario adds a client
+     * profile. The target usuario is the principal — never a path id or body
+     * field — and the created role is CLIENTE by construction, never from the
+     * body (M5). On success the principal's tokenVersion is bumped, so the new
+     * capability is honored at the next login. A second attempt is rejected
+     * with 409.
+     */
+    @PostMapping("/perfil")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ClienteApiResponse> crearMiPerfil(@AuthenticationPrincipal AuthenticatedUser principal,
+            @Valid @RequestBody ClientePerfilApiRequest request) {
+        ClienteResponse created = registrar.registrar(
+                new ClienteRequest(request.tipoCliente(), request.calle(), request.ciudad(), request.barrio(),
+                        request.ubicacion()),
+                principal.usuarioId());
         return ResponseEntity.created(URI.create("/api/clientes/" + created.id().valor()))
                 .body(ClienteApiResponse.from(created));
     }

@@ -101,6 +101,26 @@ class TecnicosRepositoryTest {
         assertThat(repository.findByIdAndActivoTrue(deleted.getId())).isEmpty();
     }
 
+    /**
+     * Duplicate detection for second-profile acquisition must see any technician
+     * row, active or not (design finding 2): a soft-deleted profile still blocks
+     * a duplicate, while the active-only lookup used for capability derivation
+     * keeps returning empty.
+     */
+    @Test
+    void findByUsuarioIdSeesSoftDeletedRows() {
+        Long usuarioId = persistUsuario("dual@example.com");
+        Tecnico saved = repository.save(tecnico(usuarioId, "500", true));
+        assertThat(repository.findByUsuarioId(usuarioId))
+                .hasValueSatisfying(found -> assertThat(found.getId()).isEqualTo(saved.getId()));
+
+        saved.desactivar();
+        repository.save(saved);
+
+        assertThat(repository.findByUsuarioIdAndActivoTrue(usuarioId)).isEmpty();
+        assertThat(repository.findByUsuarioId(usuarioId)).isPresent();
+    }
+
     @Test
     void roundTripsLocationAndTrackingFlag() {
         Long usuarioId = persistUsuario("geo@example.com");
