@@ -6,6 +6,7 @@ import { DisputaResponse, MedioPago, OtRequest, OtResponse } from '../models/com
 import {
   ClienteApiRequest,
   ClienteApiResponse,
+  ClientePerfilApiRequest,
   DisputaApiResponse,
   OtApiResponse,
   UbicacionApiRequest,
@@ -162,6 +163,37 @@ export class ClientesApi {
     }
 
     return this.http.post<ClienteApiResponse>(this.apiConfig.url('/clientes'), request);
+  }
+
+  /**
+   * POST /api/clientes/perfil: adquisición del SEGUNDO perfil (CLIENTE) por un
+   * usuario ya autenticado. El backend resuelve el usuario desde el principal,
+   * así que no viaja ningún id en la ruta ni en el cuerpo; el rol sale del tipo
+   * de perfil, nunca del body (M5). En éxito el backend sube `tokenVersion`, lo
+   * que revoca el JWT en vuelo: el llamador DEBE pedir re-login.
+   */
+  crearMiPerfil(request: ClientePerfilApiRequest): Observable<ClienteApiResponse> {
+    if (this.apiConfig.useMocks()) {
+      const fake: ClienteApiResponse = {
+        id: `cliente-mock-${Date.now()}`,
+        usuarioId: 0,
+        nombre: 'Perfil cliente (mock)',
+        correo: '',
+        telefono: null,
+        fotoUrl: null,
+        tipoCliente: request.tipoCliente,
+        direccion: {
+          calle: request.calle,
+          ciudad: request.ciudad,
+          barrio: request.barrio ?? null,
+          ubicacion: request.ubicacion ?? null,
+        },
+        activo: true,
+      };
+      return of(fake).pipe(delay(300));
+    }
+
+    return this.http.post<ClienteApiResponse>(this.apiConfig.url('/clientes/perfil'), request);
   }
 
   /**
