@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, computed, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
+import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { OtResponse } from '../../core/models/common.models';
 
@@ -13,6 +15,7 @@ import { OtResponse } from '../../core/models/common.models';
 })
 export class MonitoreoOtPage {
   private readonly adminApi = inject(AdminApi);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly busquedaCtrl = new FormControl('');
   readonly filtroCategoriaCtrl = new FormControl('TODAS');
@@ -21,9 +24,21 @@ export class MonitoreoOtPage {
   readonly ordenes = signal<OtResponse[]>([]);
 
   constructor() {
+    this.cargarOrdenes(true);
+    // El tablero se refresca cada 25 s y solo con la pestaña visible: un fallo
+    // transitorio del polling no debe vaciar la tabla en pantalla.
+    pollVisibleTab()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.cargarOrdenes(false));
+  }
+
+  /** `inicial` distingue la primera carga (que vacía si falla) del refresco periódico. */
+  private cargarOrdenes(inicial: boolean): void {
     this.adminApi.getTodasOts().subscribe({
       next: (ots) => this.ordenes.set(ots),
-      error: () => this.ordenes.set([]),
+      error: () => {
+        if (inicial) this.ordenes.set([]);
+      },
     });
   }
 

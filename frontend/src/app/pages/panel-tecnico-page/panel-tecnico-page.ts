@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
+import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
@@ -20,6 +22,7 @@ export class PanelTecnicoPage {
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
   private readonly tracking = inject(TecnicoTrackingService);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** Porcentaje de comisión de la plataforma (15%), alineado al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
@@ -64,10 +67,20 @@ export class PanelTecnicoPage {
     // se piden y la tarjeta puede reflejar el error en vez de quedar muda.
     cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
     this.cargarOts();
+    // Refresco de las OTs en curso: cada 25 s y solo con la pestaña visible.
+    pollVisibleTab()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.cargarOts(false));
   }
 
-  /** Carga las OTs en curso del técnico autenticado. */
-  private cargarOts(): void {
+  /**
+   * Carga las OTs en curso del técnico autenticado.
+   *
+   * `inicial` distingue la carga de arranque (y el reintento manual, que sí
+   * reporta el error en la tarjeta) del refresco periódico: un fallo
+   * transitorio del polling no debe tapar la lista que el técnico ya ve.
+   */
+  private cargarOts(inicial = true): void {
     this.tecnicosApi.getMisOts().subscribe({
       next: (ots) => {
         this.otsError.set(false);
@@ -76,6 +89,7 @@ export class PanelTecnicoPage {
         );
       },
       error: () => {
+        if (!inicial) return;
         this.misOtsEnCurso.set([]);
         this.otsError.set(true);
       },

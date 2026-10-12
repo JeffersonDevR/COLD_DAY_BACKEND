@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
+import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
@@ -16,6 +18,7 @@ export class OfertasPage {
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly loadingOt = signal<string | null>(null);
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
@@ -40,19 +43,27 @@ export class OfertasPage {
       },
       () => this.toast.error('Error', 'No se pudo cargar tu perfil de técnico.'),
     );
+    // Refresco del radar: cada 25 s y solo con la pestaña visible. Es silencioso
+    // para no repetir el aviso de error en cada vuelta.
+    pollVisibleTab()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.recargarOfertas(true));
   }
 
-  private cargarOfertas(tecnicoId: string): void {
+  private cargarOfertas(tecnicoId: string, inicial = true): void {
     this.tecnicosApi.getOfertasParaTecnico(tecnicoId).subscribe({
       next: (ofertas) => this.ofertas.set(ofertas),
-      error: () => this.toast.error('Error de Conexión', 'No se pudieron consultar las ofertas disponibles.'),
+      error: () => {
+        if (inicial) this.toast.error('Error de Conexión', 'No se pudieron consultar las ofertas disponibles.');
+      },
     });
   }
 
-  recargarOfertas(): void {
+  /** `silencioso` lo usa el refresco periódico; el botón manual sí avisa del fallo. */
+  recargarOfertas(silencioso = false): void {
     const tecnico = this.tecnico();
     if (tecnico) {
-      this.cargarOfertas(tecnico.id);
+      this.cargarOfertas(tecnico.id, !silencioso);
     }
   }
 

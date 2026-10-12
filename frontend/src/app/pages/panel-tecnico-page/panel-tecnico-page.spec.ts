@@ -8,6 +8,13 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse, TecnicoResponse } from '../../core/models/common.models';
+import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
+
+/** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
+function cambiarPestana(estado: 'visible' | 'hidden'): void {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => estado });
+  document.dispatchEvent(new Event('visibilitychange'));
+}
 
 const tecnico: TecnicoResponse = {
   id: 'TEC-1',
@@ -253,5 +260,43 @@ describe('PanelTecnicoPage', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Tenés una ubicación guardada');
     expect(texto).toContain('Última actualización:');
+  });
+
+  describe('refresco periódico con la pestaña visible', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+      vi.useRealTimers();
+      delete (document as { visibilityState?: string }).visibilityState;
+    });
+
+    it('refresca las OTs en curso una vez por intervalo', () => {
+      cambiarPestana('visible');
+      const { fixture, tecnicosApi } = setup({ ots: [ot('a', 'EN_CAMINO')] });
+      expect(tecnicosApi.getMisOts).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+
+      expect(tecnicosApi.getMisOts).toHaveBeenCalledTimes(2);
+      expect(fixture.componentInstance.misOtsEnCurso().map((o) => o.id)).toEqual(['a']);
+    });
+
+    it('no consulta mientras la pestaña está oculta', () => {
+      cambiarPestana('hidden');
+      const { tecnicosApi } = setup();
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(tecnicosApi.getMisOts).toHaveBeenCalledTimes(1);
+    });
+
+    it('deja de refrescar al destruirse la página', () => {
+      cambiarPestana('visible');
+      const { fixture, tecnicosApi } = setup();
+
+      fixture.destroy();
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(tecnicosApi.getMisOts).toHaveBeenCalledTimes(1);
+    });
   });
 });
