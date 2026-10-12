@@ -33,6 +33,14 @@ export const routes: Routes = [
     component: PanelRedirectComponent
   },
 
+  // Adquisición del segundo perfil (Cliente/Técnico) para un usuario autenticado.
+  {
+    path: 'perfil/agregar',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/agregar-perfil-page/agregar-perfil-page').then(m => m.AgregarPerfilPage),
+    title: 'Completar Perfil - COLD DAY'
+  },
+
   // Rutas de Clientes
   {
     path: 'cliente/panel',

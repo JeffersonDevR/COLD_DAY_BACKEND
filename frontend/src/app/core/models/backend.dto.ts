@@ -111,6 +111,20 @@ export interface ClienteApiRequest {
   aceptaHabeasData: boolean;
 }
 
+/**
+ * Body of POST /api/clientes/perfil (ClientePerfilApiRequest.java): adquisición
+ * del segundo perfil CLIENTE por el usuario autenticado. NO lleva `rol`: el rol
+ * sale del tipo de perfil, nunca del cuerpo (M5). `barrio` y `ubicacion` son
+ * opcionales. El usuario destino es SIEMPRE el principal, no un id del cuerpo.
+ */
+export interface ClientePerfilApiRequest {
+  tipoCliente: TipoCliente;
+  calle: string;
+  ciudad: string;
+  barrio?: string;
+  ubicacion?: Point;
+}
+
 export interface UbicacionApiRequest {
   latitud: number;
   longitud: number;
@@ -172,6 +186,18 @@ export interface TecnicoApiRequest {
   categoriasServicio: CategoriaServicio[];
   certificaciones?: CertificacionApi[];
   aceptaHabeasData: boolean;
+}
+
+/**
+ * Body of POST /api/tecnicos/perfil (TecnicoPerfilApiRequest.java): adquisición
+ * del segundo perfil TECNICO por el usuario autenticado. NO lleva `rol`: el rol
+ * sale del tipo de perfil, nunca del cuerpo (M5). El usuario destino es SIEMPRE
+ * el principal, no un id del cuerpo.
+ */
+export interface TecnicoPerfilApiRequest {
+  numeroIdentificacion: string;
+  categoriasServicio: CategoriaServicio[];
+  certificaciones?: CertificacionApi[];
 }
 
 export interface ValidacionTecnicoApiRequest {

@@ -168,6 +168,45 @@ describe('ClientesApi', () => {
     expect((await promise).id).toBe('cl1');
   });
 
+  it('crearMiPerfil hace POST /api/clientes/perfil con el cuerpo del segundo perfil', async () => {
+    const promise = firstValueFrom(
+      api.crearMiPerfil({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta', barrio: 'Centro' }),
+    );
+    const req = http.expectOne('/api/clientes/perfil');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      tipoCliente: 'B2C',
+      calle: 'calle 1',
+      ciudad: 'Cúcuta',
+      barrio: 'Centro',
+    });
+    // El rol NO viaja en el cuerpo: lo aplica el servidor desde el tipo de perfil.
+    expect(req.request.body).not.toHaveProperty('rol');
+    req.flush({
+      id: 'cl2',
+      usuarioId: 3,
+      nombre: 'Ana',
+      correo: 'a@x.co',
+      telefono: null,
+      fotoUrl: null,
+      tipoCliente: 'B2C',
+      direccion: { calle: 'calle 1', ciudad: 'Cúcuta', barrio: 'Centro', ubicacion: null },
+      activo: true,
+    });
+    expect((await promise).id).toBe('cl2');
+  });
+
+  it('crearMiPerfil en modo mock resuelve sin petición HTTP', async () => {
+    config.setUseMocks(true);
+    const creado = await firstValueFrom(
+      api.crearMiPerfil({ tipoCliente: 'B2B', calle: 'av 2', ciudad: 'Bogotá' }),
+    );
+    expect(creado.id).toContain('cliente-mock-');
+    expect(creado.tipoCliente).toBe('B2B');
+    expect(creado.direccion.ciudad).toBe('Bogotá');
+    http.verify();
+  });
+
   it('actualizarUbicacion hace PUT /api/clientes/me/ubicacion', async () => {
     const promise = firstValueFrom(api.actualizarUbicacion({ latitud: 1, longitud: 2 }));
     const req = http.expectOne('/api/clientes/me/ubicacion');

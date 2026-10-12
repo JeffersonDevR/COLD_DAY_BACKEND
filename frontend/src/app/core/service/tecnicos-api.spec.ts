@@ -66,6 +66,54 @@ describe('TecnicosApi', () => {
     expect((await promise).id).toBe('t1');
   });
 
+  it('crearMiPerfil hace POST /api/tecnicos/perfil con el cuerpo del segundo perfil', async () => {
+    const promise = firstValueFrom(
+      api.crearMiPerfil({
+        numeroIdentificacion: '1098765001',
+        categoriasServicio: ['REFRIGERACION'],
+        certificaciones: [],
+      }),
+    );
+    const req = http.expectOne('/api/tecnicos/perfil');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      numeroIdentificacion: '1098765001',
+      categoriasServicio: ['REFRIGERACION'],
+      certificaciones: [],
+    });
+    // El rol NO viaja en el cuerpo: lo aplica el servidor desde el tipo de perfil.
+    expect(req.request.body).not.toHaveProperty('rol');
+    req.flush({
+      id: 't9',
+      usuarioId: 3,
+      nombre: 'Ana',
+      correo: 'a@x.co',
+      telefono: null,
+      numeroIdentificacion: '1098765001',
+      fotoUrl: null,
+      categoriasServicio: ['REFRIGERACION'],
+      estadoOperativo: 'DISPONIBLE',
+      estadoValidacion: 'PENDIENTE',
+      motivoRechazoValidacion: null,
+      certificaciones: [],
+      activo: true,
+      ubicacion: null,
+      ubicacionActualizadaEn: null,
+    });
+    expect((await promise).id).toBe('t9');
+  });
+
+  it('crearMiPerfil en modo mock resuelve sin petición HTTP', async () => {
+    config.setUseMocks(true);
+    const creado = await firstValueFrom(
+      api.crearMiPerfil({ numeroIdentificacion: '999', categoriasServicio: ['LAVADORAS'] }),
+    );
+    expect(creado.numeroIdentificacion).toBe('999');
+    expect(creado.categoriasServicio).toEqual(['LAVADORAS']);
+    expect(creado.estadoValidacion).toBe('PENDIENTE');
+    http.verify();
+  });
+
   it('getMisOts traduce la lista', async () => {
     const promise = firstValueFrom(api.getMisOts());
     http.expectOne('/api/tecnicos/me/ots').flush([otDto()]);

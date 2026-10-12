@@ -23,6 +23,7 @@ import {
   TecnicoApiRequest,
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
+  TecnicoPerfilApiRequest,
   UbicacionApiRequest,
 } from '../models/backend.dto';
 import {
@@ -69,6 +70,37 @@ export class TecnicosApi {
    */
   registrar(request: TecnicoApiRequest): Observable<TecnicoApiResponse> {
     return this.http.post<TecnicoApiResponse>(this.apiConfig.url('/tecnicos'), request);
+  }
+
+  /**
+   * POST /api/tecnicos/perfil: adquisición del SEGUNDO perfil (TECNICO) por un
+   * usuario ya autenticado. El backend resuelve el usuario desde el principal,
+   * así que no viaja ningún id en la ruta ni en el cuerpo; el rol sale del tipo
+   * de perfil, nunca del body (M5). En éxito el backend sube `tokenVersion`, lo
+   * que revoca el JWT en vuelo: el llamador DEBE pedir re-login.
+   */
+  crearMiPerfil(request: TecnicoPerfilApiRequest): Observable<TecnicoApiResponse> {
+    if (this.apiConfig.useMocks()) {
+      const fake: TecnicoApiResponse = {
+        id: `TEC-${Date.now()}`,
+        usuarioId: 0,
+        nombre: 'Perfil técnico (mock)',
+        correo: '',
+        telefono: null,
+        numeroIdentificacion: request.numeroIdentificacion,
+        fotoUrl: null,
+        categoriasServicio: request.categoriasServicio,
+        estadoOperativo: 'DISPONIBLE',
+        estadoValidacion: 'PENDIENTE',
+        motivoRechazoValidacion: null,
+        certificaciones: [],
+        activo: true,
+        ubicacion: null,
+        ubicacionActualizadaEn: null,
+      };
+      return of(fake).pipe(delay(300));
+    }
+    return this.http.post<TecnicoApiResponse>(this.apiConfig.url('/tecnicos/perfil'), request);
   }
 
   /** GET /api/tecnicos/me/ots → OTs asignadas al técnico autenticado. */
