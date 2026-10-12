@@ -124,6 +124,14 @@ class OtDiagnosticoPresupuestoIT {
         String clienteToken = jwt(clienteUsuario, Rol.CLIENTE);
         String tecnicoToken = jwt(tecnicoUsuario, Rol.TECNICO);
 
+        // WS5: la visita debe estar paga antes de que el tecnico salga. Desde
+        // ASIGNADA el pago solo registra el cobro (no transiciona el estado).
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/pagar-visita")
+                        .header("Authorization", "Bearer " + clienteToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"medioPago\":\"NEQUI\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ASIGNADA"));
+
         mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/iniciar-desplazamiento")
                         .header("Authorization", "Bearer " + tecnicoToken))
                 .andExpect(status().isOk())

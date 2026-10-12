@@ -209,6 +209,11 @@ class SseOtStreamIT {
         ot.iniciarBusqueda(10.0, ahora.plusSeconds(60), ActorOt.CLIENTE, ahora);
         Ot persistida = otRepository.save(ot);
         otRepository.intentarAsignar(persistida.getId(), tecnico.getId(), ahora, 10.0);
+        // WS5: la visita debe estar paga para que el tecnico pueda desplazarse.
+        // Se registra el cobro sobre la OT ya asignada (sin transicion de estado).
+        Ot asignada = otRepository.buscarPorId(persistida.getId()).orElseThrow();
+        asignada.registrarPagoVisita("NEQUI", ahora);
+        otRepository.save(asignada);
         return persistida.getId();
     }
 
