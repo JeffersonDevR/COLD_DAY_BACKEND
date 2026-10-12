@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, computed, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
+import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { OtResponse } from '../../core/models/common.models';
@@ -15,6 +17,7 @@ import { OtResponse } from '../../core/models/common.models';
 })
 export class PanelClientePage {
   private readonly clientesApi = inject(ClientesApi);
+  private readonly destroyRef = inject(DestroyRef);
   readonly authService = inject(AuthService);
 
   private readonly _ots = signal<OtResponse[]>([]);
@@ -32,9 +35,25 @@ export class PanelClientePage {
 
   constructor() {
     const currentId = String(this.authService.currentUser()?.id ?? '');
+    this.cargarOts(currentId, true);
+    // Refresco del listado: cada 25 s y solo con la pestaña visible.
+    // `takeUntilDestroyed` corta el intervalo al destruirse la página.
+    pollVisibleTab()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.cargarOts(currentId, false));
+  }
+
+  /**
+   * `inicial` separa la carga de arranque del refresco periódico: si el primer
+   * pedido falla conviene mostrar la lista vacía, pero un fallo transitorio del
+   * refresco no debe borrar lo que el cliente ya está viendo.
+   */
+  private cargarOts(currentId: string, inicial: boolean): void {
     this.clientesApi.getOtsPorCliente(currentId).subscribe({
       next: (ots) => this._ots.set(ots),
-      error: () => this._ots.set([]),
+      error: () => {
+        if (inicial) this._ots.set([]);
+      },
     });
   }
 

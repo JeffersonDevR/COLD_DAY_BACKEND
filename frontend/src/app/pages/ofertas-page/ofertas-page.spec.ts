@@ -6,6 +6,13 @@ import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../core/models/common.models';
+import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
+
+/** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
+function cambiarPestana(estado: 'visible' | 'hidden'): void {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => estado });
+  document.dispatchEvent(new Event('visibilitychange'));
+}
 
 const ot: OtResponse = {
   id: 'OT-1',
@@ -116,5 +123,51 @@ describe('OfertasPage', () => {
     const fixture = TestBed.createComponent(OfertasPage);
     fixture.detectChanges();
     expect(toast.error).toHaveBeenCalledWith('Error', expect.any(String));
+  });
+
+  describe('refresco periódico con la pestaña visible', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+      vi.useRealTimers();
+      delete (document as { visibilityState?: string }).visibilityState;
+    });
+
+    it('refresca las ofertas una vez por intervalo', () => {
+      cambiarPestana('visible');
+      const { tecnicosApi } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+      expect(tecnicosApi.getOfertasParaTecnico).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+
+      expect(tecnicosApi.getOfertasParaTecnico).toHaveBeenCalledTimes(2);
+    });
+
+    it('no consulta mientras la pestaña está oculta', () => {
+      cambiarPestana('hidden');
+      const { tecnicosApi } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(tecnicosApi.getOfertasParaTecnico).toHaveBeenCalledTimes(1);
+    });
+
+    it('no consulta si el técnico todavía no está resuelto', () => {
+      cambiarPestana('visible');
+      const { tecnicosApi } = setup(undefined);
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 2);
+
+      expect(tecnicosApi.getOfertasParaTecnico).not.toHaveBeenCalled();
+    });
+
+    it('deja de refrescar al destruirse la página', () => {
+      cambiarPestana('visible');
+      const { fixture, tecnicosApi } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+
+      fixture.destroy();
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(tecnicosApi.getOfertasParaTecnico).toHaveBeenCalledTimes(1);
+    });
   });
 });

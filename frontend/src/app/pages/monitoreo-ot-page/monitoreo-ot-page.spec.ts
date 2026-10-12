@@ -4,6 +4,13 @@ import { of, throwError } from 'rxjs';
 import { MonitoreoOtPage } from './monitoreo-ot-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { OtResponse } from '../../core/models/common.models';
+import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
+
+/** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
+function cambiarPestana(estado: 'visible' | 'hidden'): void {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => estado });
+  document.dispatchEvent(new Event('visibilitychange'));
+}
 
 function ot(overrides: Partial<OtResponse>): OtResponse {
   return {
@@ -56,5 +63,46 @@ describe('MonitoreoOtPage', () => {
   it('deja la lista vacía si falla la carga', () => {
     const fixture = setup(vi.fn(() => throwError(() => new Error('sin red'))));
     expect(fixture.componentInstance.otsFiltradas()).toEqual([]);
+  });
+
+  describe('refresco periódico con la pestaña visible', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => {
+      vi.useRealTimers();
+      delete (document as { visibilityState?: string }).visibilityState;
+    });
+
+    it('refresca el listado una vez por intervalo', () => {
+      cambiarPestana('visible');
+      const getTodasOts = vi.fn(() => of(ots));
+      const fixture = setup(getTodasOts);
+      expect(getTodasOts).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+
+      expect(getTodasOts).toHaveBeenCalledTimes(2);
+      expect(fixture.componentInstance.otsFiltradas().length).toBe(2);
+    });
+
+    it('no consulta mientras la pestaña está oculta', () => {
+      cambiarPestana('hidden');
+      const getTodasOts = vi.fn(() => of(ots));
+      setup(getTodasOts);
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(getTodasOts).toHaveBeenCalledTimes(1);
+    });
+
+    it('deja de refrescar al destruirse la página', () => {
+      cambiarPestana('visible');
+      const getTodasOts = vi.fn(() => of(ots));
+      const fixture = setup(getTodasOts);
+
+      fixture.destroy();
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(getTodasOts).toHaveBeenCalledTimes(1);
+    });
   });
 });
