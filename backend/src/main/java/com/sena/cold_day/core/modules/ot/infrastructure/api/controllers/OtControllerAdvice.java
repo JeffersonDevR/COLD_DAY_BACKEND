@@ -20,6 +20,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoExceptio
 import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.VisitaNoPagadaException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
@@ -89,6 +90,16 @@ public class OtControllerAdvice {
     /** Illegal visit payment: already paid or the OT cannot be paid. */
     @ExceptionHandler(PagoVisitaInvalidoException.class)
     ResponseEntity<ApiError> handlePagoVisitaInvalido(PagoVisitaInvalidoException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /**
+     * The visit fee is unpaid, so the assigned technician cannot start the
+     * displacement (WS5/M6). A conflict with the payment state of the order:
+     * 409 and the OT state does not advance.
+     */
+    @ExceptionHandler(VisitaNoPagadaException.class)
+    ResponseEntity<ApiError> handleVisitaNoPagada(VisitaNoPagadaException exception) {
         return error(HttpStatus.CONFLICT, exception);
     }
 

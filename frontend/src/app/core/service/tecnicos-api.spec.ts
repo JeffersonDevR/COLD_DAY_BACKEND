@@ -21,6 +21,7 @@ function otDto(overrides: Partial<OtApiResponse> = {}): OtApiResponse {
     canceladaPor: null,
     motivoCancelacion: null,
     tarifaVisita: null,
+    visitaPagada: false,
     diagnostico: null,
     presupuesto: null,
     latitud: 4.6,

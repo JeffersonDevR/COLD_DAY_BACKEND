@@ -84,9 +84,15 @@
                 <i class="pi pi-wallet"></i>
               </div>
               <div class="space-y-0.5">
-                <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Pagar la Visita y Reabrir el Despacho</h3>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  {{ pagoVisitaReabreDespacho() ? 'Pagar la Visita y Reabrir el Despacho' : 'Pagar la Visita' }}
+                </h3>
                 <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Quedó pendiente la tarifa de visita. Al pagarla, la orden vuelve a buscar un técnico disponible.
+                  @if (pagoVisitaReabreDespacho()) {
+                    Quedó pendiente la tarifa de visita. Al pagarla, la orden vuelve a buscar un técnico disponible.
+                  } @else {
+                    El técnico está asignado y espera tu pago de visita para iniciar el desplazamiento.
+                  }
                 </p>
               </div>
             </div>
@@ -136,7 +142,7 @@
               class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md inline-flex items-center justify-center gap-1.5 transition-colors"
             >
               <i class="pi pi-check-circle text-sm"></i>
-              {{ pagandoVisita() ? 'Procesando pago...' : 'Pagar Visita y Reabrir Despacho' }}
+              {{ pagandoVisita() ? 'Procesando pago...' : (pagoVisitaReabreDespacho() ? 'Pagar Visita y Reabrir Despacho' : 'Pagar Visita') }}
             </button>
           </div>
         }

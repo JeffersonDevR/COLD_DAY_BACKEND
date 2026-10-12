@@ -74,6 +74,8 @@ class CalificarOtUseCaseTest {
                 "No enciende", List.of(), "Calle 1", new Point(7.89, -72.49), EstadoOt.ASIGNADA, 10.0,
                 AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);
         ot.drenarCambiosPendientes();
+        // WS5: la guarda exige la visita pagada para salir de ASIGNADA.
+        ot.registrarPagoVisita("TARJETA", AHORA);
         ot.iniciarDesplazamiento(ActorOt.TECNICO, AHORA.plusSeconds(30));
         ot.confirmarLlegada(ActorOt.TECNICO, AHORA.plusSeconds(120));
         ot.registrarDiagnostico(new Diagnostico("Compresor averiado", "Revisado en sitio",

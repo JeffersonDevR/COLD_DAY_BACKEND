@@ -28,8 +28,10 @@ import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.shared.domain.Point;
 
@@ -122,5 +124,30 @@ class PagarVisitaUseCaseTest {
         InOrder orden = inOrder(ofertaRepository, iniciarBusqueda);
         orden.verify(ofertaRepository).expirarDe(ot.getId(), AHORA);
         orden.verify(iniciarBusqueda).ofrecer(ot, IniciarBusquedaTecnicoUseCase.RADIO_INICIAL_KM, AHORA);
+    }
+
+    @Test
+    void registraElPagoDeUnaOtAsignadaSinCambiarDeEstado() {
+        // WS5: el cliente puede pagar la visita mientras la OT esta ASIGNADA.
+        // El pago solo queda registrado; el estado NO cambia (la OT sigue
+        // asignada) y el tecnico ya puede iniciar el desplazamiento.
+        UsuarioId usuarioId = new UsuarioId(13L);
+        Ot ot = Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), TecnicoId.nueva(),
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1",
+                new Point(7.89, -72.49), EstadoOt.ASIGNADA, 10.0, AHORA.plusSeconds(60), AHORA, AHORA,
+                null, null, null, null, null, null);
+
+        when(clienteRepository.findByUsuarioId(usuarioId)).thenReturn(Optional.of(cliente));
+        when(cliente.getId()).thenReturn(ot.getClienteId());
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(otRepository.save(ot)).thenReturn(ot);
+
+        var resultado = useCase.pagar(usuarioId, ot.getId(), "PSE");
+
+        assertThat(resultado.estado()).isEqualTo(EstadoOt.ASIGNADA);
+        assertThat(resultado.visitaPagada()).isTrue();
+        assertThat(resultado.medioPagoVisita()).isEqualTo("PSE");
+        verify(iniciarBusqueda, never()).iniciar(ot);
+        verify(iniciarBusqueda, never()).ofrecer(ot, IniciarBusquedaTecnicoUseCase.RADIO_INICIAL_KM, AHORA);
     }
 }

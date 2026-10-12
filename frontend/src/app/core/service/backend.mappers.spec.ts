@@ -45,6 +45,7 @@ const otDto = (overrides: Partial<OtApiResponse> = {}): OtApiResponse => ({
   canceladaPor: null,
   motivoCancelacion: null,
   tarifaVisita: null,
+  visitaPagada: false,
   diagnostico: null,
   presupuesto: null,
   latitud: null,
@@ -196,6 +197,11 @@ describe('backend.mappers — contratos existentes', () => {
       diagnostico: { fallaDetectada: 'compresor' }, clienteNombre: 'Ana', auxiliaresRequeridos: 2,
     });
     expect(aOtResponse(otDto()).punto).toBeUndefined();
+  });
+
+  it('expone el estado de pago de la visita de la OT (WS5)', () => {
+    expect(aOtResponse(otDto({ visitaPagada: true })).visitaPagada).toBe(true);
+    expect(aOtResponse(otDto({ visitaPagada: false })).visitaPagada).toBe(false);
   });
 
   it('normaliza los formularios de creación de OT y diagnóstico', () => {

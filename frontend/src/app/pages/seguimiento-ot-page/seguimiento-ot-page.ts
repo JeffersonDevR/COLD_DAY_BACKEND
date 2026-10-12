@@ -89,10 +89,23 @@ export class SeguimientoOtPage implements OnInit {
   readonly pagandoVisita = signal<boolean>(false);
 
   /**
-   * El pago de la visita solo aplica cuando el presupuesto quedó rechazado:
-   * `CANCELADA` contra el backend real y `DISPUTADA` en el MockDb.
+   * El pago de la visita aplica cuando el presupuesto quedó rechazado
+   * (`CANCELADA` contra el backend real y `DISPUTADA` en el MockDb) y también
+   * mientras la OT está `ASIGNADA` sin pago (WS5): el técnico no puede iniciar
+   * el desplazamiento hasta que el cobro quede registrado.
    */
   readonly puedePagarVisita = computed<boolean>(() => {
+    const orden = this.ot();
+    if (!orden) return false;
+    if (orden.estado === 'CANCELADA' || orden.estado === 'DISPUTADA') return true;
+    return orden.estado === 'ASIGNADA' && orden.visitaPagada === false;
+  });
+
+  /**
+   * Pagar una OT `CANCELADA`/`DISPUTADA` reabre el despacho; pagar una
+   * `ASIGNADA` solo habilita el desplazamiento. Gobierna el copy del panel.
+   */
+  readonly pagoVisitaReabreDespacho = computed<boolean>(() => {
     const estado = this.ot()?.estado;
     return estado === 'CANCELADA' || estado === 'DISPUTADA';
   });
@@ -266,7 +279,10 @@ export class SeguimientoOtPage implements OnInit {
     this.clientesApi.pagarVisita(this.otId(), this.medioPagoVisita()).subscribe({
       next: () => {
         this.pagandoVisita.set(false);
-        this.toast.success('Visita Pagada', 'Despacho reabierto: buscando un técnico disponible.');
+        const mensaje = this.pagoVisitaReabreDespacho()
+          ? 'Despacho reabierto: buscando un técnico disponible.'
+          : 'Ya puedes iniciar el desplazamiento.';
+        this.toast.success('Visita Pagada', mensaje);
         this.recargarOt();
       },
       error: (err: Error) => {

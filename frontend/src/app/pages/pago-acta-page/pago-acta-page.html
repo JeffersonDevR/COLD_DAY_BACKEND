@@ -137,6 +137,17 @@
                     }
                   </span>
                 </div>
+                @if (visitaPendienteDePago()) {
+                  <p class="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <i class="pi pi-clock text-xs"></i>
+                    Visita pendiente de pago: el técnico no puede iniciar el desplazamiento hasta que se registre.
+                  </p>
+                } @else if (visitaPagada()) {
+                  <p class="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <i class="pi pi-check-circle text-xs"></i>
+                    Visita pagada: el técnico ya puede iniciar el desplazamiento.
+                  </p>
+                }
                 <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
                   <span class="text-slate-500">Mano de Obra:</span>
                   <span class="font-bold">$ {{ (orden.presupuesto?.manoDeObra || 80000).toLocaleString('es-CO') }}</span>

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MockDbService } from '../../core/service/mock-db.service';
@@ -41,6 +41,20 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   readonly etaMin = signal<number | null>(null);
   /** Marca local: el técnico confirmó llegada y se habilita el diagnóstico. */
   readonly enSitio = signal<boolean>(false);
+
+  /** WS5: el backend reporta si la visita ya fue cobrada. */
+  readonly visitaPagada = computed<boolean>(() => this.ot()?.visitaPagada === true);
+
+  /**
+   * WS5: la visita debe estar pagada para iniciar el desplazamiento. Solo se
+   * bloquea cuando el servidor afirma explícitamente `false`; si el campo no
+   * viaja (mock/legacy) no se bloquea, porque la guarda autoritativa es el 409
+   * del backend y la UI no debe inventar un bloqueo que el servidor no impone.
+   */
+  readonly desplazamientoBloqueadoPorPago = computed<boolean>(() => {
+    const orden = this.ot();
+    return orden?.estado === 'ASIGNADA' && orden.visitaPagada === false;
+  });
 
   constructor() {
     // Recalcula distancia/ETA al cliente cada vez que cambia la posición del técnico.
@@ -99,6 +113,13 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   }
 
   iniciarDesplazamiento(): void {
+    if (this.desplazamientoBloqueadoPorPago()) {
+      this.toast.info(
+        'Visita pendiente de pago',
+        'El cliente debe pagar la visita antes de que puedas iniciar el desplazamiento.',
+      );
+      return;
+    }
     this.tecnicosApi.iniciarDesplazamiento(this.otId()).subscribe({
       next: () => {
         this.toast.info('En Camino', 'El cliente puede rastrear tu trayecto en vivo.');

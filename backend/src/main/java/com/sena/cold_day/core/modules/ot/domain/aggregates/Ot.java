@@ -14,6 +14,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoExce
 import com.sena.cold_day.core.modules.ot.domain.exception.ActaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.FirmaActaInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.VisitaNoPagadaException;
 import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
@@ -358,6 +359,15 @@ public class Ot {
     /** Assigned technician starts the displacement ({@code ASIGNADA -> EN_CAMINO}). */
     public void iniciarDesplazamiento(ActorOt actor, Instant ahora) {
         EstadoOt origen = this.estado;
+        // WS5/M6 displacement gate: the visit fee must be paid before the
+        // technician leaves. The guard is scoped to the ASIGNADA origin, which
+        // makes grandfathering true BY CONSTRUCTION: an OT already past ASIGNADA
+        // (EN_CAMINO / EN_DIAGNOSTICO / EN_REPARACION) never re-enters ASIGNADA,
+        // so this branch is never evaluated for it. No backfill and no migration
+        // are needed to keep in-flight OTs working.
+        if (origen == EstadoOt.ASIGNADA && this.visitaPagadaEn == null) {
+            throw new VisitaNoPagadaException();
+        }
         TransicionesOt.validar(origen, EstadoOt.EN_CAMINO);
         this.estado = EstadoOt.EN_CAMINO;
         registrarCambio(origen, EstadoOt.EN_CAMINO, actor, ahora, null);
