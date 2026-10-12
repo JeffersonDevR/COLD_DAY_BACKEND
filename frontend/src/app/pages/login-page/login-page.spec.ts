@@ -5,7 +5,6 @@ import { LoginPage } from './login-page';
 import { UsuariosApi } from '../../core/service/usuarios-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
-import { ThemeService } from '../../core/service/theme.service';
 import { UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
@@ -23,7 +22,6 @@ function setup(login: ReturnType<typeof vi.fn>) {
     getDashboardRouteForRole: vi.fn(() => '/panel'),
   };
   const toast = { success: vi.fn(), error: vi.fn() };
-  const theme = { isDark: () => false, toggleTheme: vi.fn() };
 
   TestBed.configureTestingModule({
     imports: [LoginPage],
@@ -32,7 +30,6 @@ function setup(login: ReturnType<typeof vi.fn>) {
       { provide: UsuariosApi, useValue: { login } },
       { provide: AuthService, useValue: auth },
       { provide: ToastService, useValue: toast },
-      { provide: ThemeService, useValue: theme },
     ],
   });
   const router = TestBed.inject(Router);
@@ -65,6 +62,14 @@ describe('LoginPage', () => {
     fixture.componentInstance.onSubmit();
 
     expect(login).not.toHaveBeenCalled();
+  });
+
+  it('no expone el conmutador de modo oscuro', () => {
+    const login = vi.fn(() => of({ token: 't', expiracion: 'e', rol: 'CLIENTE' }));
+    const { fixture } = setup(login);
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('[aria-label="Modo oscuro"], [aria-label="Modo claro"]')).toBeNull();
   });
 
   it('muestra el error de autenticación', () => {

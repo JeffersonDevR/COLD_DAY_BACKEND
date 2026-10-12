@@ -7,7 +7,6 @@ import { Button } from 'primeng/button';
 import { AuthService } from '../../core/service/auth.service';
 import { UsuariosApi } from '../../core/service/usuarios-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { ThemeService } from '../../core/service/theme.service';
 
 @Component({
   selector: 'app-login-page',
@@ -21,7 +20,6 @@ export class LoginPage {
 
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
-  readonly theme = inject(ThemeService);
 
   readonly loading = signal<boolean>(false);
 
