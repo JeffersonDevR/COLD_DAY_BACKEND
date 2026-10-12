@@ -47,10 +47,17 @@
           } @else {
             <!-- Paso 2: Token + Nueva Contraseña -->
             <form [formGroup]="resetForm" (ngSubmit)="onResetPassword()" class="space-y-5">
-              <div class="p-3.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-xs text-sky-800 dark:text-sky-300">
-                <span class="font-bold">Token generado para demo:</span>
-                <code class="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded ml-1 font-bold">{{ tokenSimulado() }}</code>
-              </div>
+              @if (modoDemo()) {
+                <div class="p-3.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-xs text-sky-800 dark:text-sky-300">
+                  <span class="font-bold">Código de demo:</span>
+                  <code class="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded ml-1 font-bold">{{ tokenSimulado() }}</code>
+                </div>
+              } @else {
+                <div class="p-3.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-xs text-sky-800 dark:text-sky-300">
+                  <span class="font-bold">Revisa tu correo:</span>
+                  te enviamos un enlace y un código para restablecer tu contraseña. Pégalo aquí para continuar.
+                </div>
+              }
 
               <div>
                 <label for="tokenInput" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">

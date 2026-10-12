@@ -83,6 +83,10 @@ export class UsuariosApi {
   /**
    * POST /api/usuarios/recuperar-contrasena → 202 sin cuerpo.
    * Se sintetiza un mensaje para la UI porque el backend no devuelve body.
+   *
+   * El token solo existe en modo mock (`tokenSimulado`), exclusivo para la demo:
+   * el backend real nunca lo devuelve, entrega el enlace por correo. La UI debe
+   * pedir al usuario que revise su correo y NUNCA fabricar ni prefigurar un token.
    */
   solicitarRecuperacion(correo: string): Observable<{ mensaje: string; tokenSimulado?: string }> {
     if (this.apiConfig.useMocks()) {
@@ -93,7 +97,7 @@ export class UsuariosApi {
     }
     return this.http
       .post<void>(this.apiConfig.url('/usuarios/recuperar-contrasena'), { correo })
-      .pipe(map(() => ({ mensaje: 'Se envió un correo con las instrucciones de restablecimiento.' })));
+      .pipe(map(() => ({ mensaje: 'Revisa tu correo: enviamos el enlace y el código para restablecer tu contraseña.' })));
   }
 
   /**
