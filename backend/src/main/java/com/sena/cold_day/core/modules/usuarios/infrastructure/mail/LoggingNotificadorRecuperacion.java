@@ -21,7 +21,6 @@ import com.sena.cold_day.core.modules.usuarios.infrastructure.config.MailPropert
  * request itself is still recorded, so nothing is silently dropped.
  */
 @Component
-@ConditionalOnProperty(name = "app.mail.enabled", havingValue = "false", matchIfMissing = true)
 @ConditionalOnMissingBean(NotificadorRecuperacion.class)
 public class LoggingNotificadorRecuperacion implements NotificadorRecuperacion {
 
