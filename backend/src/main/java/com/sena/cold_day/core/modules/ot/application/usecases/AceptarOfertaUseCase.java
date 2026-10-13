@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,11 +56,13 @@ public class AceptarOfertaUseCase {
     private final ApplicationEventPublisher events;
     private final Clock clock;
     private final int maxAuxiliares;
+    private final AceptarOfertaUseCase self;
 
     public AceptarOfertaUseCase(OfertaOtRepository ofertaRepository, OtRepository otRepository,
             OtEstadoHistorialRepository historialRepository, TecnicoRepository tecnicoRepository,
             ApplicationEventPublisher events, Clock clock,
-            @Value("${app.auxiliares.max:10}") int maxAuxiliares) {
+            @Value("${app.auxiliares.max:10}") int maxAuxiliares,
+            @Lazy AceptarOfertaUseCase self) {
         this.ofertaRepository = ofertaRepository;
         this.otRepository = otRepository;
         this.historialRepository = historialRepository;
@@ -67,12 +70,13 @@ public class AceptarOfertaUseCase {
         this.events = events;
         this.clock = clock;
         this.maxAuxiliares = maxAuxiliares;
+        this.self = self == null ? this : self;
     }
 
     /** Acceptance without a body: zero auxiliares, exactly as before (aux.R1/S1.1). */
     @Transactional
     public OtResponse aceptar(UsuarioId usuarioId, OfertaOtId ofertaId) {
-        return aceptar(usuarioId, ofertaId, 0);
+        return self.aceptar(usuarioId, ofertaId, 0);
     }
 
     @Transactional

@@ -198,7 +198,12 @@ export class SolicitarServicioPage {
       next: (nuevaOt) => {
         this.loading.set(false);
         this.toast.success('Solicitud Creada', `OT ${nuevaOt.id} transmitida por broadcast (10 km)`);
-        this.router.navigate(['/cliente/ot', nuevaOt.id]);
+        const roles = this.authService.userRoles();
+        if (roles.has('TECNICO') && !roles.has('CLIENTE')) {
+          this.router.navigate(['/tecnico/panel']);
+        } else {
+          this.router.navigate(['/cliente/ot', nuevaOt.id]);
+        }
       },
       error: (err: Error) => {
         this.loading.set(false);

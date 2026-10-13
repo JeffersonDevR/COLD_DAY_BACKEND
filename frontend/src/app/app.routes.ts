@@ -50,7 +50,7 @@ export const routes: Routes = [
   },
   {
     path: 'cliente/solicitar',
-    canActivate: [authGuard, roleGuard(['CLIENTE', 'ADMINISTRADOR'])],
+    canActivate: [authGuard, roleGuard(['CLIENTE', 'TECNICO', 'ADMINISTRADOR'])],
     loadComponent: () => import('./pages/solicitar-servicio-page/solicitar-servicio-page').then(m => m.SolicitarServicioPage),
     title: 'Solicitar Servicio Técnico - COLD DAY'
   },

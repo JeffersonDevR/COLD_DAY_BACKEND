@@ -98,9 +98,9 @@ public class OtController {
         this.autorizacion = autorizacion;
     }
 
-    /** The cliente is resolved from the principal; all Phase-1 orders are urgent. */
+    /** The requester is resolved from the principal; all Phase-1 orders are urgent. */
     @PostMapping
-    @PreAuthorize("hasRole('CLIENTE')")
+    @PreAuthorize("hasAnyRole('CLIENTE','TECNICO')")
     public ResponseEntity<OtApiResponse> crear(@AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody OtApiRequest request) {
         OtResponse created = crear.crear(new OtRequest(request.categoriaServicio(), request.descripcionFalla(),
