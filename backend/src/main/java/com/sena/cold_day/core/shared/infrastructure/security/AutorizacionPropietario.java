@@ -87,6 +87,15 @@ public class AutorizacionPropietario {
         if (principal.tieneRol(Rol.ADMINISTRADOR)) {
             return true;
         }
+        // A technician may act as a service requester (CLIENTE side) but must
+        // never see or operate the orders they created themselves: only other
+        // technicians' orders. Their own requester orders stay out of their view.
+        if (principal.tieneRol(Rol.TECNICO)
+                && clienteRepository.findByUsuarioId(principal.usuarioId())
+                        .filter(cliente -> cliente.getId().equals(ot.clienteId()))
+                        .isPresent()) {
+            return false;
+        }
         if (clienteRepository.findByUsuarioId(principal.usuarioId())
                 .filter(cliente -> cliente.getId().equals(ot.clienteId()))
                 .isPresent()) {

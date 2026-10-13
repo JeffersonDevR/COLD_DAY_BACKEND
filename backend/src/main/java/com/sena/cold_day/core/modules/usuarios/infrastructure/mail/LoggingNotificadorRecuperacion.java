@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.usuarios.infrastructure.mail;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ import com.sena.cold_day.core.modules.usuarios.infrastructure.config.MailPropert
  */
 @Component
 @ConditionalOnProperty(name = "app.mail.enabled", havingValue = "false", matchIfMissing = true)
+@ConditionalOnMissingBean(NotificadorRecuperacion.class)
 public class LoggingNotificadorRecuperacion implements NotificadorRecuperacion {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingNotificadorRecuperacion.class);
@@ -33,13 +35,13 @@ public class LoggingNotificadorRecuperacion implements NotificadorRecuperacion {
 
     @Override
     public void notificar(RecuperacionSolicitada evento) {
-        if (propiedades.logToken()) {
+        if (propiedades.logToken() && log.isInfoEnabled()) {
             log.info("Recuperacion solicitada (modo local): usuarioId={} correo={} token={} enlace={}",
                     evento.usuarioId(), evento.correo(), evento.token(),
                     propiedades.enlaceDeRecuperacion(evento.token()));
             return;
         }
-        log.info("Recuperacion solicitada: usuarioId={} correo={} (token no registrado; configura SMTP para "
-                + "entregarlo)", evento.usuarioId(), evento.correo());
+        log.info("Recuperacion solicitada: usuarioId={} correo={} (token no registrado; configura SMTP para entregarlo)",
+                evento.usuarioId(), evento.correo());
     }
 }

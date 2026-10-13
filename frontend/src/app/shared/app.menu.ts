@@ -19,9 +19,9 @@ const SECTIONS: MenuSection[] = [
   {
     label: 'Cliente',
     items: [
-      { label: 'Mis Órdenes', icon: 'pi pi-list-check', routerLink: '/cliente/panel', roles: ['CLIENTE'] },
-      { label: 'Pedir Técnico', icon: 'pi pi-plus-circle', routerLink: '/cliente/solicitar', roles: ['CLIENTE'] },
-      { label: 'Mis Equipos', icon: 'pi pi-box', routerLink: '/cliente/equipos', roles: ['CLIENTE'] },
+      { label: 'Mis Órdenes', icon: 'pi pi-list-check', routerLink: '/cliente/panel', roles: ['CLIENTE', 'TECNICO'] },
+      { label: 'Pedir Técnico', icon: 'pi pi-plus-circle', routerLink: '/cliente/solicitar', roles: ['CLIENTE', 'TECNICO'] },
+      { label: 'Mis Equipos', icon: 'pi pi-box', routerLink: '/cliente/equipos', roles: ['CLIENTE', 'TECNICO'] },
     ],
   },
   {

@@ -79,7 +79,7 @@ class AceptarOfertaUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new AceptarOfertaUseCase(ofertaRepository, otRepository, historialRepository,
-                tecnicoRepository, events, Clock.fixed(AHORA, ZoneOffset.UTC), MAX_AUXILIARES);
+                tecnicoRepository, events, Clock.fixed(AHORA, ZoneOffset.UTC), MAX_AUXILIARES, null);
     }
 
     @Test
