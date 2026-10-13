@@ -2,14 +2,15 @@
 @import "tailwindcss";
 @import "primeicons/primeicons.css";
 
-/* El modo oscuro se controla con la clase `.dark` en <html> (ThemeService),
-   igual que el darkModeSelector de PrimeNG. */
+/* La apariencia es fija (royal-blue): nada aplica la clase `.dark` en <html>,
+   por lo que la variante dark queda inerte y el look no depende del
+   dispositivo ni de preferencias guardadas. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
-   Theming global: las paletas Tailwind `sky-*` (color primario) y `slate-*`
-   (superficie) se enlazan a los design tokens de PrimeNG, de modo que el
-   configurador de tema (ThemeService) repinta TODA la interfaz, no solo los
+   Theming global: las paletas Tailwind `sky-*` (color primario royal-blue) y
+   `slate-*` (superficie) se enlazan a los design tokens de PrimeNG, de modo que
+   el conjunto de la interfaz comparte una única apariencia, no solo los
    componentes PrimeNG. Las paletas de estado (emerald/amber/rose/blue/violet)
    se mantienen fijas.
 --------------------------------------------------------------------------- */
@@ -26,8 +27,8 @@
   --color-sky-900: var(--p-primary-900, #0c4a6e);
   --color-sky-950: var(--p-primary-950, #082f49);
 
-  /* Superficie (no invierte): ThemeService sobrescribe estas variables al
-     cambiar de superficie, manteniendo coherentes los `dark:` de Tailwind. */
+  /* Superficie (no invierte): valores fijos que mantienen coherentes los
+     `dark:` de Tailwind, que ya no se activan. */
   --color-slate-50: #f8fafc;
   --color-slate-100: #f1f5f9;
   --color-slate-200: #e2e8f0;

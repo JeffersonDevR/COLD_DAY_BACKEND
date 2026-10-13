@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { AppTopbar } from './app-topbar';
 import { AuthService } from '../../core/service/auth.service';
-import { ThemeService } from '../../core/service/theme.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { LayoutService } from '../../core/service/layout.service';
 import { UsuarioResponse } from '../../core/models/common.models';
@@ -25,19 +24,6 @@ function setup(user: UsuarioResponse | null) {
     setMenuMode: vi.fn(),
     setSidebarCollapsed: vi.fn(),
   };
-  const theme = {
-    isDark: () => false,
-    toggleTheme: vi.fn(),
-    primaryColors: () => [],
-    primary: () => 'sky',
-    surfaces: [],
-    surface: () => 'slate',
-    preset: () => 'Aura',
-    setPrimary: vi.fn(),
-    setSurface: vi.fn(),
-    setPreset: vi.fn(),
-    setTheme: vi.fn(),
-  };
   const auth = { currentUser: () => user, logout: vi.fn() };
   const toast = { success: vi.fn() };
 
@@ -46,7 +32,6 @@ function setup(user: UsuarioResponse | null) {
     providers: [
       provideRouter([]),
       { provide: LayoutService, useValue: layout },
-      { provide: ThemeService, useValue: theme },
       { provide: AuthService, useValue: auth },
       { provide: ToastService, useValue: toast },
     ],
@@ -55,7 +40,7 @@ function setup(user: UsuarioResponse | null) {
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(AppTopbar);
   fixture.detectChanges();
-  return { fixture, layout, theme, auth, toast, navigate };
+  return { fixture, layout, auth, toast, navigate };
 }
 
 describe('AppTopbar', () => {
@@ -81,12 +66,18 @@ describe('AppTopbar', () => {
     expect(navigate).toHaveBeenCalledWith(['/login']);
   });
 
-  it('delega el toggle de menú y de tema desde los botones', () => {
-    const { fixture, layout, theme } = setup(usuario);
+  it('delega el toggle de menú desde el botón de escritorio', () => {
+    const { fixture, layout } = setup(usuario);
     const botones = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
     botones[1].click();
-    botones[2].click();
     expect(layout.toggleMenu).toHaveBeenCalled();
-    expect(theme.toggleTheme).toHaveBeenCalled();
+  });
+
+  it('no expone el configurador ni el conmutador de modo oscuro', () => {
+    const { fixture } = setup(usuario);
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('[aria-label="Personalizar tema"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Modo oscuro"], [aria-label="Modo claro"]')).toBeNull();
   });
 });

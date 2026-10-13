@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import {provideRouter} from '@angular/router';
@@ -12,10 +13,12 @@ import Aura from '@primeuix/themes/aura';
 import {routes} from './app.routes';
 import {authInterceptor} from './core/interceptos/auth.interceptor';
 import {errorInterceptor} from './core/interceptos/error.interceptor';
+import {initializeAppearance} from './core/service/appearance';
 
 /**
- * Preset Aura con la paleta corporativa de COLD DAY (sky-600 como primario),
- * alineada con los colores que ya usaba la app y la landing estática.
+ * Preset Aura con la paleta corporativa de COLD DAY (royal-blue, sky-600 como
+ * primario). Es la ÚNICA apariencia de la app: el configurador de tema
+ * (color primario, superficie, preset y modo claro/oscuro) se eliminó.
  */
 const ColdDayPreset = definePreset(Aura, {
   semantic: {
@@ -39,6 +42,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    // Limpieza de una sola vez: descarta la preferencia que dejó el
+    // configurador eliminado, para que la apariencia fija no dependa de ella.
+    provideAppInitializer(initializeAppearance),
     // authInterceptor adjunta el JWT del backend; errorInterceptor traduce ApiError.
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     providePrimeNG({
@@ -46,7 +52,9 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: ColdDayPreset,
         options: {
-          // El ThemeService de la app alterna la clase `.dark` en <html>.
+          // La apariencia es fija. El selector apunta a `.dark`, una clase que
+          // nadie aplica, de modo que la preferencia del dispositivo
+          // (prefers-color-scheme) nunca altera el look royal-blue.
           darkModeSelector: '.dark',
           cssLayer: false,
         },

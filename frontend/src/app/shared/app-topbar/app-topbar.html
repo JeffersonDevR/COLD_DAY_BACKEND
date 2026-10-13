@@ -40,29 +40,6 @@
 
         <div class="flex-1"></div>
 
-        <!-- Modo oscuro -->
-        <p-button
-          [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
-          severity="secondary"
-          [text]="true"
-          [rounded]="true"
-          [ariaLabel]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'"
-          (onClick)="theme.toggleTheme()"
-        />
-
-        <!-- Personalizador de tema (paleta) -->
-        <p-popover #themePanel appendTo="body">
-          <app-configurator />
-        </p-popover>
-        <p-button
-          icon="pi pi-palette"
-          severity="secondary"
-          [text]="true"
-          [rounded]="true"
-          ariaLabel="Personalizar tema"
-          (onClick)="themePanel.toggle($event)"
-        />
-
         <!-- Usuario -->
         <button
           type="button"

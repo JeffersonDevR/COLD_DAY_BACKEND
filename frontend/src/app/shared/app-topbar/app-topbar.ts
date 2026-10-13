@@ -4,22 +4,18 @@ import { MenuItem } from 'primeng/api';
 import { Avatar } from 'primeng/avatar';
 import { Button } from 'primeng/button';
 import { Menu } from 'primeng/menu';
-import { Popover } from 'primeng/popover';
 import { LayoutService } from '../../core/service/layout.service';
 import { AuthService } from '../../core/service/auth.service';
-import { ThemeService } from '../../core/service/theme.service';
 import { ToastService } from '../../core/alertas/toast.service';
-import { AppConfigurator } from '../app-configurator/app-configurator';
 
 @Component({
   selector: 'app-topbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Avatar, Button, Menu, Popover, AppConfigurator],
+  imports: [RouterLink, Avatar, Button, Menu],
   templateUrl: './app-topbar.html',
 })
 export class AppTopbar {
   readonly layout = inject(LayoutService);
-  readonly theme = inject(ThemeService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
