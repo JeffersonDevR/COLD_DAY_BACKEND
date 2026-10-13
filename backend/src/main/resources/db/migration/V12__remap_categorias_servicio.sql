@@ -1,18 +1,24 @@
 -- V12 — Remap the legacy ELECTRODOMESTICOS specialization to LAVADORAS and
 -- tighten the OT category domain to the canonical 5-literal catalog.
 --
--- Order matters (design WS9): remap persisted rows BEFORE recreating the CHECK
--- constraint, otherwise the ALTER fails on the existing ELECTRODOMESTICOS rows.
--- Idempotent/defensive: safe to re-run; row counts are preserved (UPDATE only).
--- V1 is an immutable baseline, so the original constraint is recreated here
--- rather than edited in place.
+-- ORDER IS LOAD-BEARING: the legacy CHECK from V1 allows ELECTRODOMESTICOS but
+-- NOT LAVADORAS, so the constraint MUST be dropped BEFORE the remap UPDATE.
+-- (The original order ran the UPDATE before the DROP and aborted with a
+-- check-constraint violation on any database holding ELECTRODOMESTICOS rows; a
+-- verify finding caught it, because CI's migration dry-run uses an empty
+-- database where the UPDATE touches zero rows and the bug stays hidden.)
+-- Idempotent/defensive: safe to re-run; row counts preserved (UPDATE only).
+-- V1 is an immutable baseline, so the constraint is recreated here.
 
--- 1) Remap the persisted OT category.
+-- 1) Drop the legacy CHECK FIRST so the remap can write the new literal.
+ALTER TABLE ot DROP CONSTRAINT IF EXISTS ot_categoria_servicio_check;
+
+-- 2) Remap the persisted OT category.
 UPDATE ot
 SET categoria_servicio = 'LAVADORAS'
 WHERE categoria_servicio = 'ELECTRODOMESTICOS';
 
--- 2) Remap the persisted technician categories element-wise (jsonb array).
+-- 3) Remap the persisted technician categories element-wise (jsonb array).
 UPDATE tecnico
 SET categorias_servicio = (
     SELECT COALESCE(
@@ -21,9 +27,7 @@ SET categorias_servicio = (
     FROM jsonb_array_elements_text(categorias_servicio) AS t(elem))
 WHERE categorias_servicio @> '["ELECTRODOMESTICOS"]'::jsonb;
 
--- 3) Recreate the OT category CHECK constraint against the 5 target literals.
-ALTER TABLE ot DROP CONSTRAINT IF EXISTS ot_categoria_servicio_check;
-
+-- 4) Recreate the OT category CHECK constraint against the 5 target literals.
 DO $$
 BEGIN
     IF NOT EXISTS (

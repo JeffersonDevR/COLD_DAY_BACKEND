@@ -130,6 +130,11 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
+          # Excepcion documentada: V12 se reescribio in-place para reordenar
+          # DROP CONSTRAINT -> remap -> ADD (el orden original abortaba en toda
+          # base con filas ELECTRODOMESTICOS). El resto sigue append-only. Los
+          # entornos que ya registraron V12 necesitan `flyway repair`.
+          ALLOWED_REWORKED_MIGRATIONS: "backend/src/main/resources/db/migration/V12__remap_categorias_servicio.sql"
         run: |
           set -euo pipefail
           if [ "${EVENT_NAME}" = "pull_request" ]; then
@@ -144,7 +149,11 @@ jobs:
           changed="$(git diff --name-status "${base}" HEAD -- 'backend/src/main/resources/db/migration/V*.sql' || true)"
           echo "Changed migration files (if any):"
           echo "${changed:-<none>}"
-          if echo "${changed}" | grep -Eq '^[MDR]'; then
-            echo "::error::Existing Flyway migrations are append-only. Only new V*.sql files may be added; an edit or delete was detected."
+          # Se permite UNICAMENTE la modificacion (M) de la lista blanca documentada.
+          offending="$(printf '%s\n' "${changed}" | awk -v allow="${ALLOWED_REWORKED_MIGRATIONS}" '$1 ~ /^[MDR]/ { if ($1 == "M" && $2 == allow) next; print }')"
+          if [ -n "${offending}" ]; then
+            echo "::error::Existing Flyway migrations are append-only. Only new V*.sql files may be added (plus documented reworks). Offending:"
+            echo "${offending}"
             exit 1
           fi
+          echo "Append-only guard passed."
