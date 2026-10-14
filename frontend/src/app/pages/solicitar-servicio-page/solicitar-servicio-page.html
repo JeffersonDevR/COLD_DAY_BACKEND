@@ -122,102 +122,71 @@
               <span class="text-xs text-slate-400">Radio inicial: 10 km</span>
             </div>
 
-            <!-- Selector rápido de Barrio -->
+            <!-- Dirección con autocompletado (ayuda de texto sobre el proxy /api/maps) -->
             <div>
-              <span class="text-xs font-medium text-slate-500 block mb-1.5">Seleccionar sector o barrio de referencia:</span>
-              <div class="flex flex-wrap gap-2">
-                @for (b of barrios; track b.nombre) {
-                  <button
-                    type="button"
-                    (click)="seleccionarBarrio(b)"
-                    class="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all"
-                    [class.bg-sky-600]="barrioSeleccionado() === b.nombre"
-                    [class.text-white]="barrioSeleccionado() === b.nombre"
-                    [class.border-sky-600]="barrioSeleccionado() === b.nombre"
-                    [class.bg-white]="barrioSeleccionado() !== b.nombre"
-                    [class.dark:bg-slate-800]="barrioSeleccionado() !== b.nombre"
-                    [class.text-slate-700]="barrioSeleccionado() !== b.nombre"
-                    [class.dark:text-slate-300]="barrioSeleccionado() !== b.nombre"
-                    [class.border-slate-300]="barrioSeleccionado() !== b.nombre"
-                    [class.dark:border-slate-600]="barrioSeleccionado() !== b.nombre"
-                  >
-                    {{ b.nombre }}
-                  </button>
+              <label for="direccion" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                Dirección exacta *
+              </label>
+              <div class="relative">
+                <input
+                  id="direccion"
+                  type="text"
+                  formControlName="direccion"
+                  autocomplete="off"
+                  placeholder="Busca tu dirección o fija el pin en el mapa"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                @if (buscandoDireccion()) {
+                  <i class="pi pi-sync absolute right-3 top-2.5 text-slate-400 animate-spin text-base"></i>
+                }
+                @if (sugerencias().length) {
+                  <ul class="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-56 overflow-auto">
+                    @for (s of sugerencias(); track s.placeId) {
+                      <li>
+                        <button
+                          type="button"
+                          (click)="seleccionarSugerencia(s)"
+                          class="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-start gap-2"
+                        >
+                          <i class="pi pi-map-marker text-sky-500 text-sm leading-none"></i>
+                          <span>{{ s.descripcion }}</span>
+                        </button>
+                      </li>
+                    }
+                  </ul>
                 }
               </div>
+              <p class="text-[10px] text-slate-400 mt-1">
+                Escribe para autocompletar, o fija el punto directamente en el mapa (se rellena sola).
+              </p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label for="direccion" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Dirección exacta *
-                </label>
-                <div class="relative">
-                  <input
-                    id="direccion"
-                    type="text"
-                    formControlName="direccion"
-                    autocomplete="off"
-                    placeholder="Ej. Calle 15 # 3E-28"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-sky-500"
-                  />
-                  @if (buscandoDireccion()) {
-                    <i class="pi pi-sync absolute right-3 top-2.5 text-slate-400 animate-spin text-base"></i>
-                  }
-                  @if (sugerencias().length) {
-                    <ul class="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-56 overflow-auto">
-                      @for (s of sugerencias(); track s.placeId) {
-                        <li>
-                          <button
-                            type="button"
-                            (click)="seleccionarSugerencia(s)"
-                            class="w-full text-left px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-sky-50 dark:hover:bg-sky-950/40 flex items-start gap-2"
-                          >
-                            <i class="pi pi-map-marker text-sky-500 text-sm leading-none"></i>
-                            <span>{{ s.descripcion }}</span>
-                          </button>
-                        </li>
-                      }
-                    </ul>
-                  }
-                </div>
-                <p class="text-[10px] text-slate-400 mt-1">
-                  Escribe y selecciona una sugerencia para fijar las coordenadas automáticamente.
-                </p>
-              </div>
+            <!-- Mapa: fija el domicilio con pin arrastrable, click o GPS del dispositivo -->
+            <app-selector-ubicacion-mapa
+              [lat]="coordenadas()?.latitud ?? null"
+              [lng]="coordenadas()?.longitud ?? null"
+              (ubicacionChange)="alFijarEnMapa($event)"
+            />
 
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <span class="block text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    Coordenadas GPS Cúcuta (Lat, Lng)
-                  </span>
-                  <button
-                    type="button"
-                    (click)="usarMiUbicacion()"
-                    [disabled]="ubicando()"
-                    class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:text-sky-500 disabled:opacity-50"
-                  >
-                    <i [class]="'pi ' + (ubicando() ? 'pi-sync' : 'pi-directions') + ' text-sm leading-none'"></i>
-                    Usar mi ubicación
-                  </button>
-                </div>
-                <div class="flex items-center gap-2">
-                  <input
-                    type="number"
-                    step="0.0001"
-                    formControlName="latitud"
-                    class="w-1/2 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono"
-                    readonly
-                  />
-                  <input
-                    type="number"
-                    step="0.0001"
-                    formControlName="longitud"
-                    class="w-1/2 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono"
-                    readonly
-                  />
-                </div>
-              </div>
+            <!-- Coordenadas resultantes (solo lectura: feedback de la selección) -->
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">Coordenadas:</span>
+              <input
+                type="number"
+                step="0.0001"
+                formControlName="latitud"
+                placeholder="lat"
+                class="w-1/2 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono"
+                readonly
+              />
+              <input
+                type="number"
+                step="0.0001"
+                formControlName="longitud"
+                placeholder="lng"
+                class="w-1/2 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono"
+                readonly
+              />
             </div>
           </div>
 
@@ -251,7 +220,7 @@
             </p>
             <button
               type="submit"
-              [disabled]="solicitudForm.invalid || loading()"
+              [disabled]="!listoParaEnviar"
               class="px-6 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-sm shadow-md transition-all inline-flex items-center gap-2"
             >
               @if (loading()) {

@@ -20,6 +20,7 @@ import {
   MapInfoWindow
 } from '@angular/google-maps';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
+import { CUCUTA_METRO_BOUNDS } from '../mapas/cucuta.constant';
 
 export interface RadarTecnicoItem {
   id: string;
@@ -32,15 +33,6 @@ export interface RadarTecnicoItem {
   vehiculo?: string;
   reputacion?: number;
 }
-
-// Límites geográficos estrictos del Área Metropolitana de Cúcuta
-// Incluye Cúcuta, Los Patios, Villa del Rosario, San Cayetano y corredores viales
-export const CUCUTA_METRO_BOUNDS: google.maps.LatLngBoundsLiteral = {
-  north: 8.0800,  // Norte: El Salado / Aeropuerto Camilo Daza / Trigal del Norte
-  south: 7.7600,  // Sur: Los Patios / Villa del Rosario / La Parada
-  west: -72.6000, // Oeste: San Cayetano / Antonia Santos / Belisario
-  east: -72.4100  // Este: Boconó / Escobal / Anillo Vial Oriental
-};
 
 @Component({
   selector: 'app-mapa-radar',

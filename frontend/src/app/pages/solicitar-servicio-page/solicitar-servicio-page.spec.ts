@@ -6,7 +6,6 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { MapsApi } from '../../core/service/maps-api';
-import { GeolocationService } from '../../core/service/geolocation.service';
 import { OtResponse } from '../../core/models/common.models';
 
 const nuevaOt: OtResponse = {
@@ -17,7 +16,7 @@ const nuevaOt: OtResponse = {
   auxiliaresRequeridos: 0,
 };
 
-function setup(opts: { disponible?: boolean } = {}) {
+function setup() {
   const clientesApi = {
     crearOt: vi.fn(() => of(nuevaOt)),
     actualizarUbicacion: vi.fn(() => of(undefined)),
@@ -27,98 +26,65 @@ function setup(opts: { disponible?: boolean } = {}) {
     geocodificar: vi.fn(() => of({ direccionFormateada: 'Calle 15, Caobos', latitud: 7.89, longitud: -72.5, placeId: 'p1' })),
     inversa: vi.fn(() => of({ direccionFormateada: 'Mi ubicación GPS', latitud: 7.9, longitud: -72.49, placeId: 'p2' })),
   };
-  const geolocation = {
-    disponible: opts.disponible ?? true,
-    obtenerPosicion: vi.fn(() => of({ latitud: 7.9, longitud: -72.49 })),
-  };
   const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
   TestBed.configureTestingModule({
     imports: [SolicitarServicioPage],
     providers: [
       provideRouter([]),
       { provide: ClientesApi, useValue: clientesApi },
-      { provide: AuthService, useValue: { currentUser: () => ({ id: 3, nombre: 'María' }) } },
+      { provide: AuthService, useValue: { currentUser: () => ({ id: 3, nombre: 'María' }), userRoles: () => new Set(['CLIENTE']) } },
       { provide: ToastService, useValue: toast },
       { provide: MapsApi, useValue: mapsApi },
-      { provide: GeolocationService, useValue: geolocation },
     ],
   });
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(SolicitarServicioPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, mapsApi, geolocation, toast, navigate };
+  return { fixture, clientesApi, mapsApi, toast, navigate };
+}
+
+/** Deja el formulario válido con una ubicación ya fijada en el mapa. */
+function prepararFormularioListo(fixture: { componentInstance: SolicitarServicioPage }) {
+  const c = fixture.componentInstance;
+  c.alFijarEnMapa({ latitud: 7.9, longitud: -72.49 });
+  c.solicitudForm.controls.descripcionFalla.setValue('El aire mini-split no enfría y gotea agua.');
 }
 
 describe('SolicitarServicioPage', () => {
-  it('cambia la categoría y selecciona barrio', () => {
+  it('arranca sin dirección ni coordenadas preseleccionadas', () => {
+    const { fixture } = setup();
+    const raw = fixture.componentInstance.solicitudForm.getRawValue();
+    expect(raw.direccion).toBe('');
+    expect(raw.descripcionFalla).toBe('');
+    expect(raw.latitud).toBeNull();
+    expect(raw.longitud).toBeNull();
+    expect(fixture.componentInstance.coordenadas()).toBeNull();
+  });
+
+  it('cambia la categoría', () => {
     const { fixture } = setup();
     fixture.componentInstance.setCategoria('ELECTRICIDAD');
     expect(fixture.componentInstance.categoriaActual()).toBe('ELECTRICIDAD');
-
-    fixture.componentInstance.seleccionarBarrio({ nombre: 'Centro', lat: 1, lng: 2 });
-    expect(fixture.componentInstance.barrioSeleccionado()).toBe('Centro');
-    expect(fixture.componentInstance.solicitudForm.getRawValue()).toMatchObject({ latitud: 1, longitud: 2 });
   });
 
-  it('carga la foto demo', () => {
-    const { fixture, toast } = setup();
-    fixture.componentInstance.usarFotoDemo();
-    expect(fixture.componentInstance.solicitudForm.controls.evidenciaUrl.value).toContain('http');
-    expect(toast.info).toHaveBeenCalled();
-  });
+  it('al fijar el punto en el mapa guarda coords, persiste y resuelve la dirección', () => {
+    const { fixture, clientesApi, mapsApi } = setup();
+    fixture.componentInstance.alFijarEnMapa({ latitud: 7.9, longitud: -72.49 });
 
-  it('crea la OT y navega al seguimiento', () => {
-    const { fixture, clientesApi, toast, navigate } = setup();
-    fixture.componentInstance.onSubmit();
-
-    expect(clientesApi.crearOt).toHaveBeenCalledWith(
-      expect.objectContaining({ categoriaServicio: 'AIRE_ACONDICIONADO', barrio: 'Los Caobos' }),
-      '3',
-      'María',
-    );
-    expect(toast.success).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'OT-99']);
-    expect(fixture.componentInstance.loading()).toBe(false);
-  });
-
-  it('no crea la OT con formulario inválido', () => {
-    const { fixture, clientesApi } = setup();
-    fixture.componentInstance.solicitudForm.controls.descripcionFalla.setValue('corto');
-    fixture.componentInstance.onSubmit();
-    expect(clientesApi.crearOt).not.toHaveBeenCalled();
-  });
-
-  it('muestra error si falla la creación', () => {
-    const { fixture, clientesApi, toast } = setup();
-    clientesApi.crearOt.mockReturnValue(throwError(() => new Error('500')));
-    fixture.componentInstance.onSubmit();
-    expect(toast.error).toHaveBeenCalledWith('No se pudo crear la solicitud', '500');
-  });
-
-  it('usa la ubicación del dispositivo', () => {
-    const { fixture, clientesApi, toast } = setup();
-    fixture.componentInstance.usarMiUbicacion();
-
+    expect(fixture.componentInstance.coordenadas()).toEqual({ latitud: 7.9, longitud: -72.49 });
+    expect(mapsApi.inversa).toHaveBeenCalledWith(7.9, -72.49);
+    expect(fixture.componentInstance.solicitudForm.controls.direccion.value).toBe('Mi ubicación GPS');
     expect(fixture.componentInstance.solicitudForm.controls.latitud.value).toBe(7.9);
     expect(clientesApi.actualizarUbicacion).toHaveBeenCalledWith({ latitud: 7.9, longitud: -72.49 });
-    expect(toast.success).toHaveBeenCalled();
-    expect(fixture.componentInstance.ubicando()).toBe(false);
   });
 
-  it('avisa si la geolocalización no está disponible', () => {
-    const { fixture, geolocation, toast } = setup({ disponible: false });
-    fixture.componentInstance.usarMiUbicacion();
-    expect(geolocation.obtenerPosicion).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('No disponible', expect.any(String));
-  });
-
-  it('geocodifica una sugerencia seleccionada', () => {
+  it('geocodifica una sugerencia seleccionada y fija las coordenadas', () => {
     const { fixture, mapsApi } = setup();
     fixture.componentInstance.seleccionarSugerencia({ descripcion: 'Calle 15, Caobos', placeId: 'p1' });
     expect(mapsApi.geocodificar).toHaveBeenCalledWith('Calle 15, Caobos');
     expect(fixture.componentInstance.solicitudForm.controls.direccion.value).toBe('Calle 15, Caobos');
-    expect(fixture.componentInstance.barrioSeleccionado()).toBe('');
+    expect(fixture.componentInstance.coordenadas()).toEqual({ latitud: 7.89, longitud: -72.5 });
   });
 
   it('autocompleta la dirección tras el debounce', () => {
@@ -131,5 +97,60 @@ describe('SolicitarServicioPage', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('carga la foto demo', () => {
+    const { fixture, toast } = setup();
+    fixture.componentInstance.usarFotoDemo();
+    expect(fixture.componentInstance.solicitudForm.controls.evidenciaUrl.value).toContain('http');
+    expect(toast.info).toHaveBeenCalled();
+  });
+
+  it('crea la OT con la ubicación fijada y navega al seguimiento', () => {
+    const { fixture, clientesApi, toast, navigate } = setup();
+    prepararFormularioListo(fixture);
+    fixture.componentInstance.onSubmit();
+
+    expect(clientesApi.crearOt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categoriaServicio: 'AIRE_ACONDICIONADO',
+        direccion: 'Mi ubicación GPS',
+        latitud: 7.9,
+        longitud: -72.49,
+      }),
+      '3',
+      'María',
+    );
+    const bodyCreado = (clientesApi.crearOt.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(bodyCreado).not.toHaveProperty('barrio');
+    expect(toast.success).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'OT-99']);
+    expect(fixture.componentInstance.loading()).toBe(false);
+  });
+
+  it('no crea la OT si falta la ubicación', () => {
+    const { fixture, clientesApi, toast } = setup();
+    // Dirección escrita a mano pero sin fijar el punto en el mapa.
+    fixture.componentInstance.solicitudForm.controls.direccion.setValue('Calle 15 Caobos');
+    fixture.componentInstance.solicitudForm.controls.descripcionFalla.setValue('El aire no enfría para nada.');
+    fixture.componentInstance.onSubmit();
+
+    expect(clientesApi.crearOt).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('Falta la ubicación', expect.any(String));
+  });
+
+  it('no crea la OT con formulario inválido', () => {
+    const { fixture, clientesApi } = setup();
+    fixture.componentInstance.solicitudForm.controls.descripcionFalla.setValue('corto');
+    fixture.componentInstance.onSubmit();
+    expect(clientesApi.crearOt).not.toHaveBeenCalled();
+  });
+
+  it('muestra error si falla la creación', () => {
+    const { fixture, clientesApi, toast } = setup();
+    prepararFormularioListo(fixture);
+    clientesApi.crearOt.mockReturnValue(throwError(() => new Error('500')));
+    fixture.componentInstance.onSubmit();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo crear la solicitud', '500');
   });
 });
