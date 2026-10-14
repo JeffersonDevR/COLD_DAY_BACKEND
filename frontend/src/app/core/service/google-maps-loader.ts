@@ -172,8 +172,10 @@ export class GoogleMapsLoaderService {
         script.defer = true;
 
         // `loading=async` + callback: patrón recomendado por Google (evita el
-        // warning de performance de la carga directa).
-        const base = 'https://maps.googleapis.com/maps/api/js?libraries=geometry&v=weekly&loading=async';
+        // warning de performance de la carga directa). `places` habilita el
+        // autocompletado de direcciones del lado del cliente (fallback cuando el
+        // proxy /api/maps no está disponible); Geocoder vive en el core.
+        const base = 'https://maps.googleapis.com/maps/api/js?libraries=geometry,places&v=weekly&loading=async';
         const url = key
           ? `${base}&key=${encodeURIComponent(key)}&callback=${callbackName}`
           : `${base}&callback=${callbackName}`;

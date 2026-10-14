@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { catchError, Observable, of } from 'rxjs';
+import { delay, switchMap } from 'rxjs/operators';
 import { ApiConfig } from './api.config';
+import { MapsGeocoderCliente } from './maps-geocoder-cliente';
 import {
   DireccionApiResponse,
   DistanciaApiResponse,
@@ -24,6 +25,7 @@ import { Point } from '../models/common.models';
 export class MapsApi {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfig);
+  private readonly geocoder = inject(MapsGeocoderCliente);
 
   estado(): Observable<EstadoMapsApiResponse> {
     if (this.apiConfig.useMocks()) {
@@ -36,7 +38,11 @@ export class MapsApi {
     if (this.apiConfig.useMocks()) {
       return of(this.direccionMock(direccion)).pipe(delay(350));
     }
-    return this.http.post<DireccionApiResponse>(this.apiConfig.url('/maps/geocode'), { direccion });
+    // Proxy del backend como vía principal; si no está disponible (server key
+    // ausente, 401/503/404), se geocodifica en el navegador con la key de navegador.
+    return this.http
+      .post<DireccionApiResponse>(this.apiConfig.url('/maps/geocode'), { direccion })
+      .pipe(catchError(() => this.geocoder.geocodificar(direccion)));
   }
 
   inversa(lat: number, lng: number): Observable<DireccionApiResponse> {
@@ -44,7 +50,9 @@ export class MapsApi {
       return of(this.direccionMock(`Coordenadas ${lat.toFixed(4)}, ${lng.toFixed(4)}`, lat, lng)).pipe(delay(300));
     }
     const params = new HttpParams().set('lat', lat).set('lng', lng);
-    return this.http.get<DireccionApiResponse>(this.apiConfig.url('/maps/inversa'), { params });
+    return this.http
+      .get<DireccionApiResponse>(this.apiConfig.url('/maps/inversa'), { params })
+      .pipe(catchError(() => this.geocoder.inversa(lat, lng)));
   }
 
   autocompletar(input: string, sesgo?: Point): Observable<SugerenciaApiResponse[]> {
@@ -63,7 +71,11 @@ export class MapsApi {
     if (sesgo) {
       params = params.set('lat', sesgo.latitud).set('lng', sesgo.longitud);
     }
-    return this.http.get<SugerenciaApiResponse[]>(this.apiConfig.url('/maps/autocompletar'), { params });
+    // Fallback: si el backend no trae sugerencias (p. ej. sin server key, que hoy
+    // devuelve lista vacía), se autocompleta en el navegador con la key de navegador.
+    return this.http
+      .get<SugerenciaApiResponse[]>(this.apiConfig.url('/maps/autocompletar'), { params })
+      .pipe(switchMap((lista) => (lista.length ? of(lista) : this.geocoder.autocompletar(input, sesgo))));
   }
 
   distancia(origen: Point, destino: Point): Observable<DistanciaApiResponse> {

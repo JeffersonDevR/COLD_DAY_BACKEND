@@ -1,18 +1,37 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { MapsApi } from './maps-api';
+import { MapsGeocoderCliente } from './maps-geocoder-cliente';
 import { ApiConfig } from './api.config';
 
 describe('MapsApi', () => {
   let api: MapsApi;
   let config: ApiConfig;
   let http: HttpTestingController;
+  let geocoder: {
+    autocompletar: ReturnType<typeof vi.fn>;
+    geocodificar: ReturnType<typeof vi.fn>;
+    inversa: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
+    geocoder = {
+      autocompletar: vi.fn(() => of([])),
+      geocodificar: vi.fn(() =>
+        of({ direccionFormateada: 'Calle Cliente, Cúcuta', latitud: 7.9, longitud: -72.5, placeId: 'cli' }),
+      ),
+      inversa: vi.fn(() =>
+        of({ direccionFormateada: 'Coordenadas Cliente, Cúcuta', latitud: 7.9, longitud: -72.49, placeId: 'cli-inv' }),
+      ),
+    };
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MapsGeocoderCliente, useValue: geocoder },
+      ],
     });
     api = TestBed.inject(MapsApi);
     config = TestBed.inject(ApiConfig);
@@ -36,6 +55,15 @@ describe('MapsApi', () => {
     expect(req.request.body).toEqual({ direccion: 'calle 1' });
     req.flush({ direccionFormateada: 'calle 1', latitud: 1, longitud: 2, placeId: 'p' });
     expect((await promise).placeId).toBe('p');
+    // Backend OK: NO se recurre al cliente.
+    expect(geocoder.geocodificar).not.toHaveBeenCalled();
+  });
+
+  it('geocodificar cae al cliente cuando el backend falla', async () => {
+    const promise = firstValueFrom(api.geocodificar('calle 1'));
+    http.expectOne('/api/maps/geocode').flush('sin server key', { status: 503, statusText: 'Unavailable' });
+    expect(await promise).toMatchObject({ placeId: 'cli' });
+    expect(geocoder.geocodificar).toHaveBeenCalledWith('calle 1');
   });
 
   it('inversa envía lat y lng como parámetros', async () => {
@@ -45,6 +73,14 @@ describe('MapsApi', () => {
     expect(req.request.params.get('lng')).toBe('-74.1');
     req.flush({ direccionFormateada: 'x', latitud: 4.6, longitud: -74.1, placeId: 'p' });
     expect((await promise).latitud).toBe(4.6);
+    expect(geocoder.inversa).not.toHaveBeenCalled();
+  });
+
+  it('inversa cae al cliente cuando el backend falla', async () => {
+    const promise = firstValueFrom(api.inversa(7.9, -72.5));
+    http.expectOne((r) => r.url === '/api/maps/inversa').flush('boom', { status: 503, statusText: 'Unavailable' });
+    expect(await promise).toMatchObject({ placeId: 'cli-inv' });
+    expect(geocoder.inversa).toHaveBeenCalledWith(7.9, -72.5);
   });
 
   it('autocompletar incluye el sesgo cuando viene', async () => {
@@ -53,8 +89,18 @@ describe('MapsApi', () => {
     expect(req.request.params.get('input')).toBe('caobos');
     expect(req.request.params.get('lat')).toBe('7.8');
     expect(req.request.params.get('lng')).toBe('-72.5');
-    req.flush([]);
-    expect(await promise).toEqual([]);
+    req.flush([{ descripcion: 'Caobos', placeId: 'bk' }]);
+    expect(await promise).toEqual([{ descripcion: 'Caobos', placeId: 'bk' }]);
+    expect(geocoder.autocompletar).not.toHaveBeenCalled();
+  });
+
+  it('autocompletar cae al cliente cuando el backend no trae sugerencias', async () => {
+    geocoder.autocompletar.mockReturnValue(of([{ descripcion: 'Calle Cliente', placeId: 'cli-s' }]));
+    const promise = firstValueFrom(api.autocompletar('calle x', { latitud: 7.8, longitud: -72.5 }));
+    const req = http.expectOne((r) => r.url === '/api/maps/autocompletar');
+    req.flush([]); // el backend no encontró nada (equivalente a no tener server key)
+    expect(await promise).toEqual([{ descripcion: 'Calle Cliente', placeId: 'cli-s' }]);
+    expect(geocoder.autocompletar).toHaveBeenCalledWith('calle x', { latitud: 7.8, longitud: -72.5 });
   });
 
   it('autocompletar omite el sesgo si no viene', async () => {
