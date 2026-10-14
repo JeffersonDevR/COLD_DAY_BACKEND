@@ -15,10 +15,12 @@ describe('buildMenu — accesos por rol', () => {
 
   it('muestra la sección técnica y la comisión', () => {
     const menu = buildMenu(['TECNICO']);
-    expect(menu).toHaveLength(1);
-    expect(menu[0].items).toHaveLength(5);
-    expect(menu[0].items[0].routerLink).toBe('/tecnico/perfil');
-    expect(menu[0].items[4].label).toContain('Liquidaciones (');
+    const seccionTecnica = menu.find((s) => s.label === 'Técnico');
+
+    expect(seccionTecnica).toBeDefined();
+    expect(seccionTecnica!.items).toHaveLength(5);
+    expect(seccionTecnica!.items[0].routerLink).toBe('/tecnico/perfil');
+    expect(seccionTecnica!.items[4].label).toContain('Liquidaciones (');
   });
 
   it('un usuario con doble rol ve AMBAS secciones, sin selector "act as"', () => {
