@@ -7,6 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.administracion.application.dto.LiquidacionResponse;
 import com.sena.cold_day.core.modules.administracion.domain.repository.LiquidacionRepository;
+import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
+import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
@@ -21,12 +25,15 @@ public class ListarLiquidacionesTecnicoUseCase {
     private final LiquidacionRepository liquidacionRepository;
     private final TecnicoRepository tecnicoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final OtRepository otRepository;
 
     public ListarLiquidacionesTecnicoUseCase(LiquidacionRepository liquidacionRepository,
-            TecnicoRepository tecnicoRepository, UsuarioRepository usuarioRepository) {
+            TecnicoRepository tecnicoRepository, UsuarioRepository usuarioRepository,
+            OtRepository otRepository) {
         this.liquidacionRepository = liquidacionRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.otRepository = otRepository;
     }
 
     @Transactional(readOnly = true)
@@ -35,7 +42,16 @@ public class ListarLiquidacionesTecnicoUseCase {
                 .orElseThrow(() -> new PerfilTecnicoNoEncontradoException(usuarioId.valor()));
         String nombre = usuarioRepository.buscarPorId(usuarioId).map(Usuario::getNombre).orElse(null);
         return liquidacionRepository.buscarPorTecnico(tecnico.getId()).stream()
-                .map(liquidacion -> LiquidacionResponse.fromDomain(liquidacion).conTecnicoNombre(nombre))
+                .map(liquidacion -> LiquidacionResponse.fromDomain(liquidacion)
+                        .conTecnicoNombre(nombre).conOtCodigo(codigoDe(liquidacion.getOtId())))
                 .toList();
+    }
+
+    /**
+     * Readable code of the liquidated order for the UI; null when the order is
+     * not found. Only the display needs it, so a missing order never fails here.
+     */
+    private CodigoOt codigoDe(OtId otId) {
+        return otRepository.buscarPorId(otId).map(Ot::getCodigo).orElse(null);
     }
 }

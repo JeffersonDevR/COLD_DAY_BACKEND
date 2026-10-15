@@ -18,6 +18,10 @@ import com.sena.cold_day.core.modules.administracion.domain.exception.Liquidacio
 import com.sena.cold_day.core.modules.administracion.domain.repository.LiquidacionRepository;
 import com.sena.cold_day.core.modules.administracion.domain.valueobjects.EstadoLiquidacion;
 import com.sena.cold_day.core.modules.administracion.domain.valueobjects.LiquidacionId;
+import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
+import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
@@ -37,15 +41,17 @@ public class VerificarComprobanteUseCase {
     private final LiquidacionRepository liquidacionRepository;
     private final TecnicoRepository tecnicoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final OtRepository otRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public VerificarComprobanteUseCase(LiquidacionRepository liquidacionRepository,
             TecnicoRepository tecnicoRepository, UsuarioRepository usuarioRepository,
-            ApplicationEventPublisher events, Clock clock) {
+            OtRepository otRepository, ApplicationEventPublisher events, Clock clock) {
         this.liquidacionRepository = liquidacionRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.otRepository = otRepository;
         this.events = events;
         this.clock = clock;
     }
@@ -64,7 +70,7 @@ public class VerificarComprobanteUseCase {
             tecnicoRepository.save(tecnico);
         }
         events.publishEvent(new LiquidacionAprobada(guardada.getId()));
-        return LiquidacionResponse.fromDomain(guardada);
+        return LiquidacionResponse.fromDomain(guardada).conOtCodigo(codigoDe(guardada.getOtId()));
     }
 
     @Transactional
@@ -74,7 +80,7 @@ public class VerificarComprobanteUseCase {
         liquidacion.rechazar(motivo, clock.instant());
         Liquidacion guardada = liquidacionRepository.save(liquidacion);
         events.publishEvent(new LiquidacionRechazada(guardada.getId(), motivo));
-        return LiquidacionResponse.fromDomain(guardada);
+        return LiquidacionResponse.fromDomain(guardada).conOtCodigo(codigoDe(guardada.getOtId()));
     }
 
     @Transactional(readOnly = true)
@@ -93,8 +99,21 @@ public class VerificarComprobanteUseCase {
                 .map(liquidacion -> LiquidacionResponse.fromDomain(liquidacion).conTecnicoNombre(
                         liquidacion.getTecnicoId() == null ? null
                                 : nombres.computeIfAbsent(liquidacion.getTecnicoId().valor(),
-                                        this::nombreTecnico)))
+                                        this::nombreTecnico))
+                        .conOtCodigo(codigoDe(liquidacion.getOtId())))
                 .toList();
+    }
+
+    /**
+     * Readable code of the liquidated order for the UI; null when the order is
+     * not found. Only the display needs it, so a missing order never fails here.
+     *
+     * <p>shortcut: one OT lookup per row (no batch), because unlike a technician
+     * a code never repeats inside a list; upgrade to {@code OtRepository#buscarPorIds}
+     * if {@code listarTodas} ever holds enough rows for the extra queries to show.
+     */
+    private CodigoOt codigoDe(OtId otId) {
+        return otRepository.buscarPorId(otId).map(Ot::getCodigo).orElse(null);
     }
 
     private String nombreTecnico(UUID tecnicoId) {

@@ -17,10 +17,13 @@ import com.sena.cold_day.core.shared.domain.Point;
  * the decision requires: {@code actaCodigoVerificacion} (a verification code),
  * {@code diagnostico}, {@code presupuesto}, {@code clienteId},
  * {@code tarifaVisita}, {@code calificacion*}, {@code medioPagoVisita} and
- * {@code actaFirmada}. The card needs exactly: id, state, category, fault
- * description, address and client name. Coordinates are included because the
- * street address is already here, so they leak nothing extra and a future map
- * can use them.
+ * {@code actaFirmada}. The card needs exactly: id, codigo, state, category,
+ * fault description, address and client name. Coordinates are included because
+ * the street address is already here, so they leak nothing extra and a future
+ * map can use them. The human-readable {@code codigo} is included on the same
+ * grounds as the address: it names the order the offer is about, which is what
+ * the technician reads and quotes, and it says nothing the pending holder is
+ * not already allowed to see.
  *
  * <p><strong>Rule for future fields:</strong> any field added to this summary
  * must be justified against "the holder is not yet a participant". If it only
@@ -28,6 +31,7 @@ import com.sena.cold_day.core.shared.domain.Point;
  */
 public record OfertaOtResumenApiResponse(
         String id,
+        String codigo,
         EstadoOt estado,
         CategoriaServicio categoriaServicio,
         String descripcionFalla,
@@ -44,6 +48,7 @@ public record OfertaOtResumenApiResponse(
         Point ubicacion = ot.ubicacion();
         return new OfertaOtResumenApiResponse(
                 ot.id() == null ? null : ot.id().valor().toString(),
+                ot.codigo() == null ? null : ot.codigo().valor(),
                 ot.estado(), ot.categoriaServicio(), ot.descripcionFalla(), ot.direccion(),
                 clienteNombre,
                 ubicacion == null ? null : ubicacion.latitud(),

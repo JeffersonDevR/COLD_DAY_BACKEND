@@ -77,6 +77,6 @@ public class RegistrarPagoUseCase {
         tecnico.bloquearPorLiquidacion();
         tecnicoRepository.save(tecnico);
         events.publishEvent(new LiquidacionRegistrada(guardada.getId()));
-        return LiquidacionResponse.fromDomain(guardada);
+        return LiquidacionResponse.fromDomain(guardada).conOtCodigo(ot.getCodigo());
     }
 }

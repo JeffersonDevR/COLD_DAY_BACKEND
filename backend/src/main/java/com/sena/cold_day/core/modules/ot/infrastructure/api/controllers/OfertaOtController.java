@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.application.usecases.AceptarOfertaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.ListarOfertasTecnicoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.NombresOtResolver;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaOtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.AceptarOfertaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OfertaOtApiResponse;
@@ -32,10 +34,13 @@ public class OfertaOtController {
 
     private final AceptarOfertaUseCase aceptar;
     private final ListarOfertasTecnicoUseCase listar;
+    private final NombresOtResolver nombres;
 
-    public OfertaOtController(AceptarOfertaUseCase aceptar, ListarOfertasTecnicoUseCase listar) {
+    public OfertaOtController(AceptarOfertaUseCase aceptar, ListarOfertasTecnicoUseCase listar,
+            NombresOtResolver nombres) {
         this.aceptar = aceptar;
         this.listar = listar;
+        this.nombres = nombres;
     }
 
     /**
@@ -51,7 +56,11 @@ public class OfertaOtController {
         int auxiliaresRequeridos = request == null || request.auxiliaresRequeridos() == null
                 ? 0
                 : request.auxiliaresRequeridos();
-        return OtApiResponse.from(aceptar.aceptar(principal.usuarioId(), id, auxiliaresRequeridos));
+        // Acceptance is the first mutation on an assigned OT: carry the names the
+        // technician's page renders instead of echoing bare UUIDs.
+        OtResponse asignada = aceptar.aceptar(principal.usuarioId(), id, auxiliaresRequeridos);
+        return OtApiResponse.from(asignada, nombres.nombreCliente(asignada.clienteId()),
+                nombres.nombreTecnico(asignada.tecnicoId()));
     }
 
     /** The authenticated technician's pending, still-vigente offers (RF-F1-09). */

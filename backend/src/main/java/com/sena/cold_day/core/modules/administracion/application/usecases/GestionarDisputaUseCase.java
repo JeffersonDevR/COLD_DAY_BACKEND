@@ -83,7 +83,7 @@ public class GestionarDisputaUseCase {
         Ot guardada = otRepository.save(ot);
         Disputa disputa = disputaRepository.save(Disputa.abrir(guardada.getId(), motivo, clock.instant()));
         events.publishEvent(new DisputaAbierta(disputa.getId()));
-        return DisputaResponse.fromDomain(disputa);
+        return DisputaResponse.fromDomain(disputa).conOtCodigo(guardada.getCodigo());
     }
 
     @Transactional
@@ -109,7 +109,7 @@ public class GestionarDisputaUseCase {
                     MotivoCancelacion.RESOLUCION_DISPUTA_SIN_ACUERDO, otGuardada.getTecnicoId()));
         }
         events.publishEvent(new DisputaResuelta(guardada.getId(), conAcuerdo));
-        return DisputaResponse.fromDomain(guardada);
+        return DisputaResponse.fromDomain(guardada).conOtCodigo(otGuardada.getCodigo());
     }
 
     @Transactional(readOnly = true)
@@ -122,7 +122,7 @@ public class GestionarDisputaUseCase {
         return enriquecer(disputaRepository.listarTodas());
     }
 
-    /** Agrega los nombres legibles de cliente y técnico (vía la OT de la disputa). */
+    /** Agrega los nombres legibles de cliente y tecnico y el codigo de la OT de la disputa. */
     private List<DisputaResponse> enriquecer(List<Disputa> disputas) {
         Map<UUID, String> nombresClientes = new HashMap<>();
         Map<UUID, String> nombresTecnicos = new HashMap<>();
@@ -140,7 +140,8 @@ public class GestionarDisputaUseCase {
                             this::nombreTecnico);
                 }
             }
-            return DisputaResponse.fromDomain(disputa).conNombres(clienteNombre, tecnicoNombre);
+            return DisputaResponse.fromDomain(disputa).conNombres(clienteNombre, tecnicoNombre)
+                    .conOtCodigo(ot == null ? null : ot.getCodigo());
         }).toList();
     }
 
