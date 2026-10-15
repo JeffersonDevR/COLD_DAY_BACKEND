@@ -48,8 +48,36 @@ describe('AppTopbar', () => {
     expect(setup(usuario).fixture.componentInstance.iniciales()).toBe('MG');
   });
 
-  it('usa "?" sin usuario', () => {
-    expect(setup(null).fixture.componentInstance.iniciales()).toBe('?');
+  it('sin nombre usa el correo de la sesión como rótulo y saca de ahí las iniciales', () => {
+    const { fixture } = setup({ ...usuario, nombre: '' });
+    expect(fixture.componentInstance.nombreVisible()).toBe('maria.gomez@gmail.com');
+    expect(fixture.componentInstance.iniciales()).toBe('M');
+  });
+
+  it('sin nombre ni correo muestra un rótulo neutro y nunca deja la etiqueta en blanco', () => {
+    // JWT real recargado: sin claims `nombre`/`correo`. El rótulo no puede quedar
+    // vacío ni inventar un nombre de persona.
+    const { fixture } = setup({ ...usuario, nombre: '', correo: '' });
+    expect(fixture.componentInstance.nombreVisible()).toBe('Usuario');
+    expect(fixture.componentInstance.iniciales()).toBe('U');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Usuario');
+  });
+
+  it('la fila de identidad del menú muestra el correo de la cuenta', () => {
+    const items = setup(usuario).fixture.componentInstance.userMenuItems();
+    expect(items[0].label).toBe('maria.gomez@gmail.com');
+  });
+
+  it('la fila de identidad del menú nunca queda en blanco sin claims', () => {
+    // JWT real recargado: sin claims `nombre`/`correo`.
+    const items = setup({ ...usuario, nombre: '', correo: '' }).fixture.componentInstance.userMenuItems();
+    expect(items[0].label).toBe('Usuario');
+  });
+
+  it('sin sesión mantiene un rótulo e iniciales neutras', () => {
+    const { fixture } = setup(null);
+    expect(fixture.componentInstance.nombreVisible()).toBe('Usuario');
+    expect(fixture.componentInstance.iniciales()).toBe('U');
   });
 
   it('construye el menú de usuario con el correo', () => {

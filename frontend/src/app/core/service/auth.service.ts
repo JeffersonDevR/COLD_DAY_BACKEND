@@ -1,7 +1,7 @@
 import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
-import { TokenStorageService } from './token-storage.service';
+import { DecodedToken, TokenStorageService } from './token-storage.service';
 import { ToastService } from '../alertas/toast.service';
 import { Rol, TokenResponse, UsuarioResponse } from '../models/common.models';
 
@@ -46,6 +46,10 @@ export class AuthService {
    * Reconstruye la sesión a partir del JWT persistido. El backend no expone un
    * endpoint de perfil, así que los datos disponibles son los claims del token
    * (`sub` = usuarioId, `rol`). Se descarta si el token ya expiró.
+   *
+   * `nombre` queda vacío cuando el token no lo trae (el JWT real no emite
+   * `nombre` ni `correo`; solo lo hace el token simulado). No se rellena con un
+   * literal: quien lo muestre decide cómo nombrar a una sesión sin nombre.
    */
   private restoreSession(): void {
     const decoded = this.tokenStorage.getDecodedToken();
@@ -55,13 +59,24 @@ export class AuthService {
     }
     this._currentUser.set({
       id: Number(decoded.id ?? decoded.sub ?? 0),
-      nombre: decoded.nombre ?? decoded.correo ?? 'Usuario',
+      nombre: this.nombreDeSesion(decoded),
       correo: decoded.correo ?? '',
       rol: decoded.rol,
       roles: decoded.roles,
       habeasDataAceptado: true,
       activo: true,
     });
+  }
+
+  /**
+   * Regla única del nombre de sesión: SOLO el claim `nombre`, y cadena vacía
+   * cuando el token no lo trae (el JWT real no lo emite; solo el token simulado).
+   * La usan el login y la restauración del token persistido para que ambos
+   * caminos devuelvan el mismo valor y ninguna persona quede renombrada con su
+   * correo. Quien lo muestre decide el rótulo cuando llega vacío.
+   */
+  private nombreDeSesion(decoded: DecodedToken | null): string {
+    return decoded?.nombre ?? '';
   }
 
   /** true si el `exp` (epoch segundos) ya pasó. */
@@ -117,8 +132,9 @@ export class AuthService {
    * El perfil se reconstruye desde los claims del JWT. Si el mock ya entrega el
    * usuario completo, se usa ese valor.
    *
-   * Pendiente(backend): no existe `GET /api/usuarios/me`, por lo que `nombre` se
-   * aproxima con el correo ingresado hasta que el backend exponga el perfil.
+   * Pendiente(backend): no existe `GET /api/usuarios/me`, así que `nombre` solo
+   * puede salir del claim homónimo (vacío en el JWT real) y el correo ingresado
+   * se usa únicamente como `correo`; ambos caminos comparten `nombreDeSesion`.
    */
   establecerSesionDesdeToken(
     res: TokenResponse,
@@ -136,7 +152,7 @@ export class AuthService {
     } else {
       usuario = {
         id: Number(decoded?.id ?? decoded?.sub ?? 0),
-        nombre: decoded?.nombre ?? correoIngresado,
+        nombre: this.nombreDeSesion(decoded),
         correo: decoded?.correo ?? correoIngresado,
         rol: decoded?.rol ?? res.rol,
         roles,

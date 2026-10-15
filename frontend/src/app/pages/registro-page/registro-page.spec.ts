@@ -131,6 +131,20 @@ describe('RegistroPage', () => {
     expect(navigate).toHaveBeenCalledWith(['/panel']);
   });
 
+  it('saluda por correo cuando la sesión no trae nombre', () => {
+    // El JWT real no emite `nombre`: el saludo no puede quedar en blanco.
+    const { fixture, mocks } = setup();
+    mocks.auth.establecerSesionDesdeToken.mockReturnValue({ ...usuario, nombre: '', correo: 'nuevo@coldday.co' });
+    llenarFormulario(fixture);
+
+    fixture.componentInstance.onSubmit();
+
+    expect(mocks.toast.success).toHaveBeenCalledWith(
+      'Cuenta Creada Exitosamente',
+      'Bienvenido a COLD DAY, nuevo@coldday.co',
+    );
+  });
+
   it('registra un técnico real con sus especialidades', () => {
     const { fixture, mocks } = setup();
     llenarFormulario(fixture);

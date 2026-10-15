@@ -169,7 +169,8 @@
               </div>
               <div>
                 <div class="flex items-center gap-2">
-                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ orden.tecnicoNombre }}</h3>
+                  <!-- shortcut: 'Buscando técnico…' here is approximate when tecnicoId is set but the name never arrives; upgrade if the backend can return an assigned OT with a null name. -->
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ orden.tecnicoNombre || 'Buscando técnico…' }}</h3>
                   <span class="inline-flex items-center gap-0.5 text-xs font-bold text-amber-500">
                     <i class="pi pi-star text-xs" style="font-size: 14px; width: 14px; height: 14px;"></i>
                     {{ orden.tecnicoReputacion || 4.9 }}

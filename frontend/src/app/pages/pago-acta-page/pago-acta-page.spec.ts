@@ -305,4 +305,23 @@ describe('PagoActaPage', () => {
     sseEventos.next({ otId: 'ot1', origen: 'EN_REPARACION', destino: 'FINALIZADA' });
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
+
+  describe('nombre del técnico en el acta', () => {
+    it('certifica el nombre real del técnico', () => {
+      const { fixture } = setup(vi.fn(() => of(undefined)));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('el técnico Juan');
+    });
+
+    it('sin nombre del técnico usa un rótulo neutro coherente con la frase', () => {
+      // La frase certifica que el servicio YA se ejecutó: "por asignar" la
+      // contradecía; "a cargo" describe el mismo hecho sin afirmar la asignación.
+      const { fixture } = setup(vi.fn(() => of(undefined)), { ...orden, tecnicoNombre: undefined });
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('el técnico a cargo ha ejecutado');
+      expect(texto).not.toContain('el técnico Asignado');
+      expect(texto).not.toContain('por asignar');
+    });
+  });
 });
