@@ -22,18 +22,30 @@ export class AppTopbar {
 
   readonly usuario = computed(() => this.auth.currentUser());
 
-  readonly iniciales = computed(() => {
-    const nombre = this.usuario()?.nombre ?? '?';
-    return nombre
+  /**
+   * Rótulo del usuario: el nombre de la sesión, si no el correo, y si tampoco lo
+   * hay, un rótulo neutro. El JWT real no trae `nombre`, así que nunca se deja la
+   * etiqueta en blanco ni se inventa un nombre de persona.
+   */
+  readonly nombreVisible = computed(() => {
+    const usuario = this.usuario();
+    return usuario?.nombre?.trim() || usuario?.correo?.trim() || 'Usuario';
+  });
+
+  /** Iniciales derivadas del rótulo visible: lo que se muestra es lo que se abrevia. */
+  readonly iniciales = computed(() =>
+    this.nombreVisible()
       .split(' ')
       .filter(Boolean)
       .slice(0, 2)
       .map((p) => p.charAt(0).toUpperCase())
-      .join('');
-  });
+      .join(''),
+  );
 
   readonly userMenuItems = computed<MenuItem[]>(() => [
-    { label: this.usuario()?.correo, disabled: true },
+    // El correo identifica la cuenta, así que va primero; con un JWT real no hay
+    // claims, y esta fila tampoco puede quedar en blanco.
+    { label: this.usuario()?.correo || this.usuario()?.nombre || 'Usuario', disabled: true },
     { separator: true },
     { label: 'Ir a Mi Panel', icon: 'pi pi-home', command: () => this.router.navigate(['/panel']) },
     { label: 'Cerrar Sesión', icon: 'pi pi-sign-out', command: () => this.cerrarSesion() },

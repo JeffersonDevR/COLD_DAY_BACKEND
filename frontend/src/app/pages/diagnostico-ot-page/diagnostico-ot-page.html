@@ -9,7 +9,7 @@
             Diagnóstico Técnico y Presupuesto
           </h1>
           <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Revisión en sitio por {{ orden.tecnicoNombre || 'el técnico asignado' }}
+            Revisión en sitio por {{ orden.tecnicoNombre || 'un técnico por asignar' }}
           </p>
         </div>
 
@@ -164,7 +164,7 @@
                 {{ orden.tecnicoNombre?.charAt(0) || 'T' }}
               </div>
               <div class="min-w-0">
-                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{{ orden.tecnicoNombre }}</h4>
+                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{{ orden.tecnicoNombre || 'Buscando técnico…' }}</h4>
                 <span class="text-[11px] text-emerald-600 flex items-center gap-1">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> En Línea
                 </span>

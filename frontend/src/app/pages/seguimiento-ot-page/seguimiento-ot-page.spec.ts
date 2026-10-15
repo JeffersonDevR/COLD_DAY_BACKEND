@@ -248,4 +248,18 @@ describe('SeguimientoOtPage', () => {
 
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
+
+  describe('tarjeta del técnico asignado', () => {
+    it('muestra el nombre real del técnico', () => {
+      const { fixture } = setup();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Juan');
+    });
+
+    it('con técnico asignado pero sin nombre muestra el fallback honesto, no un hueco', () => {
+      const { fixture } = setup({ ...orden, tecnicoNombre: undefined });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Buscando técnico…');
+    });
+  });
 });

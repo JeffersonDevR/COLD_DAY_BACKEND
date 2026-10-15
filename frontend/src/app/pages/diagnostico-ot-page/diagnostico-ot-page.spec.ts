@@ -20,7 +20,7 @@ const orden: OtResponse = {
   presupuesto: { aprobado: false, total: 150000, manoObra: 90000, repuestos: 60000 },
 };
 
-function setup() {
+function setup(otRespuesta: OtResponse = orden) {
   const clientesApi = {
     aprobarDiagnostico: vi.fn(() => of(undefined)),
     rechazarDiagnostico: vi.fn(() => of(undefined)),
@@ -33,7 +33,7 @@ function setup() {
     tarifa: 35000,
     fueraDeRango: false,
   };
-  const otApi = { getOtById: vi.fn(() => of(orden)), estimarTarifa: vi.fn(() => of(estimacion)) };
+  const otApi = { getOtById: vi.fn(() => of(otRespuesta)), estimarTarifa: vi.fn(() => of(estimacion)) };
   const sseEventos = new Subject<OtEstadoCambiado>();
   const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
   TestBed.configureTestingModule({
@@ -141,5 +141,24 @@ describe('DiagnosticoOtPage', () => {
     expect(sseEventos.observed).toBe(false);
     sseEventos.next({ otId: 'ot1', origen: 'EN_DIAGNOSTICO', destino: 'EN_REPARACION' });
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  describe('nombre del técnico', () => {
+    it('muestra el nombre real en el encabezado y en el chat', () => {
+      const { fixture } = setup();
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Revisión en sitio por Juan');
+      expect(texto).not.toContain('por asignar');
+    });
+
+    it('sin nombre muestra fallbacks honestos en lugar de una frase vacía o ambigua', () => {
+      const { fixture } = setup({ ...orden, tecnicoNombre: undefined });
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Revisión en sitio por un técnico por asignar');
+      expect(texto).toContain('Buscando técnico…');
+      expect(texto).not.toContain('el técnico asignado');
+    });
   });
 });

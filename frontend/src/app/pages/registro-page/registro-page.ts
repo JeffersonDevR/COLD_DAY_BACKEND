@@ -181,7 +181,8 @@ export class RegistroPage {
   private completarAlta(res: TokenResponse, correo: string): void {
     this.loading.set(false);
     const usuario = this.authService.establecerSesionDesdeToken(res, correo);
-    this.toast.success('Cuenta Creada Exitosamente', `Bienvenido a COLD DAY, ${usuario.nombre}`);
+    // El nombre de la sesión puede llegar vacío (el JWT real no lo emite): se saluda por correo.
+    this.toast.success('Cuenta Creada Exitosamente', `Bienvenido a COLD DAY, ${usuario.nombre || usuario.correo}`);
     // El proveedor aterriza en su expediente, no en el listado de solicitudes:
     // recién registrado está PENDIENTE y esas solicitudes le responderían 403.
     const destino = usuario.rol === 'PROVEEDOR' ? '/proveedor/documentos' : this.authService.getDashboardRouteForRole(usuario.rol);

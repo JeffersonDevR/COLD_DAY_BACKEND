@@ -45,6 +45,9 @@ describe('AuthService', () => {
 
   const create = (): AuthService => TestBed.inject(AuthService);
 
+  /** Instancia nueva: reproduce la recarga (el constructor restaura la sesión). */
+  const reload = (): AuthService => TestBed.runInInjectionContext(() => new AuthService());
+
   it('sin token no está autenticado', () => {
     const service = create();
     expect(service.isAuthenticated()).toBe(false);
@@ -75,6 +78,15 @@ describe('AuthService', () => {
     window.localStorage.setItem(TOKEN_KEY, tokenWith({ sub: '5', exp: expEn(3600) }));
     const service = create();
     expect(service.currentUser()).toBeNull();
+  });
+
+  it('un token sin nombre ni correo no inventa un nombre de sesión', () => {
+    // Forma del JWT real: solo `sub`/`rol`/`exp`. Rellenarlo con un literal
+    // ("Usuario") nombraba a la persona con un rótulo que no le corresponde.
+    window.localStorage.setItem(TOKEN_KEY, tokenWith({ sub: '5', rol: 'CLIENTE', exp: expEn(3600) }));
+    const service = create();
+    expect(service.isAuthenticated()).toBe(true);
+    expect(service.currentUser()?.nombre).toBe('');
   });
 
   it('sin sesión el conjunto de roles está vacío', () => {
@@ -118,9 +130,41 @@ describe('AuthService', () => {
     );
     expect(usuario.id).toBe(9);
     expect(usuario.correo).toBe('tecnico@x.co');
-    expect(usuario.nombre).toBe('tecnico@x.co');
+    // El correo ingresado se usa como correo, no como nombre: no conocemos el
+    // nombre de la persona (ver la regla única en AuthService.nombreDeSesion).
+    expect(usuario.nombre).toBe('');
     expect(usuario.rol).toBe('TECNICO');
     expect(service.isAuthenticated()).toBe(true);
+  });
+
+  it('el login y la recarga producen el mismo nombre de sesión', () => {
+    const service = create();
+    const token = tokenWith({ sub: '9', rol: 'CLIENTE', exp: expEn(3600) });
+    const trasLogin = service.establecerSesionDesdeToken(
+      { token, expiracion: '', rol: 'CLIENTE' },
+      'nuevo@x.co',
+    );
+
+    const trasRecarga = reload().currentUser();
+
+    expect(trasLogin.nombre).toBe('');
+    expect(trasRecarga?.nombre).toBe(trasLogin.nombre);
+    // El correo ingresado no viaja en el token, así que la recarga no lo recupera.
+    expect(trasLogin.correo).toBe('nuevo@x.co');
+    expect(trasRecarga?.correo).toBe('');
+  });
+
+  it('el login respeta el claim nombre cuando el token lo trae', () => {
+    const usuario = create().establecerSesionDesdeToken(
+      {
+        token: tokenWith({ sub: '9', rol: 'CLIENTE', nombre: 'Luis', exp: expEn(3600) }),
+        expiracion: '',
+        rol: 'CLIENTE',
+      },
+      'otro@x.co',
+    );
+    expect(usuario.nombre).toBe('Luis');
+    expect(usuario.correo).toBe('otro@x.co');
   });
 
   it('establecerSesionDesdeToken usa el usuario completo si se entrega', () => {

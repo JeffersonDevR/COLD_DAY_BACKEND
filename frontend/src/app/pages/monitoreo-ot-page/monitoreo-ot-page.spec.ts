@@ -65,6 +65,20 @@ describe('MonitoreoOtPage', () => {
     expect(fixture.componentInstance.otsFiltradas()).toEqual([]);
   });
 
+  describe('columna de técnico', () => {
+    it('muestra el nombre real del técnico asignado', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: 'OT-1', clienteNombre: 'Ana', tecnicoNombre: 'Juan Pérez' })])));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Juan Pérez');
+    });
+
+    it('sin técnico asignado muestra el fallback honesto, no una celda en blanco', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: 'OT-1', clienteNombre: 'Ana' })])));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Buscando técnico…');
+    });
+  });
+
   describe('refresco periódico con la pestaña visible', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => {

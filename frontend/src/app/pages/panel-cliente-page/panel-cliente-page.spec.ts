@@ -24,13 +24,13 @@ function ot(overrides: Partial<OtResponse>): OtResponse {
   };
 }
 
-function setup(getOts: ReturnType<typeof vi.fn>) {
+function setup(getOts: ReturnType<typeof vi.fn>, sesion: { id: number; nombre?: string } = { id: 3, nombre: 'María' }) {
   TestBed.configureTestingModule({
     imports: [PanelClientePage],
     providers: [
       provideRouter([]),
       { provide: ClientesApi, useValue: { getOtsPorCliente: getOts } },
-      { provide: AuthService, useValue: { currentUser: () => ({ id: 3, nombre: 'María' }) } },
+      { provide: AuthService, useValue: { currentUser: () => sesion } },
     ],
   });
   const fixture = TestBed.createComponent(PanelClientePage);
@@ -62,6 +62,22 @@ describe('PanelClientePage', () => {
   it('muestra el estado vacío sin servicios activos', () => {
     const fixture = setup(vi.fn(() => of([])));
     expect(fixture.nativeElement.textContent).toContain('No tienes servicios en curso');
+  });
+
+  describe('saludo del panel', () => {
+    it('saluda con el nombre real de la sesión', () => {
+      const fixture = setup(vi.fn(() => of([])));
+      expect(fixture.nativeElement.textContent).toContain('Hola, María');
+    });
+
+    it('con una sesión sin nombre saluda con una etiqueta honesta, no con "Usuario"', () => {
+      // El JWT real no emite `nombre`; un saludo con el literal "Usuario"
+      // nombra a la persona con un rótulo genérico que nunca le corresponde.
+      const fixture = setup(vi.fn(() => of([])), { id: 3 });
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Hola, Cliente');
+      expect(texto).not.toContain('Usuario');
+    });
   });
 
   describe('refresco periódico con la pestaña visible', () => {
