@@ -26,6 +26,7 @@ import com.sena.cold_day.core.modules.administracion.domain.valueobjects.MedioPa
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
@@ -78,6 +79,8 @@ class RegistrarPagoUseCaseTest {
         // liquidation, derived only from the declared montoCobrado.
         assertThat(response.montoCobrado()).isEqualByComparingTo("500000.00");
         assertThat(response.valorComision()).isEqualByComparingTo("75000.00");
+        // The response names the order by its readable code, not only by UUID (T2).
+        assertThat(response.otCodigo()).isEqualTo("OT-2026-0042");
     }
 
     @Test
@@ -116,9 +119,11 @@ class RegistrarPagoUseCaseTest {
     }
 
     private Ot otFinalizada(TecnicoId tecnicoId, int auxiliaresRequeridos) {
-        return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
+        Ot ot = Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
                 "No enciende", List.of(), "Calle 1", new Point(7.8939, -72.5078), EstadoOt.FINALIZADA, 10.0,
                 AHORA.plusSeconds(3600), AHORA, AHORA, AHORA, null, null, null, null, null, null, null,
                 auxiliaresRequeridos);
+        ot.asignarCodigo(CodigoOt.de("OT-2026-0042"));
+        return ot;
     }
 }

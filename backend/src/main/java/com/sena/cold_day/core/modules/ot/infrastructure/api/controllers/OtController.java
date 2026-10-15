@@ -26,6 +26,7 @@ import com.sena.cold_day.core.modules.ot.application.usecases.ConsultarOtUseCase
 import com.sena.cold_day.core.modules.ot.application.usecases.CrearOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.FinalizarOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.NombresOtResolver;
 import com.sena.cold_day.core.modules.ot.application.usecases.PagarVisitaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RechazarPresupuestoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarActaGarantiaUseCase;
@@ -73,6 +74,7 @@ public class OtController {
     private final CalificarOtUseCase calificarOt;
     private final RegistrarActaGarantiaUseCase registrarActaGarantia;
     private final AutorizacionPropietario autorizacion;
+    private final NombresOtResolver nombres;
 
     @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (12 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 12 params a otro ctor.
     public OtController(CrearOtUseCase crear, ConsultarOtUseCase consultar, CancelarOtUseCase cancelar,
@@ -82,7 +84,7 @@ public class OtController {
             RechazarPresupuestoUseCase rechazarPresupuesto, FinalizarOtUseCase finalizar,
             ConfirmarLlegadaUseCase confirmarLlegada, PagarVisitaUseCase pagarVisita,
             CalificarOtUseCase calificarOt, RegistrarActaGarantiaUseCase registrarActaGarantia,
-            AutorizacionPropietario autorizacion) {
+            AutorizacionPropietario autorizacion, NombresOtResolver nombres) {
         this.crear = crear;
         this.consultar = consultar;
         this.cancelar = cancelar;
@@ -96,6 +98,17 @@ public class OtController {
         this.calificarOt = calificarOt;
         this.registrarActaGarantia = registrarActaGarantia;
         this.autorizacion = autorizacion;
+        this.nombres = nombres;
+    }
+
+    /**
+     * The client/technician display names travel with the detail and mutation
+     * responses too, not only with the listings: the same OT read from a list and
+     * from {@code GET /api/ot/{id}} must not disagree on who it belongs to.
+     */
+    private OtApiResponse conNombres(OtResponse ot) {
+        return OtApiResponse.from(ot, nombres.nombreCliente(ot.clienteId()),
+                nombres.nombreTecnico(ot.tecnicoId()));
     }
 
     /** The requester is resolved from the principal; all Phase-1 orders are urgent. */
@@ -106,7 +119,7 @@ public class OtController {
         OtResponse created = crear.crear(new OtRequest(request.categoriaServicio(), request.descripcionFalla(),
                 request.evidenciaUrls(), request.direccion(), request.toPoint()), principal.usuarioId());
         return ResponseEntity.created(URI.create("/api/ot/" + created.id().valor()))
-                .body(OtApiResponse.from(created));
+                .body(conNombres(created));
     }
 
     /** Readable only by the owning client, the assigned technician, or an administrator. */
@@ -114,7 +127,7 @@ public class OtController {
     public OtApiResponse consultar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id) {
         OtResponse ot = consultar.consultar(id);
         autorizacion.exigirParticipanteOAdmin(principal, ot);
-        return OtApiResponse.from(ot);
+        return conNombres(ot);
     }
 
     @GetMapping("/{id}/historial")
@@ -148,7 +161,7 @@ public class OtController {
     @PreAuthorize("hasRole('TECNICO')")
     public OtApiResponse iniciarDesplazamiento(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OtId id) {
-        return OtApiResponse.from(iniciarDesplazamiento.iniciar(principal.usuarioId(), id));
+        return conNombres(iniciarDesplazamiento.iniciar(principal.usuarioId(), id));
     }
 
     /**
@@ -164,7 +177,7 @@ public class OtController {
                 request.observaciones(), request.costoManoObra(), request.costoRepuestos(),
                 request.insumos() == null ? List.of()
                         : request.insumos().stream().map(InsumoLineaApiRequest::toDomain).toList());
-        return OtApiResponse.from(registrarDiagnostico.registrar(principal.usuarioId(), id, diagnostico));
+        return conNombres(registrarDiagnostico.registrar(principal.usuarioId(), id, diagnostico));
     }
 
     /** RF-F1-20: the owning client approves the budget ({@code EN_REPARACION}). */
@@ -172,7 +185,7 @@ public class OtController {
     @PreAuthorize("hasRole('CLIENTE')")
     public OtApiResponse aprobarPresupuesto(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OtId id) {
-        return OtApiResponse.from(aprobarPresupuesto.aprobar(principal.usuarioId(), id));
+        return conNombres(aprobarPresupuesto.aprobar(principal.usuarioId(), id));
     }
 
     /** RF-F1-20/D1: rejection terminates the OT as CANCELADA with the visit fee. */
@@ -181,14 +194,14 @@ public class OtController {
     public OtApiResponse rechazarPresupuesto(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OtId id, @RequestBody(required = false) RechazoPresupuestoApiRequest request) {
         String razon = request == null ? null : request.motivo();
-        return OtApiResponse.from(rechazarPresupuesto.rechazar(principal.usuarioId(), id, razon));
+        return conNombres(rechazarPresupuesto.rechazar(principal.usuarioId(), id, razon));
     }
 
     /** RF-F1-10: the assigned technician finishes the repair. */
     @PostMapping("/{id}/finalizar")
     @PreAuthorize("hasRole('TECNICO')")
     public OtApiResponse finalizar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id) {
-        return OtApiResponse.from(finalizar.finalizar(principal.usuarioId(), id));
+        return conNombres(finalizar.finalizar(principal.usuarioId(), id));
     }
 
     /**
@@ -203,7 +216,7 @@ public class OtController {
             @RequestBody(required = false) CancelarOtApiRequest request) {
         String razon = request == null ? null : request.motivo();
         ActorOt actorRol = request == null ? null : request.actorRol();
-        return OtApiResponse.from(cancelar.cancelar(principal.usuarioId(), id, razon, actorRol));
+        return conNombres(cancelar.cancelar(principal.usuarioId(), id, razon, actorRol));
     }
 
     /**
@@ -220,7 +233,7 @@ public class OtController {
     public OtApiResponse confirmarLlegada(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OtId id) {
         autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
-        return OtApiResponse.from(confirmarLlegada.confirmar(principal.usuarioId(), id));
+        return conNombres(confirmarLlegada.confirmar(principal.usuarioId(), id));
     }
 
     /**
@@ -234,7 +247,7 @@ public class OtController {
     public OtApiResponse pagarVisita(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OtId id, @Valid @RequestBody PagarVisitaApiRequest request) {
         autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
-        return OtApiResponse.from(pagarVisita.pagar(principal.usuarioId(), id, request.medioPago()));
+        return conNombres(pagarVisita.pagar(principal.usuarioId(), id, request.medioPago()));
     }
 
     /** RF-F1-15: the owning client rates the technician who served the order. */
@@ -243,7 +256,7 @@ public class OtController {
     public OtApiResponse calificar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id,
             @Valid @RequestBody CalificarOtApiRequest request) {
         autorizacion.exigirParticipanteOAdmin(principal, consultar.consultar(id));
-        return OtApiResponse.from(calificarOt.calificar(principal.usuarioId(), id, request.estrellas(),
+        return conNombres(calificarOt.calificar(principal.usuarioId(), id, request.estrellas(),
                 request.comentario()));
     }
 

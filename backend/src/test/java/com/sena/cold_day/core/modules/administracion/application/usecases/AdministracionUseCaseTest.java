@@ -53,6 +53,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoExc
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
@@ -91,6 +92,8 @@ class AdministracionUseCaseTest {
             YearMonth.now().atDay(15).atStartOfDay(ZoneId.systemDefault()).toInstant();
     private static final long USUARIO_ID = 7L;
     private static final UsuarioId PRINCIPAL = new UsuarioId(USUARIO_ID);
+    /** Readable code every fixture order carries, so responses can be asserted on it (T2). */
+    private static final String CODIGO_OT = "OT-2026-0042";
 
     @Mock OtRepository otRepository;
     @Mock ClienteRepository clienteRepository;
@@ -111,15 +114,16 @@ class AdministracionUseCaseTest {
     void setUp() {
         registrarPago = new RegistrarPagoUseCase(otRepository, tecnicoRepository, liquidacionRepository,
                 events, CLOCK, new BigDecimal("0.15"));
-        cargarComprobante = new CargarComprobanteUseCase(liquidacionRepository, tecnicoRepository, events);
+        cargarComprobante = new CargarComprobanteUseCase(liquidacionRepository, tecnicoRepository,
+                otRepository, events);
         verificarComprobante = new VerificarComprobanteUseCase(liquidacionRepository, tecnicoRepository,
-                usuarioRepository, events, CLOCK);
+                usuarioRepository, otRepository, events, CLOCK);
         gestionarDisputa = new GestionarDisputaUseCase(otRepository, clienteRepository, tecnicoRepository,
                 disputaRepository, usuarioRepository, events, CLOCK);
         metricas = new ConsultarMetricasAdminUseCase(otRepository, tecnicoRepository, disputaRepository,
                 liquidacionRepository);
         listarLiquidaciones = new ListarLiquidacionesTecnicoUseCase(liquidacionRepository, tecnicoRepository,
-                usuarioRepository);
+                usuarioRepository, otRepository);
     }
 
     // ------------------------------------------------------------------ RegistrarPago
@@ -288,16 +292,20 @@ class AdministracionUseCaseTest {
     @Test
     void listarPendientesAndTodasEnrichWithTheTecnicoName() {
         Tecnico tecnico = tecnicoAprobado(EstadoOperativo.BLOQUEADO_POR_LIQUIDACION);
-        Liquidacion liquidacion = liquidacionEnVerificacion(tecnico.getId());
+        Ot ot = ot(EstadoOt.FINALIZADA, tecnico.getId(), ClienteId.nueva(), AHORA);
+        Liquidacion liquidacion = liquidacionEnVerificacion(ot.getId(), tecnico.getId());
         when(liquidacionRepository.buscarPorEstado(EstadoLiquidacion.EN_VERIFICACION))
                 .thenReturn(List.of(liquidacion));
         when(liquidacionRepository.listarTodas()).thenReturn(List.of(liquidacion));
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
         when(tecnicoRepository.findByIdAndActivoTrue(tecnico.getId())).thenReturn(Optional.of(tecnico));
         when(usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId())))
                 .thenReturn(Optional.of(usuario(tecnico.getUsuarioId(), "Ana")));
 
         assertThat(verificarComprobante.listarPendientes().get(0).tecnicoNombre()).isEqualTo("Ana");
         assertThat(verificarComprobante.listarTodas().get(0).tecnicoNombre()).isEqualTo("Ana");
+        assertThat(verificarComprobante.listarPendientes().get(0).otCodigo()).isEqualTo(CODIGO_OT);
+        assertThat(verificarComprobante.listarTodas().get(0).otCodigo()).isEqualTo(CODIGO_OT);
     }
 
     // ------------------------------------------------------------------ ListarLiquidacionesTecnico
@@ -305,15 +313,18 @@ class AdministracionUseCaseTest {
     @Test
     void listarLiquidacionesDelTecnico() {
         Tecnico tecnico = tecnicoAprobado(EstadoOperativo.BLOQUEADO_POR_LIQUIDACION);
+        Ot ot = ot(EstadoOt.FINALIZADA, tecnico.getId(), ClienteId.nueva(), AHORA);
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
         when(usuarioRepository.buscarPorId(PRINCIPAL)).thenReturn(Optional.of(usuario(USUARIO_ID, "Ana")));
         when(liquidacionRepository.buscarPorTecnico(tecnico.getId()))
-                .thenReturn(List.of(liquidacionPendiente(tecnico.getId())));
+                .thenReturn(List.of(liquidacionPendiente(ot.getId(), tecnico.getId())));
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
 
         var response = listarLiquidaciones.listar(PRINCIPAL);
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).tecnicoNombre()).isEqualTo("Ana");
+        assertThat(response.get(0).otCodigo()).isEqualTo(CODIGO_OT);
     }
 
     @Test
@@ -339,6 +350,7 @@ class AdministracionUseCaseTest {
 
         assertThat(response.motivo()).isEqualTo("Trabajo incompleto");
         assertThat(response.estado()).isEqualTo(EstadoDisputa.ABIERTA);
+        assertThat(response.otCodigo()).isEqualTo(CODIGO_OT);
         assertThat(ot.getEstado()).isEqualTo(EstadoOt.DISPUTADA);
         verify(events).publishEvent(any(Object.class));
     }
@@ -434,6 +446,7 @@ class AdministracionUseCaseTest {
 
         assertThat(gestionarDisputa.listarAbiertas().get(0).clienteNombre()).isEqualTo("Cliente Ana");
         assertThat(gestionarDisputa.listarAbiertas().get(0).tecnicoNombre()).isEqualTo("Tecnico Luis");
+        assertThat(gestionarDisputa.listarAbiertas().get(0).otCodigo()).isEqualTo(CODIGO_OT);
         assertThat(gestionarDisputa.listarTodas()).hasSize(1);
     }
 
@@ -509,26 +522,43 @@ class AdministracionUseCaseTest {
     }
 
     private Ot ot(EstadoOt estado, TecnicoId tecnicoId, ClienteId clienteId, Instant creadaEn) {
-        return Ot.reconstituir(OtId.nueva(), clienteId, tecnicoId, CategoriaServicio.REFRIGERACION,
+        Ot ot = Ot.reconstituir(OtId.nueva(), clienteId, tecnicoId, CategoriaServicio.REFRIGERACION,
                 "No enciende", List.of(), "Calle 1", new Point(7.8, -72.5), estado, 10.0, null,
                 creadaEn, creadaEn, estado == EstadoOt.FINALIZADA ? creadaEn : null, null, null, null,
                 null, null);
+        return conCodigo(ot);
     }
 
     private Ot ot(EstadoOt estado, TecnicoId tecnicoId, OtId otId, Instant creadaEn) {
-        return Ot.reconstituir(otId, ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
+        Ot ot = Ot.reconstituir(otId, ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
                 "No enciende", List.of(), "Calle 1", new Point(7.8, -72.5), estado, 10.0, null,
                 creadaEn, creadaEn, estado == EstadoOt.FINALIZADA ? creadaEn : null, null, null, null,
                 null, null);
+        return conCodigo(ot);
+    }
+
+    /** Every fixture order carries the readable code the UI names it with (T2). */
+    private Ot conCodigo(Ot ot) {
+        ot.asignarCodigo(CodigoOt.de(CODIGO_OT));
+        return ot;
     }
 
     private Liquidacion liquidacionPendiente(TecnicoId tecnicoId) {
-        return Liquidacion.registrar(OtId.nueva(), tecnicoId, new BigDecimal("100000.00"),
+        return liquidacionPendiente(OtId.nueva(), tecnicoId);
+    }
+
+    private Liquidacion liquidacionPendiente(OtId otId, TecnicoId tecnicoId) {
+        return Liquidacion.registrar(otId, tecnicoId, new BigDecimal("100000.00"),
                 MedioPago.EFECTIVO, new BigDecimal("0.15"), AHORA);
     }
 
     private Liquidacion liquidacionEnVerificacion(TecnicoId tecnicoId) {
-        Liquidacion liquidacion = liquidacionPendiente(tecnicoId);
+        return liquidacionEnVerificacion(OtId.nueva(), tecnicoId);
+    }
+
+    private Liquidacion liquidacionEnVerificacion(OtId otId, TecnicoId tecnicoId) {
+        Liquidacion liquidacion = Liquidacion.registrar(otId, tecnicoId, new BigDecimal("100000.00"),
+                MedioPago.EFECTIVO, new BigDecimal("0.15"), AHORA);
         liquidacion.cargarComprobante("https://cdn/c.jpg");
         return liquidacion;
     }

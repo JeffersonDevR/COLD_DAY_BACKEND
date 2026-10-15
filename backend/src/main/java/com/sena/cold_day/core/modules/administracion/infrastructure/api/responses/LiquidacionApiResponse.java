@@ -7,10 +7,14 @@ import com.sena.cold_day.core.modules.administracion.application.dto.Liquidacion
 import com.sena.cold_day.core.modules.administracion.domain.valueobjects.EstadoLiquidacion;
 import com.sena.cold_day.core.modules.administracion.domain.valueobjects.MedioPago;
 
-/** Vista API de una liquidacion: identificadores como UUID planos. */
+/**
+ * API view of a settlement: identifiers as plain UUIDs. {@code otCodigo}
+ * accompanies {@code otId} so the UI can name the OT without showing its UUID.
+ */
 public record LiquidacionApiResponse(
         String id,
         String otId,
+        String otCodigo,
         String tecnicoId,
         BigDecimal montoCobrado,
         MedioPago medioPago,
@@ -27,6 +31,7 @@ public record LiquidacionApiResponse(
         return new LiquidacionApiResponse(
                 response.id() == null ? null : response.id().valor().toString(),
                 response.otId() == null ? null : response.otId().valor().toString(),
+                response.otCodigo(),
                 response.tecnicoId() == null ? null : response.tecnicoId().valor().toString(),
                 response.montoCobrado(), response.medioPago(), response.porcentajeComision(),
                 response.valorComision(), response.estado(), response.comprobanteUrl(),

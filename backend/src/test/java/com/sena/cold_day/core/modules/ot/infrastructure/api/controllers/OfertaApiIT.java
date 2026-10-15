@@ -27,6 +27,7 @@ import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaEstado;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOfertaOtRepository;
@@ -209,6 +210,7 @@ class OfertaApiIT {
                 .andExpect(jsonPath("$[0].estado").value("PENDIENTE"))
                 .andExpect(jsonPath("$[0].otId").value(ot.getId().valor().toString()))
                 .andExpect(jsonPath("$[0].ot.id").value(ot.getId().valor().toString()))
+                .andExpect(jsonPath("$[0].ot.codigo").value("OT-2026-0001"))
                 .andExpect(jsonPath("$[0].ot.estado").value("BUSCANDO_TECNICO"))
                 .andExpect(jsonPath("$[0].ot.categoriaServicio").value("REFRIGERACION"))
                 .andExpect(jsonPath("$[0].ot.descripcionFalla").value("No enciende"))
@@ -260,6 +262,8 @@ class OfertaApiIT {
         Instant ahora = Instant.now();
         Ot ot = Ot.crear(fx.clienteId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
                 "Calle 1", BOGOTA, ahora);
+        // The offer card names the order with this handle instead of its UUID (T2).
+        ot.asignarCodigo(CodigoOt.de("OT-2026-0001"));
         ot.iniciarBusqueda(10.0, ahora.plusSeconds(60), ActorOt.CLIENTE, ahora);
         return otRepository.save(ot);
     }

@@ -12,7 +12,11 @@ import com.sena.cold_day.core.modules.administracion.domain.repository.Liquidaci
 import com.sena.cold_day.core.modules.administracion.domain.valueobjects.LiquidacionId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
+import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
+import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
@@ -25,12 +29,15 @@ public class CargarComprobanteUseCase {
 
     private final LiquidacionRepository liquidacionRepository;
     private final TecnicoRepository tecnicoRepository;
+    private final OtRepository otRepository;
     private final ApplicationEventPublisher events;
 
     public CargarComprobanteUseCase(LiquidacionRepository liquidacionRepository,
-            TecnicoRepository tecnicoRepository, ApplicationEventPublisher events) {
+            TecnicoRepository tecnicoRepository, OtRepository otRepository,
+            ApplicationEventPublisher events) {
         this.liquidacionRepository = liquidacionRepository;
         this.tecnicoRepository = tecnicoRepository;
+        this.otRepository = otRepository;
         this.events = events;
     }
 
@@ -47,6 +54,14 @@ public class CargarComprobanteUseCase {
         liquidacion.cargarComprobante(comprobanteUrl);
         Liquidacion guardada = liquidacionRepository.save(liquidacion);
         events.publishEvent(new ComprobanteCargado(guardada.getId()));
-        return LiquidacionResponse.fromDomain(guardada);
+        return LiquidacionResponse.fromDomain(guardada).conOtCodigo(codigoDe(guardada.getOtId()));
+    }
+
+    /**
+     * Readable code of the liquidated order for the UI; null when the order is
+     * not found. Only the display needs it, so a missing order never fails here.
+     */
+    private CodigoOt codigoDe(OtId otId) {
+        return otRepository.buscarPorId(otId).map(Ot::getCodigo).orElse(null);
     }
 }

@@ -57,7 +57,8 @@ class ListarOtUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new ListarOtUseCase(otRepository, clienteRepository, tecnicoRepository, usuarioRepository);
+        useCase = new ListarOtUseCase(otRepository, clienteRepository, tecnicoRepository,
+                new NombresOtResolver(clienteRepository, tecnicoRepository, usuarioRepository));
     }
 
     @Test

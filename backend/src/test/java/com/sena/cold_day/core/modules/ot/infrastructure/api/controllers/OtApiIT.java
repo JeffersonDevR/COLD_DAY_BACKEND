@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -28,9 +30,14 @@ import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
+import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.modules.tecnicos.infrastructure.repository.SpringDataTecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
@@ -56,7 +63,9 @@ class OtApiIT {
     @Autowired MockMvc mockMvc;
     @Autowired OtRepository otRepository;
     @Autowired ClienteRepository clienteRepository;
+    @Autowired TecnicoRepository tecnicoRepository;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
+    @Autowired SpringDataTecnicoRepository springDataTecnico;
     @Autowired SpringDataOtRepository springDataOt;
     @Autowired SpringDataOtEstadoHistorialRepository springDataHistorial;
     @Autowired JwtTokenIssuer tokenIssuer;
@@ -66,6 +75,8 @@ class OtApiIT {
     void cleanup() {
         springDataHistorial.deleteAll();
         springDataOt.deleteAll();
+        // Technicians reference usuarios, so they go before the users are wiped.
+        springDataTecnico.deleteAll();
         clienteRepository.deleteAll();
         usuarioRepository.deleteAll();
     }
@@ -99,6 +110,65 @@ class OtApiIT {
                 .andExpect(jsonPath("$[0].actor").value("CLIENTE"))
                 .andExpect(jsonPath("$[1].estadoOrigen").value("SOLICITADA"))
                 .andExpect(jsonPath("$[1].estadoDestino").value("BUSCANDO_TECNICO"));
+    }
+
+    /**
+     * T2: the display names are not a list-only nicety. An OT read from the
+     * detail endpoint and an OT returned by a mutation carry the same client and
+     * technician names the listing already carried; on an unassigned order the
+     * client is still named and the technician is honestly absent.
+     */
+    @Test
+    void theDetailOfAnAssignedOrderCarriesTheClientAndTechnicianNames() throws Exception {
+        Long clienteUsuario = crearUsuario("nombres-cliente@example.com", Rol.CLIENTE, "Cliente Ana");
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("nombres-tecnico@example.com", Rol.TECNICO, "Tecnico Luis");
+        TecnicoId tecnicoId = tecnicoRepository.save(Tecnico.crear(tecnicoUsuario,
+                "ID-" + UUID.randomUUID(), Set.of(CategoriaServicio.REFRIGERACION), Set.of())).getId();
+        Instant ahora = Instant.parse("2026-09-14T10:00:00Z");
+        // EN_CAMINO: the paid-visit gate guards ASIGNADA -> EN_CAMINO (Ot#iniciarDesplazamiento),
+        // and this test is about the names, not about the fee.
+        Ot enCamino = otRepository.save(Ot.reconstituir(OtId.nueva(), cliente.getId(), tecnicoId,
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0),
+                EstadoOt.EN_CAMINO, 10.0, ahora.plusSeconds(60), ahora, ahora, null, null, null, null,
+                null, null));
+
+        mockMvc.perform(get("/api/ot/" + enCamino.getId().valor())
+                        .header("Authorization", "Bearer " + jwt(clienteUsuario, Rol.CLIENTE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clienteNombre").value("Cliente Ana"))
+                .andExpect(jsonPath("$.tecnicoNombre").value("Tecnico Luis"));
+
+        // A mutation response is built on the same path as the detail: the
+        // technician confirming arrival must see the same names.
+        mockMvc.perform(post("/api/ot/" + enCamino.getId().valor() + "/llegada")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO)))
+                .andExpect(status().isOk())
+                // Arrival is a fact, not a transition: the state stays EN_CAMINO.
+                .andExpect(jsonPath("$.estado").value("EN_CAMINO"))
+                .andExpect(jsonPath("$.clienteNombre").value("Cliente Ana"))
+                .andExpect(jsonPath("$.tecnicoNombre").value("Tecnico Luis"));
+    }
+
+    @Test
+    void theResponseOfAnUnassignedOrderCarriesOnlyTheClientName() throws Exception {
+        Long usuarioId = crearUsuario("sin-tecnico@example.com", Rol.CLIENTE, "Cliente Ana");
+        crearCliente(usuarioId);
+        String token = jwt(usuarioId, Rol.CLIENTE);
+
+        String body = mockMvc.perform(post("/api/ot")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.clienteNombre").value("Cliente Ana"))
+                .andExpect(jsonPath("$.tecnicoNombre").value(nullValue()))
+                .andReturn().getResponse().getContentAsString();
+        String otId = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+
+        mockMvc.perform(get("/api/ot/" + otId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.clienteNombre").value("Cliente Ana"))
+                .andExpect(jsonPath("$.tecnicoNombre").value(nullValue()));
     }
 
     @Test
@@ -177,11 +247,15 @@ class OtApiIT {
     }
 
     private Long crearUsuario(String correo, Rol rol) {
+        return crearUsuario(correo, rol, "Ana");
+    }
+
+    private Long crearUsuario(String correo, Rol rol, String nombre) {
         PasswordEncoderPort encoder = new PasswordEncoderPort() {
             public String encode(String p) { return "fake:" + p; }
             public boolean matches(String p, String h) { return ("fake:" + p).equals(h); }
         };
-        Usuario usuario = Usuario.registrar("Ana", correo, "secreto", "3001234567", null, rol, true, encoder);
+        Usuario usuario = Usuario.registrar(nombre, correo, "secreto", "3001234567", null, rol, true, encoder);
         return usuarioRepository.save(UsuarioJpaEntity.fromDomain(usuario)).getId();
     }
 
