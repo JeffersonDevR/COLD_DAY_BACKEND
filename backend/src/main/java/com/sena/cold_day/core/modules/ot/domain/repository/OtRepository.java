@@ -54,4 +54,15 @@ public interface OtRepository {
 
     /** Orders still searching whose dispatch window has closed. */
     List<Ot> buscarVentanasVencidas(Instant ahora);
+
+    /**
+     * Highest per-year sequence already issued for {@code anio} among the
+     * {@code OT-YYYY-####} codes, or {@code 0} when the year has none: the seed of
+     * the next code (see
+     * {@link com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt}).
+     * Rows without a code are ignored. Callers read it inside the creation
+     * transaction, before the order that will consume the number is saved.
+     */
+    // shortcut: the number is derived from the rows of the year, so two concurrent creations of the same year can compute the same one (the loser fails on idx_ot_codigo) and deleting the highest-numbered OT of a year frees its number, upgrade to a per-year counter row if concurrent creation or OT deletion becomes a real path.
+    int ultimoNumeroCodigo(int anio);
 }

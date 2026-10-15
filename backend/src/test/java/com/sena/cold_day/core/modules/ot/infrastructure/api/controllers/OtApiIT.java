@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -79,6 +80,10 @@ class OtApiIT {
                         .contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNotEmpty())
+                // The human-readable handle (T1) travels with the order. Only the
+                // shape is asserted: the number depends on how many orders the
+                // shared test database already holds.
+                .andExpect(jsonPath("$.codigo").value(matchesPattern("^OT-\\d{4}-\\d{4,}$")))
                 .andExpect(jsonPath("$.clienteId").value(cliente.getId().valor().toString()))
                 .andExpect(jsonPath("$.estado").value("BUSCANDO_TECNICO"))
                 .andExpect(jsonPath("$.radioKm").value(10.0))

@@ -9,6 +9,7 @@ import java.util.UUID;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
@@ -205,6 +206,14 @@ public class OtJpaEntity {
     @Column(name = "acta_firmada_en")
     private Instant actaFirmadaEn;
 
+    // Human-readable code (V14). Nullable and left NULL by the additive ALTER:
+    // every pre-existing row was backfilled by the migration and every order
+    // created through CrearOtUseCase is allocated one, so a NULL here means "a
+    // row written by a path that never allocates a code", never "unknown".
+    // applyFromDomain never clears an already stored code (stable once assigned).
+    @Column(name = "codigo", length = 20)
+    private String codigo;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -253,6 +262,12 @@ public class OtJpaEntity {
         this.actaCodigoVerificacion = source.getActaCodigoVerificacion() == null ? null
                 : source.getActaCodigoVerificacion().valor();
         this.actaFirmadaEn = source.getActaFirmadaEn();
+        // A code already stored survives a save from an aggregate that does not
+        // carry one (a reconstitution through one of the legacy overloads, or a
+        // row created before the code existed). The code is assigned once at
+        // creation and never regenerated, so the only way it changes is a
+        // mistake; keeping the stored value makes that mistake impossible here.
+        this.codigo = source.getCodigo() == null ? this.codigo : source.getCodigo().valor();
     }
 
     public Ot toDomain() {
@@ -267,6 +282,7 @@ public class OtJpaEntity {
                 tarifaFuente == null ? null : TarifaFuente.valueOf(tarifaFuente), auxiliaresRequeridos,
                 llegadaEn, medioPagoVisita, visitaPagadaEn, calificacionEstrellas, calificacionComentario,
                 calificacionEn, calificacionTecnicoId == null ? null : TecnicoId.desde(calificacionTecnicoId),
-                actaFirmaDataUrl, actaCodigoVerificacion, actaFirmadaEn);
+                actaFirmaDataUrl, actaCodigoVerificacion, actaFirmadaEn,
+                codigo == null ? null : CodigoOt.de(codigo));
     }
 }
