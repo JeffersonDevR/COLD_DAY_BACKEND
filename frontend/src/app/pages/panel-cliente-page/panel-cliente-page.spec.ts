@@ -16,6 +16,7 @@ function cambiarPestana(estado: 'visible' | 'hidden'): void {
 function ot(overrides: Partial<OtResponse>): OtResponse {
   return {
     id: 'ot1',
+    codigo: 'OT-2026-0001',
     categoriaServicio: 'REFRIGERACION',
     descripcionFalla: 'no enfría',
     estado: 'EN_CAMINO',
@@ -77,6 +78,25 @@ describe('PanelClientePage', () => {
       const texto = fixture.nativeElement.textContent as string;
       expect(texto).toContain('Hola, Cliente');
       expect(texto).not.toContain('Usuario');
+    });
+  });
+
+  describe('identificación de la OT', () => {
+    // El `id` es el UUID interno del backend: nunca se muestra al cliente.
+    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+
+    it('muestra el código legible y no el id interno', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: idInterno, codigo: 'OT-2026-0013', estado: 'EN_CAMINO' })])));
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('OT-2026-0013');
+      expect(texto).not.toContain(idInterno);
+    });
+
+    it('sin código del backend muestra un texto honesto, tampoco el id interno', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: idInterno, codigo: undefined, estado: 'EN_CAMINO' })])));
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Sin código');
+      expect(texto).not.toContain(idInterno);
     });
   });
 

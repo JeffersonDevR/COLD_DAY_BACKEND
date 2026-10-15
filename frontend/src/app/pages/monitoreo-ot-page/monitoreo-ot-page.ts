@@ -50,7 +50,7 @@ export class MonitoreoOtPage {
 
     if (query) {
       list = list.filter(o =>
-        o.id.toLowerCase().includes(query) ||
+        o.codigo?.toLowerCase().includes(query) ||
         o.clienteNombre?.toLowerCase().includes(query) ||
         o.tecnicoNombre?.toLowerCase().includes(query) ||
         o.barrio?.toLowerCase().includes(query) ||

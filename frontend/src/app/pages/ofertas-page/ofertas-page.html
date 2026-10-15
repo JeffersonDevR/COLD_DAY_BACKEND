@@ -38,7 +38,7 @@
           <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 relative overflow-hidden hover:border-sky-400 transition-all">
             <!-- Barra superior con cuenta regresiva -->
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <span class="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">{{ ot.id }}</span>
+              <span class="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">{{ ot.codigo || 'Sin código' }}</span>
               <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-bold">
                 <i class="pi pi-clock text-xs" style="font-size: 14px; width:14px; height:14px;"></i>
                 <span>42s restantes</span>
@@ -69,7 +69,7 @@
               </div>
               <div class="flex items-center gap-1 text-slate-500">
                 <i class="pi pi-user text-xs"></i>
-                <span>Cliente: {{ ot.clienteNombre }}</span>
+                <span>Cliente: {{ ot.clienteNombre || 'Sin nombre' }}</span>
               </div>
               <div class="flex items-center gap-1 text-emerald-700 dark:text-emerald-300 font-semibold pt-1 border-t border-slate-200/70 dark:border-slate-700/70 mt-1">
                 <i class="pi pi-wallet text-xs"></i>

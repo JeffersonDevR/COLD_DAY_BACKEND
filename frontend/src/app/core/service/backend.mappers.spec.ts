@@ -204,6 +204,13 @@ describe('backend.mappers — contratos existentes', () => {
     expect(aOtResponse(otDto({ visitaPagada: false })).visitaPagada).toBe(false);
   });
 
+  it('expone el código legible de la OT y no lo fabrica cuando falta', () => {
+    expect(aOtResponse(otDto({ codigo: 'OT-2026-0007' })).codigo).toBe('OT-2026-0007');
+    // Fila anterior al backfill: el mapper no inventa un código ni cae al UUID.
+    expect(aOtResponse(otDto({ codigo: null })).codigo).toBeUndefined();
+    expect(aOtResponse(otDto()).codigo).toBeUndefined();
+  });
+
   it('normaliza los formularios de creación de OT y diagnóstico', () => {
     expect(aOtApiRequest({
       categoriaServicio: 'ELECTRICIDAD', descripcionFalla: 'corto', direccion: 'calle 9', latitud: 1, longitud: 2,
@@ -226,7 +233,7 @@ describe('backend.mappers — contratos existentes', () => {
       id: 'of1', otId: 'ot1', tecnicoId: 't1', radioKm: 10, estado: 'PENDIENTE',
       creadaEn: '2026-01-01T00:00:00', expiraEn: new Date(Date.now() + 60_000).toISOString(),
       ot: {
-        id: 'ot1', estado: 'BUSCANDO_TECNICO', categoriaServicio: 'REFRIGERACION',
+        id: 'ot1', codigo: 'OT-2026-0011', estado: 'BUSCANDO_TECNICO', categoriaServicio: 'REFRIGERACION',
         descripcionFalla: 'no enfría', direccion: 'calle 1', clienteNombre: 'Ana',
         latitud: 4.6, longitud: -74.1,
       },
@@ -236,7 +243,7 @@ describe('backend.mappers — contratos existentes', () => {
     // La OT embebida se puebla desde el resumen de la oferta, sin un
     // GET /api/ot/{id} aparte.
     expect(vm.ot).toMatchObject({
-      id: 'ot1', categoriaServicio: 'REFRIGERACION', descripcionFalla: 'no enfría',
+      id: 'ot1', codigo: 'OT-2026-0011', categoriaServicio: 'REFRIGERACION', descripcionFalla: 'no enfría',
       direccion: 'calle 1', clienteNombre: 'Ana', estado: 'BUSCANDO_TECNICO',
       punto: { latitud: 4.6, longitud: -74.1 }, auxiliaresRequeridos: 0,
     });
@@ -246,17 +253,23 @@ describe('backend.mappers — contratos existentes', () => {
 
   it('mapea liquidación, disputa y métricas administrativas', () => {
     const liquidacion: LiquidacionApiResponse = {
-      id: 'l1', otId: 'ot1', tecnicoId: 't1', montoCobrado: 100000, medioPago: 'EFECTIVO',
+      id: 'l1', otId: 'ot1', otCodigo: 'OT-2026-0004', tecnicoId: 't1', montoCobrado: 100000, medioPago: 'EFECTIVO',
       porcentajeComision: 0.15, valorComision: 15000, estado: 'PENDIENTE_CONSIGNACION',
       comprobanteUrl: null, motivoRechazo: null, creadaEn: '2026-01-01T00:00:00',
       verificadaEn: null, tecnicoNombre: null,
     };
-    expect(aLiquidacionResponse(liquidacion)).toMatchObject({ montoServicio: 100000, comision: 15000, fechaVerificacion: undefined });
+    expect(aLiquidacionResponse(liquidacion)).toMatchObject({
+      montoServicio: 100000, comision: 15000, otCodigo: 'OT-2026-0004', fechaVerificacion: undefined,
+    });
+    // Respuesta sin código (fila anterior al backfill): la UI recibe undefined.
+    expect(aLiquidacionResponse({ ...liquidacion, otCodigo: null }).otCodigo).toBeUndefined();
     const disputa: DisputaApiResponse = {
-      id: 'd1', otId: 'ot1', motivo: 'no llegó', estado: 'ABIERTA', resolucion: null,
+      id: 'd1', otId: 'ot1', otCodigo: 'OT-2026-0005', motivo: 'no llegó', estado: 'ABIERTA', resolucion: null,
       creadaEn: '2026-01-01T00:00:00', resueltaEn: null, clienteNombre: null, tecnicoNombre: null,
     };
-    expect(aDisputaResponse(disputa)).toMatchObject({ estado: 'ABIERTA', resolucion: undefined });
+    expect(aDisputaResponse(disputa)).toMatchObject({
+      estado: 'ABIERTA', resolucion: undefined, otCodigo: 'OT-2026-0005',
+    });
     const metricas: MetricasAdminApiResponse = {
       otsEnEjecucion: 4, otsPorEstado: {}, tecnicosVerificados: 2, tecnicosTotales: 5,
       tecnicosBloqueadosPorLiquidacion: 0, tecnicosDisponibles: 3, tiempoPromedioAsignacionSegundos: 90,

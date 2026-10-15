@@ -296,6 +296,12 @@ export interface PresupuestoApi {
 
 export interface OtApiResponse {
   id: string;
+  /**
+   * Código legible de la OT (`OT-YYYY-####`). Opcional a propósito, como
+   * `actaFirmada`: la columna es nullable y una fila anterior al backfill de
+   * V14 puede no traerlo. La UI cae a su propio texto, nunca al UUID.
+   */
+  codigo?: string | null;
   clienteId: string;
   tecnicoId: string | null;
   estado: EstadoOt;
@@ -428,6 +434,11 @@ export interface HistorialEstadoApiResponse {
  */
 export interface OfertaOtResumenApiResponse {
   id: string;
+  /**
+   * Código legible de la OT ofertada. Es lo que el técnico lee y cita; el `id`
+   * sigue viajando porque es el que resuelve las rutas.
+   */
+  codigo?: string | null;
   estado: EstadoOt;
   categoriaServicio: CategoriaServicio;
   descripcionFalla: string;
@@ -486,6 +497,8 @@ export interface TarifaEstimadaApiResponse {
 export interface LiquidacionApiResponse {
   id: string;
   otId: string;
+  /** Código legible de la OT liquidada; el backend lo expone junto al `otId`. */
+  otCodigo?: string | null;
   tecnicoId: string;
   montoCobrado: number;
   medioPago: MedioPago;
@@ -515,6 +528,8 @@ export interface RechazoLiquidacionApiRequest {
 export interface DisputaApiResponse {
   id: string;
   otId: string;
+  /** Código legible de la OT en disputa; el backend lo expone junto al `otId`. */
+  otCodigo?: string | null;
   motivo: string;
   estado: EstadoDisputa;
   resolucion: string | null;

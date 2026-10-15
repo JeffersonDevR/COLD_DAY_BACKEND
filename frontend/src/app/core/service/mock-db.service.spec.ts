@@ -123,6 +123,9 @@ describe('MockDbService — flujos operativos existentes', () => {
     });
     expect(ot.id).toBe('OT-2026-007');
     expect(ot.estado).toBe('BUSCANDO_TECNICO');
+    // El mock también alimenta `codigo`: las plantillas muestran el código del
+    // servidor, así que sin él los flujos mock mostrarían el fallback vacío.
+    expect(ot.codigo).toBe('OT-2026-007');
     expect(db.ordenesTrabajo()[0].id).toBe('OT-2026-007');
     expect(db.ofertas().filter((o) => o.otId === ot.id).length).toBeGreaterThan(0);
   });

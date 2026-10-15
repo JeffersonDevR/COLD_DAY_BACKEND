@@ -14,6 +14,7 @@ import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',
+  codigo: 'OT-2026-0003',
   categoriaServicio: 'REFRIGERACION',
   descripcionFalla: 'no enfría',
   estado: 'EN_CAMINO',
@@ -260,6 +261,25 @@ describe('SeguimientoOtPage', () => {
       const { fixture } = setup({ ...orden, tecnicoNombre: undefined });
       fixture.detectChanges();
       expect(fixture.nativeElement.textContent).toContain('Buscando técnico…');
+    });
+  });
+
+  describe('identificación de la OT', () => {
+    // El `id` es el UUID interno del backend: la cabecera no debe mostrarlo.
+    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+
+    it('encabeza la página con el código legible', () => {
+      const { fixture } = setup({ ...orden, id: idInterno, codigo: 'OT-2026-0016' });
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('OT: OT-2026-0016');
+      expect(texto).not.toContain(idInterno);
+    });
+
+    it('sin código del backend muestra un texto honesto, tampoco el id interno', () => {
+      const { fixture } = setup({ ...orden, id: idInterno, codigo: undefined });
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('OT: Sin código');
+      expect(texto).not.toContain(idInterno);
     });
   });
 });

@@ -159,6 +159,9 @@ function aDiagnostico(dto: DiagnosticoApi): DiagnosticoRequest {
 export function aOtResponse(dto: OtApiResponse): OtResponse {
   return {
     id: dto.id,
+    // El código humano viaja tal cual lo emitió el servidor; si la fila es
+    // anterior al backfill, queda undefined y la plantilla muestra su fallback.
+    codigo: dto.codigo ?? undefined,
     clienteId: dto.clienteId,
     tecnicoId: dto.tecnicoId,
     categoriaServicio: dto.categoriaServicio,
@@ -258,6 +261,7 @@ export function aOfertaTecnico(dto: OfertaOtConResumen): OfertaTecnicoResponse {
     // con lo que el resumen sí expone.
     ot: {
       id: dto.ot.id,
+      codigo: dto.ot.codigo ?? undefined,
       categoriaServicio: dto.ot.categoriaServicio,
       descripcionFalla: dto.ot.descripcionFalla,
       direccion: dto.ot.direccion,
@@ -338,6 +342,7 @@ export function aLiquidacionResponse(dto: LiquidacionApiResponse): LiquidacionRe
   return {
     id: dto.id,
     otId: dto.otId,
+    otCodigo: dto.otCodigo ?? undefined,
     tecnicoId: dto.tecnicoId,
     montoServicio: dto.montoCobrado,
     comision: dto.valorComision,
@@ -357,6 +362,7 @@ export function aDisputaResponse(dto: DisputaApiResponse): DisputaResponse {
   return {
     id: dto.id,
     otId: dto.otId,
+    otCodigo: dto.otCodigo ?? undefined,
     motivo: dto.motivo,
     estado: dto.estado,
     resolucion: dto.resolucion ?? undefined,
