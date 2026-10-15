@@ -43,7 +43,7 @@ public class OtRepositoryAdapter implements OtRepository {
             SELECT COALESCE(MAX(split_part(codigo, '-', 3)::bigint), 0)
             FROM ot
             WHERE codigo LIKE CONCAT('OT-', :anio, '-%')
-              AND codigo ~ '^OT-[0-9]{4}-[0-9]+$'
+              AND codigo ~ '^OT-[0-9]{4}-[0-9]{1,12}$'
             """;
 
     private final SpringDataOtRepository repository;

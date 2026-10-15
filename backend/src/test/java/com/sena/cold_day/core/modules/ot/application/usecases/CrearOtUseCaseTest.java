@@ -1,7 +1,10 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +23,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
@@ -94,9 +100,39 @@ class CrearOtUseCaseTest {
         assertThat(CodigoOt.formatear(2026, 10000).valor()).isEqualTo("OT-2026-10000");
     }
 
+    @Test
+    void crearReintentaEnTransaccionNuevaCuandoElCodigoColisiona() {
+        when(otRepository.ultimoNumeroCodigo(2026)).thenReturn(6, 7);
+        when(iniciarBusqueda.iniciar(any()))
+                .thenThrow(new DataIntegrityViolationException("idx_ot_codigo"))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var respuesta = useCase(AHORA_2026).crear(request(), PRINCIPAL);
+
+        assertThat(respuesta.codigo()).isEqualTo(CodigoOt.de("OT-2026-0008"));
+        verify(iniciarBusqueda, times(2)).iniciar(any());
+    }
+
+    @Test
+    void crearNoReintentaMasDeLosIntentosPermitidos() {
+        when(otRepository.ultimoNumeroCodigo(2026)).thenReturn(6);
+        when(iniciarBusqueda.iniciar(any()))
+                .thenThrow(new DataIntegrityViolationException("idx_ot_codigo"));
+
+        var useCase = useCase(AHORA_2026);
+
+        assertThatThrownBy(() -> useCase.crear(request(), PRINCIPAL))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        verify(iniciarBusqueda, times(3)).iniciar(any());
+    }
+
     private CrearOtUseCase useCase(Instant ahora) {
+        // Un TransactionTemplate real sobre un manager mockeado: estos casos prueban
+        // la asignación y el reintento, no la transacción en sí.
+        PlatformTransactionManager txManager = mock(PlatformTransactionManager.class);
+        when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
         return new CrearOtUseCase(clienteRepository, iniciarBusqueda, otRepository, events,
-                Clock.fixed(ahora, ZoneOffset.UTC));
+                Clock.fixed(ahora, ZoneOffset.UTC), txManager);
     }
 
     private OtRequest request() {

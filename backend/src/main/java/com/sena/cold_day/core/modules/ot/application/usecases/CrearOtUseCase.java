@@ -6,8 +6,11 @@ import java.time.Year;
 import java.time.ZoneOffset;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
@@ -29,30 +32,61 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
  * <p>This is the single place where the human-readable code
  * ({@link CodigoOt}, {@code OT-YYYY-####}) is allocated: the number is the
  * highest one already issued for the UTC year of the creation instant plus one,
- * read inside this transaction ({@link OtRepository#ultimoNumeroCodigo(int)}),
+ * read inside the creation transaction ({@link OtRepository#ultimoNumeroCodigo(int)}),
  * and the code is assigned to the aggregate before it is saved. An order
- * therefore reaches the table with a code or not at all.
+ * therefore reaches the table with a code or not at all. Two creations of the
+ * same year can still compute the same number, so the loser fails on
+ * {@code idx_ot_codigo} and {@link #crear} retries a bounded number of times,
+ * each attempt in its own transaction.
  */
 @Service
 public class CrearOtUseCase {
+
+    /** Attempts on a code collision: two creations of the same year at once. */
+    private static final int INTENTOS_CODIGO = 3;
 
     private final ClienteRepository clienteRepository;
     private final IniciarBusquedaTecnicoUseCase iniciarBusqueda;
     private final OtRepository otRepository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
+    /** One fresh transaction per attempt; see {@link #crear}. */
+    private final TransactionTemplate txNueva;
 
     public CrearOtUseCase(ClienteRepository clienteRepository, IniciarBusquedaTecnicoUseCase iniciarBusqueda,
-            OtRepository otRepository, ApplicationEventPublisher events, Clock clock) {
+            OtRepository otRepository, ApplicationEventPublisher events, Clock clock,
+            PlatformTransactionManager txManager) {
         this.clienteRepository = clienteRepository;
         this.iniciarBusqueda = iniciarBusqueda;
         this.otRepository = otRepository;
         this.events = events;
         this.clock = clock;
+        this.txNueva = new TransactionTemplate(txManager);
+        // REQUIRES_NEW, not REQUIRED: a retry that joins the transaction that just
+        // failed is doomed, the unique index already marked it rollback-only.
+        this.txNueva.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    @Transactional
+    /**
+     * Creates the order with a freshly allocated code, retrying on a code
+     * collision. The retry never runs inside the failed transaction: the unique
+     * index leaves it rollback-only, so each attempt needs its own boundary.
+     *
+     * @throws DataIntegrityViolationException if every attempt collides
+     */
     public OtResponse crear(OtRequest request, UsuarioId usuarioId) {
+        for (int intento = 1; ; intento++) {
+            try {
+                return txNueva.execute(status -> crearEnTransaccion(request, usuarioId));
+            } catch (DataIntegrityViolationException ex) {
+                if (intento >= INTENTOS_CODIGO) {
+                    throw ex;
+                }
+            }
+        }
+    }
+
+    private OtResponse crearEnTransaccion(OtRequest request, UsuarioId usuarioId) {
         Cliente cliente = clienteRepository.findByUsuarioId(usuarioId)
                 .orElseThrow(() -> new ClienteNoEncontradoException(
                         "No existe un perfil de cliente para el usuario: " + usuarioId.valor()));
