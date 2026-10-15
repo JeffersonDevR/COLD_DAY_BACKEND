@@ -23,6 +23,8 @@ import com.sena.cold_day.core.modules.ot.infrastructure.persistence.OtJpaEntity;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
+import jakarta.persistence.EntityManager;
+
 /**
  * Adapter for the OT aggregate. Saving drains the aggregate's pending
  * {@link CambioEstado} list into the append-only history in the same
@@ -31,15 +33,31 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 @Repository
 public class OtRepositoryAdapter implements OtRepository {
 
+    /**
+     * Highest sequence already issued for a year in the {@code OT-YYYY-####} codes,
+     * or 0 when the year has none. The regex guard rejects any code that is not one
+     * of ours, so a code edited by hand cannot blow the cast up and, with it, every
+     * creation of that year.
+     */
+    private static final String ULTIMO_NUMERO_CODIGO = """
+            SELECT COALESCE(MAX(split_part(codigo, '-', 3)::bigint), 0)
+            FROM ot
+            WHERE codigo LIKE CONCAT('OT-', :anio, '-%')
+              AND codigo ~ '^OT-[0-9]{4}-[0-9]+$'
+            """;
+
     private final SpringDataOtRepository repository;
     private final OtEstadoHistorialRepository historialRepository;
     private final ApplicationEventPublisher events;
+    private final EntityManager entityManager;
 
     public OtRepositoryAdapter(SpringDataOtRepository repository,
-            OtEstadoHistorialRepository historialRepository, ApplicationEventPublisher events) {
+            OtEstadoHistorialRepository historialRepository, ApplicationEventPublisher events,
+            EntityManager entityManager) {
         this.repository = repository;
         this.historialRepository = historialRepository;
         this.events = events;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -132,5 +150,20 @@ public class OtRepositoryAdapter implements OtRepository {
     public List<Ot> buscarVentanasVencidas(Instant ahora) {
         return repository.findByEstadoAndVentanaExpiraEnLessThanEqual(EstadoOt.BUSCANDO_TECNICO, ahora)
                 .stream().map(OtJpaEntity::toDomain).toList();
+    }
+
+    /**
+     * Native SQL because the number lives inside the code string: splitting the
+     * third dash-separated part and casting it to a number is not expressible in
+     * JPQL without relying on the cast support of one Hibernate version. The
+     * statement joins whatever transaction is open, so a caller that reads it right
+     * before inserting the order that consumes the number sees its own rows.
+     */
+    @Override
+    public int ultimoNumeroCodigo(int anio) {
+        Number ultimo = (Number) entityManager.createNativeQuery(ULTIMO_NUMERO_CODIGO)
+                .setParameter("anio", anio)
+                .getSingleResult();
+        return ultimo == null ? 0 : ultimo.intValue();
     }
 }

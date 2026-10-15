@@ -14,10 +14,12 @@ import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * API view of an OT: identifiers are plain UUID strings and the state is an
- * enum name.
+ * enum name. {@code codigo} is the human-readable handle ({@code OT-YYYY-####});
+ * {@code id} stays the identity every endpoint is addressed by.
  */
 public record OtApiResponse(
         String id,
+        String codigo,
         String clienteId,
         String tecnicoId,
         EstadoOt estado,
@@ -59,6 +61,7 @@ public record OtApiResponse(
         Point ubicacion = response.ubicacion();
         return new OtApiResponse(
                 response.id() == null ? null : response.id().valor().toString(),
+                response.codigo() == null ? null : response.codigo().valor(),
                 response.clienteId() == null ? null : response.clienteId().valor().toString(),
                 response.tecnicoId() == null ? null : response.tecnicoId().valor().toString(),
                 response.estado(), response.categoriaServicio(), response.descripcionFalla(),

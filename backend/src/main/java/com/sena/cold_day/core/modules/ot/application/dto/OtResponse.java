@@ -6,6 +6,7 @@ import java.time.Instant;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
@@ -18,6 +19,7 @@ import com.sena.cold_day.core.shared.domain.Point;
 /** Application-level view of an OT. */
 public record OtResponse(
         OtId id,
+        CodigoOt codigo,
         ClienteId clienteId,
         TecnicoId tecnicoId,
         EstadoOt estado,
@@ -43,7 +45,7 @@ public record OtResponse(
         Instant actaFirmadaEn) {
 
     public static OtResponse fromDomain(Ot ot) {
-        return new OtResponse(ot.getId(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
+        return new OtResponse(ot.getId(), ot.getCodigo(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
                 ot.getCategoriaServicio(), ot.getDescripcionFalla(), ot.getDireccion(), ot.getRadioKm(),
                 ot.getCreadaEn(), ot.getCanceladaPor(), ot.getMotivoCancelacion(), ot.getTarifaVisita(),
                 ot.getDiagnostico(), ot.getPresupuesto(), ot.getUbicacion(), ot.getAuxiliaresRequeridos(),

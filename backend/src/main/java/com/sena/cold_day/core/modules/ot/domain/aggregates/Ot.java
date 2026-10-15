@@ -18,6 +18,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.VisitaNoPagadaExceptio
 import com.sena.cold_day.core.modules.ot.domain.services.TransicionesOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoVerificacionActa;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
@@ -77,6 +78,9 @@ public class Ot {
     private String actaFirmaDataUrl;
     private CodigoVerificacionActa actaCodigoVerificacion;
     private Instant actaFirmadaEn;
+    // Human-readable code OT-YYYY-#### (V14). Assigned once at creation and never
+    // regenerated: it is the handle a client may have written on a paper invoice.
+    private CodigoOt codigo;
 
     /**
      * Hard ceiling on the signature payload, in characters of the data URL.
@@ -208,8 +212,8 @@ public class Ot {
     /**
      * Reconstitution from persistence including the signed warranty acta (V11).
      * Kept as its own overload so every existing call site and test that rebuilds
-     * an OT compiles untouched; the three acta fields default to null, which is
-     * exactly what an order finalized before this feature reads back as.
+     * an OT compiles untouched; the code defaults to null, which is what a row
+     * allocated before V14 reads back as (see the canonical overload below).
      */
     @SuppressWarnings("java:S107") // Rehidratacion de persistencia: el estado completo del agregado (32 campos). Mismo motivo que la sobrecarga de 29 campos.
     public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
@@ -222,6 +226,33 @@ public class Ot {
             Integer calificacionEstrellas, String calificacionComentario, Instant calificacionEn,
             TecnicoId calificacionTecnicoId, String actaFirmaDataUrl, String actaCodigoVerificacion,
             Instant actaFirmadaEn) {
+        return reconstituir(id, clienteId, tecnicoId, categoriaServicio, descripcionFalla, evidenciaUrls,
+                direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
+                tarifaFuente, auxiliaresRequeridos, llegadaEn, medioPagoVisita, visitaPagadaEn,
+                calificacionEstrellas, calificacionComentario, calificacionEn, calificacionTecnicoId,
+                actaFirmaDataUrl, actaCodigoVerificacion, actaFirmadaEn, null);
+    }
+
+    /**
+     * Reconstitution from persistence including the human-readable code (V14).
+     * This is the canonical overload: the previous ones delegate here with a
+     * {@code null} code, so every existing call site and test that rebuilds an OT
+     * compiles untouched. A null code means "a row written by a path that never
+     * allocated one" — V14 backfilled every pre-existing row and production
+     * creation always assigns one — which is why the column stays nullable.
+     */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: el estado completo del agregado (33 campos). Mismo motivo que la sobrecarga de 32 campos.
+    public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
+            CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
+            String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
+            Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
+            Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente,
+            Integer auxiliaresRequeridos, Instant llegadaEn, String medioPagoVisita, Instant visitaPagadaEn,
+            Integer calificacionEstrellas, String calificacionComentario, Instant calificacionEn,
+            TecnicoId calificacionTecnicoId, String actaFirmaDataUrl, String actaCodigoVerificacion,
+            Instant actaFirmadaEn, CodigoOt codigo) {
         Ot ot = new Ot();
         ot.id = id;
         ot.clienteId = clienteId;
@@ -258,6 +289,7 @@ public class Ot {
         ot.actaCodigoVerificacion = actaCodigoVerificacion == null ? null
                 : CodigoVerificacionActa.de(actaCodigoVerificacion);
         ot.actaFirmadaEn = actaFirmadaEn;
+        ot.codigo = codigo;
         return ot;
     }
 
@@ -803,6 +835,33 @@ public class Ot {
         return this.actaFirmadaEn != null;
     }
 
+    /**
+     * Assigns the human-readable code ({@code OT-YYYY-####}) exactly once, at
+     * creation. The number is handed IN by the application layer, which is the
+     * only layer that can look at the codes already issued — the aggregate has no
+     * access to persistence, and a code derived from the order id would be
+     * reproducible by anyone.
+     *
+     * <p>A second assignment is rejected rather than absorbed: overwriting the
+     * code would silently invalidate the one already printed on an invoice or
+     * read over the phone, and it would break the uniqueness contract of
+     * {@code idx_ot_codigo}. Reconstitution never passes through here, so a code
+     * read from the base is never "re-assigned" by a round trip.
+     *
+     * @throws IllegalArgumentException if {@code codigo} is null
+     * @throws IllegalStateException if the OT already carries a code
+     */
+    public void asignarCodigo(CodigoOt codigo) {
+        if (codigo == null) {
+            throw new IllegalArgumentException("El codigo de la OT es requerido");
+        }
+        if (this.codigo != null) {
+            throw new IllegalStateException("La OT ya tiene el codigo " + this.codigo.valor()
+                    + " y no se regenera");
+        }
+        this.codigo = codigo;
+    }
+
     public String getActaFirmaDataUrl() {
         return actaFirmaDataUrl;
     }
@@ -813,5 +872,14 @@ public class Ot {
 
     public Instant getActaFirmadaEn() {
         return actaFirmadaEn;
+    }
+
+    /**
+     * Human-readable code of the order, or {@code null} for a row that predates
+     * it (V14 backfilled every existing row, so in practice only code written by
+     * a path that never allocates one).
+     */
+    public CodigoOt getCodigo() {
+        return codigo;
     }
 }
