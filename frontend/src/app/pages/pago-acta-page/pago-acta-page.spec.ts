@@ -9,6 +9,7 @@ import { ActaGarantia, OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',
+  codigo: 'OT-2026-0009',
   categoriaServicio: 'REFRIGERACION',
   descripcionFalla: 'x',
   estado: 'FINALIZADA',
@@ -304,6 +305,16 @@ describe('PagoActaPage', () => {
     expect(sseEventos.observed).toBe(false);
     sseEventos.next({ otId: 'ot1', origen: 'EN_REPARACION', destino: 'FINALIZADA' });
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('encabeza el acta con el código de la OT y no con el id interno', () => {
+    // El `id` es el UUID interno del backend: el documento no debe mostrarlo.
+    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+    const { fixture } = setup(vi.fn(() => of(undefined)), { ...orden, id: idInterno, codigo: 'OT-2026-0018' });
+    fixture.detectChanges();
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('OT: OT-2026-0018');
+    expect(texto).not.toContain(idInterno);
   });
 
   describe('nombre del técnico en el acta', () => {

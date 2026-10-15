@@ -16,6 +16,7 @@ import { OtResponse } from '../../core/models/common.models';
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
   return {
     id: 'ot1',
+    codigo: 'OT-2026-0002',
     categoriaServicio: 'REFRIGERACION',
     descripcionFalla: 'no enfría',
     estado: 'EN_REPARACION',
@@ -187,5 +188,14 @@ describe('EjecucionOtPage', () => {
     expect(sseEventos.observed).toBe(false);
     sseEventos.next({ otId: 'ot1', origen: 'ASIGNADA', destino: 'EN_CAMINO' });
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('identifica la ejecución por el código de la OT, no por el id interno', () => {
+    // El `id` es el UUID interno del backend: la cabecera del técnico no lo muestra.
+    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+    const { fixture } = setup({ ot: orden({ id: idInterno, codigo: 'OT-2026-0017' }) });
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('Ejecución OT: OT-2026-0017');
+    expect(texto).not.toContain(idInterno);
   });
 });

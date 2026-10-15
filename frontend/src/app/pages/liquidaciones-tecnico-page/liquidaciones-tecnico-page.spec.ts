@@ -12,6 +12,7 @@ function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionRespon
   return {
     id: 'L1',
     otId: 'OT-1',
+    otCodigo: 'OT-2026-0004',
     tecnicoId: 'TEC-1',
     montoServicio: 100000,
     comision: 15000,
@@ -61,6 +62,19 @@ describe('LiquidacionesTecnicoPage', () => {
     const { fixture } = setup();
     fixture.componentInstance.abrirSubida(liquidacion({}));
     expect(fixture.componentInstance.liqSeleccionada()?.id).toBe('L1');
+  });
+
+  it('identifica la liquidación por el código de la OT, no por ids internos', () => {
+    const { fixture } = setup();
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('OT-2026-0004');
+    expect(texto).not.toContain('L1');
+    expect(texto).not.toContain('OT-1');
+
+    fixture.componentInstance.abrirSubida(liquidacion({}));
+    fixture.detectChanges();
+    const modal = fixture.nativeElement.textContent as string;
+    expect(modal).toContain('Legalizar Liquidación (OT: OT-2026-0004)');
   });
 
   it('envía el comprobante y recarga', () => {

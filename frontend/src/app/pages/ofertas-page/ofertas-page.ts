@@ -104,7 +104,7 @@ export class OfertasPage {
 
     const oferta = this.ofertas().find(o => o.otId === ot.id);
     if (!oferta) {
-      this.toast.error('Sin Oferta Vigente', `No hay una oferta activa para la orden ${ot.id}. Puede que ya haya sido tomada.`);
+      this.toast.error('Sin Oferta Vigente', `No hay una oferta activa para la orden ${ot.codigo || 'Sin código'}. Puede que ya haya sido tomada.`);
       return;
     }
 
@@ -116,7 +116,7 @@ export class OfertasPage {
           auxiliaresRequeridos > 0 ? ` con ${auxiliaresRequeridos} auxiliar(es)` : '';
         this.toast.success(
           '¡Servicio Asignado!',
-          `Has tomado la orden ${ot.id}${detalleAuxiliares}. Se notificó al cliente la tarifa de visita + diagnóstico por distancia. Desplázate al domicilio.`
+          `Has tomado la orden ${ot.codigo || 'Sin código'}${detalleAuxiliares}. Se notificó al cliente la tarifa de visita + diagnóstico por distancia. Desplázate al domicilio.`
         );
         this.router.navigate(['/tecnico/ejecucion', ot.id]);
       },

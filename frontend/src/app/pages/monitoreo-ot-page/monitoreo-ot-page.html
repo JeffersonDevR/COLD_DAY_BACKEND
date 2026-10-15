@@ -79,7 +79,7 @@
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               @for (ot of otsFiltradas(); track ot.id) {
                 <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                  <td class="p-3 font-mono font-bold">{{ ot.id }}</td>
+                  <td class="p-3 font-mono font-bold">{{ ot.codigo || 'Sin código' }}</td>
                   <td class="p-3 font-semibold">{{ ot.categoriaServicio.replace('_', ' ') }}</td>
                   <td class="p-3">{{ ot.clienteNombre }}</td>
                   <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">

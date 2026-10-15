@@ -16,6 +16,7 @@ function cambiarPestana(estado: 'visible' | 'hidden'): void {
 
 const ot: OtResponse = {
   id: 'OT-1',
+  codigo: 'OT-2026-0042',
   categoriaServicio: 'REFRIGERACION',
   descripcionFalla: 'no enfría',
   estado: 'BUSCANDO_TECNICO',
@@ -62,7 +63,12 @@ describe('OfertasPage', () => {
     const { fixture, tecnicosApi } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
     expect(tecnicosApi.getOfertasParaTecnico).toHaveBeenCalledWith('TEC-1');
     expect(fixture.componentInstance.solicitudesDisponibles().length).toBe(1);
-    expect(fixture.nativeElement.textContent).toContain('OT-1');
+    // La tarjeta se identifica por el código de la OT, no por su id interno
+    // ni por el id de la oferta.
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('OT-2026-0042');
+    expect(texto).not.toContain('OT-1');
+    expect(texto).not.toContain('OF-1');
   });
 
   it('acepta la oferta y navega a ejecución', () => {
@@ -71,9 +77,21 @@ describe('OfertasPage', () => {
     fixture.componentInstance.aceptarOferta(ot);
 
     expect(tecnicosApi.aceptarOferta).toHaveBeenCalledWith('OF-1', 'TEC-1', 0);
-    expect(toast.success).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith(
+      '¡Servicio Asignado!',
+      'Has tomado la orden OT-2026-0042. Se notificó al cliente la tarifa de visita + diagnóstico por distancia. Desplázate al domicilio.',
+    );
     expect(navigate).toHaveBeenCalledWith(['/tecnico/ejecucion', 'OT-1']);
     expect(fixture.componentInstance.loadingOt()).toBeNull();
+  });
+
+  it('sin código de OT, el aviso usa el fallback y no el id interno', () => {
+    const { fixture, toast } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+
+    fixture.componentInstance.aceptarOferta({ ...ot, codigo: undefined });
+
+    expect(toast.success).toHaveBeenCalledWith('¡Servicio Asignado!', expect.stringContaining('Sin código'));
+    expect(toast.success).not.toHaveBeenCalledWith('¡Servicio Asignado!', expect.stringContaining('OT-1'));
   });
 
   it('bloquea la aceptación si el técnico está bloqueado', () => {
@@ -92,7 +110,10 @@ describe('OfertasPage', () => {
     fixture.componentInstance.aceptarOferta(ot);
 
     expect(tecnicosApi.aceptarOferta).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Sin Oferta Vigente', expect.any(String));
+    expect(toast.error).toHaveBeenCalledWith(
+      'Sin Oferta Vigente',
+      'No hay una oferta activa para la orden OT-2026-0042. Puede que ya haya sido tomada.',
+    );
   });
 
   it('reporta error de concurrencia al fallar la aceptación', () => {

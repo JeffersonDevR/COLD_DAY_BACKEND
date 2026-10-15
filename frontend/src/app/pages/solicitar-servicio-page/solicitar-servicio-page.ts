@@ -176,7 +176,7 @@ export class SolicitarServicioPage {
       .subscribe({
         next: (nuevaOt) => {
           this.loading.set(false);
-          this.toast.success('Solicitud Creada', `OT ${nuevaOt.id} transmitida por broadcast (10 km)`);
+          this.toast.success('Solicitud Creada', `OT ${nuevaOt.codigo || 'Sin código'} transmitida por broadcast (10 km)`);
           const roles = this.authService.userRoles();
           if (roles.has('TECNICO') && !roles.has('CLIENTE')) {
             this.router.navigate(['/tecnico/panel']);

@@ -21,7 +21,7 @@
             </div>
             <div>
               <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ orden.tecnicoNombre }}</h3>
-              <p class="text-xs text-slate-500">Servicio de {{ orden.categoriaServicio.replace('_', ' ') }} • OT {{ orden.id }}</p>
+              <p class="text-xs text-slate-500">Servicio de {{ orden.categoriaServicio.replace('_', ' ') }} • OT {{ orden.codigo || 'Sin código' }}</p>
             </div>
           </div>
 

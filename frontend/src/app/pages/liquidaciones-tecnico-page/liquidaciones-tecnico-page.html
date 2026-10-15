@@ -65,7 +65,7 @@
             <div class="flex items-center gap-2">
               <i class="pi pi-receipt text-sky-600"></i>
               <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">
-                Legalizar Liquidación {{ liq.id }} (OT: {{ liq.otId }})
+                Legalizar Liquidación (OT: {{ liq.otCodigo || 'Sin código' }})
               </h3>
             </div>
             <button type="button" (click)="liqSeleccionada.set(null)" class="text-slate-400 hover:text-slate-600">
@@ -135,7 +135,7 @@
           <table class="w-full text-xs text-left">
             <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase tracking-wider">
               <tr>
-                <th class="p-3 rounded-l-xl">ID / OT</th>
+                <th class="p-3 rounded-l-xl">OT</th>
                 <th class="p-3">Fecha</th>
                 <th class="p-3">Valor Servicio</th>
                 <th class="p-3">Comisión {{ environment.commissionRate * 100 }}%</th>
@@ -148,8 +148,7 @@
               @for (liq of misLiquidaciones(); track liq.id) {
                 <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                   <td class="p-3 font-mono font-bold">
-                    {{ liq.id }}
-                    <span class="block text-[11px] text-slate-400">OT: {{ liq.otId }}</span>
+                    {{ liq.otCodigo || 'Sin código' }}
                   </td>
                   <td class="p-3 text-slate-600 dark:text-slate-300">{{ liq.fechaCreacion | date:'shortDate' }}</td>
                   <td class="p-3 font-bold">$ {{ liq.montoServicio.toLocaleString('es-CO') }}</td>

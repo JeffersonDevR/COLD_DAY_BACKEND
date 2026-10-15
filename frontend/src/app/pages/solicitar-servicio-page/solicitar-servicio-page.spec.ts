@@ -10,6 +10,7 @@ import { OtResponse } from '../../core/models/common.models';
 
 const nuevaOt: OtResponse = {
   id: 'OT-99',
+  codigo: 'OT-2026-0099',
   categoriaServicio: 'AIRE_ACONDICIONADO',
   descripcionFalla: 'x',
   estado: 'BUSCANDO_TECNICO',
@@ -123,9 +124,22 @@ describe('SolicitarServicioPage', () => {
     );
     const bodyCreado = (clientesApi.crearOt.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
     expect(bodyCreado).not.toHaveProperty('barrio');
-    expect(toast.success).toHaveBeenCalled();
+    // El aviso cita el código legible de la OT; la ruta sigue usando el id interno.
+    expect(toast.success).toHaveBeenCalledWith('Solicitud Creada', 'OT OT-2026-0099 transmitida por broadcast (10 km)');
+    expect(toast.success).not.toHaveBeenCalledWith('Solicitud Creada', expect.stringContaining('OT-99'));
     expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'OT-99']);
     expect(fixture.componentInstance.loading()).toBe(false);
+  });
+
+  it('sin código de OT, el aviso usa el fallback y no el id interno', () => {
+    const { fixture, clientesApi, toast, navigate } = setup();
+    clientesApi.crearOt.mockReturnValue(of({ ...nuevaOt, codigo: undefined }));
+    prepararFormularioListo(fixture);
+    fixture.componentInstance.onSubmit();
+
+    expect(toast.success).toHaveBeenCalledWith('Solicitud Creada', 'OT Sin código transmitida por broadcast (10 km)');
+    expect(toast.success).not.toHaveBeenCalledWith('Solicitud Creada', expect.stringContaining('OT-99'));
+    expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'OT-99']);
   });
 
   it('no crea la OT si falta la ubicación', () => {

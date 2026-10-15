@@ -16,7 +16,7 @@
         @for (disp of disputas(); track disp.id) {
           <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <span class="font-mono text-xs font-bold text-slate-500">{{ disp.id }} (OT: {{ disp.otId }})</span>
+              <span class="font-mono text-xs font-bold text-slate-500">OT: {{ disp.otCodigo || 'Sin código' }}</span>
               <span
                 class="px-2.5 py-1 rounded-full text-[11px] font-bold"
                 [class.bg-rose-100]="disp.estado === 'ABIERTA'"
@@ -76,7 +76,7 @@
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
           <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <h3 class="text-base font-bold text-purple-600 flex items-center gap-2">
-              <i class="pi pi-shield"></i> Mediación Oficial: Caso {{ d.id }}
+              <i class="pi pi-shield"></i> Mediación Oficial: OT {{ d.otCodigo || 'Sin código' }}
             </h3>
             <p class="text-xs text-slate-500">
               Escucha a ambas partes y emite una solución técnica de común acuerdo o cierre judicial.

@@ -15,6 +15,7 @@ function cambiarPestana(estado: 'visible' | 'hidden'): void {
 function ot(overrides: Partial<OtResponse>): OtResponse {
   return {
     id: 'ot1',
+    codigo: 'OT-2026-0001',
     categoriaServicio: 'REFRIGERACION',
     descripcionFalla: 'x',
     estado: 'EN_CAMINO',
@@ -33,8 +34,8 @@ function setup(getTodasOts: ReturnType<typeof vi.fn>) {
 
 describe('MonitoreoOtPage', () => {
   const ots = [
-    ot({ id: 'OT-1', clienteNombre: 'Ana', barrio: 'Caobos', estado: 'EN_CAMINO' }),
-    ot({ id: 'OT-2', clienteNombre: 'Luis', barrio: 'Centro', estado: 'FINALIZADA', categoriaServicio: 'ELECTRICIDAD' }),
+    ot({ id: 'OT-1', codigo: 'OT-2026-0001', clienteNombre: 'Ana', barrio: 'Caobos', estado: 'EN_CAMINO' }),
+    ot({ id: 'OT-2', codigo: 'OT-2026-0002', clienteNombre: 'Luis', barrio: 'Centro', estado: 'FINALIZADA', categoriaServicio: 'ELECTRICIDAD' }),
   ];
 
   it('carga todas las OTs y las muestra sin filtros', () => {
@@ -46,6 +47,13 @@ describe('MonitoreoOtPage', () => {
     const fixture = setup(vi.fn(() => of(ots)));
     fixture.componentInstance.busquedaCtrl.setValue('ana');
     expect(fixture.componentInstance.otsFiltradas().map((o) => o.id)).toEqual(['OT-1']);
+  });
+
+  it('filtra por el código de OT que la tabla muestra, no por el id interno', () => {
+    const fixture = setup(vi.fn(() => of(ots)));
+    // La tabla muestra `codigo` (OT-2026-0002); el id interno es 'OT-2'.
+    fixture.componentInstance.busquedaCtrl.setValue('OT-2026-0002');
+    expect(fixture.componentInstance.otsFiltradas().map((o) => o.id)).toEqual(['OT-2']);
   });
 
   it('filtra por categoría', () => {
@@ -76,6 +84,27 @@ describe('MonitoreoOtPage', () => {
       const fixture = setup(vi.fn(() => of([ot({ id: 'OT-1', clienteNombre: 'Ana' })])));
       fixture.detectChanges();
       expect(fixture.nativeElement.textContent).toContain('Buscando técnico…');
+    });
+  });
+
+  describe('columna de identificación', () => {
+    // El `id` es el UUID interno del backend: nunca debe llegar a la tabla.
+    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+
+    it('muestra el código legible y no el id interno', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: idInterno, codigo: 'OT-2026-0012', clienteNombre: 'Ana' })])));
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('OT-2026-0012');
+      expect(texto).not.toContain(idInterno);
+    });
+
+    it('sin código del backend muestra un texto honesto, tampoco el id interno', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: idInterno, codigo: undefined, clienteNombre: 'Ana' })])));
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Sin código');
+      expect(texto).not.toContain(idInterno);
     });
   });
 

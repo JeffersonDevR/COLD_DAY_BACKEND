@@ -29,8 +29,8 @@ function tecnicoCon(overrides: Partial<TecnicoResponse>): TecnicoResponse {
   return { ...tecnico, ...overrides };
 }
 
-function ot(id: string, estado: OtResponse['estado']): OtResponse {
-  return { id, categoriaServicio: 'REFRIGERACION', descripcionFalla: 'x', estado, auxiliaresRequeridos: 0 };
+function ot(id: string, estado: OtResponse['estado'], codigo = 'OT-2026-0001'): OtResponse {
+  return { id, codigo, categoriaServicio: 'REFRIGERACION', descripcionFalla: 'x', estado, auxiliaresRequeridos: 0 };
 }
 
 function setup(opts: {
@@ -141,6 +141,15 @@ describe('PanelTecnicoPage', () => {
   it('muestra el estado vacío sin servicios asignados', () => {
     const { fixture } = setup({ ots: [] });
     expect(fixture.nativeElement.textContent).toContain('No tienes servicios asignados');
+  });
+
+  it('identifica cada OT asignada por su código, no por el id interno', () => {
+    // El `id` es el UUID interno del backend: la tarjeta del técnico no lo muestra.
+    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+    const { fixture } = setup({ ots: [ot(idInterno, 'EN_CAMINO', 'OT-2026-0015')] });
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('OT-2026-0015');
+    expect(texto).not.toContain(idInterno);
   });
 
   it('muestra el estado de validación real sin inventar APROBADO', () => {
