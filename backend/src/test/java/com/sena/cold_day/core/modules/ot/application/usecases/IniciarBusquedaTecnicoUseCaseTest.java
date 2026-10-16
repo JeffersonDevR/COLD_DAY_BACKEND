@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -22,12 +23,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.geolocalizacion.domain.repository.TecnicoDisponibilidadRepository;
 import com.sena.cold_day.core.modules.geolocalizacion.domain.valueobjects.TecnicoCercano;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
+import com.sena.cold_day.core.modules.ot.domain.events.OfertaCreada;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.services.NotificacionPushPort;
@@ -55,6 +58,7 @@ class IniciarBusquedaTecnicoUseCaseTest {
     @Mock OfertaOtRepository ofertaRepository;
     @Mock TecnicoDisponibilidadRepository disponibilidadRepository;
     @Mock NotificacionPushPort notificacionPush;
+    @Mock ApplicationEventPublisher events;
 
     private IniciarBusquedaTecnicoUseCase useCase;
 
@@ -62,7 +66,7 @@ class IniciarBusquedaTecnicoUseCaseTest {
     void setUp() {
         Clock clock = Clock.fixed(AHORA, ZoneOffset.UTC);
         useCase = new IniciarBusquedaTecnicoUseCase(otRepository, ofertaRepository,
-                disponibilidadRepository, notificacionPush, clock);
+                disponibilidadRepository, notificacionPush, events, clock);
     }
 
     @Test
@@ -110,6 +114,9 @@ class IniciarBusquedaTecnicoUseCaseTest {
         assertThat(resultado.getVentanaExpiraEn()).isEqualTo(EXPIRA);
         verify(ofertaRepository, never()).save(any());
         verify(notificacionPush, never()).notificarOferta(any(), any(), any());
+        // No offer, no notification: an event without an offer would wake the
+        // technician's stream for nothing.
+        verifyNoInteractions(events);
     }
 
     @Test
@@ -130,6 +137,30 @@ class IniciarBusquedaTecnicoUseCaseTest {
         verify(ofertaRepository).save(ofertas.capture());
         assertThat(ofertas.getValue().getRadioKm()).isEqualTo(15.0);
         assertThat(ofertas.getValue().getTecnicoId()).isEqualTo(tecnico);
+    }
+
+    /**
+     * The emit point of the technician stream: every persisted offer carries its
+     * recipient, which is the only thing that lets the SSE bridge key the stream
+     * by technician instead of by OT. Two eligible technicians must produce two
+     * events, not one broadcast.
+     */
+    @Test
+    void publishesOneOfertaCreadaPerPersistedOfferCarryingItsRecipient() {
+        TecnicoId primero = TecnicoId.nueva();
+        TecnicoId segundo = TecnicoId.nueva();
+        cuandoHayDisponibles(new TecnicoCercano(primero, 1.5), new TecnicoCercano(segundo, 4.2));
+        cuandoElOtSeGuarda();
+        cuandoLaOfertaSeGuarda();
+        Ot ot = otSolicitada();
+
+        Ot resultado = useCase.iniciar(ot);
+
+        ArgumentCaptor<Object> publicados = ArgumentCaptor.forClass(Object.class);
+        verify(events, times(2)).publishEvent(publicados.capture());
+        assertThat(publicados.getAllValues()).containsExactlyInAnyOrder(
+                new OfertaCreada(resultado.getId(), primero),
+                new OfertaCreada(resultado.getId(), segundo));
     }
 
     private Ot otSolicitada() {

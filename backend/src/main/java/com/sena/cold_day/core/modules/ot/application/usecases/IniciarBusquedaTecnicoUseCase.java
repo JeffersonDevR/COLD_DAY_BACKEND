@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,7 @@ import com.sena.cold_day.core.modules.geolocalizacion.domain.repository.TecnicoD
 import com.sena.cold_day.core.modules.geolocalizacion.domain.valueobjects.TecnicoCercano;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
+import com.sena.cold_day.core.modules.ot.domain.events.OfertaCreada;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.services.NotificacionPushPort;
@@ -23,7 +25,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
  * advances to {@code BUSCANDO_TECNICO} with the initial 10 km / 60 s window and
  * broadcasts one pending offer per eligible technician in the current radius.
  * The same {@link #ofrecer(Ot, double, Instant)} primitive is reused by radius
- * escalation, so offer creation lives in one place.
+ * escalation, so offer creation lives in one place — and so does the
+ * {@link OfertaCreada} notification each technician's stream depends on.
  */
 @Service
 public class IniciarBusquedaTecnicoUseCase {
@@ -38,15 +41,17 @@ public class IniciarBusquedaTecnicoUseCase {
     private final OfertaOtRepository ofertaRepository;
     private final TecnicoDisponibilidadRepository disponibilidadRepository;
     private final NotificacionPushPort notificacionPush;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public IniciarBusquedaTecnicoUseCase(OtRepository otRepository, OfertaOtRepository ofertaRepository,
             TecnicoDisponibilidadRepository disponibilidadRepository, NotificacionPushPort notificacionPush,
-            Clock clock) {
+            ApplicationEventPublisher events, Clock clock) {
         this.otRepository = otRepository;
         this.ofertaRepository = ofertaRepository;
         this.disponibilidadRepository = disponibilidadRepository;
         this.notificacionPush = notificacionPush;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -79,6 +84,11 @@ public class IniciarBusquedaTecnicoUseCase {
             OfertaOt oferta = OfertaOt.crear(ot.getId(), cercano.tecnicoId(), radioKm, ahora,
                     ahora.plus(VENTANA_BUSQUEDA));
             OfertaOt guardada = ofertaRepository.save(oferta);
+            // The bridge to the technician stream: one event per technician so the
+            // recipient is part of the event, which is what lets the SSE listener
+            // key the stream by technician. Published after the offer is persisted;
+            // the listener still fires only after the commit.
+            events.publishEvent(new OfertaCreada(guardada.getOtId(), cercano.tecnicoId()));
             notificacionPush.notificarOferta(cercano.tecnicoId(), guardada, ot);
         }
         return disponibles.size();
