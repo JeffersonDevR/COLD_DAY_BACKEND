@@ -12,8 +12,18 @@ import { SseService } from '../../core/service/sse.service';
 import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { OtResponse, MedioPago } from '../../core/models/common.models';
+
+/**
+ * Copy propia de esta pantalla: el 409 de `POST /ot/{id}/desplazamiento` es
+ * `VisitaNoPagadaException` (WS5), no un conflicto de estado. Refrescar no
+ * sirve: el cliente debe pagar la visita antes de que el técnico pueda salir.
+ */
+const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
+  409: 'No se pudo iniciar el desplazamiento: el cliente puede no haber pagado la visita todavía, o la orden pudo cambiar de estado en otro dispositivo. Actualiza la página e inténtalo de nuevo.',
+};
 
 @Component({
   selector: 'app-ejecucion-ot-page',
@@ -133,7 +143,11 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       next: () => {
         this.toast.info('En Camino', 'El cliente puede rastrear tu trayecto en vivo.');
         this.recargarOt();
-      }
+      },
+      // Sin recargar: la OT sigue en ASIGNADA y el técnico ve por qué no salió.
+      error: (err) => {
+        this.toast.error('No se pudo iniciar el desplazamiento', mensajeErrorAccion(err, MENSAJES_DESPLAZAMIENTO));
+      },
     });
   }
 
@@ -148,7 +162,11 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       next: () => {
         this.enSitio.set(true);
         this.toast.success('Llegada Registrada', 'Registra el diagnóstico y presupuesto del equipo.');
-      }
+      },
+      // El formulario de diagnóstico no se habilita: la llegada no quedó registrada.
+      error: (err) => {
+        this.toast.error('No se pudo registrar la llegada', mensajeErrorAccion(err));
+      },
     });
   }
 
@@ -167,7 +185,11 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
           insumos.length > 0 ? ` Se despacharon ${insumos.length} insumo(s) a los proveedores.` : '';
         this.toast.success('Presupuesto Notificado', `El cliente ha recibido la cotización para su aprobación.${detalle}`);
         this.recargarOt();
-      }
+      },
+      // El formulario queda tal como estaba para que el técnico pueda reintentar.
+      error: (err) => {
+        this.toast.error('No se pudo enviar el diagnóstico', mensajeErrorAccion(err));
+      },
     });
   }
 
@@ -177,7 +199,11 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
         this.tracking.detener();
         this.recargarOt();
         this.registrarPagoCierre();
-      }
+      },
+      // No se detiene el tracking ni se registra el pago: la OT no se finalizó.
+      error: (err) => {
+        this.toast.error('No se pudo finalizar el servicio', mensajeErrorAccion(err));
+      },
     });
   }
 
@@ -237,7 +263,12 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
           'Servicio Completado',
           'Acta de 90 días certificada y liquidación registrada.'
         );
-      }
+      },
+      // La OT ya quedó FINALIZADA; solo falló el registro del pago, así que el
+      // aviso lo dice para que el técnico no crea que el cobro se guardó.
+      error: (err) => {
+        this.toast.error('No se pudo registrar el pago del servicio', mensajeErrorAccion(err));
+      },
     });
   }
 }

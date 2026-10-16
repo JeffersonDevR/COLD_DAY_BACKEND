@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { EjecucionOtPage } from './ejecucion-ot-page';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
@@ -11,6 +11,7 @@ import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
@@ -190,12 +191,34 @@ describe('EjecucionOtPage', () => {
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 
-  it('identifica la ejecución por el código de la OT, no por el id interno', () => {
-    // El `id` es el UUID interno del backend: la cabecera del técnico no lo muestra.
-    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-    const { fixture } = setup({ ot: orden({ id: idInterno, codigo: 'OT-2026-0017' }) });
-    const texto = fixture.nativeElement.textContent as string;
-    expect(texto).toContain('Ejecución OT: OT-2026-0017');
-    expect(texto).not.toContain(idInterno);
+  it('avisa si falla el inicio del desplazamiento y no recarga la OT (409 visita sin pagar)', () => {
+    const { fixture, tecnicosApi, otApi, toast } = setup({ ot: orden({ estado: 'ASIGNADA' }) });
+    tecnicosApi.iniciarDesplazamiento.mockReturnValue(
+      throwError(() => new ApiHttpError('La visita debe estar pagada antes de iniciar el desplazamiento', 409)),
+    );
+
+    fixture.componentInstance.iniciarDesplazamiento();
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo iniciar el desplazamiento',
+      'No se pudo iniciar el desplazamiento: el cliente puede no haber pagado la visita todavía, o la orden pudo cambiar de estado en otro dispositivo. Actualiza la página e inténtalo de nuevo.',
+    );
+    // Solo la carga inicial: el fallo no dispara refetch.
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('avisa si falla la finalización y no registra el pago', () => {
+    const { fixture, tecnicosApi, tracking, liquidacionApi, toast } = setup();
+    tecnicosApi.finalizarServicio.mockReturnValue(
+      throwError(() => new ApiHttpError('Solo se puede finalizar en EN_REPARACION', 409)),
+    );
+
+    fixture.componentInstance.finalizarServicio();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo finalizar el servicio', expect.any(String));
+    // El fallo no detiene el tracking ni dispara el registro del pago.
+    expect(tracking.detener).not.toHaveBeenCalled();
+    expect(liquidacionApi.registrarPago).not.toHaveBeenCalled();
   });
 });

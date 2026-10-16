@@ -7,6 +7,7 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoLiquidacion, LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
 
@@ -84,7 +85,11 @@ export class LiquidacionesTecnicoPage {
         this.toast.success('Comprobante Registrado', 'Pasa a cola de conciliación contable de COLD DAY.');
         this.liqSeleccionada.set(null);
         this.cargarLiquidaciones(Number(this.authService.currentUser()?.id ?? 0));
-      }
+      },
+      // El modal queda abierto con los datos del comprobante para reintentar.
+      error: (err) => {
+        this.toast.error('No se pudo enviar el comprobante', mensajeErrorAccion(err));
+      },
     });
   }
 

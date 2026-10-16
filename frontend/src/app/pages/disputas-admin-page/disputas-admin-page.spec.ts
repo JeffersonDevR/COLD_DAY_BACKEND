@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { DisputasAdminPage } from './disputas-admin-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { DisputaResponse } from '../../core/models/common.models';
 
 const disputa: DisputaResponse = {
@@ -22,7 +23,7 @@ function setup() {
     getTodasDisputas: vi.fn(() => of([disputa])),
     resolverDisputa: vi.fn(() => of(undefined)),
   };
-  const toast = { success: vi.fn() };
+  const toast = { success: vi.fn(), error: vi.fn() };
   TestBed.configureTestingModule({
     imports: [DisputasAdminPage],
     providers: [
@@ -99,5 +100,23 @@ describe('DisputasAdminPage', () => {
     fixture.componentInstance.resolver(true);
 
     expect(adminApi.resolverDisputa).not.toHaveBeenCalled();
+  });
+
+  it('avisa si falla la resolución y mantiene el modal con el dictamen', () => {
+    const { fixture, adminApi, toast } = setup();
+    adminApi.resolverDisputa.mockReturnValue(
+      throwError(() => new ApiHttpError('La disputa ya fue resuelta', 409)),
+    );
+    fixture.componentInstance.abrirResolucion(disputa);
+    fixture.componentInstance.resolucionCtrl.setValue('Se acuerda un descuento del 10%');
+
+    fixture.componentInstance.resolver(true);
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo resolver la disputa', expect.any(String));
+    // El modal sigue abierto con el dictamen escrito para reintentar.
+    expect(fixture.componentInstance.disputaSeleccionada()).not.toBeNull();
+    expect(fixture.componentInstance.resolucionCtrl.value).toBe('Se acuerda un descuento del 10%');
+    expect(adminApi.getTodasDisputas).toHaveBeenCalledTimes(1);
   });
 });

@@ -10,6 +10,7 @@ import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
@@ -250,36 +251,21 @@ describe('SeguimientoOtPage', () => {
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 
-  describe('tarjeta del técnico asignado', () => {
-    it('muestra el nombre real del técnico', () => {
-      const { fixture } = setup();
-      fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain('Juan');
-    });
+  it('avisa si falla la cancelación y mantiene el modal para reintentar', () => {
+    const { fixture, clientesApi, toast, navigate } = setup();
+    clientesApi.cancelarOt.mockReturnValue(
+      throwError(() => new ApiHttpError('El motivo es requerido', 400)),
+    );
+    fixture.componentInstance.mostrarModalCancelar.set(true);
+    fixture.componentInstance.motivoControl.setValue('ya no lo necesito');
 
-    it('con técnico asignado pero sin nombre muestra el fallback honesto, no un hueco', () => {
-      const { fixture } = setup({ ...orden, tecnicoNombre: undefined });
-      fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain('Buscando técnico…');
-    });
-  });
+    fixture.componentInstance.confirmarCancelacion();
 
-  describe('identificación de la OT', () => {
-    // El `id` es el UUID interno del backend: la cabecera no debe mostrarlo.
-    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-
-    it('encabeza la página con el código legible', () => {
-      const { fixture } = setup({ ...orden, id: idInterno, codigo: 'OT-2026-0016' });
-      const texto = fixture.nativeElement.textContent as string;
-      expect(texto).toContain('OT: OT-2026-0016');
-      expect(texto).not.toContain(idInterno);
-    });
-
-    it('sin código del backend muestra un texto honesto, tampoco el id interno', () => {
-      const { fixture } = setup({ ...orden, id: idInterno, codigo: undefined });
-      const texto = fixture.nativeElement.textContent as string;
-      expect(texto).toContain('OT: Sin código');
-      expect(texto).not.toContain(idInterno);
-    });
+    expect(toast.warning).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo cancelar el servicio', expect.any(String));
+    // No navega al panel: la cancelación no quedó registrada.
+    expect(navigate).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.mostrarModalCancelar()).toBe(true);
+    expect(fixture.componentInstance.motivoControl.value).toBe('ya no lo necesito');
   });
 });

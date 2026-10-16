@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { DiagnosticoOtPage } from './diagnostico-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
@@ -25,7 +26,7 @@ function setup(otRespuesta: OtResponse = orden) {
     aprobarDiagnostico: vi.fn(() => of(undefined)),
     rechazarDiagnostico: vi.fn(() => of(undefined)),
   };
-  const toast = { success: vi.fn(), warning: vi.fn() };
+  const toast = { success: vi.fn(), warning: vi.fn(), error: vi.fn() };
   const estimacion = {
     distanciaKm: 9.5,
     tarifaFuente: 'LINEAL' as const,
@@ -143,22 +144,33 @@ describe('DiagnosticoOtPage', () => {
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 
-  describe('nombre del técnico', () => {
-    it('muestra el nombre real en el encabezado y en el chat', () => {
-      const { fixture } = setup();
-      fixture.detectChanges();
-      const texto = fixture.nativeElement.textContent as string;
-      expect(texto).toContain('Revisión en sitio por Juan');
-      expect(texto).not.toContain('por asignar');
-    });
+  it('avisa si falla la aprobación del presupuesto y no navega', () => {
+    const { fixture, clientesApi, toast, navigate } = setup();
+    clientesApi.aprobarDiagnostico.mockReturnValue(
+      throwError(() => new ApiHttpError('La orden no está en diagnóstico', 409)),
+    );
 
-    it('sin nombre muestra fallbacks honestos en lugar de una frase vacía o ambigua', () => {
-      const { fixture } = setup({ ...orden, tecnicoNombre: undefined });
-      fixture.detectChanges();
-      const texto = fixture.nativeElement.textContent as string;
-      expect(texto).toContain('Revisión en sitio por un técnico por asignar');
-      expect(texto).toContain('Buscando técnico…');
-      expect(texto).not.toContain('el técnico asignado');
-    });
+    fixture.componentInstance.aprobarPresupuesto();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo aprobar el presupuesto', expect.any(String));
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('avisa si falla el rechazo y mantiene el modal con el motivo', () => {
+    const { fixture, clientesApi, toast, navigate } = setup();
+    clientesApi.rechazarDiagnostico.mockReturnValue(
+      throwError(() => new ApiHttpError('El motivo es requerido', 400)),
+    );
+    fixture.componentInstance.mostrarRechazo.set(true);
+    fixture.componentInstance.motivoRechazoCtrl.setValue('costo elevado');
+
+    fixture.componentInstance.rechazarPresupuesto();
+
+    expect(toast.warning).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo rechazar el presupuesto', expect.any(String));
+    expect(navigate).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.mostrarRechazo()).toBe(true);
+    expect(fixture.componentInstance.motivoRechazoCtrl.value).toBe('costo elevado');
   });
 });

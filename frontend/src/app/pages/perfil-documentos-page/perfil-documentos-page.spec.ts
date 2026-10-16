@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { PerfilDocumentosPage } from './perfil-documentos-page';
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { TecnicoResponse } from '../../core/models/common.models';
 
 const tecnico: TecnicoResponse = { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' };
@@ -15,7 +16,7 @@ function setup(conTecnico = true) {
     getMisDocumentos: vi.fn(() => of([{ id: 'DOC-1', tipo: 'CEDULA', nombre: 'c.pdf', estadoValidacion: 'APROBADO', semaforo: 'VERDE' }])),
     subirDocumento: vi.fn(() => of(undefined)),
   };
-  const toast = { success: vi.fn() };
+  const toast = { success: vi.fn(), error: vi.fn() };
   TestBed.configureTestingModule({
     imports: [PerfilDocumentosPage],
     providers: [
@@ -90,5 +91,24 @@ describe('PerfilDocumentosPage', () => {
     const { fixture, tecnicosApi } = setup(false);
     fixture.componentInstance.onSubirDoc();
     expect(tecnicosApi.subirDocumento).not.toHaveBeenCalled();
+  });
+
+  it('avisa si falla la subida y mantiene el formulario con los datos', () => {
+    const { fixture, tecnicosApi, toast } = setup();
+    tecnicosApi.subirDocumento.mockReturnValue(
+      throwError(() => new ApiHttpError('El documento no es válido', 400)),
+    );
+    fixture.componentInstance.mostrarForm.set(true);
+
+    fixture.componentInstance.onSubirDoc();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo subir el documento', expect.any(String));
+    // El formulario sigue abierto con los datos cargados para reintentar.
+    expect(fixture.componentInstance.mostrarForm()).toBe(true);
+    expect(fixture.componentInstance.docForm.controls.archivoUrl.value).toBe(
+      'https://coldday.com.co/docs/certificacion.pdf',
+    );
+    expect(tecnicosApi.getMisDocumentos).toHaveBeenCalledTimes(1);
   });
 });
