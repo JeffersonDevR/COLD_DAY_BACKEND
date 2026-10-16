@@ -25,18 +25,18 @@ Barrido verificado (2026-10-16): **15 acciones en 8 archivos** sin handler de er
 - Mensajes: español humano, **nunca** un status code crudo, un stack ni un string interno.
 - Los handlers de carga que hoy setean `[]`/null **no se tocan** en esta feature.
 - Rama `fix/errores-silenciosos-acciones` (desde `origin/main` = `6dbc328`). Un solo PR. Push/merge son decisiones del usuario.
-- TDD standard (`strict_tdd: false`). Runners: `npm test -- --watch=false` (baseline **69 archivos / 583 tests**), `npx tsc -p tsconfig.app.json --noEmit`, `npx eslint <archivos tocados>`; los 8 errores del lint repo-wide son preexistentes (no tocarlos).
+- TDD standard (`strict_tdd: false`). Runners: `npm test -- --watch=false` (**baseline de esta rama: 69 archivos / 547 tests** — el 583 del brief original era del worktree de T4, que ya tenía T3+T4 aplicados; tras T1: **70 / 555**), `npx tsc -p tsconfig.app.json --noEmit` (y `tsconfig.spec.json`), `npx eslint <archivos tocados>`; los 8 errores del lint repo-wide son preexistentes (no tocarlos).
 
 ## Authorized scope
 Usuario autorizó "409 + barrido de la clase" (2026-10-16).
 
 ## Acceptance criteria
-- [ ] T1: mecanismo elegido + el caso confirmado (validación de técnicos) muestran un toast de error humano ante 409/404; spec cubre el camino de error.
+- [x] T1: mecanismo elegido + el caso confirmado (validación de técnicos) muestran un toast de error humano ante 409/404; spec cubre el camino de error. Evidence: commit `4d033c2` (4 archivos, +138/−5); helper `core/alertas/mensaje-error.ts` (`mensajeErrorAccion`, status→copy humana, sin filtrar strings internos); ambos subscribes de `validacion-tecnicos-page` con `error:`; la fila NO se refetchea al fallar y el modal de rechazo queda abierto con el motivo intacto; specs +8 (6 del helper, 2 de la página). Suite 70 archivos / 555 tests / 0 failures; `tsc` (app y spec) exit 0; `eslint` en lo tocado exit 0.
 - [ ] T2: los 13 sitios restantes muestran toast ante fallo; un test por página tocada; **ningún `subscribe` de acción queda sin `error:`**.
 - [ ] T3: suite frontend verde + `tsc` + `eslint` en lo tocado + verificación independiente.
 
 ## Tasks
-- [ ] T1 (frontend, delegated): mecanismo + validación de técnicos (2 sitios). Route: delegated-direct.
+- [x] T1 (frontend, delegated): mecanismo + validación de técnicos (2 sitios). Route: delegated-direct. Evidence: commit `4d033c2`; el writer eligió el **helper compartido** y lo justificó (el patrón por archivo de `solicitudes-proveedor-page` filtra el string interno del backend: `DocumentacionIncompletaException` emite un id de dominio). Copy del 409: "El expediente del técnico no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo."
 - [ ] T2 (frontend, delegated): los 13 sitios restantes (7 archivos). Route: delegated-direct.
 - [ ] T3 (parent): verificación final + reporte.
 
@@ -50,3 +50,4 @@ Usuario autorizó "409 + barrido de la clase" (2026-10-16).
 
 ## Progress
 - 2026-10-16: doc creado en `fix/errores-silenciosos-acciones` (desde `origin/main` `6dbc328`). Barrido verificado: 15 acciones / 8 archivos.
+- 2026-10-16: T1 DONE (commit `4d033c2`): helper compartido `core/alertas/mensaje-error.ts` (`mensajeErrorAccion`) + el caso confirmado. El writer probó empíricamente que el test sirve (comentó el handler → el test del 409 falló; restauró). **Corrección de baseline:** en esta rama el front arranca en 547 tests (el 583 del brief era del worktree de T4); el delta exacto del cambio es +8 (6 del helper + 2 de la página).
