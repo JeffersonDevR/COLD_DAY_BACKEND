@@ -12,6 +12,7 @@ import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../core/servi
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { MapsApi } from '../../core/service/maps-api';
 import { SseService } from '../../core/service/sse.service';
+import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
 import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';
@@ -72,6 +73,12 @@ export class SeguimientoOtPage implements OnInit {
 
   /** Sondeo de la última posición del técnico; `null` cuando no aplica. */
   private suscripcionSeguimiento: Subscription | null = null;
+
+  /**
+   * Poll de respaldo: `null` mientras el stream SSE está vivo. Solo arranca
+   * cuando el stream se rinde (ver `escucharCambiosDeEstado`).
+   */
+  private suscripcionRespaldo: Subscription | null = null;
 
   /** Muestra el cargo de visita + diagnóstico desde que hay técnico asignado. */
   readonly mostrarCargoVisita = computed<boolean>(() => {
@@ -147,7 +154,9 @@ export class SeguimientoOtPage implements OnInit {
    * Actualización en vivo: el backend empuja cada cambio de estado por SSE y acá
    * se recarga la OT. Es solo una mejora: si el stream no está disponible (mock,
    * SSR o caída de red) la página sigue funcionando con la recarga manual, por
-   * eso un fallo se silencia en vez de avisar al usuario.
+   * eso un fallo se silencia en vez de avisar al usuario. Ahora bien: cuando el
+   * stream se rinde del todo, arranca el poll de respaldo para que la página no
+   * quede vieja para siempre.
    */
   private escucharCambiosDeEstado(id: string): void {
     this.sse
@@ -159,9 +168,24 @@ export class SeguimientoOtPage implements OnInit {
           if (payload.otId === this.otId()) this.recargarOt();
         },
         error: () => {
-          // El stream es un extra: nunca rompe ni alerta a la página.
+          // El stream es un extra: nunca rompe ni alerta a la página. Si se
+          // rinde (reintentos agotados), el poll de respaldo toma la posta.
+          this.iniciarPollDeRespaldo();
         },
       });
+  }
+
+  /**
+   * Plan B del stream: refresca la OT cada 25 s (mismo ritmo que los demás
+   * tableros) para que el seguimiento no quede congelado cuando SSE se rinde.
+   * Idempotente, se corta al destruirse el componente y nunca corre mientras el
+   * stream está vivo: solo se arranca desde su callback de error.
+   */
+  private iniciarPollDeRespaldo(): void {
+    if (this.suscripcionRespaldo) return;
+    this.suscripcionRespaldo = pollVisibleTab()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.recargarOt());
   }
 
   /** Técnicos disponibles dentro del radio de búsqueda para el radar. */

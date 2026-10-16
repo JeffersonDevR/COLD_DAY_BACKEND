@@ -9,6 +9,7 @@ import { MapsApi } from '../../core/service/maps-api';
 import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
+import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
@@ -299,6 +300,53 @@ describe('SeguimientoOtPage', () => {
       const texto = fixture.nativeElement.textContent as string;
       expect(texto).toContain('OT: Sin código');
       expect(texto).not.toContain(idInterno);
+    });
+  });
+
+  describe('poll de respaldo cuando el stream SSE se rinde', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      // El poll solo corre con la pestaña visible: se fija como el navegador.
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      delete (document as { visibilityState?: string }).visibilityState;
+    });
+
+    it('arranca el poll y refresca la OT cuando el stream se cae', () => {
+      const { otApi, sseEventos } = setup();
+      // Todavía no falló: solo está la carga inicial de la ruta.
+      expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+
+      sseEventos.error(new Error('stream agotado'));
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+
+      // Y sigue refrescando en cada intervalo.
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+      expect(otApi.getOtById).toHaveBeenCalledTimes(3);
+    });
+
+    it('no pollea mientras el stream sigue vivo', () => {
+      const { otApi } = setup();
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+    });
+
+    it('detiene el poll de respaldo al destruirse el componente', () => {
+      const { fixture, otApi, sseEventos } = setup();
+      sseEventos.error(new Error('stream agotado'));
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+
+      fixture.destroy();
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
     });
   });
 });

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,17 +27,23 @@ import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
+import com.sena.cold_day.core.modules.ot.application.usecases.AceptarOfertaUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.IniciarBusquedaTecnicoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
+import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
+import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.listeners.OtEstadoCambiadoSseListener;
+import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtEstadoHistorialRepository;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
@@ -69,11 +76,16 @@ class SseOtStreamIT {
     @Autowired SseTicketService sseTicketService;
     @Autowired SseEmitterRegistry sseEmitterRegistry;
     @Autowired IniciarDesplazamientoUseCase iniciarDesplazamiento;
+    @Autowired IniciarBusquedaTecnicoUseCase iniciarBusqueda;
+    @Autowired AceptarOfertaUseCase aceptarOferta;
+    @Autowired OfertaOtRepository ofertaRepository;
+    @Autowired SpringDataOfertaOtRepository springDataOfertas;
 
     @BeforeEach
     @AfterEach
     void cleanup() {
         sseEmitterRegistry.limpiar();
+        springDataOfertas.deleteAll();
         springDataHistorial.deleteAll();
         springDataOt.deleteAll();
         clienteRepository.deleteAll();
@@ -187,6 +199,39 @@ class SseOtStreamIT {
         assertThat(sseEmitterRegistry.contar(otId.valor().toString())).isEqualTo(1);
     }
 
+    /**
+     * The transition this feature exists for. The winning acceptance assigns the
+     * order through the bulk conditional UPDATE, so it never passes the
+     * repository drain loop and the generic listener cannot fire for it. The
+     * dedicated {@code OtAsignada} listener is what puts it on the stream: this
+     * drives the real use case and reads the event off the client's response.
+     */
+    @Test
+    void theAssignmentReachesTheStream() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-asignacion@example.com", Rol.CLIENTE);
+        Long tecnicoUsuario = crearUsuario("tecnico-asignacion@example.com", Rol.TECNICO);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Tecnico tecnico = crearTecnicoDisponible(tecnicoUsuario);
+        OfertaOt oferta = crearOfertaPara(cliente, tecnico);
+        String clave = oferta.getOtId().valor().toString();
+
+        String ticket = ticketDe(clienteUsuario, Rol.CLIENTE);
+        MvcResult stream = mockMvc.perform(get("/api/ot/" + clave + "/stream")
+                        .param("ticket", ticket)
+                        .accept(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        aceptarOferta.aceptar(new UsuarioId(tecnicoUsuario), oferta.getId());
+
+        String cuerpo = stream.getResponse().getContentAsString();
+        assertThat(cuerpo)
+                .contains(OtEstadoCambiadoSseListener.EVENTO)
+                .contains("BUSCANDO_TECNICO")
+                .contains("ASIGNADA");
+        assertThat(sseEmitterRegistry.contar(clave)).isEqualTo(1);
+    }
+
     /** Ticket issued directly through the service, bound to the given identity. */
     private String ticketDe(Long usuarioId, Rol rol) {
         return sseTicketService.emitir(new AuthenticatedUser(new UsuarioId(usuarioId), rol));
@@ -228,6 +273,31 @@ class SseOtStreamIT {
 
     private Tecnico crearTecnico(Long usuarioId) {
         return tecnicoRepository.save(Tecnico.crear(usuarioId, "ID-" + usuarioId, Set.of(CategoriaServicio.REFRIGERACION), Set.of()));
+    }
+
+    /**
+     * Technician eligible for the spatial dispatch query: approved, available
+     * and located, otherwise no offer is created for them.
+     */
+    private Tecnico crearTecnicoDisponible(Long usuarioId) {
+        Tecnico tecnico = Tecnico.crear(usuarioId, "ID-" + usuarioId,
+                Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+        tecnico.aprobarValidacion(LocalDate.of(2026, 1, 1));
+        tecnico.cambiarEstado(EstadoOperativo.DISPONIBLE);
+        tecnico.actualizarUbicacion(new Point(4.6, -74.0), Instant.now());
+        return tecnicoRepository.save(tecnico);
+    }
+
+    /** Dispatches a fresh OT and returns the live offer created for that technician. */
+    private OfertaOt crearOfertaPara(Cliente cliente, Tecnico tecnico) {
+        Instant ahora = Instant.now();
+        Ot ot = Ot.crear(cliente.getId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+                "Calle 1", new Point(4.6, -74.0), ahora);
+        Ot buscando = iniciarBusqueda.iniciar(ot);
+        return ofertaRepository.listarPendientesPorOt(buscando.getId()).stream()
+                .filter(oferta -> oferta.getTecnicoId().equals(tecnico.getId()))
+                .findFirst()
+                .orElseThrow();
     }
 
     private Cliente crearCliente(Long usuarioId) {
