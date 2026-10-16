@@ -17,6 +17,7 @@ import { OtResponse } from '../../core/models/common.models';
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
   return {
     id: 'ot1',
+    codigo: 'OT-2026-0002',
     categoriaServicio: 'REFRIGERACION',
     descripcionFalla: 'no enfría',
     estado: 'EN_REPARACION',

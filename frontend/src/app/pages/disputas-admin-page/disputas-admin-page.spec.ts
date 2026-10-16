@@ -11,6 +11,7 @@ import { DisputaResponse } from '../../core/models/common.models';
 const disputa: DisputaResponse = {
   id: 'DISP-1',
   otId: 'OT-1',
+  otCodigo: 'OT-2026-0005',
   motivo: 'cobro excesivo',
   estado: 'ABIERTA',
   clienteNombre: 'Ana',
@@ -50,6 +51,21 @@ describe('DisputasAdminPage', () => {
     expect(fixture.componentInstance.disputaSeleccionada()?.id).toBe('DISP-1');
   });
 
+  it('identifica la disputa por el código de la OT, no por ids internos', () => {
+    const { fixture } = setup();
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('OT: OT-2026-0005');
+    // Ni el id de la disputa ni el UUID de la OT se muestran.
+    expect(texto).not.toContain('DISP-1');
+    expect(texto).not.toContain('OT-1');
+
+    fixture.componentInstance.abrirResolucion(disputa);
+    fixture.detectChanges();
+    const modal = fixture.nativeElement.textContent as string;
+    expect(modal).toContain('Mediación Oficial: OT OT-2026-0005');
+    expect(modal).not.toContain('Caso DISP-1');
+  });
+
   it('resuelve la disputa con el dictamen y recarga', () => {
     const { fixture, adminApi, toast } = setup();
     fixture.componentInstance.abrirResolucion(disputa);
@@ -58,8 +74,22 @@ describe('DisputasAdminPage', () => {
     fixture.componentInstance.resolver(true);
 
     expect(adminApi.resolverDisputa).toHaveBeenCalledWith('DISP-1', 'Se acuerda un descuento del 10%', true, 'Admin Uno');
-    expect(toast.success).toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith(
+      'Disputa Resuelta',
+      'La disputa de la OT OT-2026-0005 ha sido conciliada satisfactoriamente.',
+    );
     expect(fixture.componentInstance.disputaSeleccionada()).toBeNull();
+  });
+
+  it('sin código de OT, el aviso usa el fallback y no filtra el id interno', () => {
+    const { fixture, toast } = setup();
+    fixture.componentInstance.abrirResolucion({ ...disputa, otCodigo: undefined });
+    fixture.componentInstance.resolucionCtrl.setValue('Se acuerda un descuento del 10%');
+
+    fixture.componentInstance.resolver(true);
+
+    expect(toast.success).toHaveBeenCalledWith('Disputa Resuelta', expect.stringContaining('Sin código'));
+    expect(toast.success).not.toHaveBeenCalledWith('Disputa Resuelta', expect.stringContaining('DISP-1'));
   });
 
   it('no resuelve si el dictamen es inválido', () => {

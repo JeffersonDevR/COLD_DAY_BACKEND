@@ -15,6 +15,7 @@ import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',
+  codigo: 'OT-2026-0003',
   categoriaServicio: 'REFRIGERACION',
   descripcionFalla: 'no enfría',
   estado: 'EN_CAMINO',

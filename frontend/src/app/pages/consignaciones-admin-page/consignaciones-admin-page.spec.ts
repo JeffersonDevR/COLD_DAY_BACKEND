@@ -12,6 +12,7 @@ function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionRespon
   return {
     id: 'L1',
     otId: 'OT-1',
+    otCodigo: 'OT-2026-0004',
     tecnicoId: 'TEC-1',
     tecnicoNombre: 'Juan',
     montoServicio: 100000,
@@ -62,6 +63,14 @@ describe('ConsignacionesAdminPage', () => {
     expect(fixture.componentInstance.enVerificacion().length).toBe(1);
     expect(fixture.componentInstance.tecnicosBloqueados().length).toBe(1);
     expect(fixture.componentInstance.totalComisionesAprobadas()).toBe(5000);
+  });
+
+  it('identifica cada consignación por el código de la OT, no por ids internos', () => {
+    const { fixture } = setup();
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('OT-2026-0004');
+    expect(texto).not.toContain('L1');
+    expect(texto).not.toContain('OT-1');
   });
 
   it('aprueba una liquidación y avisa', () => {

@@ -68,10 +68,10 @@ export class SolicitudesProveedorPage implements OnInit {
     this.proveedoresApi.aceptar(oferta.id).subscribe({
       next: (requerimiento) => {
         this.accionEnCurso.set(null);
-        this.anunciar(`Solicitud ${requerimiento.id} aceptada. Estado: ${requerimiento.estado}.`);
+        this.anunciar(`Solicitud aceptada. Estado: ${requerimiento.estado}.`);
         this.toast.success(
           'Solicitud aceptada',
-          `Te asignamos el requerimiento ${requerimiento.id}. Coordina la entrega en el sitio del técnico.`
+          'Te asignamos el requerimiento. Coordina la entrega en el sitio del técnico.'
         );
         this.cargar();
       },
@@ -89,7 +89,7 @@ export class SolicitudesProveedorPage implements OnInit {
     this.proveedoresApi.rechazar(oferta.id).subscribe({
       next: () => {
         this.accionEnCurso.set(null);
-        this.anunciar(`Solicitud ${oferta.requerimientoId} rechazada.`);
+        this.anunciar('Solicitud rechazada.');
         this.toast.info('Solicitud rechazada', 'Se registró tu rechazo. No quedas vinculado a esta entrega.');
         this.cargar();
       },
@@ -110,9 +110,9 @@ export class SolicitudesProveedorPage implements OnInit {
     }
     this.accionEnCurso.set(oferta.id);
     this.proveedoresApi.entregar(requerimientoId).subscribe({
-      next: (requerimiento) => {
+      next: () => {
         this.accionEnCurso.set(null);
-        this.anunciar(`Entrega del requerimiento ${requerimiento.id} confirmada.`);
+        this.anunciar('Entrega del requerimiento confirmada.');
         this.toast.success('Entrega confirmada', 'El requerimiento quedó marcado como ENTREGADO.');
         this.cargar();
       },

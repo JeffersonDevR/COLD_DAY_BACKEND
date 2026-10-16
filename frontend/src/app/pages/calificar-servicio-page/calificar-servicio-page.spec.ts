@@ -9,6 +9,7 @@ import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',
+  codigo: 'OT-2026-0014',
   categoriaServicio: 'REFRIGERACION',
   descripcionFalla: 'no enfría',
   estado: 'FINALIZADA',
@@ -40,6 +41,13 @@ describe('CalificarServicioPage', () => {
     const { fixture } = setup(vi.fn(() => of(undefined)));
     expect(fixture.componentInstance.otId()).toBe('ot1');
     expect(fixture.componentInstance.ot()?.id).toBe('ot1');
+  });
+
+  it('muestra el código de la OT y no el id interno del backend', () => {
+    const { fixture } = setup(vi.fn(() => of(undefined)));
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('OT OT-2026-0014');
+    expect(texto).not.toContain('ot1');
   });
 
   it('alterna los tags destacados', () => {

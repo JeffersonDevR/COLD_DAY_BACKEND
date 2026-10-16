@@ -390,6 +390,9 @@ export class MockDbService {
   readonly ordenesTrabajo = signal<OtResponse[]>([
     {
       id: 'OT-2026-001',
+      // En modo mock el id ya es legible; se replica en `codigo` para que las
+      // plantillas que muestran el código del servidor también lo tengan aquí.
+      codigo: 'OT-2026-001',
       clienteId: '3',
       clienteNombre: 'María Gómez',
       clienteTelefono: '3187654321',
@@ -413,6 +416,7 @@ export class MockDbService {
     },
     {
       id: 'OT-2026-002',
+      codigo: 'OT-2026-002',
       clienteId: '4',
       clienteNombre: 'Roberto Torres',
       clienteTelefono: '3129876543',
@@ -458,6 +462,7 @@ export class MockDbService {
     },
     {
       id: 'OT-2026-003',
+      codigo: 'OT-2026-003',
       clienteId: '5',
       clienteNombre: 'Lucía Mendoza',
       clienteTelefono: '3171122334',
@@ -501,6 +506,7 @@ export class MockDbService {
     },
     {
       id: 'OT-2026-004',
+      codigo: 'OT-2026-004',
       clienteId: '4',
       clienteNombre: 'Roberto Torres',
       clienteTelefono: '3129876543',
@@ -552,6 +558,7 @@ export class MockDbService {
     },
     {
       id: 'OT-2026-005',
+      codigo: 'OT-2026-005',
       clienteId: '3',
       clienteNombre: 'María Gómez',
       clienteTelefono: '3187654321',
@@ -588,6 +595,7 @@ export class MockDbService {
     },
     {
       id: 'OT-2026-006',
+      codigo: 'OT-2026-006',
       clienteId: '3',
       clienteNombre: 'María Gómez',
       clienteTelefono: '3187654321',
@@ -634,6 +642,7 @@ export class MockDbService {
     {
       id: 'LIQ-001',
       otId: 'OT-2026-004',
+      otCodigo: 'OT-2026-004',
       tecnicoId: 'TEC-002',
       tecnicoNombre: 'Diego Caicedo',
       montoServicio: 180000,
@@ -646,6 +655,7 @@ export class MockDbService {
     {
       id: 'LIQ-002',
       otId: 'OT-2026-003',
+      otCodigo: 'OT-2026-003',
       tecnicoId: 'TEC-003',
       tecnicoNombre: 'Andrés Silva',
       montoServicio: 250000,
@@ -659,6 +669,7 @@ export class MockDbService {
     {
       id: 'LIQ-003',
       otId: 'OT-2026-000',
+      otCodigo: 'OT-2026-000',
       tecnicoId: 'TEC-001',
       tecnicoNombre: 'Juan Pérez',
       montoServicio: 320000,
@@ -677,6 +688,7 @@ export class MockDbService {
     {
       id: 'DISP-001',
       otId: 'OT-2026-005',
+      otCodigo: 'OT-2026-005',
       clienteNombre: 'María Gómez',
       tecnicoNombre: 'Juan Pérez',
       motivo: 'Cliente manifiesta inconformidad con el diagnóstico: afirma que el técnico presupuestó cambio de bomba nueva ($95.000) cuando solo requería retiro de monedas atascadas.',
@@ -734,6 +746,8 @@ export class MockDbService {
     const fecha = new Date().toISOString();
     const ot: OtResponse = {
       id,
+      // En modo mock el id ya se fabrica legible; el código es el mismo valor.
+      codigo: id,
       clienteId: nuevaOt.clienteId,
       clienteNombre: nuevaOt.clienteNombre,
       clienteTelefono: nuevaOt.clienteTelefono || '3100000000',
@@ -960,6 +974,8 @@ export class MockDbService {
       {
         id: `DISP-${Date.now()}`,
         otId,
+        // El código de la OT viaja en la fila: es lo único que la UI muestra.
+        otCodigo: ot?.codigo,
         clienteNombre: ot?.clienteNombre || 'Cliente',
         tecnicoNombre: ot?.tecnicoNombre || 'Técnico',
         motivo,
@@ -1015,6 +1031,8 @@ export class MockDbService {
       const nuevaLiq: LiquidacionResponse = {
         id: `LIQ-${Date.now().toString().slice(-4)}`,
         otId,
+        // Mismo criterio que el backend: el código de la OT acompaña a la fila.
+        otCodigo: this.ordenesTrabajo().find(o => o.id === otId)?.codigo,
         tecnicoId: tecId,
         tecnicoNombre: tecnico?.nombre || 'Técnico',
         montoServicio: totalCobrado,

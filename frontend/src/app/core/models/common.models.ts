@@ -357,6 +357,11 @@ export interface OtRequest {
 
 export interface OtResponse {
   id: string;
+  /**
+   * Código legible de la OT (`OT-YYYY-####`). Es el identificador que se
+   * muestra; el `id` queda para rutas y llamadas al backend.
+   */
+  codigo?: string;
   clienteId?: string;
   clienteNombre?: string;
   clienteTelefono?: string;
@@ -462,6 +467,8 @@ export interface RegistrarPagoRequest {
 export interface LiquidacionResponse {
   id: string;
   otId: string;
+  /** Código legible de la OT liquidada; es lo que la UI muestra. */
+  otCodigo?: string;
   tecnicoId: string;
   tecnicoNombre?: string;
   montoServicio: number;
@@ -480,6 +487,8 @@ export interface LiquidacionResponse {
 export interface DisputaResponse {
   id: string;
   otId: string;
+  /** Código legible de la OT en disputa; es lo que la UI muestra. */
+  otCodigo?: string;
   clienteNombre?: string;
   tecnicoNombre?: string;
   motivo: string;

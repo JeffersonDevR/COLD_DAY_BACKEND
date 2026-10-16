@@ -21,7 +21,7 @@ const orden: OtResponse = {
   presupuesto: { aprobado: false, total: 150000, manoObra: 90000, repuestos: 60000 },
 };
 
-function setup() {
+function setup(otRespuesta: OtResponse = orden) {
   const clientesApi = {
     aprobarDiagnostico: vi.fn(() => of(undefined)),
     rechazarDiagnostico: vi.fn(() => of(undefined)),
@@ -34,7 +34,7 @@ function setup() {
     tarifa: 35000,
     fueraDeRango: false,
   };
-  const otApi = { getOtById: vi.fn(() => of(orden)), estimarTarifa: vi.fn(() => of(estimacion)) };
+  const otApi = { getOtById: vi.fn(() => of(otRespuesta)), estimarTarifa: vi.fn(() => of(estimacion)) };
   const sseEventos = new Subject<OtEstadoCambiado>();
   const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
   TestBed.configureTestingModule({

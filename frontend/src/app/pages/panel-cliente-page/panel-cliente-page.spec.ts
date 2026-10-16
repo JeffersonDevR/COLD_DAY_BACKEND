@@ -16,6 +16,7 @@ function cambiarPestana(estado: 'visible' | 'hidden'): void {
 function ot(overrides: Partial<OtResponse>): OtResponse {
   return {
     id: 'ot1',
+    codigo: 'OT-2026-0001',
     categoriaServicio: 'REFRIGERACION',
     descripcionFalla: 'no enfría',
     estado: 'EN_CAMINO',
@@ -24,13 +25,13 @@ function ot(overrides: Partial<OtResponse>): OtResponse {
   };
 }
 
-function setup(getOts: ReturnType<typeof vi.fn>) {
+function setup(getOts: ReturnType<typeof vi.fn>, sesion: { id: number; nombre?: string } = { id: 3, nombre: 'María' }) {
   TestBed.configureTestingModule({
     imports: [PanelClientePage],
     providers: [
       provideRouter([]),
       { provide: ClientesApi, useValue: { getOtsPorCliente: getOts } },
-      { provide: AuthService, useValue: { currentUser: () => ({ id: 3, nombre: 'María' }) } },
+      { provide: AuthService, useValue: { currentUser: () => sesion } },
     ],
   });
   const fixture = TestBed.createComponent(PanelClientePage);
@@ -62,6 +63,41 @@ describe('PanelClientePage', () => {
   it('muestra el estado vacío sin servicios activos', () => {
     const fixture = setup(vi.fn(() => of([])));
     expect(fixture.nativeElement.textContent).toContain('No tienes servicios en curso');
+  });
+
+  describe('saludo del panel', () => {
+    it('saluda con el nombre real de la sesión', () => {
+      const fixture = setup(vi.fn(() => of([])));
+      expect(fixture.nativeElement.textContent).toContain('Hola, María');
+    });
+
+    it('con una sesión sin nombre saluda con una etiqueta honesta, no con "Usuario"', () => {
+      // El JWT real no emite `nombre`; un saludo con el literal "Usuario"
+      // nombra a la persona con un rótulo genérico que nunca le corresponde.
+      const fixture = setup(vi.fn(() => of([])), { id: 3 });
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Hola, Cliente');
+      expect(texto).not.toContain('Usuario');
+    });
+  });
+
+  describe('identificación de la OT', () => {
+    // El `id` es el UUID interno del backend: nunca se muestra al cliente.
+    const idInterno = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+
+    it('muestra el código legible y no el id interno', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: idInterno, codigo: 'OT-2026-0013', estado: 'EN_CAMINO' })])));
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('OT-2026-0013');
+      expect(texto).not.toContain(idInterno);
+    });
+
+    it('sin código del backend muestra un texto honesto, tampoco el id interno', () => {
+      const fixture = setup(vi.fn(() => of([ot({ id: idInterno, codigo: undefined, estado: 'EN_CAMINO' })])));
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Sin código');
+      expect(texto).not.toContain(idInterno);
+    });
   });
 
   describe('refresco periódico con la pestaña visible', () => {

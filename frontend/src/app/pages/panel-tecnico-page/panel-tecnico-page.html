@@ -377,7 +377,7 @@
             @for (ot of misOtsEnCurso(); track ot.id) {
               <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
                 <div class="flex items-center justify-between">
-                  <span class="font-mono text-xs font-bold text-slate-500">{{ ot.id }}</span>
+                  <span class="font-mono text-xs font-bold text-slate-500">{{ ot.codigo || 'Sin código' }}</span>
                   <app-estado-badge [estado]="ot.estado" />
                 </div>
                 <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">

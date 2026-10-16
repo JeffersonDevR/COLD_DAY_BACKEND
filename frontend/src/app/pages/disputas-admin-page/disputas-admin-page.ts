@@ -44,7 +44,7 @@ export class DisputasAdminPage {
     const admin = this.authService.currentUser()?.nombre || 'Administrador COLD DAY';
     this.adminApi.resolverDisputa(d.id, this.resolucionCtrl.value, acuerdo, admin).subscribe({
       next: () => {
-        this.toast.success('Disputa Resuelta', `El caso ${d.id} ha sido conciliado satisfactoriamente.`);
+        this.toast.success('Disputa Resuelta', `La disputa de la OT ${d.otCodigo || 'Sin código'} ha sido conciliada satisfactoriamente.`);
         this.disputaSeleccionada.set(null);
         this.resolucionCtrl.reset();
         this.cargarDisputas();

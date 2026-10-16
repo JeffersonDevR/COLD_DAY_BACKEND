@@ -69,17 +69,10 @@
               <header class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div class="min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">{{ oferta.id }}</span>
                     <span class="px-2 py-0.5 rounded-full text-[11px] font-bold" [class]="claseBadge(tonoOferta(oferta.estado))">
                       {{ etiquetaOferta(oferta.estado) }}
                     </span>
                   </div>
-                  <p class="text-xs text-slate-500 mt-1">
-                    Requerimiento {{ oferta.requerimientoId }}
-                    @if (oferta.requerimiento) {
-                      · OT {{ oferta.requerimiento.otId }}
-                    }
-                  </p>
                 </div>
                 @if (oferta.expiraEn && oferta.estado === 'PENDIENTE') {
                   <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-xs font-bold">
@@ -128,7 +121,6 @@
                     [disabled]="accionEnCurso() === oferta.id"
                     (click)="rechazar(oferta)"
                     class="px-4 py-2.5 rounded-2xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 disabled:opacity-50 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
-                    [attr.aria-label]="'Rechazar la solicitud ' + oferta.requerimientoId"
                   >
                     <i class="pi pi-times text-sm"></i>
                     Rechazar
@@ -138,7 +130,6 @@
                     [disabled]="accionEnCurso() === oferta.id"
                     (click)="aceptar(oferta)"
                     class="px-5 py-2.5 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-colors"
-                    [attr.aria-label]="'Aceptar la solicitud ' + oferta.requerimientoId"
                   >
                     @if (accionEnCurso() === oferta.id) {
                       <i class="pi pi-sync animate-spin text-sm"></i>
@@ -154,7 +145,6 @@
                     [disabled]="accionEnCurso() === oferta.id"
                     (click)="entregar(oferta)"
                     class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-colors"
-                    [attr.aria-label]="'Confirmar la entrega del requerimiento ' + oferta.requerimientoId"
                   >
                     @if (accionEnCurso() === oferta.id) {
                       <i class="pi pi-sync animate-spin text-sm"></i>
