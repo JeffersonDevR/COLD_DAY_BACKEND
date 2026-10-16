@@ -78,8 +78,6 @@
             "coverageReporters": ["lcov", "text-summary"],
             "coverageExclude": [
               "src/main.ts",
-              "src/main.server.ts",
-              "src/server.ts",
               "src/app/core/environment/**",
               "src/**/*.spec.ts"
             ]
