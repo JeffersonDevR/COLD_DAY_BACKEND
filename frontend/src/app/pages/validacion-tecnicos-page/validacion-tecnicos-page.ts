@@ -4,7 +4,18 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { TecnicoResponse } from '../../core/models/common.models';
+
+/**
+ * Copy propia de esta pantalla: el 409 de este endpoint es
+ * `DocumentacionIncompletaException`, o sea que el expediente del técnico no
+ * está vigente. Reintentar no sirve, así que el mensaje debe decir qué hacer.
+ */
+const MENSAJES_VALIDACION: Record<number, string> = {
+  409: 'El expediente del técnico no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.',
+  404: 'El técnico ya no está registrado. Actualiza la lista e inténtalo de nuevo.',
+};
 
 @Component({
   selector: 'app-validacion-tecnicos-page',
@@ -37,6 +48,10 @@ export class ValidacionTecnicosPage {
       next: () => {
         this.toast.success('Técnico Aprobado', `${tec.nombreCompleto} ha sido habilitado para tomar servicios en Cúcuta.`);
         this.cargarTecnicos();
+      },
+      // Sin recargar: la fila sigue en pantalla y el admin ve por qué no se habilitó.
+      error: (err) => {
+        this.toast.error('No se pudo habilitar al técnico', mensajeErrorAccion(err, MENSAJES_VALIDACION));
       }
     });
   }
@@ -55,6 +70,10 @@ export class ValidacionTecnicosPage {
         this.tecnicoARechazar.set(null);
         this.motivoCtrl.reset();
         this.cargarTecnicos();
+      },
+      // El modal queda abierto y el motivo escrito intacto para que el admin reintente.
+      error: (err) => {
+        this.toast.error('No se pudo rechazar la validación', mensajeErrorAccion(err, MENSAJES_VALIDACION));
       }
     });
   }
