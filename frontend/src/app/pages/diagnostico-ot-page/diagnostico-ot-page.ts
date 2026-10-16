@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, OnDestroy, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService } from '../../core/service/sse.service';
+import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -29,6 +31,7 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
   private readonly clientesApi = inject(ClientesApi);
   private readonly otApi = inject(OtApi);
   private readonly sse = inject(SseService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
 
@@ -40,6 +43,9 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
 
   /** Suscripción al stream de cambios de estado; se corta al destruir la página. */
   private suscripcionEstado: Subscription | null = null;
+
+  /** Poll de respaldo: `null` mientras el stream SSE está vivo. */
+  private suscripcionRespaldo: Subscription | null = null;
 
   readonly mostrarRechazo = signal<boolean>(false);
   readonly motivoRechazoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
@@ -74,6 +80,8 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.suscripcionEstado?.unsubscribe();
     this.suscripcionEstado = null;
+    this.suscripcionRespaldo?.unsubscribe();
+    this.suscripcionRespaldo = null;
   }
 
   /** Refresca la OT observada junto con su estimación de tarifa de visita. */
@@ -98,9 +106,19 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
         if (payload.otId === this.otId()) this.recargarOt();
       },
       error: () => {
-        // El stream es solo una mejora: nunca rompe ni alerta a la página.
+        // El stream es un extra: nunca rompe ni alerta a la página. Si se
+        // rinde, el poll de respaldo toma la posta.
+        this.iniciarPollDeRespaldo();
       },
     });
+  }
+
+  /** Plan B del stream: refresca la OT cada 25 s mientras la pestaña está visible. */
+  private iniciarPollDeRespaldo(): void {
+    if (this.suscripcionRespaldo) return;
+    this.suscripcionRespaldo = pollVisibleTab()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.recargarOt());
   }
 
   /** Consulta la tarifa de visita por distancia para el punto de servicio. */

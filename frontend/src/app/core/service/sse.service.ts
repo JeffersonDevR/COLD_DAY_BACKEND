@@ -11,6 +11,11 @@ export interface OtEstadoCambiado {
   destino: EstadoOt;
 }
 
+/** Payload del evento `oferta-creada` del canal por tecnico. */
+export interface OfertaCreada {
+  otId: string;
+}
+
 /** Respuesta de `POST /api/sse/ticket`. */
 interface SseTicketResponse {
   codigo: string;
@@ -19,6 +24,9 @@ interface SseTicketResponse {
 
 /** Nombre del evento con el que el backend anuncia un cambio de estado. */
 const EVENTO_ESTADO = 'ot-estado-cambiado';
+
+/** Evento del canal por tecnico: se creo una nueva oferta para ese tecnico. */
+const EVENTO_OFERTA_CREADA = 'oferta-creada';
 
 /** Backoff: arranca en 1 s y se duplica hasta el tope de 30 s. */
 const RETARDO_BASE_MS = 1000;
@@ -154,6 +162,99 @@ export class SseService {
         limpiar();
       };
     });
+  }
+
+  /** Stream frio de ofertas nuevas para el tecnico autenticado. */
+  abrirOfertasTecnico(): Observable<OfertaCreada> {
+    if (this.apiConfig.useMocks()) return EMPTY;
+    if (typeof EventSource === 'undefined') return EMPTY;
+
+    return new Observable<OfertaCreada>((subscriber) => {
+      let fuente: EventSource | null = null;
+      let temporizador: ReturnType<typeof setTimeout> | null = null;
+      let detenido = false;
+      let fallosConsecutivos = 0;
+      let conexionAbiertaEn = 0;
+
+      const limpiar = (): void => {
+        if (temporizador !== null) {
+          clearTimeout(temporizador);
+          temporizador = null;
+        }
+        fuente?.close();
+        fuente = null;
+      };
+
+      const programarReintento = (): void => {
+        const espera = Math.min(RETARDO_BASE_MS * 2 ** (fallosConsecutivos - 1), RETARDO_MAX_MS);
+        temporizador = setTimeout(() => {
+          temporizador = null;
+          abrir();
+        }, espera);
+      };
+
+      const registrarFallo = (): void => {
+        if (detenido) return;
+        if (conexionAbiertaEn > 0 && Date.now() - conexionAbiertaEn >= VIDA_MINIMA_MS) {
+          fallosConsecutivos = 0;
+        }
+        conexionAbiertaEn = 0;
+        fallosConsecutivos++;
+        if (fallosConsecutivos >= MAX_FALLOS_CONSECUTIVOS) {
+          detenido = true;
+          limpiar();
+          subscriber.error(new Error('No se pudo establecer el stream de ofertas.'));
+          return;
+        }
+        programarReintento();
+      };
+
+      const abrir = (): void => {
+        if (detenido) return;
+        this.pedirTicket().subscribe({
+          next: (ticket) => {
+            if (detenido) return;
+            const url = `${this.apiConfig.url('/tecnicos/me/ofertas/stream')}?ticket=${encodeURIComponent(ticket.codigo)}`;
+            const evento = new EventSource(url);
+            fuente = evento;
+            evento.onopen = () => {
+              conexionAbiertaEn = Date.now();
+            };
+            evento.addEventListener(EVENTO_OFERTA_CREADA, (mensaje: MessageEvent) => {
+              const payload = this.parsearOferta(mensaje.data);
+              // Un payload invalido se descarta; el stream sigue vivo. La pagina
+              // ignora el payload y solo refresca sus ofertas.
+              if (!payload) return;
+              fallosConsecutivos = 0;
+              subscriber.next(payload);
+            });
+            evento.onerror = () => {
+              limpiar();
+              registrarFallo();
+            };
+          },
+          error: () => registrarFallo(),
+        });
+      };
+
+      abrir();
+
+      return () => {
+        detenido = true;
+        limpiar();
+      };
+    });
+  }
+
+  /** Parseo defensivo del payload del canal de ofertas (solo exige otId). */
+  private parsearOferta(data: string): OfertaCreada | null {
+    try {
+      const parsed = JSON.parse(data) as Partial<OfertaCreada>;
+      if (typeof parsed?.otId !== 'string') return null;
+      return { otId: parsed.otId };
+    } catch {
+      return null;
+    }
   }
 
   /** `POST /api/sse/ticket`: el interceptor de auth adjunta el JWT. */

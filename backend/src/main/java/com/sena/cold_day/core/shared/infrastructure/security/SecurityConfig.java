@@ -90,6 +90,14 @@ public class SecurityConfig {
                         // anyRequest().authenticated(), and no other /api/ot or
                         // /api/sse path is widened.
                         .requestMatchers(HttpMethod.GET, "/api/ot/*/stream").permitAll()
+                        // Same contract for the technician offer stream: it is
+                        // opened by ticket, and the ticket proves identity before
+                        // the technician profile is resolved. Without this rule
+                        // the EventSource request would be rejected by the JWT
+                        // filter, which cannot see the ticket. The sibling
+                        // /api/tecnicos/me/ofertas read endpoint stays
+                        // authenticated.
+                        .requestMatchers(HttpMethod.GET, "/api/tecnicos/me/ofertas/stream").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 // Rate limit de los 4 endpoints publicos de auth: va antes del
