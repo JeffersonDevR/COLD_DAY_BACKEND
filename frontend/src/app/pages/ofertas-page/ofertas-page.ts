@@ -1,7 +1,10 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subscription } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { SseService } from '../../core/service/sse.service';
+import { ApiConfig } from '../../core/service/api.config';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -14,11 +17,13 @@ import { environment } from '../../core/environment/environment';
   imports: [RouterLink],
   templateUrl: './ofertas-page.html',
 })
-export class OfertasPage {
+export class OfertasPage implements OnInit {
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly sse = inject(SseService, { optional: true });
+  private readonly apiConfig = inject(ApiConfig, { optional: true });
 
   readonly loadingOt = signal<string | null>(null);
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
@@ -31,6 +36,27 @@ export class OfertasPage {
   private readonly auxiliaresPorOt = signal<Record<string, number>>({});
 
   readonly solicitudesDisponibles = computed(() => this.ofertas().map(oferta => oferta.ot));
+
+  /** Suscripcion SSE activa; se cierra antes de reabrir (HMR/instancias). */
+  private suscripcionSse: Subscription | null = null;
+
+  ngOnInit(): void {
+    // Fuera de mock/SSR no hay stream que abrir: el poll de respaldo queda como
+    // unico mecanismo de refresco.
+    if (this.sse == null || (this.apiConfig?.useMocks() ?? false) || typeof EventSource === 'undefined') {
+      return;
+    }
+    // Cierre el stream previo si ya habia uno (HMR / multiples instancias).
+    this.suscripcionSse?.unsubscribe();
+    this.suscripcionSse = this.sse
+      .abrirOfertasTecnico()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        // El payload es informativo: cualquier evento significa "tus ofertas
+        // cambiaron", asi que simplemente se refrescan.
+        this.recargarOfertas(true);
+      });
+  }
 
   constructor() {
     cargarTecnicoAutenticado(
