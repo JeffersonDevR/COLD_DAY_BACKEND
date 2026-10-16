@@ -10,6 +10,7 @@ import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
@@ -247,5 +248,23 @@ describe('SeguimientoOtPage', () => {
     sseEventos.next({ otId: 'ot-ajena', origen: 'SOLICITADA', destino: 'ASIGNADA' });
 
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('avisa si falla la cancelación y mantiene el modal para reintentar', () => {
+    const { fixture, clientesApi, toast, navigate } = setup();
+    clientesApi.cancelarOt.mockReturnValue(
+      throwError(() => new ApiHttpError('El motivo es requerido', 400)),
+    );
+    fixture.componentInstance.mostrarModalCancelar.set(true);
+    fixture.componentInstance.motivoControl.setValue('ya no lo necesito');
+
+    fixture.componentInstance.confirmarCancelacion();
+
+    expect(toast.warning).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo cancelar el servicio', expect.any(String));
+    // No navega al panel: la cancelación no quedó registrada.
+    expect(navigate).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.mostrarModalCancelar()).toBe(true);
+    expect(fixture.componentInstance.motivoControl.value).toBe('ya no lo necesito');
   });
 });

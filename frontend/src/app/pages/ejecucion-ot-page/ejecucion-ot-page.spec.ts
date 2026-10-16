@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { EjecucionOtPage } from './ejecucion-ot-page';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
@@ -11,6 +11,7 @@ import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
@@ -187,5 +188,36 @@ describe('EjecucionOtPage', () => {
     expect(sseEventos.observed).toBe(false);
     sseEventos.next({ otId: 'ot1', origen: 'ASIGNADA', destino: 'EN_CAMINO' });
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('avisa si falla el inicio del desplazamiento y no recarga la OT (409 visita sin pagar)', () => {
+    const { fixture, tecnicosApi, otApi, toast } = setup({ ot: orden({ estado: 'ASIGNADA' }) });
+    tecnicosApi.iniciarDesplazamiento.mockReturnValue(
+      throwError(() => new ApiHttpError('La visita debe estar pagada antes de iniciar el desplazamiento', 409)),
+    );
+
+    fixture.componentInstance.iniciarDesplazamiento();
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo iniciar el desplazamiento',
+      'No se pudo iniciar el desplazamiento: el cliente puede no haber pagado la visita todavía, o la orden pudo cambiar de estado en otro dispositivo. Actualiza la página e inténtalo de nuevo.',
+    );
+    // Solo la carga inicial: el fallo no dispara refetch.
+    expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+  });
+
+  it('avisa si falla la finalización y no registra el pago', () => {
+    const { fixture, tecnicosApi, tracking, liquidacionApi, toast } = setup();
+    tecnicosApi.finalizarServicio.mockReturnValue(
+      throwError(() => new ApiHttpError('Solo se puede finalizar en EN_REPARACION', 409)),
+    );
+
+    fixture.componentInstance.finalizarServicio();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo finalizar el servicio', expect.any(String));
+    // El fallo no detiene el tracking ni dispara el registro del pago.
+    expect(tracking.detener).not.toHaveBeenCalled();
+    expect(liquidacionApi.registrarPago).not.toHaveBeenCalled();
   });
 });

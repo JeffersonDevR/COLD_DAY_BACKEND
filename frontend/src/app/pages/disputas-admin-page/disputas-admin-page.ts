@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { DisputaResponse } from '../../core/models/common.models';
 
 @Component({
@@ -47,7 +48,11 @@ export class DisputasAdminPage {
         this.disputaSeleccionada.set(null);
         this.resolucionCtrl.reset();
         this.cargarDisputas();
-      }
+      },
+      // El modal queda abierto con el dictamen escrito para que el admin reintente.
+      error: (err) => {
+        this.toast.error('No se pudo resolver la disputa', mensajeErrorAccion(err));
+      },
     });
   }
 }

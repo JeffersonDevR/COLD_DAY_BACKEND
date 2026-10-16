@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { LiquidacionesTecnicoPage } from './liquidaciones-tecnico-page';
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 
 function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionResponse {
@@ -29,7 +30,7 @@ function setup(opts: { tecnico?: TecnicoResponse; liquidaciones?: LiquidacionRes
     getLiquidacionesPorTecnico: vi.fn(() => of(opts.liquidaciones ?? [liquidacion({}), liquidacion({ id: 'L2', estado: 'APROBADA', comision: 5000 })])),
     subirComprobante: vi.fn(() => of(undefined)),
   };
-  const toast = { success: vi.fn(), info: vi.fn() };
+  const toast = { success: vi.fn(), info: vi.fn(), error: vi.fn() };
   TestBed.configureTestingModule({
     imports: [LiquidacionesTecnicoPage],
     providers: [
@@ -88,5 +89,23 @@ describe('LiquidacionesTecnicoPage', () => {
     const { fixture, toast } = setup();
     fixture.componentInstance.copiarDatosBanco();
     expect(toast.info).toHaveBeenCalledWith('Copiado', expect.any(String));
+  });
+
+  it('avisa si falla la subida del comprobante y mantiene el formulario', () => {
+    const { fixture, liquidacionApi, toast } = setup();
+    liquidacionApi.subirComprobante.mockReturnValue(
+      throwError(() => new ApiHttpError('La liquidación no admite comprobante', 409)),
+    );
+    fixture.componentInstance.abrirSubida(liquidacion({}));
+    fixture.componentInstance.comprobanteForm.controls.referencia.setValue('BCOL-123');
+
+    fixture.componentInstance.enviarComprobante();
+
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo enviar el comprobante', expect.any(String));
+    // El modal sigue abierto con los datos cargados para reintentar.
+    expect(fixture.componentInstance.liqSeleccionada()).not.toBeNull();
+    expect(fixture.componentInstance.comprobanteForm.controls.referencia.value).toBe('BCOL-123');
+    expect(liquidacionApi.getLiquidacionesPorTecnico).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,6 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from '../../core/models/common.models';
 
 @Component({
@@ -52,7 +53,11 @@ export class PerfilDocumentosPage {
         this.toast.success('Documento Adjuntado', 'El archivo ha sido enviado para verificación del administrador.');
         this.mostrarForm.set(false);
         this.cargarDocumentos();
-      }
+      },
+      // El formulario queda abierto con los datos cargados para que el técnico reintente.
+      error: (err) => {
+        this.toast.error('No se pudo subir el documento', mensajeErrorAccion(err));
+      },
     });
   }
 }

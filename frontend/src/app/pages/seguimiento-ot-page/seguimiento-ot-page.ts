@@ -13,6 +13,7 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { MapsApi } from '../../core/service/maps-api';
 import { SseService } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';
 import { MapaRadar } from '../../shared/mapa-radar/mapa-radar';
 import { CargoVisitaDiagnostico } from '../../shared/cargo-visita/cargo-visita';
@@ -254,7 +255,11 @@ export class SeguimientoOtPage implements OnInit {
         this.mostrarModalCancelar.set(false);
         this.toast.warning('Servicio Cancelado', 'La orden de trabajo ha sido cancelada.');
         this.router.navigate(['/panel']);
-      }
+      },
+      // El modal queda abierto con el motivo escrito para que el cliente reintente.
+      error: (err) => {
+        this.toast.error('No se pudo cancelar el servicio', mensajeErrorAccion(err));
+      },
     });
   }
 
