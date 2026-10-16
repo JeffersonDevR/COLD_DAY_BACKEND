@@ -5,6 +5,7 @@ import { DiagnosticoOtPage } from './diagnostico-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
+import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
@@ -192,4 +193,46 @@ describe('DiagnosticoOtPage', () => {
       expect(texto).not.toContain('el técnico asignado');
     });
   });
+
+  describe('poll de respaldo cuando el stream SSE se rinde', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      delete (document as { visibilityState?: string }).visibilityState;
+    });
+
+    it('arranca el poll y refresca la OT cuando el stream se cae', () => {
+      const { otApi, sseEventos } = setup();
+      expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+
+      sseEventos.error(new Error('stream agotado'));
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+    });
+
+    it('no pollea mientras el stream sigue vivo', () => {
+      const { otApi } = setup();
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+    });
+
+    it('detiene el poll de respaldo al destruirse el componente', () => {
+      const { fixture, otApi, sseEventos } = setup();
+      sseEventos.error(new Error('stream agotado'));
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+
+      fixture.destroy();
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+    });
+  });
+
 });

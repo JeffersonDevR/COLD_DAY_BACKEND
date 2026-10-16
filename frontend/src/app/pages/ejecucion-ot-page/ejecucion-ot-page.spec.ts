@@ -9,6 +9,7 @@ import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.serv
 import { MapsApi } from '../../core/service/maps-api';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
+import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
@@ -230,4 +231,46 @@ describe('EjecucionOtPage', () => {
     expect(texto).toContain('Ejecución OT: OT-2026-0017');
     expect(texto).not.toContain(idInterno);
   });
+
+  describe('poll de respaldo cuando el stream SSE se rinde', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      delete (document as { visibilityState?: string }).visibilityState;
+    });
+
+    it('arranca el poll y refresca la OT cuando el stream se cae', () => {
+      const { otApi, sseEventos } = setup();
+      expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+
+      sseEventos.error(new Error('stream agotado'));
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+    });
+
+    it('no pollea mientras el stream sigue vivo', () => {
+      const { otApi } = setup();
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(1);
+    });
+
+    it('detiene el poll de respaldo al destruirse el componente', () => {
+      const { fixture, otApi, sseEventos } = setup();
+      sseEventos.error(new Error('stream agotado'));
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+
+      fixture.destroy();
+      vi.advanceTimersByTime(POLL_INTERVAL_MS * 3);
+
+      expect(otApi.getOtById).toHaveBeenCalledTimes(2);
+    });
+  });
+
 });
