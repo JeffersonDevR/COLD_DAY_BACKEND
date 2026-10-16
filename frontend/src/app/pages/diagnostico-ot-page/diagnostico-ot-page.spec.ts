@@ -173,4 +173,23 @@ describe('DiagnosticoOtPage', () => {
     expect(fixture.componentInstance.mostrarRechazo()).toBe(true);
     expect(fixture.componentInstance.motivoRechazoCtrl.value).toBe('costo elevado');
   });
+
+  describe('nombre del técnico', () => {
+    it('muestra el nombre real en el encabezado y en el chat', () => {
+      const { fixture } = setup();
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Revisión en sitio por Juan');
+      expect(texto).not.toContain('por asignar');
+    });
+
+    it('sin nombre muestra fallbacks honestos en lugar de una frase vacía o ambigua', () => {
+      const { fixture } = setup({ ...orden, tecnicoNombre: undefined });
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Revisión en sitio por un técnico por asignar');
+      expect(texto).toContain('Buscando técnico…');
+      expect(texto).not.toContain('el técnico asignado');
+    });
+  });
 });
