@@ -4,7 +4,7 @@ import { AppTopbar } from './app-topbar';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { LayoutService } from '../../core/service/layout.service';
-import { UsuarioResponse } from '../../core/models/common.models';
+import { Rol, UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
   id: 3,
@@ -15,7 +15,7 @@ const usuario: UsuarioResponse = {
   activo: true,
 };
 
-function setup(user: UsuarioResponse | null) {
+function setup(user: UsuarioResponse | null, roles?: Set<Rol>) {
   const layout = {
     toggleMobileMenu: vi.fn(),
     toggleMenu: vi.fn(),
@@ -24,7 +24,11 @@ function setup(user: UsuarioResponse | null) {
     setMenuMode: vi.fn(),
     setSidebarCollapsed: vi.fn(),
   };
-  const auth = { currentUser: () => user, logout: vi.fn() };
+  const auth = {
+    currentUser: () => user,
+    userRoles: () => roles ?? (user?.rol ? new Set<Rol>([user.rol as Rol]) : new Set<Rol>()),
+    logout: vi.fn(),
+  };
   const toast = { success: vi.fn() };
 
   TestBed.configureTestingModule({
@@ -107,5 +111,12 @@ describe('AppTopbar', () => {
 
     expect(host.querySelector('[aria-label="Personalizar tema"]')).toBeNull();
     expect(host.querySelector('[aria-label="Modo oscuro"], [aria-label="Modo claro"]')).toBeNull();
+  });
+
+  it('con rol TECNICO, "Mi Panel" lleva al panel del técnico', () => {
+    const { fixture, navigate } = setup({ ...usuario, rol: 'TECNICO' }, new Set<Rol>(['TECNICO']));
+    const item = fixture.componentInstance.userMenuItems().find((i) => i.label === 'Ir a Mi Panel');
+    (item?.command as (() => void) | undefined)?.();
+    expect(navigate).toHaveBeenCalledWith(['/tecnico/panel']);
   });
 });

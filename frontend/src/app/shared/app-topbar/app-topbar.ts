@@ -47,7 +47,7 @@ export class AppTopbar {
     // claims, y esta fila tampoco puede quedar en blanco.
     { label: this.usuario()?.correo || this.usuario()?.nombre || 'Usuario', disabled: true },
     { separator: true },
-    { label: 'Ir a Mi Panel', icon: 'pi pi-home', command: () => this.router.navigate(['/panel']) },
+    { label: 'Ir a Mi Panel', icon: 'pi pi-home', command: () => this.router.navigate([this.auth.userRoles().has('TECNICO') ? '/tecnico/panel' : '/panel']) },
     { label: 'Cerrar Sesión', icon: 'pi pi-sign-out', command: () => this.cerrarSesion() },
   ]);
 
