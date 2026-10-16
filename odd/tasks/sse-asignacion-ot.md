@@ -31,12 +31,12 @@ Síntoma reportado: *"sigue estando el problema de que se tiene que recargar la 
 Usuario eligió **"Asignación + fallback"** (2026-10-16).
 
 ## Acceptance criteria
-- [ ] T1: al aceptar una oferta, el registry publica al stream de esa OT (con test que lo pruebe); el UPDATE masivo queda intacto.
+- [x] T1: al aceptar una oferta, el registry publica al stream de esa OT (con test que lo pruebe); el UPDATE masivo queda intacto. Evidence: commit `2df2628` (4 archivos, +205, **solo adiciones**); `OtAsignadaSseListener` (`@TransactionalEventListener(AFTER_COMMIT, fallbackExecution=true)` sobre `OtAsignada` → `registry.publicar(clave(otId), EVENTO, payload)`); reusa `EVENTO`/`clave(...)` que ya eran públicos (una sola derivación de la clave); payload = el mismo record que consume el front, con overload `de(OtId, EstadoOt, EstadoOt)` y la transición **real** BUSCANDO_TECNICO→ASIGNADA; tests: IT end-to-end que maneja `AceptarOfertaUseCase` sobre Testcontainers con stream SSE real + unit del listener. Suite backend **120 suites / 828 tests / 0 failures**.
 - [ ] T2: si el stream de seguimiento muere, la página refresca por poll lento y deja de pollear cuando el stream vuelve / al destruirse (con test).
 - [ ] T3: suites verdes (backend + frontend) + verificación independiente.
 
 ## Tasks
-- [ ] T1 (backend, delegated): listener de `OtAsignada` → registry. Route: delegated-direct.
+- [x] T1 (backend, delegated): listener de `OtAsignada` → registry. Route: delegated-direct. Evidence: commit `2df2628`; el writer hizo un **experimento discriminante** (sacó `@Component` del listener → falló **solo** el test del caso, los otros 7 pasaron) → el test detecta el bug de verdad; verificó además que **no hay doble publicación** (`intentarAsignar` solo se llama desde `AceptarOfertaUseCase`, que no hace `save` de esa OT, y `OtAsignada` no tiene otro publisher).
 - [ ] T2 (frontend, delegated): poll de respaldo en seguimiento. Route: delegated-direct.
 - [ ] T3 (parent): verificación final + reporte.
 
@@ -45,3 +45,4 @@ Usuario eligió **"Asignación + fallback"** (2026-10-16).
 
 ## Progress
 - 2026-10-16: doc creado en `fix/sse-asignacion-ot` (desde `origin/main` `48e8e9d`). Diagnóstico verificado por el orquestador: `AceptarOfertaUseCase:106-124` sin `save`; `OtRepositoryAdapter:86` única publicación de `OtEstadoCambiado`; `OtEstadoCambiadoSseListener:39` único puente al registry. Wiring del front sin mismatches (nombre de evento, `otId`, ticket) — no es la causa.
+- 2026-10-16: T1 DONE (commit `2df2628`): el puente que faltaba. Verificación del writer: `cleanTest test --rerun-tasks` → BUILD SUCCESSFUL (5m20s), **120 suites / 828 tests / 0 failures**. Spot check del parent: re-corrida de los tests target → 2 suites / 10 tests / 0 failures; `OtEstadoCambiadoSseListener`, `OtRepositoryAdapter` y `AceptarOfertaUseCase` **intactos** (fuera del diff). Notas: Docker Desktop no estaba corriendo (el writer lo levantó) y `fallbackExecution=true` espeja el listener existente.
