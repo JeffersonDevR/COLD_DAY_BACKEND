@@ -4,6 +4,7 @@ import { catchError, Observable, of } from 'rxjs';
 import { delay, switchMap } from 'rxjs/operators';
 import { ApiConfig } from './api.config';
 import { MapsGeocoderCliente } from './maps-geocoder-cliente';
+import { distanciaHaversineKm, VELOCIDAD_MEDIA_KMH } from './distancia-local';
 import {
   DireccionApiResponse,
   DistanciaApiResponse,
@@ -80,8 +81,8 @@ export class MapsApi {
 
   distancia(origen: Point, destino: Point): Observable<DistanciaApiResponse> {
     if (this.apiConfig.useMocks()) {
-      const km = this.haversineKm(origen, destino);
-      const min = Math.round((km / 25) * 60);
+      const km = distanciaHaversineKm(origen, destino);
+      const min = Math.round((km / VELOCIDAD_MEDIA_KMH) * 60);
       return of({
         distanciaKm: Math.round(km * 100) / 100,
         duracionMin: min,
@@ -112,16 +113,5 @@ export class MapsApi {
       hash = (hash * 31 + (value.codePointAt(i) ?? 0)) % 2147483647;
     }
     return hash;
-  }
-
-  private haversineKm(a: Point, b: Point): number {
-    const radioTierraKm = 6371;
-    const dLat = ((b.latitud - a.latitud) * Math.PI) / 180;
-    const dLng = ((b.longitud - a.longitud) * Math.PI) / 180;
-    const lat1 = (a.latitud * Math.PI) / 180;
-    const lat2 = (b.latitud * Math.PI) / 180;
-    const h =
-      Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-    return 2 * radioTierraKm * Math.asin(Math.sqrt(h));
   }
 }

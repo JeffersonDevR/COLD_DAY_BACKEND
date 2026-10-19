@@ -8,9 +8,9 @@ import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
-import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
+import { cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
-import { MapsApi } from '../../core/service/maps-api';
+import { rutaLocal } from '../../core/service/distancia-local';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -52,7 +52,6 @@ export class SeguimientoOtPage implements OnInit {
   private readonly clientesApi = inject(ClientesApi);
   private readonly otApi = inject(OtApi);
   private readonly tecnicosApi = inject(TecnicosApi);
-  private readonly mapsApi = inject(MapsApi);
   private readonly sse = inject(SseService);
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
@@ -235,21 +234,29 @@ export class SeguimientoOtPage implements OnInit {
     this.suscripcionSeguimiento = null;
   }
 
+  /**
+   * Distancia y ETA estimadas en el navegador (haversine).
+   *
+   * El poll de 15 s NO puede pedir la distancia a Google en cada tick: eso
+   * quemaba la cuota de Distance Matrix (4 llamadas por minuto y por cliente
+   * mirando la pantalla). Además, Google devolvía la distancia por calle
+   * (modo driving) con tráfico, así que el número local es honesto como
+   * cota inferior del trayecto, no como el tiempo real de la calle.
+   *
+   * Si falta la posición del técnico o el punto de servicio no se muestra
+   * ningún número: mejor sin dato que con un dato falso.
+   */
   private recalcularDistancia(): void {
-    calcularRuta(
-      this.mapsApi,
-      this.tecnicoUbicacion(),
-      this.ot()?.punto,
-      (ruta) => {
-        this.distanciaKm.set(ruta.distanciaKm);
-        this.etaMin.set(ruta.duracionMin);
-      },
-      // El backend puede tener Google Maps deshabilitado (503): no romper la vista.
-      () => {
-        this.distanciaKm.set(null);
-        this.etaMin.set(null);
-      },
-    );
+    const origen = this.tecnicoUbicacion();
+    const destino = this.ot()?.punto;
+    if (!origen || !destino) {
+      this.distanciaKm.set(null);
+      this.etaMin.set(null);
+      return;
+    }
+    const ruta = rutaLocal(origen, destino);
+    this.distanciaKm.set(ruta.distanciaKm);
+    this.etaMin.set(ruta.duracionMin);
   }
 
   puedeCancelar(): boolean {
