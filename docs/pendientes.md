@@ -1,0 +1,63 @@
+# Pendientes
+
+Todo lo que falta para completar el trabajo, con lo ya verificado en código (`path:line`) y el tamaño estimado. Se va marcando a medida que se cierre; lo `[ ]` es lo que queda.
+
+Estado: 2026-10-19.
+
+## 1. Feature en curso — mapa de la ruta del técnico
+
+Rama `feat/mapa-ruta-tecnico` (desde `origin/main`). Doc del feature: `odd/tasks/mapa-ruta-tecnico.md`.
+
+- [x] **T1** (`0f34fb8`) — la distancia/ETA del cliente deja de llamar a Google Maps en cada tick de 15 s → cálculo local (`distancia-local.ts`, haversine + 25 km/h, la misma fórmula que el backend). Test con `HttpTestingController` real (`expectNone('/api/maps/distancia')`).
+- [x] **T1-bis** (`4de9904`) — el mismo leak en `ejecucion-ot-page.ts:84` (4 llamadas/min **por técnico**).
+- [ ] **T2** — *en curso*:
+  - Backend: crear `GET /api/config/maps` (el loader **ya lo pide** y da 404 → en dev no hay mapa) con centro/bounds/zoom desde `app.maps.*` / `app.tarifa.centro-*`.
+  - Frontend: consumir esa config y eliminar las 6 duplicaciones (`cucuta.constant.ts:11,17-22`, `mapa-radar.ts:63-64`, `seguimiento-ot-page.html:156-157`, `registro-page.ts:163`, `environment.ts:39-42`).
+  - Frontend: borrar el código muerto `calcularRuta` (`ot-carga.ts:48-59`) y `MapsApi.distancia` — ya no tienen callers de producción y son la trampa para reintroducir la fuga. El endpoint del backend `/api/maps/distancia` **se queda** (lo usa el backend para estimar tarifa).
+- [ ] **T3** — el mapa de seguimiento: marcador del técnico moviéndose (poll existente de 15 s, **sin llamadas a Maps**), destino y línea recta, y **visible también en `EN_CAMINO`** (hoy el mapa del cliente solo existe en `SOLICITADA|BUSCANDO_TECNICO` → `seguimiento-ot-page.html:151-161`). `mapa-radar` está acoplado al radar (4 círculos, sweep, timer): reutilizar `GoogleMapsLoaderService`, `CUCUTA_METRO_BOUNDS` y los estilos, no el componente tal cual. La librería `geometry` ya se pide en el loader.
+- [ ] **T4** — exponer `llegadaEn` en la respuesta de la OT + evento SSE → el cliente ve "el técnico llegó" sin recargar. Hoy `Ot.confirmarLlegada` (EN_CAMINO, idempotente) la fija pero **no está en ninguna respuesta de la API**.
+- [ ] **T5** — verificación final del feature.
+
+**Decisiones ya tomadas (no reabrir sin motivo):** cero llamadas nuevas a Google Maps; la "ruta" es una **línea recta** al destino y la ETA es **local** (`round((km/25)×60)`) → es una **cota inferior**, optimista frente a Google; **Directions API fuera de alcance** (el scope de la key no es verificable y costaría por viaje); la **geo-arrival automática** fuera de alcance (la llegada sigue siendo manual: `POST /api/ot/{id}/llegada`).
+
+## 2. Las 4 features pedidas el 2026-10-19
+
+### 2.1 Alertas en los momentos importantes de la OT — **M**
+- Momentos pedidos: el técnico acepta una orden, el cliente paga la visita, el cliente paga/el técnico envía el presupuesto, y otros.
+- Los eventos de dominio **ya existen** (no hay que inventar el modelo): `OtCreada`, `OtAsignada`, `OtFinalizada`, `OtCancelada`, `LiquidacionRegistrada/Aprobada/Rechazada`, `ComprobanteCargado`, `DisputaAbierta/Resuelta`.
+- Lo que falta: **bridges SSE por OT** (el patrón ya está en `OfertaCreadaSseListener` / `OtEstadoCambiadoSseListener`) + el aviso en la UI del cliente y del técnico (toast/aviso en la página de seguimiento, en la de ofertas y en la del técnico).
+- Ojo: el **envío del presupuesto** no tiene evento propio → hay que emitirlo o derivarlo de `OtEstadoCambiado`.
+- Se reusa el canal por técnico ya construido (`tecnico:{id}`, `GET /api/tecnicos/me/ofertas/stream`).
+
+### 2.2 Quitar el registro de proveedores desde la parte de admin — **S**
+- Localizar la ruta/UI de admin para **dar de alta** un proveedor y el endpoint backend del alta-admin; el **auto-registro ya existe** en el dominio.
+- Decidir qué queda del admin: aprobar/rechazar la documentación **sí** se queda; solo se va el alta.
+
+### 2.3 Filtro de OTs en la parte del cliente — **S**
+- Filtrar por **completadas / no completadas / sin técnico**. Hoy el panel del cliente pollea cada 25 s (`panel-cliente-page.ts:41-43`).
+- Decidir si el filtro vive en el front (más simple) o como query param en el backend.
+
+### 2.4 Repuestos (insumos) para proveedores + que el técnico los agregue desde su OT — **M/L**
+- El dominio ya tiene `Insumo`, `OfertaInsumo`, `RequerimientoInsumo` y `oferta.requerimientoId` (que en T4 dejamos de exponer por ser un id interno).
+- Falta la UI de insumos del proveedor y el flujo de que el técnico proponga/agregue repuestos desde su vista de la OT.
+
+## 3. Pendientes acumulados de la sesión
+
+- [ ] **3 sitios que muestran el mensaje crudo del backend** al usuario: `seguimiento-ot-page.ts:275,295` y `panel-tecnico-page.ts:117` — misma clase de fuga que se corrigió en T4 (`err.message` crudo en vez de copy humano).
+- [ ] **Clase de LOADS silenciosos**: `ot-carga.ts:42` (deja la página **en blanco**), `dashboard-admin-page.ts:56`, `diagnostico-ot-page.ts:85`, `pago-acta-page.ts:95`, `ejecucion-ot-page.ts:185`, `seguimiento-ot-page.ts:133`, y el poll de ubicación que **muere en silencio** cuando el backend responde 404 (`seguimiento-ot-page.ts:202`).
+- [ ] **El tablero admin no se actualiza nunca**: disputas, consignaciones, liquidaciones y validación de técnicos (no hay bridges para `DisputaAbierta/Resuelta`, `Liquidacion*`, `ComprobanteCargado`, `TecnicoValidado`) → requiere un canal `admin` (M/L).
+- [ ] **`OtSinTecnicosDisponibles` no se emite** (`EscalarRadioUseCase:104`): el estado queda `BUSCANDO_TECNICO` y el cliente no ve que el radio creció.
+- [ ] **El nombre propio del usuario**: el JWT no lo trae (`TokenResponse` = token/expiracion/rol/roles) → requiere backend (agregar `nombre` al token o un `/api/usuarios/me`).
+- [ ] **Batería**: `ejecucion-ot-page.ts:131` reporta ubicación aunque el técnico esté solo `DISPONIBLE` (no ejecutando).
+- [ ] **Botón de reportar ubicación**: el diseño de `tecnico-activar-ubicacion` (reportar para aparecer en el radar, sin OT) es incómodo; el live tracking debería alimentarse del ciclo de vida de la OT.
+- [ ] **Navegación a `/panel`**: `PanelRedirectComponent` sigue eligiendo por **rol primario** → un dual-role puede no llegar al panel de técnico por esa vía (el botón "Mi Panel" ya se corrigió en `2c2bf0a`).
+- [ ] **Registry SSE en memoria**: con más de una instancia en Railway, un evento publicado en una no llega al cliente de otra. Hoy corre 1 instancia.
+- [ ] **El proxy `/api/maps` no tiene `directions`**: si alguna vez se quiere la ruta real por calles, hay que habilitar el scope en la key y pagar por viaje.
+
+## 4. Orden sugerido
+
+1. Cerrar el feature del mapa (T2 → T5) — es el que pediste en primer lugar.
+2. **Alertas de la OT** (2.1) — reusa el canal SSE ya construido; es el mayor valor por esfuerzo.
+3. Los dos baratos: **filtro de OTs del cliente** (2.3) y **quitar el registro de proveedores en admin** (2.2).
+4. **Repuestos/insumos** (2.4) — toca el mismo dominio de ofertas que el mapa.
+5. Los de la sección 3 según impacto (3.1 el crudo y 3.2 los loads son los que más se ven).
