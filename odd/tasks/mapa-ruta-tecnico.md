@@ -39,14 +39,14 @@ Que el cliente vea al técnico moverse y dónde va, **sin recargar** y **sin gas
 Usuario (2026-10-19): *"falta agregar un mapa para poder visualizar la ruta del tecnico, parecido al mapa donde se visualizan los tecnicos"*, con la restricción de que **no** se gaste en llamadas a la API de Google Maps.
 
 ## Acceptance criteria
-- [ ] T1: el poll de 15 s **no** dispara llamadas a `/api/maps/distancia`; la ETA mostrada es local (o cacheada una vez por viaje) y hay un test que lo comprueba.
+- [x] T1: el poll de 15 s **no** dispara llamadas a `/api/maps/distancia`; la ETA mostrada es local (o cacheada una vez por viaje) y hay un test que lo comprueba. Evidence: commit `0f34fb8` (+179/−42, 5 archivos): nuevo `distancia-local.ts` (haversine + `VELOCIDAD_MEDIA_KMH = 25`, **extraído del duplicado** que ya estaba dentro de `maps-api.ts`), `seguimiento-ot-page.ts` sin `MapsApi` ni `calcularRuta`; spec con `HttpTestingController` real + `http.expectNone('/api/maps/distancia')` + spy (el writer reintrodujo la llamada y los tests fallaron → revertido). Suite **71 archivos / 621 tests / 0 fallos**; `tsc` 0; `eslint` 0. Extensión **T1-bis** (`4de9904`): el mismo leak en `ejecucion-ot-page.ts:84` (el técnico quemaba ~4 llamadas/min) → cerrado con el mismo módulo, sin duplicar la fórmula. Suite **624 / 0**.
 - [ ] T2: `GET /api/config/maps` responde con centro/bounds/zoom desde el backend; el front usa esa config y deja de duplicar constantes (las duplicaciones restantes quedan listadas).
 - [ ] T3: en la vista de seguimiento se ve el técnico moviéndose, el destino y la línea recta, también en `EN_CAMINO`, sin llamadas a Maps por tick.
 - [ ] T4: la respuesta de la OT expone `llegadaEn` y el cliente lo ve sin recargar.
 - [ ] T5: suites verdes + verificación independiente.
 
 ## Tasks
-- [ ] T1 (frontend, delegated): quitar la llamada a Maps por tick. Route: delegated-direct.
+- [x] T1 (frontend, delegated): quitar la llamada a Maps por tick. Route: delegated-direct. Evidence: `0f34fb8` + T1-bis `4de9904` (ejecución del técnico). **Ya no queda ningún caller de producción de `calcularRuta` ni de `MapsApi.distancia`** → quedan como código muerto (a eliminar; el endpoint del backend `/api/maps/distancia` sigue vivo y lo usa el backend para estimar tarifa).
 - [ ] T2 (backend+frontend, delegated): `GET /api/config/maps` + consumo de la config. Route: delegated-direct.
 - [ ] T3 (frontend, delegated): mapa de seguimiento. Route: delegated-direct.
 - [ ] T4 (backend, delegated): `llegadaEn` + evento SSE. Route: delegated-direct.
@@ -57,3 +57,5 @@ Usuario (2026-10-19): *"falta agregar un mapa para poder visualizar la ruta del 
 
 ## Progress
 - 2026-10-19: doc creado tras el mapeo del flujo de mapas (T1–T4 identificados con `path:line`).
+- 2026-10-19: T1 DONE (`0f34fb8`): la distancia/ETA del cliente deja de llamar a Google en cada tick. Opción elegida: **cálculo local** (haversine + 25 km/h), no "una llamada con cache" (esa igual gastaba cuota y dejaba el número viejo mientras el técnico se mueve). La fórmula replica la del backend (`CalculadoraHaversine`, r=6371). Verificado por el writer con un test que muerde (reintrodujo la llamada → falló) y por el parent: 71/621/0, `tsc` 0, `eslint` 0.
+- 2026-10-19: T1-bis DONE (`4de9904`): el mismo leak en `ejecucion-ot-page.ts:84` (4 llamadas/min por técnico). Reusa el módulo de T1 sin duplicar la fórmula; `ultimaPosicion` pasó a signal para que el effect reaccione al tick. Suite 624/0; `tsc` 0; `eslint` 0. Grep final: **sin callers de producción** de `calcularRuta` ni de `MapsApi.distancia` → código muerto, a eliminar (encomendado a T2; el endpoint del backend sigue existiendo porque el backend lo usa para la tarifa).
