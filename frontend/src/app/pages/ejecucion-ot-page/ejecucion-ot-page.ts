@@ -16,7 +16,7 @@ import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
-import { OtResponse, MedioPago } from '../../core/models/common.models';
+import { OtResponse, MedioPago, EstadoOt } from '../../core/models/common.models';
 
 /**
  * Copy propia de esta pantalla: el 409 de `POST /ot/{id}/desplazamiento` es
@@ -250,7 +250,9 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     this.suscripcionEstado = this.sse.abrirOtStream(id).subscribe({
       next: (payload) => {
         // Solo reacciona al cambio de la orden que se está viendo.
-        if (payload.otId === this.otId()) this.recargarOt();
+        if (payload.otId !== this.otId()) return;
+        this.anunciarAprobacionDelPresupuesto(payload.destino);
+        this.recargarOt();
       },
       error: () => {
         // El stream es un extra: nunca rompe ni alerta a la página. Si se
@@ -258,6 +260,19 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
         this.iniciarPollDeRespaldo();
       },
     });
+  }
+
+  /**
+   * Anuncia la aprobación del presupuesto, que llega SOLA desde el canal de la
+   * orden. Los toasts verdes (`success`) son para lo que el técnico acaba de
+   * hacer, así que la noticia entrante va en `info`.
+   */
+  private anunciarAprobacionDelPresupuesto(destino: EstadoOt): void {
+    if (destino !== 'EN_REPARACION') return;
+    this.toast.info(
+      'Presupuesto aprobado',
+      'El cliente aprobó tu presupuesto. Ya puedes empezar la reparación.',
+    );
   }
 
   /** Plan B del stream: refresca la OT cada 25 s mientras la pestaña está visible. */

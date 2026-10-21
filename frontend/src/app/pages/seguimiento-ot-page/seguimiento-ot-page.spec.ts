@@ -262,6 +262,36 @@ describe('SeguimientoOtPage', () => {
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 
+  it('avisa que un técnico aceptó la orden', () => {
+    const { toast, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot1', origen: 'BUSCANDO_TECNICO', destino: 'ASIGNADA' });
+
+    expect(toast.info).toHaveBeenCalledWith(
+      'Técnico asignado',
+      'Un técnico aceptó tu orden de trabajo. Puedes seguir su avance en esta pantalla.',
+    );
+  });
+
+  it('avisa que el técnico envió el presupuesto', () => {
+    const { toast, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot1', origen: 'EN_CAMINO', destino: 'EN_DIAGNOSTICO' });
+
+    expect(toast.info).toHaveBeenCalledWith(
+      'Presupuesto recibido',
+      'El técnico envió el presupuesto de la reparación. Revísalo y apruébalo para continuar.',
+    );
+  });
+
+  it('no avisa los estados que no son un momento importante', () => {
+    const { toast, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot1', origen: 'ASIGNADA', destino: 'EN_CAMINO' });
+
+    expect(toast.info).not.toHaveBeenCalled();
+  });
+
   it('avisa si falla la cancelación y mantiene el modal para reintentar', () => {
     const { fixture, clientesApi, toast, navigate } = setup();
     clientesApi.cancelarOt.mockReturnValue(

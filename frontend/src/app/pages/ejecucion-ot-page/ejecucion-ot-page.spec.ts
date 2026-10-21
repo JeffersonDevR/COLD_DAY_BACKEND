@@ -189,6 +189,25 @@ describe('EjecucionOtPage', () => {
     expect(otApi.getOtById).toHaveBeenCalledTimes(1);
   });
 
+  it('avisa que el cliente aprobó el presupuesto', () => {
+    const { toast, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot1', origen: 'EN_DIAGNOSTICO', destino: 'EN_REPARACION' });
+
+    expect(toast.info).toHaveBeenCalledWith(
+      'Presupuesto aprobado',
+      'El cliente aprobó tu presupuesto. Ya puedes empezar la reparación.',
+    );
+  });
+
+  it('no avisa los estados que no son un momento importante', () => {
+    const { toast, sseEventos } = setup();
+
+    sseEventos.next({ otId: 'ot1', origen: 'EN_REPARACION', destino: 'FINALIZADA' });
+
+    expect(toast.info).not.toHaveBeenCalled();
+  });
+
   it('corta el stream al destruir la página (sin fugas)', () => {
     const { fixture, otApi, sseEventos } = setup();
     expect(sseEventos.observed).toBe(true);

@@ -53,7 +53,8 @@ export class OfertasPage implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         // El payload es informativo: cualquier evento significa "tus ofertas
-        // cambiaron", asi que simplemente se refrescan.
+        // cambiaron", asi que se avisa y se refrescan.
+        this.anunciarOfertaNueva();
         this.recargarOfertas(true);
       });
   }
@@ -74,6 +75,15 @@ export class OfertasPage implements OnInit {
     pollVisibleTab()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.recargarOfertas(true));
+  }
+
+  /**
+   * Anuncia la oferta nueva, que llega SOLA por el canal del técnico. Los
+   * toasts verdes (`success`) son para lo que el técnico acaba de hacer, así que
+   * la noticia entrante va en `info`.
+   */
+  private anunciarOfertaNueva(): void {
+    this.toast.info('Nueva oferta', 'Hay una nueva orden de trabajo disponible cerca de ti.');
   }
 
   private cargarOfertas(tecnicoId: string, inicial = true): void {
