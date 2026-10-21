@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -108,7 +109,10 @@ class OtVisitaCalificacionIT {
                 // Arrival is a fact, not a transition (SRS 5.2 has no
                 // EN_LLEGADO), so the state stays where the technician left it.
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("EN_CAMINO"));
+                .andExpect(jsonPath("$.estado").value("EN_CAMINO"))
+                // The arrival instant travels on the OT response: without it the
+                // client had no way of knowing the technician was already there.
+                .andExpect(jsonPath("$.llegadaEn").isNotEmpty());
 
         assertThat(otRepository.buscarPorId(ot.getId()))
                 .hasValueSatisfying(found -> {
@@ -211,6 +215,35 @@ class OtVisitaCalificacionIT {
     void rejectsUnauthenticatedArrivalConfirmation() throws Exception {
         mockMvc.perform(post("/api/ot/" + UUID.randomUUID() + "/llegada"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    /**
+     * The order carries the arrival instant on every read once the technician
+     * reported it, and carries nothing before that. The client that watches the
+     * order polls nothing: it reads the order and finds out.
+     */
+    @Test
+    void theOrderExposesTheArrivalInstantOnlyAfterItHappened() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-llegada-6@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("tecnico-llegada-6@example.com", Rol.TECNICO);
+        TecnicoId tecnicoId = crearTecnico(tecnicoUsuario);
+        Ot ot = otEnEstado(cliente.getId(), tecnicoId, EstadoOt.EN_CAMINO);
+        String tokenCliente = jwt(clienteUsuario, Rol.CLIENTE);
+
+        mockMvc.perform(get("/api/ot/" + ot.getId().valor())
+                        .header("Authorization", "Bearer " + tokenCliente))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.llegadaEn").isEmpty());
+
+        mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/llegada")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/ot/" + ot.getId().valor())
+                        .header("Authorization", "Bearer " + tokenCliente))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.llegadaEn").isNotEmpty());
     }
 
     // ------------------------------------------------------------ pagar visita

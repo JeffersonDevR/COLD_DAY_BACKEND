@@ -211,6 +211,13 @@ describe('backend.mappers — contratos existentes', () => {
     expect(aOtResponse(otDto()).codigo).toBeUndefined();
   });
 
+  it('expone el instante de llegada del técnico y no lo inventa cuando falta', () => {
+    expect(aOtResponse(otDto({ llegadaEn: '2026-10-21T15:30:00Z' })).llegadaEn).toBe('2026-10-21T15:30:00Z');
+    // Todavía nadie reportó la llegada: el mapper no fabrica un instante.
+    expect(aOtResponse(otDto({ llegadaEn: null })).llegadaEn).toBeUndefined();
+    expect(aOtResponse(otDto()).llegadaEn).toBeUndefined();
+  });
+
   it('normaliza los formularios de creación de OT y diagnóstico', () => {
     expect(aOtApiRequest({
       categoriaServicio: 'ELECTRICIDAD', descripcionFalla: 'corto', direccion: 'calle 9', latitud: 1, longitud: 2,
