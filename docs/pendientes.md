@@ -4,16 +4,18 @@ Todo lo que falta para completar el trabajo, con lo ya verificado en código (`p
 
 Estado: 2026-10-19.
 
-## 1. Feature en curso — mapa de la ruta del técnico
+## 1. ✅ Cerrado — mapa de la ruta del técnico
 
-Rama `feat/mapa-ruta-tecnico` (desde `origin/main`). Doc del feature: `odd/tasks/mapa-ruta-tecnico.md`.
+Rama `feat/mapa-ruta-tecnico` (desde `origin/main`), **pusheada y sin PR**. Doc del feature: `odd/tasks/mapa-ruta-tecnico.md`. Verificación independiente: **VERIFIED** (cuota, mapa, endpoint público, llegada e higiene) + 1 defecto menor cerrado.
+
+**Lo que queda de tu lado:** probarlo en la app (el render real del mapa no se ejercitó en navegador) y mergear la rama.
 
 - [x] **T1** (`0f34fb8`) — la distancia/ETA del cliente deja de llamar a Google Maps en cada tick de 15 s → cálculo local (`distancia-local.ts`, haversine + 25 km/h, la misma fórmula que el backend). Test con `HttpTestingController` real (`expectNone('/api/maps/distancia')`).
 - [x] **T1-bis** (`4de9904`) — el mismo leak en `ejecucion-ot-page.ts:84` (4 llamadas/min **por técnico**).
 - [x] **T2** (`ea0ca21` backend + `9c4783d` frontend) — `GET /api/config/maps` **público** con `apiKey` (solo la de navegador), `centro`, `bounds`, `zoom` y `radio*Km`; el front lo consume con `mapa-config.service.ts`; **eliminados** `cucuta.constant.ts` (las 6 duplicaciones) y el código muerto `MapsApi.distancia` + `calcularRuta` (sus specs también). Backend 124/844/0 · frontend 72/627/0 · `tsc` 0 · `eslint` 0. Rama `feat/mapa-ruta-tecnico` **pusheada** (sin PR). Lo que quedó duplicado y por qué está en el doc del feature.
 - [ ] **T3** — el mapa de seguimiento: marcador del técnico moviéndose (poll existente de 15 s, **sin llamadas a Maps**), destino y línea recta, y **visible también en `EN_CAMINO`** (hoy el mapa del cliente solo existe en `SOLICITADA|BUSCANDO_TECNICO` → `seguimiento-ot-page.html:151-161`). `mapa-radar` está acoplado al radar (4 círculos, sweep, timer): reutilizar `GoogleMapsLoaderService`, `CUCUTA_METRO_BOUNDS` y los estilos, no el componente tal cual. La librería `geometry` ya se pide en el loader.
 - [ ] **T4** — exponer `llegadaEn` en la respuesta de la OT + evento SSE → el cliente ve "el técnico llegó" sin recargar. Hoy `Ot.confirmarLlegada` (EN_CAMINO, idempotente) la fija pero **no está en ninguna respuesta de la API**.
-- [ ] **T5** — verificación final del feature.
+- [x] **T5** — verificación final del feature: **VERIFIED** por el verificador independiente (1 defecto menor —el badge decía "En camino:" junto al "El técnico llegó"— cerrado en `7ff01fb`; 4 nits documentados). Suite frontend 73/644/0 · backend 125/849/0.
 
 **Decisiones ya tomadas (no reabrir sin motivo):** cero llamadas nuevas a Google Maps; la "ruta" es una **línea recta** al destino y la ETA es **local** (`round((km/25)×60)`) → es una **cota inferior**, optimista frente a Google; **Directions API fuera de alcance** (el scope de la key no es verificable y costaría por viaje); la **geo-arrival automática** fuera de alcance (la llegada sigue siendo manual: `POST /api/ot/{id}/llegada`).
 
@@ -39,6 +41,9 @@ Rama `feat/mapa-ruta-tecnico` (desde `origin/main`). Doc del feature: `odd/tasks
 - Falta la UI de insumos del proveedor y el flujo de que el técnico proponga/agregue repuestos desde su vista de la OT.
 
 ## 3. Pendientes acumulados de la sesión
+
+- [ ] **Locale de fechas**: la app no registra `LOCALE_ID` → todas las fechas salen en `en-US` ("Oct 21, 2026, 3:30:00 PM") dentro de textos en español. Fix de 1 línea (`registerLocaleData` + `LOCALE_ID` es-CO) pero cambia el render de fechas de **toda** la app: decisión tuya.
+- [ ] **Costo de Google Maps**: un segundo mapa renderizado es un *map load* facturable (a diferencia de Distance Matrix). Hoy no hay doble carga (el radar solo se renderiza cuando no hay técnico asignado), pero es el número a mirar si se superponen.
 
 - [ ] **3 sitios que muestran el mensaje crudo del backend** al usuario: `seguimiento-ot-page.ts:275,295` y `panel-tecnico-page.ts:117` — misma clase de fuga que se corrigió en T4 (`err.message` crudo en vez de copy humano).
 - [ ] **Clase de LOADS silenciosos**: `ot-carga.ts:42` (deja la página **en blanco**), `dashboard-admin-page.ts:56`, `diagnostico-ot-page.ts:85`, `pago-acta-page.ts:95`, `ejecucion-ot-page.ts:185`, `seguimiento-ot-page.ts:133`, y el poll de ubicación que **muere en silencio** cuando el backend responde 404 (`seguimiento-ot-page.ts:202`).
