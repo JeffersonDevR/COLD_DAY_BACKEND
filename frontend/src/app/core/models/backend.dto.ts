@@ -586,10 +586,3 @@ export interface SugerenciaApiResponse {
   descripcion: string;
   placeId: string;
 }
-
-export interface DistanciaApiResponse {
-  distanciaKm: number;
-  duracionMin: number;
-  distanciaTexto: string;
-  duracionTexto: string;
-}

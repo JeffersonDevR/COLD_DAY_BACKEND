@@ -30,4 +30,22 @@ public final class MapsApiResponses {
             return new DistanciaApiResponse(r.distanciaKm(), r.duracionMin(), r.distanciaTexto(), r.duracionTexto());
         }
     }
+
+    /**
+     * Map view configuration served to the frontend (GET /api/config/maps).
+     * Mirrors the Google Maps shapes ({@code LatLngLiteral} and
+     * {@code LatLngBoundsLiteral}) so the frontend can hand them straight to the
+     * map component.
+     */
+    public record ConfigMapaApiResponse(String apiKey, CentroApiResponse centro, BoundsApiResponse bounds, double zoom,
+            double radioInicialKm, double radioMaxKm, double radioPasoKm) {
+    }
+
+    /** Center of the map view (mirrors the Google Maps {@code LatLngLiteral}). */
+    public record CentroApiResponse(double lat, double lng) {
+    }
+
+    /** Strict bounds of the map view (mirrors the Google Maps {@code LatLngBoundsLiteral}). */
+    public record BoundsApiResponse(double north, double south, double east, double west) {
+    }
 }

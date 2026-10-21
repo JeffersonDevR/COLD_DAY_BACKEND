@@ -1,10 +1,9 @@
 import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of, throwError } from 'rxjs';
-import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from './ot-carga';
+import { of } from 'rxjs';
+import { cargarOtDesdeRuta, otDesdeFuente } from './ot-carga';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
-import { MapsApi } from './maps-api';
 import { OtApi } from './ot-api';
 import { OtResponse } from '../models/common.models';
 
@@ -48,40 +47,5 @@ describe('ot-carga', () => {
 
     expect(llamado).toBe(false);
     expect(otApi.getOtById).not.toHaveBeenCalled();
-  });
-
-  it('calcularRuta emite distancia y ETA', () => {
-    const mapsApi = {
-      distancia: vi.fn(() => of({ distanciaKm: 3, duracionMin: 8, distanciaTexto: '', duracionTexto: '' })),
-    } as unknown as MapsApi;
-    let ruta: { distanciaKm: number; duracionMin: number } | undefined;
-
-    calcularRuta(mapsApi, { latitud: 1, longitud: 2 }, { latitud: 3, longitud: 4 }, (r) => (ruta = r));
-
-    expect(ruta).toMatchObject({ distanciaKm: 3, duracionMin: 8 });
-  });
-
-  it('calcularRuta no consulta sin origen o destino', () => {
-    const mapsApi = { distancia: vi.fn() } as unknown as MapsApi;
-
-    calcularRuta(mapsApi, null, { latitud: 3, longitud: 4 }, () => undefined);
-    calcularRuta(mapsApi, { latitud: 1, longitud: 2 }, undefined, () => undefined);
-
-    expect(mapsApi.distancia).not.toHaveBeenCalled();
-  });
-
-  it('calcularRuta invoca onError', () => {
-    const mapsApi = { distancia: vi.fn(() => throwError(() => new Error('503'))) } as unknown as MapsApi;
-    let errored = false;
-
-    calcularRuta(
-      mapsApi,
-      { latitud: 1, longitud: 2 },
-      { latitud: 3, longitud: 4 },
-      () => undefined,
-      () => (errored = true),
-    );
-
-    expect(errored).toBe(true);
   });
 });

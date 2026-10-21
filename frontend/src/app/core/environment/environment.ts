@@ -36,9 +36,6 @@ export const environment = {
   useMocks: false, // Producción: siempre API REST del backend
   appName: 'COLD DAY S.A.S.',
   city: 'Cúcuta, Colombia',
-  defaultSearchRadiusKm: 10,
-  maxSearchRadiusKm: 25,
-  radiusIncrementStepKm: 5,
   broadcastTimeoutSec: 60,
   commissionRate: 0.15, // 15% de comisión plataforma (app.liquidacion.comision-porcentaje=0.15)
   cancellationGraceMinutes: 10,

@@ -6,7 +6,6 @@ import { ApiConfig } from './api.config';
 import { MapsGeocoderCliente } from './maps-geocoder-cliente';
 import {
   DireccionApiResponse,
-  DistanciaApiResponse,
   EstadoMapsApiResponse,
   SugerenciaApiResponse,
 } from '../models/backend.dto';
@@ -15,9 +14,12 @@ import { Point } from '../models/common.models';
 /**
  * Fachada del proxy seguro /api/maps del backend (Google Maps Platform).
  *
- * El backend guarda la server key; el frontend solo pide geocodificación,
- * autocompletado y distancias. En modo mock devuelve datos sembrados de Cúcuta
- * para que la UI funcione sin backend ni cuota de Google.
+ * El backend guarda la server key; el frontend solo pide geocodificación y
+ * autocompletado. En modo mock devuelve datos sembrados de Cúcuta para que la
+ * UI funcione sin backend ni cuota de Google.
+ *
+ * NO expone distancias: el cálculo de ruta se hace en el navegador
+ * (core/service/distancia-local) para no gastar cuota de Google en cada tick.
  */
 @Injectable({
   providedIn: 'root',
@@ -78,25 +80,6 @@ export class MapsApi {
       .pipe(switchMap((lista) => (lista.length ? of(lista) : this.geocoder.autocompletar(input, sesgo))));
   }
 
-  distancia(origen: Point, destino: Point): Observable<DistanciaApiResponse> {
-    if (this.apiConfig.useMocks()) {
-      const km = this.haversineKm(origen, destino);
-      const min = Math.round((km / 25) * 60);
-      return of({
-        distanciaKm: Math.round(km * 100) / 100,
-        duracionMin: min,
-        distanciaTexto: `${km.toFixed(1)} km`,
-        duracionTexto: `${min} min`,
-      }).pipe(delay(250));
-    }
-    return this.http.post<DistanciaApiResponse>(this.apiConfig.url('/maps/distancia'), {
-      origenLat: origen.latitud,
-      origenLng: origen.longitud,
-      destinoLat: destino.latitud,
-      destinoLng: destino.longitud,
-    });
-  }
-
   private direccionMock(direccion: string, lat = 7.8872, lng = -72.4951): DireccionApiResponse {
     return {
       direccionFormateada: direccion.trim() || 'Dirección sin nombre, Cúcuta',
@@ -112,16 +95,5 @@ export class MapsApi {
       hash = (hash * 31 + (value.codePointAt(i) ?? 0)) % 2147483647;
     }
     return hash;
-  }
-
-  private haversineKm(a: Point, b: Point): number {
-    const radioTierraKm = 6371;
-    const dLat = ((b.latitud - a.latitud) * Math.PI) / 180;
-    const dLng = ((b.longitud - a.longitud) * Math.PI) / 180;
-    const lat1 = (a.latitud * Math.PI) / 180;
-    const lat2 = (b.latitud * Math.PI) / 180;
-    const h =
-      Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-    return 2 * radioTierraKm * Math.asin(Math.sqrt(h));
   }
 }

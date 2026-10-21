@@ -20,7 +20,7 @@ import {
   MapInfoWindow
 } from '@angular/google-maps';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
-import { CUCUTA_METRO_BOUNDS } from '../mapas/cucuta.constant';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 
 export interface RadarTecnicoItem {
   id: string;
@@ -49,6 +49,7 @@ export interface RadarTecnicoItem {
 })
 export class MapaRadar implements OnInit, OnDestroy {
   readonly mapsLoader = inject(GoogleMapsLoaderService);
+  private readonly mapaConfig = inject(MapaConfigService);
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -57,11 +58,15 @@ export class MapaRadar implements OnInit, OnDestroy {
   readonly infoWindow = viewChild<MapInfoWindow>('infoWindow');
   readonly clienteInfoWindow = viewChild<MapInfoWindow>('clienteInfoWindow');
 
-  readonly radioInicial = input<number>(10);
+  readonly radioInicial = input<number | null>(null);
   readonly isBuscando = input<boolean>(true);
   readonly clienteUbicacionNombre = input<string>('Tu Domicilio');
-  readonly centroLat = input<number>(7.8939);
-  readonly centroLng = input<number>(-72.5078);
+  /**
+   * Centro del radar. Si no se informa, se usa el centro que publica el
+   * backend (nunca una copia local del número).
+   */
+  readonly centroLat = input<number | null>(null);
+  readonly centroLng = input<number | null>(null);
   /** Técnicos reales del backend; si es null se usa la lista demo local. */
   readonly tecnicosExternos = input<RadarTecnicoItem[] | null>(null);
   readonly radioCambiado = output<number>();
@@ -73,11 +78,12 @@ export class MapaRadar implements OnInit, OnDestroy {
 
   private timerInterval: ReturnType<typeof setInterval> | null = null;
 
-  // Centro en Cúcuta
+  // Centro en Cúcuta (el del backend si nadie informa otro)
   readonly centroUbicacion = computed<google.maps.LatLngLiteral>(() => {
+    const centro = this.mapaConfig.centro();
     return {
-      lat: this.centroLat(),
-      lng: this.centroLng()
+      lat: this.centroLat() ?? centro.lat,
+      lng: this.centroLng() ?? centro.lng,
     };
   });
 
@@ -86,29 +92,70 @@ export class MapaRadar implements OnInit, OnDestroy {
     return this.radioActualKm() * 1000;
   });
 
+  /** Escala del lienzo SVG (px por km). */
+  private readonly pxPorKm = 7;
+
+  /** Escala de radios del radar (la que publica el backend). */
+  readonly radioInicialKm = computed(() => this.mapaConfig.radioInicialKm());
+  readonly radioMaxKm = computed(() => this.mapaConfig.radioMaxKm());
+  readonly radioPasoKm = computed(() => this.mapaConfig.radioPasoKm());
+
+  /**
+   * Radios de referencia (círculos perimetrales): base, base+paso, ... hasta el
+   * tope. El último (el tope) se dibuja aparte porque es el límite.
+   */
+  readonly radiosReferencia = computed<{ km: number; px: number }[]>(() => {
+    const base = this.radioInicialKm();
+    const paso = this.radioPasoKm();
+    const max = this.radioMaxKm();
+    const radios: { km: number; px: number }[] = [];
+    for (let km = base; km < max; km += paso) {
+      radios.push({ km, px: km * this.pxPorKm });
+    }
+    return radios;
+  });
+
+  /** Radio tope: el límite del área de búsqueda. */
+  readonly radioLimite = computed<{ km: number; px: number }>(() => {
+    const km = this.radioMaxKm();
+    return { km, px: km * this.pxPorKm };
+  });
+
   // Nivel de zoom según el radio de cobertura acotado al área metropolitana
   readonly zoomNivel = computed<number>(() => {
     const km = this.radioActualKm();
-    if (km <= 10) return 13;
-    if (km <= 15) return 12.2;
-    if (km <= 20) return 11.8;
-    return 11.5;
+    const base = this.mapaConfig.radioInicialKm();
+    const paso = this.mapaConfig.radioPasoKm();
+    if (km <= base) return this.zoomDeNivel(0);
+    if (km <= base + paso) return this.zoomDeNivel(1);
+    if (km <= base + 2 * paso) return this.zoomDeNivel(2);
+    return this.zoomDeNivel(3);
   });
+
+  /**
+   * Zoom del nivel de radio (0 = base, 1 = base+paso, 2 = base+2*paso, 3 = tope),
+   * relativo al zoom que publica el backend.
+   */
+  private zoomDeNivel(nivel: number): number {
+    const zoom = this.mapaConfig.zoom();
+    const deltas = [0, -0.8, -1.2, -1.5];
+    return zoom + (deltas[nivel] ?? deltas[deltas.length - 1]);
+  }
 
   // Opciones de configuración de Google Maps con el Solutions Attribution ID requerido
   // y restricción estricta de navegación al Área Metropolitana de Cúcuta
-  readonly mapOptions: google.maps.MapOptions = {
+  readonly mapOptions = computed<google.maps.MapOptions>(() => ({
     disableDefaultUI: false,
     zoomControl: true,
     streetViewControl: false,
     fullscreenControl: false,
     mapTypeControl: false,
     // Límites de zoom para no alejarse de Cúcuta y sus sectores aledaños
-    minZoom: 11.5,
+    minZoom: this.zoomDeNivel(3),
     maxZoom: 18,
     // Restricción geográfica estricta: impide desplazarse fuera de Cúcuta, Los Patios y Villa del Rosario
     restriction: {
-      latLngBounds: CUCUTA_METRO_BOUNDS,
+      latLngBounds: this.mapaConfig.bounds(),
       strictBounds: true
     },
     // Mandatory usage tracking attribution ID for AI Studio
@@ -158,7 +205,7 @@ export class MapaRadar implements OnInit, OnDestroy {
         stylers: [{ color: '#0c4a6e' }]
       }
     ]
-  };
+  }));
 
   // Opciones del círculo activo de cobertura
   readonly activeCircleOptions = computed<google.maps.CircleOptions>(() => ({
@@ -256,17 +303,17 @@ export class MapaRadar implements OnInit, OnDestroy {
 
   // Conversión a escala para la vista SVG (fallback)
   readonly activeRadiusSvg = computed<number>(() => {
-    return Math.min(175, this.radioActualKm() * 7);
+    return Math.min(this.radioLimite().px, this.radioActualKm() * this.pxPorKm);
   });
 
   getSvgX(tec: RadarTecnicoItem): number {
-    // Proyección de coordenadas relativas a Cúcuta Centro hacia canvas de 400x400
-    const deltaLng = (tec.lng - this.centroLng()) * 800;
+    // Proyección de coordenadas relativas al centro de Cúcuta hacia canvas de 400x400
+    const deltaLng = (tec.lng - this.centroUbicacion().lng) * 800;
     return 200 + deltaLng;
   }
 
   getSvgY(tec: RadarTecnicoItem): number {
-    const deltaLat = (this.centroLat() - tec.lat) * 800;
+    const deltaLat = (this.centroUbicacion().lat - tec.lat) * 800;
     return 200 + deltaLat;
   }
 
@@ -285,7 +332,7 @@ export class MapaRadar implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.radioActualKm.set(this.radioInicial());
+    this.radioActualKm.set(this.radioInicial() ?? this.mapaConfig.radioInicialKm());
     this.iniciarTemporizador();
 
     // Iniciar carga de Google Maps si estamos en el navegador
@@ -322,11 +369,11 @@ export class MapaRadar implements OnInit, OnDestroy {
       if (seg > 1) {
         this.segundosRestantes.set(seg - 1);
       } else {
-        // Expiró 60s -> crecer +5 km si no ha alcanzado 25 km
+        // Expiró 60s -> crecer el radio en el paso configurado, hasta el tope
         this.segundosRestantes.set(60);
         const actual = this.radioActualKm();
-        if (actual < 25) {
-          const nuevo = actual + 5;
+        if (actual < this.mapaConfig.radioMaxKm()) {
+          const nuevo = actual + this.mapaConfig.radioPasoKm();
           this.radioActualKm.set(nuevo);
           this.radioCambiado.emit(nuevo);
         }
@@ -343,8 +390,8 @@ export class MapaRadar implements OnInit, OnDestroy {
 
   simularExpansionRadio(): void {
     const actual = this.radioActualKm();
-    if (actual < 25) {
-      const nuevo = actual + 5;
+    if (actual < this.mapaConfig.radioMaxKm()) {
+      const nuevo = actual + this.mapaConfig.radioPasoKm();
       this.radioActualKm.set(nuevo);
       this.segundosRestantes.set(60);
       this.radioCambiado.emit(nuevo);
@@ -352,8 +399,9 @@ export class MapaRadar implements OnInit, OnDestroy {
   }
 
   reiniciarRadar(): void {
-    this.radioActualKm.set(10);
+    const inicial = this.mapaConfig.radioInicialKm();
+    this.radioActualKm.set(inicial);
     this.segundosRestantes.set(60);
-    this.radioCambiado.emit(10);
+    this.radioCambiado.emit(inicial);
   }
 }
