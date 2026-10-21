@@ -130,4 +130,27 @@ describe('MapaSeguimiento', () => {
     expect(texto).toContain('Mapa no disponible');
     expect(texto).toContain('2.5 km');
   });
+
+  it('con la llegada registrada el mapa dice que ya llegó, no que sigue en camino', () => {
+    const { fixture } = setup();
+    fixture.componentRef.setInput('posicionTecnico', TECNICO);
+    fixture.componentRef.setInput('destino', DESTINO);
+    fixture.componentRef.setInput('tecnicoNombre', 'Juan');
+    fixture.detectChanges();
+
+    // Sin llegada: el mapa sigue diciendo "En camino:" con la distancia.
+    expect(fixture.nativeElement.textContent).toContain('En camino:');
+
+    // Ya llegó: el mapa no puede seguir diciendo que está en camino.
+    fixture.componentRef.setInput('llegada', true);
+    fixture.detectChanges();
+
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).not.toContain('En camino:');
+    expect(texto).not.toContain('en camino');
+    // El badge dice la llegada...
+    expect(texto).toContain('Juan ya llegó');
+    // ...y el texto que se anuncia con aria-live tampoco contradice.
+    expect(texto).toContain('Juan ya llegó al punto de servicio');
+  });
 });

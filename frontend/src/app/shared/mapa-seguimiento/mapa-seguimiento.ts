@@ -56,6 +56,11 @@ export class MapaSeguimiento implements OnInit {
   readonly destinoNombre = input<string>('Punto de servicio');
   /** Nombre del técnico asignado. */
   readonly tecnicoNombre = input<string>('El técnico');
+  /**
+   * ¿El técnico ya llegó al punto de servicio? Lo sabe la página (la OT trae
+   * `llegadaEn`) y el mapa lo necesita para no seguir diciendo "En camino:".
+   */
+  readonly llegada = input<boolean>(false);
 
   /** Posición del marcador del técnico; `null` sin posición (no hay pin). */
   readonly posicionMarcador = computed<google.maps.LatLngLiteral | null>(() => {
