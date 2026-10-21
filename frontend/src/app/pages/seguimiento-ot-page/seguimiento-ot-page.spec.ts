@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -13,6 +14,8 @@ import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
+import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
+import { MapaSeguimiento } from '../../shared/mapa-seguimiento/mapa-seguimiento';
 import { OtResponse, Point } from '../../core/models/common.models';
 
 const orden: OtResponse = {
@@ -67,6 +70,8 @@ function setup(ot: OtResponse = orden) {
       { provide: MockDbService, useValue: { ordenesTrabajo: () => [] } },
       { provide: SseService, useValue: sse },
       { provide: ToastService, useValue: toast },
+      // El mapa es aditivo: en las pruebas no se carga el script de Google.
+      { provide: GoogleMapsLoaderService, useValue: { isLoaded: () => false, isLoading: () => false, loadError: () => null, init: vi.fn() } },
     ],
   });
   const router = TestBed.inject(Router);
@@ -360,6 +365,65 @@ describe('SeguimientoOtPage', () => {
       expect(texto).toContain('En camino a tu ubicación');
       // Sin ETA ni distancia: mejor sin dato que con un número falso.
       expect(texto).not.toContain('ETA');
+    });
+  });
+
+  describe('mapa de seguimiento', () => {
+    it('muestra el mapa de seguimiento cuando el técnico va en camino', () => {
+      const { fixture } = setup({ ...orden, estado: 'EN_CAMINO' });
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-mapa-seguimiento')).toBeTruthy();
+    });
+
+    it('mientras se busca técnico se ve el radar, no el mapa de seguimiento', () => {
+      const { fixture } = setup({ ...orden, estado: 'BUSCANDO_TECNICO', tecnicoId: null });
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-mapa-radar')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('app-mapa-seguimiento')).toBeFalsy();
+    });
+
+    it('el marcador del mapa sigue la posición que llega del sondeo', () => {
+      vi.useFakeTimers();
+      try {
+        const { fixture, otApi } = setup();
+        const mapa = fixture.debugElement.query(By.directive(MapaSeguimiento)).componentInstance as MapaSeguimiento;
+        fixture.detectChanges();
+
+        // La posición del primer sondeo ya está en el mapa.
+        expect(mapa.posicionMarcador()).toEqual({ lat: 7.9, lng: -72.5 });
+
+        // El técnico se acerca: el siguiente tick mueve el marcador.
+        otApi.getTecnicoUbicacion.mockReturnValue(of({ latitud: 7.885, longitud: -72.492 }));
+        vi.advanceTimersByTime(15000);
+        fixture.detectChanges();
+
+        expect(mapa.posicionMarcador()).toEqual({ lat: 7.885, lng: -72.492 });
+        // Y la ruta se dibuja entre el técnico y el punto de servicio.
+        expect(mapa.ruta().length).toBe(2);
+        expect(mapa.ruta()[1]).toEqual({ lat: 7.88, lng: -72.49 });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('sin posición del técnico el mapa no muestra marcador ni ruta', () => {
+      vi.useFakeTimers();
+      try {
+        const { fixture, otApi } = setup();
+        // El técnico todavía no reportó ubicación: el backend responde null.
+        otApi.getTecnicoUbicacion.mockReturnValue(of(null));
+        vi.advanceTimersByTime(15000);
+        fixture.detectChanges();
+
+        const mapa = fixture.debugElement.query(By.directive(MapaSeguimiento)).componentInstance as MapaSeguimiento;
+        expect(mapa.posicionMarcador()).toBeNull();
+        expect(mapa.ruta()).toEqual([]);
+        expect(mapa.distanciaKm()).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
