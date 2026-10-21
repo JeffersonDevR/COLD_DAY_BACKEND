@@ -7,11 +7,11 @@ import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
-import { MapsApi } from '../../core/service/maps-api';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
-import { calcularRuta, cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
+import { cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
+import { rutaLocal } from '../../core/service/distancia-local';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
@@ -39,7 +39,6 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   private readonly apiConfig = inject(ApiConfig);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly tracking = inject(TecnicoTrackingService);
-  private readonly mapsApi = inject(MapsApi);
   private readonly otApi = inject(OtApi);
   private readonly liquidacionApi = inject(LiquidacionApi);
   private readonly toast = inject(ToastService);
@@ -79,12 +78,30 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   });
 
   constructor() {
-    // Recalcula distancia/ETA al cliente cada vez que cambia la posición del técnico.
+    /**
+     * Recalcula distancia/ETA al cliente cada vez que cambia la posición del
+     * técnico.
+     *
+     * El cálculo es LOCAL (haversine): pedirle la distancia a Distance Matrix
+     * en cada tick quemaba cuota de Google (4 llamadas por minuto y por
+     * técnico ejecutando). Además Google devolvía la distancia por calle con
+     * tráfico, así que el número local es honesto como cota inferior del
+     * trayecto, no como el tiempo real de la calle.
+     *
+     * Sin posición del técnico o sin punto de servicio no se muestra ningún
+     * número: mejor sin dato que con un dato falso.
+     */
     effect(() => {
-      calcularRuta(this.mapsApi, this.tracking.ultimaPosicion(), this.ot()?.punto, (ruta) => {
-        this.distanciaKm.set(ruta.distanciaKm);
-        this.etaMin.set(ruta.duracionMin);
-      });
+      const origen = this.tracking.ultimaPosicion();
+      const destino = this.ot()?.punto;
+      if (!origen || !destino) {
+        this.distanciaKm.set(null);
+        this.etaMin.set(null);
+        return;
+      }
+      const ruta = rutaLocal(origen, destino);
+      this.distanciaKm.set(ruta.distanciaKm);
+      this.etaMin.set(ruta.duracionMin);
     });
   }
 

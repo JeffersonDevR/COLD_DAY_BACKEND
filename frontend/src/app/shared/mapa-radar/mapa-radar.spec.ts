@@ -1,11 +1,31 @@
 import { TestBed } from '@angular/core/testing';
 import { MapaRadar, RadarTecnicoItem } from './mapa-radar';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 
-function setup() {
+/**
+ * Configuración del mapa que publica el backend. El stub permite comprobar que
+ * el radar NO lleva sus propios números: si el backend cambia el centro, el
+ * radar lo sigue.
+ */
+function mapaConfigStub(centro = { lat: 7.8939, lng: -72.5078 }) {
+  return {
+    centro: () => centro,
+    bounds: () => ({ north: 8.08, south: 7.76, east: -72.41, west: -72.6 }),
+    zoom: () => 13,
+    radioInicialKm: () => 10,
+    radioMaxKm: () => 25,
+    radioPasoKm: () => 5,
+  };
+}
+
+function setup(centro = { lat: 7.8939, lng: -72.5078 }) {
   const mapsLoader = { isLoaded: () => false, isLoading: () => false, loadError: () => null, init: vi.fn() };
   TestBed.configureTestingModule({
-    providers: [{ provide: GoogleMapsLoaderService, useValue: mapsLoader }],
+    providers: [
+      { provide: GoogleMapsLoaderService, useValue: mapsLoader },
+      { provide: MapaConfigService, useValue: mapaConfigStub(centro) },
+    ],
   });
   // No se llama detectChanges para evitar montar los componentes de Google Maps.
   const fixture = TestBed.createComponent(MapaRadar);
@@ -89,5 +109,25 @@ describe('MapaRadar', () => {
     expect(component.activeRadiusSvg()).toBe(70);
     component.radioActualKm.set(25);
     expect(component.activeRadiusSvg()).toBe(175);
+  });
+
+  it('centra y acota el mapa con la configuración que publica el backend', () => {
+    const { component } = setup({ lat: 1.25, lng: -70 });
+
+    expect(component.centroUbicacion()).toEqual({ lat: 1.25, lng: -70 });
+    expect(component.mapOptions().restriction?.latLngBounds).toEqual({
+      north: 8.08,
+      south: 7.76,
+      east: -72.41,
+      west: -72.6,
+    });
+  });
+
+  it('usa el centro informado por el llamador cuando existe', () => {
+    const { fixture, component } = setup();
+    fixture.componentRef.setInput('centroLat', 5);
+    fixture.componentRef.setInput('centroLng', -75);
+
+    expect(component.centroUbicacion()).toEqual({ lat: 5, lng: -75 });
   });
 });

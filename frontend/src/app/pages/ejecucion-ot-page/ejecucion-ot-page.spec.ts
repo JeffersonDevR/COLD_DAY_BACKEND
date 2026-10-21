@@ -1,19 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { of, Subject, throwError } from 'rxjs';
 import { EjecucionOtPage } from './ejecucion-ot-page';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
-import { MapsApi } from '../../core/service/maps-api';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { OtResponse } from '../../core/models/common.models';
+import { OtResponse, Point } from '../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
   return {
@@ -38,7 +40,8 @@ function setup(opts: { useMocks?: boolean; ot?: OtResponse } = {}) {
     registrarDiagnostico: vi.fn(() => of(undefined)),
     finalizarServicio: vi.fn(() => of(undefined)),
   };
-  const tracking = { ultimaPosicion: () => null, iniciar: vi.fn(), detener: vi.fn() };
+  const posicion = signal<Point | null>(null);
+  const tracking = { ultimaPosicion: posicion.asReadonly(), iniciar: vi.fn(), detener: vi.fn() };
   const otApi = { getOtById: vi.fn(() => of(opts.ot ?? orden())) };
   const liquidacionApi = { registrarPago: vi.fn(() => of(undefined)) };
   const toast = { info: vi.fn(), success: vi.fn(), error: vi.fn() };
@@ -49,21 +52,26 @@ function setup(opts: { useMocks?: boolean; ot?: OtResponse } = {}) {
     imports: [EjecucionOtPage],
     providers: [
       provideRouter([]),
+      // Http real + controlador de pruebas: si el tick de posición volviera a
+      // pedir la distancia a Google, la petición a /api/maps/distancia queda
+      // registrada y el test falla.
+      provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'ot1' })) } },
       { provide: MockDbService, useValue: { ordenesTrabajo: () => [opts.ot ?? orden()] } },
-      { provide: ApiConfig, useValue: { useMocks: () => opts.useMocks ?? false } },
+      { provide: ApiConfig, useValue: { useMocks: () => opts.useMocks ?? false, url: (path: string) => `/api${path}` } },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: TecnicoTrackingService, useValue: tracking },
-      { provide: MapsApi, useValue: { distancia: () => of({ distanciaKm: 1, duracionMin: 3 }) } },
       { provide: OtApi, useValue: otApi },
       { provide: SseService, useValue: sse },
       { provide: LiquidacionApi, useValue: liquidacionApi },
       { provide: ToastService, useValue: toast },
     ],
   });
+  const http = TestBed.inject(HttpTestingController);
   const fixture = TestBed.createComponent(EjecucionOtPage);
   fixture.detectChanges();
-  return { fixture, tecnicosApi, tracking, liquidacionApi, toast, otApi, sse, sseEventos };
+  return { fixture, tecnicosApi, tracking, posicion, liquidacionApi, toast, otApi, sse, sseEventos, http };
 }
 
 describe('EjecucionOtPage', () => {
@@ -230,6 +238,52 @@ describe('EjecucionOtPage', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Ejecución OT: OT-2026-0017');
     expect(texto).not.toContain(idInterno);
+  });
+
+  describe('distancia y ETA locales (sin llamadas a Google Maps)', () => {
+    it('el tick de posición NO llama a /api/maps/distancia y calcula la ETA en el navegador', () => {
+      const { fixture, posicion, http } = setup();
+
+      // El técnico reporta su posición: el tick recalcula la ruta local.
+      posicion.set({ latitud: 7.9, longitud: -72.5 });
+      fixture.detectChanges();
+
+      // Distancia en línea recta entre el técnico (7.9, -72.5) y el destino
+      // (7.88, -72.49): 2,48 km y 6 min a 25 km/h.
+      expect(fixture.componentInstance.distanciaKm()).toBe(2.48);
+      expect(fixture.componentInstance.etaMin()).toBe(6);
+
+      // Y lo importante: ni una llamada a Distance Matrix en el tick.
+      http.expectNone('/api/maps/distancia');
+    });
+
+    it('no llama a /api/maps/distancia en ningún tick de posición', () => {
+      const { fixture, posicion, http } = setup();
+
+      posicion.set({ latitud: 7.9, longitud: -72.5 });
+      fixture.detectChanges();
+      posicion.set({ latitud: 7.885, longitud: -72.492 });
+      fixture.detectChanges();
+
+      // La ETA local sí se recalculó en cada tick: 0,6 km y 1 min.
+      expect(fixture.componentInstance.distanciaKm()).toBe(0.6);
+      expect(fixture.componentInstance.etaMin()).toBe(1);
+      http.expectNone('/api/maps/distancia');
+    });
+
+    it('sin posición del técnico no muestra ningún número', () => {
+      const { fixture, http } = setup();
+
+      expect(fixture.componentInstance.distanciaKm()).toBeNull();
+      expect(fixture.componentInstance.etaMin()).toBeNull();
+
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      // Sin ETA ni distancia: mejor sin dato que con un número falso.
+      expect(texto).not.toContain('ETA al cliente');
+
+      http.expectNone('/api/maps/distancia');
+    });
   });
 
   describe('poll de respaldo cuando el stream SSE se rinde', () => {

@@ -1,18 +1,22 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { Subject, of, throwError } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Subject, of, throwError, Observable } from 'rxjs';
 import { SeguimientoOtPage } from './seguimiento-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
-import { MapsApi } from '../../core/service/maps-api';
 import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { OtResponse } from '../../core/models/common.models';
+import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
+import { MapaSeguimiento } from '../../shared/mapa-seguimiento/mapa-seguimiento';
+import { OtResponse, Point } from '../../core/models/common.models';
 
 const orden: OtResponse = {
   id: 'ot1',
@@ -36,7 +40,7 @@ function setup(ot: OtResponse = orden) {
   };
   const otApi = {
     getOtById: vi.fn(() => of(ot)),
-    getTecnicoUbicacion: vi.fn(() => of({ latitud: 7.9, longitud: -72.5 })),
+    getTecnicoUbicacion: vi.fn((): Observable<Point | null> => of({ latitud: 7.9, longitud: -72.5 })),
     estimarTarifa: vi.fn(() => of({
       distanciaKm: 3.2,
       tarifaFuente: 'LINEAL' as const,
@@ -46,9 +50,6 @@ function setup(ot: OtResponse = orden) {
     })),
   };
   const tecnicosApi = { getTecnicosCercanos: vi.fn(() => of([])) };
-  const mapsApi = {
-    distancia: vi.fn(() => of({ distanciaKm: 3.2, duracionMin: 8, distanciaTexto: '3.2 km', duracionTexto: '8 min' })),
-  };
   const toast = { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() };
   const sseEventos = new Subject<OtEstadoCambiado>();
   const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
@@ -56,30 +57,39 @@ function setup(ot: OtResponse = orden) {
     imports: [SeguimientoOtPage],
     providers: [
       provideRouter([]),
+      // Http real + controlador de pruebas: si algún camino volviera a pedir
+      // la distancia a Google, la petición a /api/maps/distancia queda
+      // registrada y el test falla.
+      provideHttpClient(),
+      provideHttpClientTesting(),
       { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'ot1' })) } },
       { provide: ClientesApi, useValue: clientesApi },
       { provide: OtApi, useValue: otApi },
       { provide: TecnicosApi, useValue: tecnicosApi },
-      { provide: MapsApi, useValue: mapsApi },
-      { provide: ApiConfig, useValue: { useMocks: () => false } },
+      { provide: ApiConfig, useValue: { useMocks: () => false, url: (path: string) => `/api${path}` } },
       { provide: MockDbService, useValue: { ordenesTrabajo: () => [] } },
       { provide: SseService, useValue: sse },
       { provide: ToastService, useValue: toast },
+      // El mapa es aditivo: en las pruebas no se carga el script de Google.
+      { provide: GoogleMapsLoaderService, useValue: { isLoaded: () => false, isLoading: () => false, loadError: () => null, init: vi.fn() } },
     ],
   });
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  const http = TestBed.inject(HttpTestingController);
   const fixture = TestBed.createComponent(SeguimientoOtPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, otApi, toast, navigate, sse, sseEventos };
+  return { fixture, clientesApi, otApi, toast, navigate, sse, sseEventos, http };
 }
 
 describe('SeguimientoOtPage', () => {
-  it('carga la OT y calcula distancia/ETA', () => {
+  it('carga la OT y calcula la distancia/ETA local', () => {
     const { fixture } = setup();
     expect(fixture.componentInstance.ot()?.id).toBe('ot1');
-    expect(fixture.componentInstance.distanciaKm()).toBe(3.2);
-    expect(fixture.componentInstance.etaMin()).toBe(8);
+    // Distancia en línea recta entre el técnico (7.9, -72.5) y el destino
+    // (7.88, -72.49): 2,48 km y 6 min a 25 km/h.
+    expect(fixture.componentInstance.distanciaKm()).toBe(2.48);
+    expect(fixture.componentInstance.etaMin()).toBe(6);
   });
 
   it('muestra el cargo de visita con técnico asignado', () => {
@@ -300,6 +310,145 @@ describe('SeguimientoOtPage', () => {
       const texto = fixture.nativeElement.textContent as string;
       expect(texto).toContain('OT: Sin código');
       expect(texto).not.toContain(idInterno);
+    });
+  });
+
+  describe('distancia y ETA locales (sin llamadas a Google Maps)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('el tick de posición NO llama a /api/maps/distancia y aun así actualiza la ETA', () => {
+      const { fixture, otApi, http } = setup();
+      // El primer sondeo es inmediato (`startWith(0)`) y ya fija distancia/ETA.
+      expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(1);
+      expect(fixture.componentInstance.distanciaKm()).toBe(2.48);
+      expect(fixture.componentInstance.etaMin()).toBe(6);
+
+      // El técnico se acerca: el siguiente tick trae otra posición.
+      otApi.getTecnicoUbicacion.mockReturnValue(of({ latitud: 7.885, longitud: -72.492 }));
+      vi.advanceTimersByTime(15000);
+
+      expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(2);
+      // La ETA y la distancia se recalcularon en el navegador: 0,6 km y 1 min.
+      expect(fixture.componentInstance.distanciaKm()).toBe(0.6);
+      expect(fixture.componentInstance.etaMin()).toBe(1);
+
+      // Y lo importante: ni una llamada a Distance Matrix en el tick.
+      http.expectNone('/api/maps/distancia');
+    });
+
+    it('no llama a /api/maps/distancia en ningún tick del seguimiento', () => {
+      const { otApi, http } = setup();
+
+      vi.advanceTimersByTime(15000 * 4);
+
+      expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(5);
+      http.expectNone('/api/maps/distancia');
+    });
+
+    it('sin posición del técnico no muestra ningún número', () => {
+      const { fixture, otApi } = setup();
+      // El técnico todavía no reportó ubicación: el backend responde null.
+      otApi.getTecnicoUbicacion.mockReturnValue(of(null));
+      vi.advanceTimersByTime(15000);
+
+      expect(fixture.componentInstance.tecnicoUbicacion()).toBeNull();
+      expect(fixture.componentInstance.distanciaKm()).toBeNull();
+      expect(fixture.componentInstance.etaMin()).toBeNull();
+
+      fixture.detectChanges();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('En camino a tu ubicación');
+      // Sin ETA ni distancia: mejor sin dato que con un número falso.
+      expect(texto).not.toContain('ETA');
+    });
+  });
+
+  describe('mapa de seguimiento', () => {
+    it('muestra el mapa de seguimiento cuando el técnico va en camino', () => {
+      const { fixture } = setup({ ...orden, estado: 'EN_CAMINO' });
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-mapa-seguimiento')).toBeTruthy();
+    });
+
+    it('mientras se busca técnico se ve el radar, no el mapa de seguimiento', () => {
+      const { fixture } = setup({ ...orden, estado: 'BUSCANDO_TECNICO', tecnicoId: null });
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-mapa-radar')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('app-mapa-seguimiento')).toBeFalsy();
+    });
+
+    it('el marcador del mapa sigue la posición que llega del sondeo', () => {
+      vi.useFakeTimers();
+      try {
+        const { fixture, otApi } = setup();
+        const mapa = fixture.debugElement.query(By.directive(MapaSeguimiento)).componentInstance as MapaSeguimiento;
+        fixture.detectChanges();
+
+        // La posición del primer sondeo ya está en el mapa.
+        expect(mapa.posicionMarcador()).toEqual({ lat: 7.9, lng: -72.5 });
+
+        // El técnico se acerca: el siguiente tick mueve el marcador.
+        otApi.getTecnicoUbicacion.mockReturnValue(of({ latitud: 7.885, longitud: -72.492 }));
+        vi.advanceTimersByTime(15000);
+        fixture.detectChanges();
+
+        expect(mapa.posicionMarcador()).toEqual({ lat: 7.885, lng: -72.492 });
+        // Y la ruta se dibuja entre el técnico y el punto de servicio.
+        expect(mapa.ruta().length).toBe(2);
+        expect(mapa.ruta()[1]).toEqual({ lat: 7.88, lng: -72.49 });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('sin posición del técnico el mapa no muestra marcador ni ruta', () => {
+      vi.useFakeTimers();
+      try {
+        const { fixture, otApi } = setup();
+        // El técnico todavía no reportó ubicación: el backend responde null.
+        otApi.getTecnicoUbicacion.mockReturnValue(of(null));
+        vi.advanceTimersByTime(15000);
+        fixture.detectChanges();
+
+        const mapa = fixture.debugElement.query(By.directive(MapaSeguimiento)).componentInstance as MapaSeguimiento;
+        expect(mapa.posicionMarcador()).toBeNull();
+        expect(mapa.ruta()).toEqual([]);
+        expect(mapa.distanciaKm()).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('llegada del técnico', () => {
+    it('muestra el instante de la llegada cuando la OT trae llegadaEn', () => {
+      const { fixture } = setup({ ...orden, llegadaEn: '2026-10-21T15:30:00Z' });
+      fixture.detectChanges();
+
+      const linea = fixture.nativeElement.querySelector('[data-testid="estado-tecnico"]') as HTMLElement;
+      expect(linea.textContent).toContain('El técnico llegó');
+      // Y el instante de la llegada, no solo el texto.
+      expect(linea.textContent).toContain('2026');
+      // Con el técnico en el sitio la ETA ya no aplica: no se muestra.
+      expect(linea.textContent).not.toContain('En camino a tu ubicación');
+      expect(fixture.nativeElement.textContent).not.toContain('Llegada estimada');
+    });
+
+    it('no muestra nada de la llegada mientras el técnico no ha llegado', () => {
+      const { fixture } = setup();
+      fixture.detectChanges();
+
+      const linea = fixture.nativeElement.querySelector('[data-testid="estado-tecnico"]') as HTMLElement;
+      expect(linea.textContent).not.toContain('El técnico llegó');
+      // Sin `llegadaEn` no hay ni mensaje de "todavía no llegó": solo el estado normal.
+      expect(linea.textContent).toContain('En camino a tu ubicación');
     });
   });
 

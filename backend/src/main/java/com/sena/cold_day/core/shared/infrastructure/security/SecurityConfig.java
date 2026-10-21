@@ -69,6 +69,13 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll()
+                        // Map view configuration: the map loader reads it before
+                        // the user signs in (login and registration show a map)
+                        // and it carries no personal data, only the center, the
+                        // metropolitan bounds, the zoom and the radius ladder.
+                        // The server key never leaves the backend; only the
+                        // browser key (restricted by HTTP referrer) is served.
+                        .requestMatchers(HttpMethod.GET, "/api/config/maps").permitAll()
                         // Registro publico: cada uno crea su propia cuenta, ninguno
                         // alcanza datos de terceros. El rol SIEMPRE lo deriva el
                         // servidor (Rol.TECNICO / CLIENTE / PROVEEDOR dentro del

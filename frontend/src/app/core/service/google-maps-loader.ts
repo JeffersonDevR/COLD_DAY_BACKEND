@@ -1,8 +1,7 @@
 import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
 import { environment } from '../environment/environment';
+import { MapaConfigService } from './mapa-config.service';
 
 /**
  * Intervalo entre sondeos de readiness de la API de Google Maps.
@@ -19,8 +18,8 @@ const DEFAULT_READINESS_TIMEOUT_MS = 10_000;
   providedIn: 'root'
 })
 export class GoogleMapsLoaderService {
-  private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly mapaConfig = inject(MapaConfigService);
 
   readonly isLoaded = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
@@ -131,17 +130,12 @@ export class GoogleMapsLoaderService {
       }
 
       // 1) Clave inyectada en build (environment.googleMapsApiKey).
-      // 2) Endpoint /api/config/maps, solo disponible si SSR está habilitado.
+      // 2) Configuración del mapa en GET /api/config/maps: el backend publica
+      //    el centro, los límites, el zoom y (si está configurada) la browser key.
       let key = environment.googleMapsApiKey?.trim() ?? '';
       if (!key) {
-        try {
-          const config = await firstValueFrom(this.http.get<{ apiKey?: string }>('/api/config/maps'));
-          if (config?.apiKey) {
-            key = config.apiKey.trim();
-          }
-        } catch {
-          // Sin SSR ni clave en environment: se intenta cargar el script sin clave.
-        }
+        await this.mapaConfig.cargar();
+        key = this.mapaConfig.apiKey();
       }
       if (key) {
         this.apiKey.set(key);

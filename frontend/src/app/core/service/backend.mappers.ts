@@ -187,6 +187,9 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
     actaFirmada: dto.actaFirmada ?? false,
     actaCodigoVerificacion: dto.actaCodigoVerificacion ?? undefined,
     actaFirmadaEn: dto.actaFirmadaEn ?? undefined,
+    // La llegada es un hecho, no una transición: el instante viaja tal cual lo
+    // emitió el servidor y no se deriva de ningún estado.
+    llegadaEn: dto.llegadaEn ?? undefined,
     // Pendiente(backend): barrio/historial requieren campos/endpoints que el
     // backend aún no expone (historial: GET /api/ot/{id}/historial).
   };

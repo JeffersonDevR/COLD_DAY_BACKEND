@@ -50,7 +50,12 @@ public record OtApiResponse(
         // by whoever needs to render the document.
         boolean actaFirmada,
         String actaCodigoVerificacion,
-        Instant actaFirmadaEn) {
+        Instant actaFirmadaEn,
+        // Instant the technician confirmed the arrival on site (RF-F1-14).
+        // Arrival is a fact and not a transition, so there is no state to read
+        // it from: without this field the client had no way of knowing that
+        // the technician was already at the door.
+        Instant llegadaEn) {
 
     public static OtApiResponse from(OtResponse response) {
         return from(response, null, null);
@@ -74,6 +79,6 @@ public record OtApiResponse(
                 clienteNombre, tecnicoNombre, response.auxiliaresRequeridos(),
                 response.medioPagoVisita(), response.calificacionEstrellas(), response.calificacionComentario(),
                 response.calificacionEn(), response.actaFirmada(), response.actaCodigoVerificacion(),
-                response.actaFirmadaEn());
+                response.actaFirmadaEn(), response.llegadaEn());
     }
 }

@@ -4,6 +4,7 @@ import { SelectorUbicacionMapa } from './selector-ubicacion-mapa';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
 import { GeolocationService } from '../../core/service/geolocation.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { signal } from '@angular/core';
 
 function eventoMapa(lat: number, lng: number): google.maps.MapMouseEvent {
@@ -29,6 +30,14 @@ function setup(opts: { disponible?: boolean } = {}) {
       { provide: GoogleMapsLoaderService, useValue: mapsLoader },
       { provide: GeolocationService, useValue: geolocation },
       { provide: ToastService, useValue: toast },
+      // La configuración del mapa la publica el backend (ver mapa-config.service).
+      {
+        provide: MapaConfigService,
+        useValue: {
+          centro: () => ({ lat: 7.8939, lng: -72.5078 }),
+          bounds: () => ({ north: 8.08, south: 7.76, east: -72.41, west: -72.6 }),
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(SelectorUbicacionMapa);

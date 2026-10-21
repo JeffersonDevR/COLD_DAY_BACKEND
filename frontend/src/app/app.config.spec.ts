@@ -1,5 +1,6 @@
 import { ApplicationInitStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { appConfig } from './app.config';
 import { LEGACY_THEME_STORAGE_KEY } from './core/service/appearance';
 
@@ -13,10 +14,16 @@ describe('appConfig', () => {
     window.localStorage.clear();
   });
 
-  function arrancarApp(): void {
-    TestBed.configureTestingModule({ providers: [...appConfig.providers] });
+  function arrancarApp(): HttpTestingController {
+    TestBed.configureTestingModule({
+      providers: [...appConfig.providers, provideHttpClientTesting()],
+    });
     // Inyectar ApplicationInitStatus ejecuta los initializers de la app.
     TestBed.inject(ApplicationInitStatus);
+    const http = TestBed.inject(HttpTestingController);
+    // La configuración del mapa se pide al arrancar (ver MapaConfigService).
+    http.expectOne('/api/config/maps').flush({});
+    return http;
   }
 
   it('descarta la preferencia de tema heredada al arrancar', () => {
@@ -38,5 +45,11 @@ describe('appConfig', () => {
 
     expect(window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY)).toBeNull();
     expect(window.localStorage.getItem('coldday.layout')).toBe('{"menuMode":"overlay"}');
+  });
+
+  it('pide la configuración del mapa al backend al arrancar', () => {
+    const http = arrancarApp();
+
+    http.expectNone('/api/config/maps');
   });
 });

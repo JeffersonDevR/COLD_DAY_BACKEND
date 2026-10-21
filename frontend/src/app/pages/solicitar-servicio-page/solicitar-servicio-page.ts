@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,7 +9,7 @@ import { ToastService } from '../../core/alertas/toast.service';
 import { CategoriaServicio, Point } from '../../core/models/common.models';
 import { MapsApi } from '../../core/service/maps-api';
 import { SugerenciaApiResponse } from '../../core/models/backend.dto';
-import { CUCUTA_CENTRO } from '../../shared/mapas/cucuta.constant';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
 
 @Component({
@@ -25,9 +25,12 @@ export class SolicitarServicioPage {
   private readonly router = inject(Router);
   private readonly mapsApi = inject(MapsApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly mapaConfig = inject(MapaConfigService);
 
   readonly categoriaActual = signal<CategoriaServicio>('AIRE_ACONDICIONADO');
   readonly loading = signal<boolean>(false);
+  /** Radio inicial de búsqueda: lo publica el backend (app.maps.radio-inicial-km). */
+  readonly radioInicialKm = computed(() => this.mapaConfig.radioInicialKm());
   readonly sugerencias = signal<SugerenciaApiResponse[]>([]);
   readonly buscandoDireccion = signal<boolean>(false);
   /** Punto fijado en el mapa; `null` hasta que el usuario elige una ubicación. */
@@ -72,9 +75,10 @@ export class SolicitarServicioPage {
             return of([]);
           }
           this.buscandoDireccion.set(true);
+          const centro = this.mapaConfig.centro();
           const sesgo = this.coordenadas() ?? {
-            latitud: CUCUTA_CENTRO.latitud,
-            longitud: CUCUTA_CENTRO.longitud,
+            latitud: centro.lat,
+            longitud: centro.lng,
           };
           return this.mapsApi.autocompletar(query, sesgo).pipe(catchError(() => of([])));
         }),
@@ -176,7 +180,7 @@ export class SolicitarServicioPage {
       .subscribe({
         next: (nuevaOt) => {
           this.loading.set(false);
-          this.toast.success('Solicitud Creada', `OT ${nuevaOt.codigo || 'Sin código'} transmitida por broadcast (10 km)`);
+          this.toast.success('Solicitud Creada', `OT ${nuevaOt.codigo || 'Sin código'} transmitida por broadcast (${this.mapaConfig.radioInicialKm()} km)`);
           const roles = this.authService.userRoles();
           if (roles.has('TECNICO') && !roles.has('CLIENTE')) {
             this.router.navigate(['/tecnico/panel']);

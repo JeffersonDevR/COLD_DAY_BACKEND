@@ -17,7 +17,7 @@ import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
 import { GeolocationService } from '../../core/service/geolocation.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { Point } from '../../core/models/common.models';
-import { CUCUTA_CENTRO, CUCUTA_METRO_BOUNDS } from '../mapas/cucuta.constant';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 
 /**
  * Selector de domicilio sobre Google Maps.
@@ -44,6 +44,7 @@ export class SelectorUbicacionMapa implements OnInit {
   private readonly geolocation = inject(GeolocationService);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly mapaConfig = inject(MapaConfigService);
 
   readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -58,10 +59,11 @@ export class SelectorUbicacionMapa implements OnInit {
 
   readonly resolviendoGps = signal<boolean>(false);
 
-  readonly centroDefecto: google.maps.LatLngLiteral = {
-    lat: CUCUTA_CENTRO.latitud,
-    lng: CUCUTA_CENTRO.longitud,
-  };
+  /** Centro por defecto: el que publica el backend (nunca una copia local). */
+  readonly centroDefecto = computed<google.maps.LatLngLiteral>(() => {
+    const centro = this.mapaConfig.centro();
+    return { lat: centro.lat, lng: centro.lng };
+  });
 
   readonly puntoActual = computed<google.maps.LatLngLiteral | null>(() => {
     const lat = this.lat();
@@ -69,18 +71,18 @@ export class SelectorUbicacionMapa implements OnInit {
     return lat === null || lng === null ? null : { lat, lng };
   });
 
-  readonly centro = computed<google.maps.LatLngLiteral>(() => this.puntoActual() ?? this.centroDefecto);
+  readonly centro = computed<google.maps.LatLngLiteral>(() => this.puntoActual() ?? this.centroDefecto());
 
   readonly zoomNivel = computed<number>(() => (this.puntoActual() ? 16 : 12.5));
 
   readonly markerOptions = computed<google.maps.MarkerOptions>(() => ({
-    position: this.puntoActual() ?? this.centroDefecto,
+    position: this.puntoActual() ?? this.centroDefecto(),
     draggable: true,
     clickable: true,
     title: 'Arrastra para ajustar tu domicilio',
   }));
 
-  readonly mapOptions: google.maps.MapOptions = {
+  readonly mapOptions = computed<google.maps.MapOptions>(() => ({
     disableDefaultUI: false,
     zoomControl: true,
     streetViewControl: false,
@@ -88,10 +90,10 @@ export class SelectorUbicacionMapa implements OnInit {
     mapTypeControl: false,
     // Restricción estricta al área metropolitana: no se puede salir de Cúcuta.
     restriction: {
-      latLngBounds: CUCUTA_METRO_BOUNDS,
+      latLngBounds: this.mapaConfig.bounds(),
       strictBounds: true,
     },
-  };
+  }));
 
   ngOnInit(): void {
     if (this.isBrowser) {
