@@ -4,9 +4,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Registra {@link MapsProperties} sin tocar el SecurityConfig existente.
+ * Registers the Maps configuration properties without touching the existing
+ * SecurityConfig.
  */
 @Configuration
-@EnableConfigurationProperties(MapsProperties.class)
+@EnableConfigurationProperties({ MapsProperties.class, MapsConfigProperties.class })
 public class MapsConfig {
 }

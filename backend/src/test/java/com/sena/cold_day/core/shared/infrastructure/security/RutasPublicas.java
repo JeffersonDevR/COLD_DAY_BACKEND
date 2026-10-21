@@ -39,7 +39,12 @@ public final class RutasPublicas {
             // by a single-use ticket query parameter (EventSource cannot send the
             // Authorization header). Only this exact path is open; the ticket
             // endpoint POST /api/sse/ticket stays behind anyRequest().authenticated().
-            "GET /api/ot/{id}/stream");
+            "GET /api/ot/{id}/stream",
+            // Map view configuration: the map loader reads it before the user
+            // signs in (login and registration show a map). It carries no
+            // personal data, only the center, the metropolitan bounds, the zoom
+            // and the radius ladder; the server key never leaves the backend.
+            "GET /api/config/maps");
 
     /** Prefixes that are intentionally anonymous, subtree included. */
     public static final List<String> PREFIJOS = List.of(
