@@ -11,6 +11,7 @@ import { OtApi } from '../../core/service/ot-api';
 import { cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { rutaLocal } from '../../core/service/distancia-local';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -58,6 +59,7 @@ export class SeguimientoOtPage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly mapaConfig = inject(MapaConfigService);
 
   readonly otId = signal<string>('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
@@ -195,7 +197,11 @@ export class SeguimientoOtPage implements OnInit {
       return;
     }
     this.tecnicosApi
-      .getTecnicosCercanos(orden.punto, orden.radioBusquedaKm || 10, orden.categoriaServicio)
+      .getTecnicosCercanos(
+        orden.punto,
+        orden.radioBusquedaKm || this.mapaConfig.radioInicialKm(),
+        orden.categoriaServicio,
+      )
       .subscribe({
         next: (tecnicos) => this.tecnicosCercanos.set(tecnicos),
         error: () => this.tecnicosCercanos.set([]),

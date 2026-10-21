@@ -82,7 +82,7 @@
             <google-map
               [center]="centroUbicacion()"
               [zoom]="zoomNivel()"
-              [options]="mapOptions"
+              [options]="mapOptions()"
               height="100%"
               width="100%"
             >
@@ -93,25 +93,17 @@
                 [options]="activeCircleOptions()"
               />
 
-              <!-- Círculos de referencia perimetral (10 km, 15 km, 20 km, 25 km límite) -->
+              <!-- Círculos de referencia perimetral (escala de radios del backend) -->
+              @for (radio of radiosReferencia(); track radio.km) {
+                <map-circle
+                  [center]="centroUbicacion()"
+                  [radius]="radio.km * 1000"
+                  [options]="referenceCircleOptions"
+                />
+              }
               <map-circle
                 [center]="centroUbicacion()"
-                [radius]="10000"
-                [options]="referenceCircleOptions"
-              />
-              <map-circle
-                [center]="centroUbicacion()"
-                [radius]="15000"
-                [options]="referenceCircleOptions"
-              />
-              <map-circle
-                [center]="centroUbicacion()"
-                [radius]="20000"
-                [options]="referenceCircleOptions"
-              />
-              <map-circle
-                [center]="centroUbicacion()"
-                [radius]="25000"
+                [radius]="radioLimite().km * 1000"
                 [options]="limitCircleOptions"
               />
 
@@ -238,17 +230,13 @@
               <line x1="10" y1="200" x2="390" y2="200" stroke="#334155" stroke-width="1" stroke-dasharray="3 3" />
 
               <!-- Círculos concéntricos de referencia -->
-              <circle cx="200" cy="200" r="70" fill="none" [attr.stroke]="radioActualKm() >= 10 ? '#0ea5e9' : '#1e293b'" stroke-width="1" />
-              <text x="205" y="135" fill="#64748b" font-size="10" font-family="monospace">10 km</text>
+              @for (radio of radiosReferencia(); track radio.km) {
+                <circle cx="200" cy="200" [attr.r]="radio.px" fill="none" [attr.stroke]="radioActualKm() >= radio.km ? '#0ea5e9' : '#1e293b'" stroke-width="1" />
+                <text x="205" [attr.y]="205 - radio.px" fill="#64748b" font-size="10" font-family="monospace">{{ radio.km }} km</text>
+              }
 
-              <circle cx="200" cy="200" r="105" fill="none" [attr.stroke]="radioActualKm() >= 15 ? '#0ea5e9' : '#1e293b'" stroke-width="1" />
-              <text x="205" y="100" fill="#64748b" font-size="10" font-family="monospace">15 km</text>
-
-              <circle cx="200" cy="200" r="140" fill="none" [attr.stroke]="radioActualKm() >= 20 ? '#0ea5e9' : '#1e293b'" stroke-width="1" />
-              <text x="205" y="65" fill="#64748b" font-size="10" font-family="monospace">20 km</text>
-
-              <circle cx="200" cy="200" r="175" fill="none" [attr.stroke]="radioActualKm() >= 25 ? '#38bdf8' : '#1e293b'" stroke-width="1.5" stroke-dasharray="4 4" />
-              <text x="205" y="30" fill="#64748b" font-size="10" font-family="monospace">25 km (Límite)</text>
+              <circle cx="200" cy="200" [attr.r]="radioLimite().px" fill="none" [attr.stroke]="radioActualKm() >= radioLimite().km ? '#38bdf8' : '#1e293b'" stroke-width="1.5" stroke-dasharray="4 4" />
+              <text x="205" [attr.y]="205 - radioLimite().px" fill="#64748b" font-size="10" font-family="monospace">{{ radioLimite().km }} km (Límite)</text>
 
               <!-- Área activa iluminada -->
               <circle
@@ -353,16 +341,16 @@
             type="button"
             (click)="simularExpansionRadio()"
             class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-400 font-semibold transition-colors flex items-center gap-1"
-            title="Incrementar radio de búsqueda perimetral +5 km"
+            title="Incrementar radio de búsqueda perimetral +{{ radioPasoKm() }} km"
           >
             <i class="pi pi-expand text-xs" style="font-size: 14px; width: 14px; height: 14px;"></i>
-            <span>+5 km</span>
+            <span>+{{ radioPasoKm() }} km</span>
           </button>
           <button
             type="button"
             (click)="reiniciarRadar()"
             class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium transition-colors"
-            title="Reiniciar búsqueda a radio base de 10 km"
+            title="Reiniciar búsqueda a radio base de {{ radioInicialKm() }} km"
           >
             Reset
           </button>

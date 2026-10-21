@@ -9,7 +9,6 @@ import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
-import { MapsApi } from '../../core/service/maps-api';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
@@ -70,10 +69,9 @@ function setup(opts: { useMocks?: boolean; ot?: OtResponse } = {}) {
     ],
   });
   const http = TestBed.inject(HttpTestingController);
-  const distanciaSpy = vi.spyOn(TestBed.inject(MapsApi), 'distancia');
   const fixture = TestBed.createComponent(EjecucionOtPage);
   fixture.detectChanges();
-  return { fixture, tecnicosApi, tracking, posicion, liquidacionApi, toast, otApi, sse, sseEventos, http, distanciaSpy };
+  return { fixture, tecnicosApi, tracking, posicion, liquidacionApi, toast, otApi, sse, sseEventos, http };
 }
 
 describe('EjecucionOtPage', () => {
@@ -244,7 +242,7 @@ describe('EjecucionOtPage', () => {
 
   describe('distancia y ETA locales (sin llamadas a Google Maps)', () => {
     it('el tick de posición NO llama a /api/maps/distancia y calcula la ETA en el navegador', () => {
-      const { fixture, posicion, http, distanciaSpy } = setup();
+      const { fixture, posicion, http } = setup();
 
       // El técnico reporta su posición: el tick recalcula la ruta local.
       posicion.set({ latitud: 7.9, longitud: -72.5 });
@@ -256,12 +254,11 @@ describe('EjecucionOtPage', () => {
       expect(fixture.componentInstance.etaMin()).toBe(6);
 
       // Y lo importante: ni una llamada a Distance Matrix en el tick.
-      expect(distanciaSpy).not.toHaveBeenCalled();
       http.expectNone('/api/maps/distancia');
     });
 
     it('no llama a /api/maps/distancia en ningún tick de posición', () => {
-      const { fixture, posicion, http, distanciaSpy } = setup();
+      const { fixture, posicion, http } = setup();
 
       posicion.set({ latitud: 7.9, longitud: -72.5 });
       fixture.detectChanges();
@@ -271,12 +268,11 @@ describe('EjecucionOtPage', () => {
       // La ETA local sí se recalculó en cada tick: 0,6 km y 1 min.
       expect(fixture.componentInstance.distanciaKm()).toBe(0.6);
       expect(fixture.componentInstance.etaMin()).toBe(1);
-      expect(distanciaSpy).not.toHaveBeenCalled();
       http.expectNone('/api/maps/distancia');
     });
 
     it('sin posición del técnico no muestra ningún número', () => {
-      const { fixture, http, distanciaSpy } = setup();
+      const { fixture, http } = setup();
 
       expect(fixture.componentInstance.distanciaKm()).toBeNull();
       expect(fixture.componentInstance.etaMin()).toBeNull();
@@ -286,7 +282,6 @@ describe('EjecucionOtPage', () => {
       // Sin ETA ni distancia: mejor sin dato que con un número falso.
       expect(texto).not.toContain('ETA al cliente');
 
-      expect(distanciaSpy).not.toHaveBeenCalled();
       http.expectNone('/api/maps/distancia');
     });
   });

@@ -150,11 +150,11 @@
         <!-- Radar de Búsqueda SVG (si está en SOLICITADA o BUSCANDO_TECNICO) -->
         @if (orden.estado === 'SOLICITADA' || orden.estado === 'BUSCANDO_TECNICO') {
           <app-mapa-radar
-            [radioInicial]="orden.radioBusquedaKm || 10"
+            [radioInicial]="orden.radioBusquedaKm || null"
             [isBuscando]="true"
             [clienteUbicacionNombre]="orden.barrio || 'Tu Ubicación'"
-            [centroLat]="orden.punto?.latitud ?? 7.8939"
-            [centroLng]="orden.punto?.longitud ?? -72.5078"
+            [centroLat]="orden.punto?.latitud ?? null"
+            [centroLng]="orden.punto?.longitud ?? null"
             [tecnicosExternos]="tecnicosCercanos()"
             (radioCambiado)="actualizarRadio($event)"
           />

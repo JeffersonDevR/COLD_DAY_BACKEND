@@ -6,6 +6,7 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { MapsApi } from '../../core/service/maps-api';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { OtResponse } from '../../core/models/common.models';
 
 const nuevaOt: OtResponse = {
@@ -36,6 +37,14 @@ function setup() {
       { provide: AuthService, useValue: { currentUser: () => ({ id: 3, nombre: 'María' }), userRoles: () => new Set(['CLIENTE']) } },
       { provide: ToastService, useValue: toast },
       { provide: MapsApi, useValue: mapsApi },
+      // La configuración del mapa la publica el backend (ver mapa-config.service).
+      {
+        provide: MapaConfigService,
+        useValue: {
+          centro: () => ({ lat: 7.8939, lng: -72.5078 }),
+          radioInicialKm: () => 10,
+        },
+      },
     ],
   });
   const router = TestBed.inject(Router);

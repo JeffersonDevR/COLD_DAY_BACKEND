@@ -10,6 +10,7 @@ import { ProveedorRegistroService } from '../../core/service/proveedor-registro.
 import { ApiConfig } from '../../core/service/api.config';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
@@ -67,6 +68,11 @@ function setup(useMocks = false): { fixture: ComponentFixture<RegistroPage>; moc
       { provide: ApiConfig, useValue: { useMocks: () => useMocks } },
       { provide: AuthService, useValue: mocks.auth },
       { provide: ToastService, useValue: mocks.toast },
+      // La configuración del mapa la publica el backend (ver mapa-config.service).
+      {
+        provide: MapaConfigService,
+        useValue: { centro: () => ({ lat: 7.8939, lng: -72.5078 }) },
+      },
     ],
   });
   const router = TestBed.inject(Router);

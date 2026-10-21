@@ -2,8 +2,7 @@ import { Signal, computed } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
-import { MapsApi } from './maps-api';
-import { OtResponse, Point } from '../models/common.models';
+import { OtResponse } from '../models/common.models';
 import { OtApi } from './ot-api';
 
 /**
@@ -42,18 +41,4 @@ export function cargarOtDesdeRuta(
       otApi.getOtById(id).subscribe({ next: onOt });
     }
   });
-}
-
-/** Calcula distancia y ETA entre dos puntos; no falla si el origen/destino faltan. */
-export function calcularRuta(
-  mapsApi: MapsApi,
-  origen: Point | null | undefined,
-  destino: Point | undefined,
-  onRuta: (ruta: { distanciaKm: number; duracionMin: number }) => void,
-  onError?: () => void,
-): void {
-  if (!origen || !destino) {
-    return;
-  }
-  mapsApi.distancia(origen, destino).subscribe({ next: onRuta, error: onError });
 }

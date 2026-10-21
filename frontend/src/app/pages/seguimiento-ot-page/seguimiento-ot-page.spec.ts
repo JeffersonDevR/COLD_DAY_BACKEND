@@ -7,7 +7,6 @@ import { SeguimientoOtPage } from './seguimiento-ot-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
-import { MapsApi } from '../../core/service/maps-api';
 import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
@@ -73,11 +72,9 @@ function setup(ot: OtResponse = orden) {
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const http = TestBed.inject(HttpTestingController);
-  const mapsApi = TestBed.inject(MapsApi);
-  const distanciaSpy = vi.spyOn(mapsApi, 'distancia');
   const fixture = TestBed.createComponent(SeguimientoOtPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, otApi, toast, navigate, sse, sseEventos, http, distanciaSpy };
+  return { fixture, clientesApi, otApi, toast, navigate, sse, sseEventos, http };
 }
 
 describe('SeguimientoOtPage', () => {
@@ -320,7 +317,7 @@ describe('SeguimientoOtPage', () => {
     });
 
     it('el tick de posición NO llama a /api/maps/distancia y aun así actualiza la ETA', () => {
-      const { fixture, otApi, http, distanciaSpy } = setup();
+      const { fixture, otApi, http } = setup();
       // El primer sondeo es inmediato (`startWith(0)`) y ya fija distancia/ETA.
       expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(1);
       expect(fixture.componentInstance.distanciaKm()).toBe(2.48);
@@ -336,17 +333,15 @@ describe('SeguimientoOtPage', () => {
       expect(fixture.componentInstance.etaMin()).toBe(1);
 
       // Y lo importante: ni una llamada a Distance Matrix en el tick.
-      expect(distanciaSpy).not.toHaveBeenCalled();
       http.expectNone('/api/maps/distancia');
     });
 
     it('no llama a /api/maps/distancia en ningún tick del seguimiento', () => {
-      const { otApi, http, distanciaSpy } = setup();
+      const { otApi, http } = setup();
 
       vi.advanceTimersByTime(15000 * 4);
 
       expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(5);
-      expect(distanciaSpy).not.toHaveBeenCalled();
       http.expectNone('/api/maps/distancia');
     });
 

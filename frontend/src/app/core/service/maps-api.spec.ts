@@ -111,25 +111,11 @@ describe('MapsApi', () => {
     await promise;
   });
 
-  it('distancia envía el cuadro de coordenadas', async () => {
-    const promise = firstValueFrom(api.distancia({ latitud: 1, longitud: 2 }, { latitud: 3, longitud: 4 }));
-    const req = http.expectOne('/api/maps/distancia');
-    expect(req.request.body).toEqual({ origenLat: 1, origenLng: 2, destinoLat: 3, destinoLng: 4 });
-    req.flush({ distanciaKm: 5, duracionMin: 10, distanciaTexto: '5 km', duracionTexto: '10 min' });
-    expect((await promise).distanciaKm).toBe(5);
-  });
-
-  it('en modo mock geocodifica y calcula distancia', async () => {
+  it('en modo mock geocodifica', async () => {
     config.setUseMocks(true);
     const dir = await firstValueFrom(api.geocodificar('Calle 15'));
     expect(dir.direccionFormateada).toBe('Calle 15');
     expect(dir.placeId).toContain('mock-');
-
-    const distancia = await firstValueFrom(
-      api.distancia({ latitud: 7.8872, longitud: -72.4951 }, { latitud: 7.9045, longitud: -72.4977 }),
-    );
-    expect(distancia.distanciaKm).toBeGreaterThan(0);
-    expect(distancia.duracionMin).toBeGreaterThanOrEqual(0);
   });
 
   it('en modo mock filtra las sugerencias de autocompletado', async () => {

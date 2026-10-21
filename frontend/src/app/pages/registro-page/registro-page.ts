@@ -12,6 +12,7 @@ import { ApiConfig } from '../../core/service/api.config';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { Rol, CategoriaServicio, TokenResponse } from '../../core/models/common.models';
+import { MapaConfigService } from '../../core/service/mapa-config.service';
 
 @Component({
   selector: 'app-registro-page',
@@ -29,6 +30,7 @@ export class RegistroPage {
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly mapaConfig = inject(MapaConfigService);
 
   readonly selectedRol = signal<Rol>('CLIENTE');
   readonly especialidades = signal<CategoriaServicio[]>(['AIRE_ACONDICIONADO', 'REFRIGERACION']);
@@ -160,7 +162,7 @@ export class RegistroPage {
         tipoCliente: 'B2C',
         calle: 'Por definir',
         ciudad: 'Cúcuta',
-        ubicacion: { latitud: 7.8939, longitud: -72.5078 },
+        ubicacion: { latitud: this.mapaConfig.centro().lat, longitud: this.mapaConfig.centro().lng },
         aceptaHabeasData: formVal.aceptaHabeasData,
       }),
       formVal.correo,

@@ -4,10 +4,8 @@ import { catchError, Observable, of } from 'rxjs';
 import { delay, switchMap } from 'rxjs/operators';
 import { ApiConfig } from './api.config';
 import { MapsGeocoderCliente } from './maps-geocoder-cliente';
-import { distanciaHaversineKm, VELOCIDAD_MEDIA_KMH } from './distancia-local';
 import {
   DireccionApiResponse,
-  DistanciaApiResponse,
   EstadoMapsApiResponse,
   SugerenciaApiResponse,
 } from '../models/backend.dto';
@@ -16,9 +14,12 @@ import { Point } from '../models/common.models';
 /**
  * Fachada del proxy seguro /api/maps del backend (Google Maps Platform).
  *
- * El backend guarda la server key; el frontend solo pide geocodificación,
- * autocompletado y distancias. En modo mock devuelve datos sembrados de Cúcuta
- * para que la UI funcione sin backend ni cuota de Google.
+ * El backend guarda la server key; el frontend solo pide geocodificación y
+ * autocompletado. En modo mock devuelve datos sembrados de Cúcuta para que la
+ * UI funcione sin backend ni cuota de Google.
+ *
+ * NO expone distancias: el cálculo de ruta se hace en el navegador
+ * (core/service/distancia-local) para no gastar cuota de Google en cada tick.
  */
 @Injectable({
   providedIn: 'root',
@@ -77,25 +78,6 @@ export class MapsApi {
     return this.http
       .get<SugerenciaApiResponse[]>(this.apiConfig.url('/maps/autocompletar'), { params })
       .pipe(switchMap((lista) => (lista.length ? of(lista) : this.geocoder.autocompletar(input, sesgo))));
-  }
-
-  distancia(origen: Point, destino: Point): Observable<DistanciaApiResponse> {
-    if (this.apiConfig.useMocks()) {
-      const km = distanciaHaversineKm(origen, destino);
-      const min = Math.round((km / VELOCIDAD_MEDIA_KMH) * 60);
-      return of({
-        distanciaKm: Math.round(km * 100) / 100,
-        duracionMin: min,
-        distanciaTexto: `${km.toFixed(1)} km`,
-        duracionTexto: `${min} min`,
-      }).pipe(delay(250));
-    }
-    return this.http.post<DistanciaApiResponse>(this.apiConfig.url('/maps/distancia'), {
-      origenLat: origen.latitud,
-      origenLng: origen.longitud,
-      destinoLat: destino.latitud,
-      destinoLng: destino.longitud,
-    });
   }
 
   private direccionMock(direccion: string, lat = 7.8872, lng = -72.4951): DireccionApiResponse {

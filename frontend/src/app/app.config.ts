@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
@@ -14,6 +15,7 @@ import {routes} from './app.routes';
 import {authInterceptor} from './core/interceptos/auth.interceptor';
 import {errorInterceptor} from './core/interceptos/error.interceptor';
 import {initializeAppearance} from './core/service/appearance';
+import {MapaConfigService} from './core/service/mapa-config.service';
 
 /**
  * Preset Aura con la paleta corporativa de COLD DAY (royal-blue, sky-600 como
@@ -45,6 +47,13 @@ export const appConfig: ApplicationConfig = {
     // Limpieza de una sola vez: descarta la preferencia que dejó el
     // configurador eliminado, para que la apariencia fija no dependa de ella.
     provideAppInitializer(initializeAppearance),
+    // Configuracion del mapa (centro, limites, zoom y escala de radios): la
+    // publica el backend en GET /api/config/maps y se pide una sola vez al
+    // arrancar. NO bloquea el arranque: si el backend no responde, la app sigue
+    // con los valores por defecto.
+    provideAppInitializer(() => {
+      void inject(MapaConfigService).cargar();
+    }),
     // authInterceptor adjunta el JWT del backend; errorInterceptor traduce ApiError.
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     providePrimeNG({
