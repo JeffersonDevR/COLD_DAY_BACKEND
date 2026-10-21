@@ -335,6 +335,13 @@ export interface OtApiResponse {
   actaFirmada?: boolean;
   actaCodigoVerificacion?: string | null;
   actaFirmadaEn?: string | null;
+  /**
+   * Instante (ISO-8601) en que el técnico confirmó su llegada al sitio.
+   *
+   * Opcional a propósito: la llegada es un HECHO y no una transición, así que
+   * no hay estado del que deducirla. Viene `null` mientras nadie la reporta.
+   */
+  llegadaEn?: string | null;
 }
 
 /**

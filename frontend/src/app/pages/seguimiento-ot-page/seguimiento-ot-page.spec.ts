@@ -427,6 +427,31 @@ describe('SeguimientoOtPage', () => {
     });
   });
 
+  describe('llegada del técnico', () => {
+    it('muestra el instante de la llegada cuando la OT trae llegadaEn', () => {
+      const { fixture } = setup({ ...orden, llegadaEn: '2026-10-21T15:30:00Z' });
+      fixture.detectChanges();
+
+      const linea = fixture.nativeElement.querySelector('[data-testid="estado-tecnico"]') as HTMLElement;
+      expect(linea.textContent).toContain('El técnico llegó');
+      // Y el instante de la llegada, no solo el texto.
+      expect(linea.textContent).toContain('2026');
+      // Con el técnico en el sitio la ETA ya no aplica: no se muestra.
+      expect(linea.textContent).not.toContain('En camino a tu ubicación');
+      expect(fixture.nativeElement.textContent).not.toContain('Llegada estimada');
+    });
+
+    it('no muestra nada de la llegada mientras el técnico no ha llegado', () => {
+      const { fixture } = setup();
+      fixture.detectChanges();
+
+      const linea = fixture.nativeElement.querySelector('[data-testid="estado-tecnico"]') as HTMLElement;
+      expect(linea.textContent).not.toContain('El técnico llegó');
+      // Sin `llegadaEn` no hay ni mensaje de "todavía no llegó": solo el estado normal.
+      expect(linea.textContent).toContain('En camino a tu ubicación');
+    });
+  });
+
   describe('poll de respaldo cuando el stream SSE se rinde', () => {
     beforeEach(() => {
       vi.useFakeTimers();

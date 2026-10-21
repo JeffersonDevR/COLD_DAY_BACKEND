@@ -28,6 +28,7 @@ import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteReposito
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
 import com.sena.cold_day.core.modules.ot.application.usecases.AceptarOfertaUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.ConfirmarLlegadaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarBusquedaTecnicoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
@@ -78,6 +79,7 @@ class SseOtStreamIT {
     @Autowired IniciarDesplazamientoUseCase iniciarDesplazamiento;
     @Autowired IniciarBusquedaTecnicoUseCase iniciarBusqueda;
     @Autowired AceptarOfertaUseCase aceptarOferta;
+    @Autowired ConfirmarLlegadaUseCase confirmarLlegada;
     @Autowired OfertaOtRepository ofertaRepository;
     @Autowired SpringDataOfertaOtRepository springDataOfertas;
 
@@ -230,6 +232,41 @@ class SseOtStreamIT {
                 .contains("BUSCANDO_TECNICO")
                 .contains("ASIGNADA");
         assertThat(sseEmitterRegistry.contar(clave)).isEqualTo(1);
+    }
+
+    /**
+     * The arrival is a fact and not a transition: it never produces a
+     * {@code CambioEstado}, so the repository drain loop stays silent and the
+     * client watching the order would never learn that the technician had
+     * arrived. This drives the real use case against a client that is already
+     * subscribed and reads the event off that client's response.
+     */
+    @Test
+    void theArrivalReachesAnAlreadySubscribedClient() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-llegada-stream@example.com", Rol.CLIENTE);
+        Long tecnicoUsuario = crearUsuario("tecnico-llegada-stream@example.com", Rol.TECNICO);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Tecnico tecnico = crearTecnico(tecnicoUsuario);
+        OtId otId = crearOtAsignada(cliente, tecnico);
+        // The arrival can only be confirmed while the technician is on the way.
+        iniciarDesplazamiento.iniciar(new UsuarioId(tecnicoUsuario), otId);
+
+        String ticket = ticketDe(clienteUsuario, Rol.CLIENTE);
+        MvcResult stream = mockMvc.perform(get("/api/ot/" + otId.valor() + "/stream")
+                        .param("ticket", ticket)
+                        .accept(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        confirmarLlegada.confirmar(new UsuarioId(tecnicoUsuario), otId);
+
+        String cuerpo = stream.getResponse().getContentAsString();
+        assertThat(cuerpo)
+                .contains(OtEstadoCambiadoSseListener.EVENTO)
+                // The state did not change: what the event adds is the instant.
+                .contains("EN_CAMINO")
+                .contains("llegadaEn");
+        assertThat(sseEmitterRegistry.contar(otId.valor().toString())).isEqualTo(1);
     }
 
     /** Ticket issued directly through the service, bound to the given identity. */
