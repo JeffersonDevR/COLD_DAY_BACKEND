@@ -42,7 +42,10 @@ public record OtResponse(
         Instant calificacionEn,
         boolean actaFirmada,
         String actaCodigoVerificacion,
-        Instant actaFirmadaEn) {
+        Instant actaFirmadaEn,
+        // Instant the assigned technician confirmed the arrival on site. It is a
+        // fact, not a transition: null until the technician reports it.
+        Instant llegadaEn) {
 
     public static OtResponse fromDomain(Ot ot) {
         return new OtResponse(ot.getId(), ot.getCodigo(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
@@ -52,6 +55,6 @@ public record OtResponse(
                 ot.getMedioPagoVisita(), ot.getVisitaPagadaEn() != null, ot.getCalificacionEstrellas(),
                 ot.getCalificacionComentario(), ot.getCalificacionEn(), ot.actaFirmada(),
                 ot.getActaCodigoVerificacion() == null ? null : ot.getActaCodigoVerificacion().valor(),
-                ot.getActaFirmadaEn());
+                ot.getActaFirmadaEn(), ot.getLlegadaEn());
     }
 }

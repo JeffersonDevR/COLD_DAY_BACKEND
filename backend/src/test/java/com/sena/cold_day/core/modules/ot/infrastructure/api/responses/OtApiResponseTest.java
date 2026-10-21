@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -49,6 +50,28 @@ class OtApiResponseTest {
         return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), TecnicoId.nueva(),
                 CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1",
                 new Point(4.6, -74.0), EstadoOt.ASIGNADA, 10.0, AHORA.plusSeconds(60), AHORA, AHORA,
+                null, null, null, null, null, null);
+    }
+
+    /**
+     * The arrival instant has to travel on the OT projection: it is a fact and
+     * not a transition, so no state tells the client that the technician
+     * arrived.
+     */
+    @Test
+    void exponeLaLlegadaSoloCuandoElTecnicoLaConfirma() {
+        Ot ot = otEnCamino();
+        assertThat(OtApiResponse.from(OtResponse.fromDomain(ot)).llegadaEn()).isNull();
+
+        ot.confirmarLlegada(ActorOt.TECNICO, AHORA.plusSeconds(120));
+
+        assertThat(OtApiResponse.from(OtResponse.fromDomain(ot)).llegadaEn()).isEqualTo(AHORA.plusSeconds(120));
+    }
+
+    private Ot otEnCamino() {
+        return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), TecnicoId.nueva(),
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1",
+                new Point(4.6, -74.0), EstadoOt.EN_CAMINO, 10.0, AHORA.plusSeconds(60), AHORA, AHORA,
                 null, null, null, null, null, null);
     }
 }
