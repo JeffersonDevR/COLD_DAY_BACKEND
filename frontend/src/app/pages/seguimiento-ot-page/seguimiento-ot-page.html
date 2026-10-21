@@ -160,6 +160,16 @@
           />
         }
 
+        <!-- Mapa de seguimiento: el técnico en vivo y la ruta al punto de servicio -->
+        @if (mostrarCargoVisita()) {
+          <app-mapa-seguimiento
+            [posicionTecnico]="tecnicoUbicacion()"
+            [destino]="orden.punto ?? null"
+            [destinoNombre]="orden.barrio || 'Punto de servicio'"
+            [tecnicoNombre]="orden.tecnicoNombre || 'El técnico'"
+          />
+        }
+
         <!-- Tarjeta de Técnico Asignado (si aplica) -->
         @if (orden.tecnicoId) {
           <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-4">

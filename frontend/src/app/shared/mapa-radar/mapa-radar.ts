@@ -34,6 +34,80 @@ export interface RadarTecnicoItem {
   reputacion?: number;
 }
 
+/**
+ * Estilos del mapa oscuro de la casa. Los comparte el mapa de seguimiento:
+ * la paleta vive en un solo lugar y ningún mapa la duplica.
+ */
+export const MAPA_ESTILOS: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0f172a' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+  {
+    featureType: 'administrative.locality',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#38bdf8' }]
+  },
+  {
+    featureType: 'poi',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#64748b' }]
+  },
+  {
+    featureType: 'poi.park',
+    elementType: 'geometry',
+    stylers: [{ color: '#0f291e' }]
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [{ color: '#334155' }]
+  },
+  {
+    featureType: 'road',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#1e293b' }]
+  },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry',
+    stylers: [{ color: '#0284c7' }]
+  },
+  {
+    featureType: 'transit',
+    elementType: 'geometry',
+    stylers: [{ color: '#1e293b' }]
+  },
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [{ color: '#0c4a6e' }]
+  }
+];
+
+/** Marcador circular del cliente (punto azul central). */
+export const MARCADOR_CLIENTE_OPCIONES = {
+  icon: {
+    path: 0 as google.maps.SymbolPath, // SymbolPath.CIRCLE (sin tocar google en runtime)
+    scale: 8,
+    fillColor: '#0284c7',
+    fillOpacity: 1,
+    strokeColor: '#ffffff',
+    strokeWeight: 2.5
+  }
+};
+
+/** Marcador circular del técnico dentro del radio (verde). */
+export const MARCADOR_TECNICO_OPCIONES = {
+  icon: {
+    path: 0 as google.maps.SymbolPath, // SymbolPath.CIRCLE (sin tocar google en runtime)
+    scale: 6.5,
+    fillColor: '#10b981',
+    fillOpacity: 1,
+    strokeColor: '#ffffff',
+    strokeWeight: 1.5
+  }
+};
+
 @Component({
   selector: 'app-mapa-radar',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -160,51 +234,7 @@ export class MapaRadar implements OnInit, OnDestroy {
     },
     // Mandatory usage tracking attribution ID for AI Studio
     internalUsageAttributionIds: ['gmp_mcp_codeassist_v1_aistudio'],
-    styles: [
-      { elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
-      { elementType: 'labels.text.stroke', stylers: [{ color: '#0f172a' }] },
-      { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
-      {
-        featureType: 'administrative.locality',
-        elementType: 'labels.text.fill',
-        stylers: [{ color: '#38bdf8' }]
-      },
-      {
-        featureType: 'poi',
-        elementType: 'labels.text.fill',
-        stylers: [{ color: '#64748b' }]
-      },
-      {
-        featureType: 'poi.park',
-        elementType: 'geometry',
-        stylers: [{ color: '#0f291e' }]
-      },
-      {
-        featureType: 'road',
-        elementType: 'geometry',
-        stylers: [{ color: '#334155' }]
-      },
-      {
-        featureType: 'road',
-        elementType: 'geometry.stroke',
-        stylers: [{ color: '#1e293b' }]
-      },
-      {
-        featureType: 'road.highway',
-        elementType: 'geometry',
-        stylers: [{ color: '#0284c7' }]
-      },
-      {
-        featureType: 'transit',
-        elementType: 'geometry',
-        stylers: [{ color: '#1e293b' }]
-      },
-      {
-        featureType: 'water',
-        elementType: 'geometry',
-        stylers: [{ color: '#0c4a6e' }]
-      }
-    ]
+    styles: MAPA_ESTILOS
   }));
 
   // Opciones del círculo activo de cobertura
@@ -234,16 +264,7 @@ export class MapaRadar implements OnInit, OnDestroy {
   };
 
   // Opciones del marcador del cliente (punto azul central)
-  readonly clienteMarkerOptions = {
-    icon: {
-      path: 0 as google.maps.SymbolPath, // SymbolPath.CIRCLE (sin tocar google en runtime)
-      scale: 8,
-      fillColor: '#0284c7',
-      fillOpacity: 1,
-      strokeColor: '#ffffff',
-      strokeWeight: 2.5
-    }
-  };
+  readonly clienteMarkerOptions = MARCADOR_CLIENTE_OPCIONES;
 
   // Lista demo de respaldo (solo si no llegan técnicos reales del backend).
   private readonly tecnicosDemo = signal<RadarTecnicoItem[]>([
@@ -321,12 +342,9 @@ export class MapaRadar implements OnInit, OnDestroy {
     const enRango = tec.distanciaKm <= this.radioActualKm();
     return {
       icon: {
-        path: 0 as google.maps.SymbolPath, // SymbolPath.CIRCLE
+        ...MARCADOR_TECNICO_OPCIONES.icon,
         scale: enRango ? 6.5 : 5,
-        fillColor: enRango ? '#10b981' : '#64748b',
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 1.5
+        fillColor: enRango ? '#10b981' : '#64748b'
       }
     };
   }

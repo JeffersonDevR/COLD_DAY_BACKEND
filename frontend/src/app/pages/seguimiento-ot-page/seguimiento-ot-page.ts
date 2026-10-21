@@ -18,6 +18,7 @@ import { ToastService } from '../../core/alertas/toast.service';
 import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';
 import { MapaRadar } from '../../shared/mapa-radar/mapa-radar';
+import { MapaSeguimiento } from '../../shared/mapa-seguimiento/mapa-seguimiento';
 import { CargoVisitaDiagnostico } from '../../shared/cargo-visita/cargo-visita';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { OtResponse, Point, TecnicoCercano, MedioPago, EstadoOt } from '../../core/models/common.models';
@@ -43,6 +44,7 @@ const ESTADOS_TECNICO_EN_MOVIMIENTO: readonly EstadoOt[] = [
     ReactiveFormsModule,
     OtTimeline,
     MapaRadar,
+    MapaSeguimiento,
     CargoVisitaDiagnostico,
     EstadoBadge
   ],
