@@ -30,13 +30,19 @@ Cerrado en main (merge 363b83d). Rama feat/alertas-ot (8 commits). Backend 127 s
 - Ojo: el **envío del presupuesto** no tiene evento propio → hay que emitirlo o derivarlo de `OtEstadoCambiado`.
 - Se reusa el canal por técnico ya construido (`tecnico:{id}`, `GET /api/tecnicos/me/ofertas/stream`).
 
-### 2.2 Quitar el registro de proveedores desde la parte de admin — **S**
-- Localizar la ruta/UI de admin para **dar de alta** un proveedor y el endpoint backend del alta-admin; el **auto-registro ya existe** en el dominio.
-- Decidir qué queda del admin: aprobar/rechazar la documentación **sí** se queda; solo se va el alta.
+### 2.2 Quitar el registro de proveedores desde la parte de admin — **S** (PR ABIERTO 2026-10-22)
 
-### 2.3 Filtro de OTs en la parte del cliente — **S**
-- Filtrar por **completadas / no completadas / sin técnico**. Hoy el panel del cliente pollea cada 25 s (`panel-cliente-page.ts:41-43`).
-- Decidir si el filtro vive en el front (más simple) o como query param en el backend.
+Rama `feat/admin-proveedores-validacion` (2 commits, c40f1ee + 752cc0d). Frontend 74 archivos / 661 tests. Doc: `odd/tasks/admin-proveedores-validacion.md`.
+Mapeo: `POST /api/proveedores` **es** el auto-registro público (`permitAll`), y la UI pública ya lo usa desde `registro-page`. El formulario del admin lo duplicaba.
+- Se va el alta completa del panel de admin (form + `AdminApi.crearProveedor`, que quedó sin consumidores).
+- Se queda la validación documental, que el admin **no** tenía en UI aunque el backend sí: `PATCH /api/proveedores/{id}/validacion` vía `ProveedoresApi.validarDocumentacion`. El listado ahora muestra `estadoValidacion` y permite aprobar / rechazar con motivo.
+
+### 2.3 Filtro de OTs en la parte del cliente — **S** (PR ABIERTO 2026-10-22)
+
+Rama `feat/filtro-ots-cliente` (2 commits, 5f084da + 4a1155c). Frontend 73 archivos / 662 tests (+9). Doc: `odd/tasks/filtro-ots-cliente.md`.
+- Filtro **en el front**: el panel ya trae todas las OTs del cliente, no hizo falta query param.
+- 4 vistas: `Todas` / `Activas` (default, la de hoy) / `Completadas` / `Sin técnico` (`!tecnicoId && estado !== 'CANCELADA'`). Las completadas antes solo existían como contador; ahora se listan.
+- Los contadores de las métricas **no** siguen el filtro.
 
 ### 2.4 Repuestos (insumos) para proveedores + que el técnico los agregue desde su OT — **M/L**
 - El dominio ya tiene `Insumo`, `OfertaInsumo`, `RequerimientoInsumo` y `oferta.requerimientoId` (que en T4 dejamos de exponer por ser un id interno).
@@ -62,6 +68,6 @@ Cerrado en main (merge 363b83d). Rama feat/alertas-ot (8 commits). Backend 127 s
 
 1. Cerrar el feature del mapa (T2 → T5) — es el que pediste en primer lugar.
 2. **Alertas de la OT** (2.1) — reusa el canal SSE ya construido; es el mayor valor por esfuerzo.
-3. Los dos baratos: **filtro de OTs del cliente** (2.3) y **quitar el registro de proveedores en admin** (2.2).
-4. **Repuestos/insumos** (2.4) — toca el mismo dominio de ofertas que el mapa.
+3. ~~Los dos baratos: **filtro de OTs del cliente** (2.3) y **quitar el registro de proveedores en admin** (2.2).~~ HECHO 2026-10-22 — PRs abiertos, falta merge.
+4. **Repuestos/insumos** (2.4) — toca el mismo dominio de ofertas que el mapa. **Siguiente.**
 5. Los de la sección 3 según impacto (3.1 el crudo y 3.2 los loads son los que más se ven).
