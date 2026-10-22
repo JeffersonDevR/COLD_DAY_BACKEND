@@ -51,10 +51,15 @@ readonly serviciosFinalizados = computed(() =>
 Usuario (2026-10-22): *"dale arranca con esos 2"* — los dos baratos del roadmap (`docs/pendientes.md` §2.3 y §2.2).
 
 ## Acceptance criteria
-- [ ] T1: el panel del cliente tiene un control de filtro con las 4 opciones y la lista responde a él; cada opción muestra exactamente lo de la tabla de arriba; los estados vacíos dicen qué falta; suite + tsc + eslint verdes.
+- [x] T1: el panel del cliente tiene un control de filtro con las 4 opciones y la lista responde a él; cada opción muestra exactamente lo de la tabla de arriba; los estados vacíos dicen qué falta; suite + tsc + eslint verdes.
+  Evidence: commit `5f084da` (3 archivos, +194/−12). `FiltroOts` + `filtro` signal (default `ACTIVAS`) + `serviciosFiltrados` computed con el contrato exacto de la tabla; `serviciosActivos`/`serviciosFinalizados` intactos (los contadores no siguen el filtro, hay spec que lo asegura). Control segmentado `role="group"` + `aria-pressed` + `type="button"`. Título neutro "Mis Servicios Técnicos" y subtítulo/vacío por filtro (el texto de `ACTIVAS` no cambió, el spec viejo sigue pasando). **Frontend 73 archivos / 662 tests / 0 fallos** (+9), `tsc` app+spec 0, `eslint` 0 en los tocados. Parent spot check: suite re-corrida, 662/0 confirmado.
 
 ## Tasks
-- [ ] T1 (frontend, delegated): filtro + control + estados vacíos + spec. Route: delegated-direct (2+ archivos no triviales).
+- [x] T1 (frontend, delegated): filtro + control + estados vacíos + spec. Route: delegated-direct (2+ archivos no triviales).
+
+## Progress
+- 2026-10-22: doc creado tras el mapeo (con `path:line` del problema).
+- 2026-10-22: T1 DONE (`5f084da`). Verificación del writer + spot check del parent: 73/662/0, `tsc` app+spec 0, `eslint` 0. Resta push + PR.
 
 ## Delivery
 - Forecast: ~120–180 líneas (señal + computed + template + spec). Un PR, sin cadena.
