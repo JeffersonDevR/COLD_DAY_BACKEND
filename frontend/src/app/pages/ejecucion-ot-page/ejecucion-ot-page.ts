@@ -251,7 +251,15 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       next: (payload) => {
         // Solo reacciona al cambio de la orden que se está viendo.
         if (payload.otId !== this.otId()) return;
+        // Captura el estado previo para no doble-anunciar si ya estaba pagada.
+        const yaPagada = this.ot()?.visitaPagada === true;
         this.anunciarAprobacionDelPresupuesto(payload.destino);
+        if (payload.visitaPagadaEn && !yaPagada) {
+          this.toast.info(
+            'Visita pagada',
+            'El cliente pagó la visita. Ya podés continuar con el diagnóstico.',
+          );
+        }
         this.recargarOt();
       },
       error: () => {

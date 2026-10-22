@@ -51,11 +51,16 @@ export class OfertasPage implements OnInit {
     this.suscripcionSse = this.sse
       .abrirOfertasTecnico()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        // El payload es informativo: cualquier evento significa "tus ofertas
-        // cambiaron", asi que se avisa y se refrescan.
-        this.anunciarOfertaNueva();
-        this.recargarOfertas(true);
+      .subscribe({
+        next: () => {
+          // El payload es informativo: cualquier evento significa "tus ofertas
+          // cambiaron", asi que se avisa y se refrescan.
+          this.anunciarOfertaNueva();
+          this.recargarOfertas(true);
+        },
+        error: () => {
+          /* el poll de 25s cubre la recuperación */
+        },
       });
   }
 

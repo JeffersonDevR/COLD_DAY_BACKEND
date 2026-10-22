@@ -169,7 +169,7 @@ export class SeguimientoOtPage implements OnInit {
         next: (payload) => {
           // Solo reacciona al cambio de la orden que se está viendo.
           if (payload.otId !== this.otId()) return;
-          this.anunciarMomentoDeLaOrden(payload.destino);
+          this.anunciarMomentoDeLaOrden(payload.destino, payload.visitaPagadaEn);
           this.recargarOt();
         },
         error: () => {
@@ -188,7 +188,14 @@ export class SeguimientoOtPage implements OnInit {
    * La llegada NO se avisa: la tarjeta del técnico ya muestra "El técnico
    * llegó {fecha}" en el sitio y un toast lo repetiría sin aportar nada.
    */
-  private anunciarMomentoDeLaOrden(destino: EstadoOt): void {
+  private anunciarMomentoDeLaOrden(destino: EstadoOt, visitaPagadaEn?: string): void {
+    // El pago de la visita no cambia el estado: llega como ASIGNADA con
+    // `visitaPagadaEn`. El cliente ya recibió su propio toast de éxito al
+    // pagar, así que no anunciamos "Técnico asignado" (falso positivo) ni
+    // duplicamos el aviso del pago.
+    if (destino === 'ASIGNADA' && visitaPagadaEn) {
+      return;
+    }
     if (destino === 'ASIGNADA') {
       this.toast.info(
         'Técnico asignado',

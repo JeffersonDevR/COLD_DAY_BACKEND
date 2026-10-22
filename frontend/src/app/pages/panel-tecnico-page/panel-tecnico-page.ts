@@ -98,11 +98,16 @@ export class PanelTecnicoPage {
     this.suscripcionSse = this.sse
       .abrirOfertasTecnico()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        // El payload es informativo: cualquier evento significa "tienes una
-        // orden nueva cerca". Los toasts verdes (`success`) son para lo que el
-        // técnico acaba de hacer, así que la noticia entrante va en `info`.
-        this.toast.info('Nueva oferta', 'Hay una nueva orden de trabajo disponible cerca de ti.');
+      .subscribe({
+        next: () => {
+          // El payload es informativo: cualquier evento significa "tienes una
+          // orden nueva cerca". Los toasts verdes (`success`) son para lo que el
+          // técnico acaba de hacer, así que la noticia entrante va en `info`.
+          this.toast.info('Nueva oferta', 'Hay una nueva orden de trabajo disponible cerca de ti.');
+        },
+        error: () => {
+          /* el poll de 25s cubre la recuperación */
+        },
       });
   }
 
