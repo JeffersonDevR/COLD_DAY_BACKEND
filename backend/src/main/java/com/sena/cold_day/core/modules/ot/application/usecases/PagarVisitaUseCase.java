@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.ot.application.usecases;
 import java.time.Clock;
 import java.time.Instant;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontr
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
+import com.sena.cold_day.core.modules.ot.domain.events.OtVisitaPagada;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
@@ -27,15 +29,17 @@ public class PagarVisitaUseCase {
     private final OtRepository otRepository;
     private final OfertaOtRepository ofertaRepository;
     private final IniciarBusquedaTecnicoUseCase iniciarBusqueda;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     public PagarVisitaUseCase(ClienteRepository clienteRepository, OtRepository otRepository,
             OfertaOtRepository ofertaRepository, IniciarBusquedaTecnicoUseCase iniciarBusqueda,
-            Clock clock) {
+            ApplicationEventPublisher events, Clock clock) {
         this.clienteRepository = clienteRepository;
         this.otRepository = otRepository;
         this.ofertaRepository = ofertaRepository;
         this.iniciarBusqueda = iniciarBusqueda;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -60,7 +64,15 @@ public class PagarVisitaUseCase {
         }
         Instant ahora = clock.instant();
         ot.registrarPagoVisita(medioPago, ahora);
-        return OtResponse.fromDomain(aplicarEfectosDelPago(ot, ahora));
+        Ot guardada = aplicarEfectosDelPago(ot, ahora);
+        // The payment is a fact, not a transition: an ASIGNADA order stays
+        // assigned, so no CambioEstado is produced and the repository drain
+        // loop - the only publisher of the generic state-change event - stays
+        // silent. This event is what tells the technician that the visit is
+        // already paid and that the displacement can start.
+        events.publishEvent(new OtVisitaPagada(guardada.getId(), guardada.getEstado(),
+                guardada.getVisitaPagadaEn()));
+        return OtResponse.fromDomain(guardada);
     }
 
     /**

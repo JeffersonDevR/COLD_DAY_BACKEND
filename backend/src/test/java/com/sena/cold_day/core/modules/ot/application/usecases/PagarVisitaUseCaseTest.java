@@ -15,14 +15,17 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
+import com.sena.cold_day.core.modules.ot.domain.events.OtVisitaPagada;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
@@ -44,6 +47,7 @@ class PagarVisitaUseCaseTest {
     @Mock OtRepository otRepository;
     @Mock OfertaOtRepository ofertaRepository;
     @Mock IniciarBusquedaTecnicoUseCase iniciarBusqueda;
+    @Mock ApplicationEventPublisher events;
     @Mock Cliente cliente;
 
     private PagarVisitaUseCase useCase;
@@ -51,7 +55,7 @@ class PagarVisitaUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new PagarVisitaUseCase(clienteRepository, otRepository, ofertaRepository,
-                iniciarBusqueda, Clock.fixed(AHORA, ZoneOffset.UTC));
+                iniciarBusqueda, events, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 
     @Test
@@ -149,5 +153,33 @@ class PagarVisitaUseCaseTest {
         assertThat(resultado.medioPagoVisita()).isEqualTo("PSE");
         verify(iniciarBusqueda, never()).iniciar(ot);
         verify(iniciarBusqueda, never()).ofrecer(ot, IniciarBusquedaTecnicoUseCase.RADIO_INICIAL_KM, AHORA);
+    }
+
+    /**
+     * The payment of an assigned order does not change its state, so the drain
+     * loop of the repository stays silent and nobody would learn that the
+     * client paid. The dedicated event is what carries the fact to the
+     * technician.
+     */
+    @Test
+    void publicaElEventoDelPagoDeLaVisita() {
+        UsuarioId usuarioId = new UsuarioId(17L);
+        Ot ot = Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), TecnicoId.nueva(),
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1",
+                new Point(7.89, -72.49), EstadoOt.ASIGNADA, 10.0, AHORA.plusSeconds(60), AHORA, AHORA,
+                null, null, null, null, null, null);
+
+        when(clienteRepository.findByUsuarioId(usuarioId)).thenReturn(Optional.of(cliente));
+        when(cliente.getId()).thenReturn(ot.getClienteId());
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(otRepository.save(ot)).thenReturn(ot);
+
+        useCase.pagar(usuarioId, ot.getId(), "NEQUI");
+
+        ArgumentCaptor<OtVisitaPagada> evento = ArgumentCaptor.forClass(OtVisitaPagada.class);
+        verify(events).publishEvent(evento.capture());
+        assertThat(evento.getValue().otId()).isEqualTo(ot.getId());
+        assertThat(evento.getValue().estado()).isEqualTo(EstadoOt.ASIGNADA);
+        assertThat(evento.getValue().visitaPagadaEn()).isEqualTo(AHORA);
     }
 }

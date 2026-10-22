@@ -31,6 +31,7 @@ import com.sena.cold_day.core.modules.ot.application.usecases.AceptarOfertaUseCa
 import com.sena.cold_day.core.modules.ot.application.usecases.ConfirmarLlegadaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarBusquedaTecnicoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.PagarVisitaUseCase;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OfertaOt;
 import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
@@ -80,6 +81,7 @@ class SseOtStreamIT {
     @Autowired IniciarBusquedaTecnicoUseCase iniciarBusqueda;
     @Autowired AceptarOfertaUseCase aceptarOferta;
     @Autowired ConfirmarLlegadaUseCase confirmarLlegada;
+    @Autowired PagarVisitaUseCase pagarVisita;
     @Autowired OfertaOtRepository ofertaRepository;
     @Autowired SpringDataOfertaOtRepository springDataOfertas;
 
@@ -269,6 +271,40 @@ class SseOtStreamIT {
         assertThat(sseEmitterRegistry.contar(otId.valor().toString())).isEqualTo(1);
     }
 
+    /**
+     * The visit payment of an assigned order is a fact and not a transition:
+     * it never produces a {@code CambioEstado}, so the repository drain loop
+     * stays silent and the technician watching the order would never learn
+     * that the client paid. This drives the real use case against a technician
+     * that is already subscribed and reads the event off that client's
+     * response.
+     */
+    @Test
+    void theVisitPaymentReachesAnAlreadySubscribedTechnician() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-pago-stream@example.com", Rol.CLIENTE);
+        Long tecnicoUsuario = crearUsuario("tecnico-pago-stream@example.com", Rol.TECNICO);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Tecnico tecnico = crearTecnico(tecnicoUsuario);
+        OtId otId = crearOtAsignadaSinPago(cliente, tecnico);
+
+        String ticket = ticketDe(tecnicoUsuario, Rol.TECNICO);
+        MvcResult stream = mockMvc.perform(get("/api/ot/" + otId.valor() + "/stream")
+                        .param("ticket", ticket)
+                        .accept(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        pagarVisita.pagar(new UsuarioId(clienteUsuario), otId, "NEQUI");
+
+        String cuerpo = stream.getResponse().getContentAsString();
+        assertThat(cuerpo)
+                .contains(OtEstadoCambiadoSseListener.EVENTO)
+                // The state did not change: what the event adds is the instant.
+                .contains("ASIGNADA")
+                .contains("visitaPagadaEn");
+        assertThat(sseEmitterRegistry.contar(otId.valor().toString())).isEqualTo(1);
+    }
+
     /** Ticket issued directly through the service, bound to the given identity. */
     private String ticketDe(Long usuarioId, Rol rol) {
         return sseTicketService.emitir(new AuthenticatedUser(new UsuarioId(usuarioId), rol));
@@ -296,6 +332,17 @@ class SseOtStreamIT {
         Ot asignada = otRepository.buscarPorId(persistida.getId()).orElseThrow();
         asignada.registrarPagoVisita("NEQUI", ahora);
         otRepository.save(asignada);
+        return persistida.getId();
+    }
+
+    /** OT assigned to the technician with the visit still unpaid. */
+    private OtId crearOtAsignadaSinPago(Cliente cliente, Tecnico tecnico) {
+        Instant ahora = Instant.now();
+        Ot ot = Ot.crear(cliente.getId(), CategoriaServicio.REFRIGERACION, "No enciende", List.of(),
+                "Calle 1", new Point(4.6, -74.0), ahora);
+        ot.iniciarBusqueda(10.0, ahora.plusSeconds(60), ActorOt.CLIENTE, ahora);
+        Ot persistida = otRepository.save(ot);
+        otRepository.intentarAsignar(persistida.getId(), tecnico.getId(), ahora, 10.0);
         return persistida.getId();
     }
 
