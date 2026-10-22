@@ -168,7 +168,9 @@ export class SeguimientoOtPage implements OnInit {
       .subscribe({
         next: (payload) => {
           // Solo reacciona al cambio de la orden que se está viendo.
-          if (payload.otId === this.otId()) this.recargarOt();
+          if (payload.otId !== this.otId()) return;
+          this.anunciarMomentoDeLaOrden(payload.destino);
+          this.recargarOt();
         },
         error: () => {
           // El stream es un extra: nunca rompe ni alerta a la página. Si se
@@ -176,6 +178,30 @@ export class SeguimientoOtPage implements OnInit {
           this.iniciarPollDeRespaldo();
         },
       });
+  }
+
+  /**
+   * Anuncia los momentos que llegan SOLOS: los toasts verdes (`success`) son
+   * para lo que el usuario acaba de hacer, así que una noticia entrante va en
+   * `info` para que no se confunda con la confirmación de su propia acción.
+   *
+   * La llegada NO se avisa: la tarjeta del técnico ya muestra "El técnico
+   * llegó {fecha}" en el sitio y un toast lo repetiría sin aportar nada.
+   */
+  private anunciarMomentoDeLaOrden(destino: EstadoOt): void {
+    if (destino === 'ASIGNADA') {
+      this.toast.info(
+        'Técnico asignado',
+        'Un técnico aceptó tu orden de trabajo. Puedes seguir su avance en esta pantalla.',
+      );
+      return;
+    }
+    if (destino === 'EN_DIAGNOSTICO') {
+      this.toast.info(
+        'Presupuesto recibido',
+        'El técnico envió el presupuesto de la reparación. Revísalo y apruébalo para continuar.',
+      );
+    }
   }
 
   /**

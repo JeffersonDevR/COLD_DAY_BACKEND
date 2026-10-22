@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { OfertasPage } from './ofertas-page';
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { ApiConfig } from '../../core/service/api.config';
+import { SseService, OfertaCreada } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
@@ -12,6 +14,36 @@ import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 function cambiarPestana(estado: 'visible' | 'hidden'): void {
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => estado });
   document.dispatchEvent(new Event('visibilitychange'));
+}
+
+/**
+ * Doble de `EventSource`: jsdom no lo implementa y la página lo exige (guarda
+ * de SSR) antes de abrir el canal de ofertas.
+ */
+class FakeEventSource {
+  readonly listeners = new Map<string, unknown>();
+
+  constructor(readonly url: string) {}
+
+  addEventListener(tipo: string, listener: unknown): void {
+    this.listeners.set(tipo, listener);
+  }
+
+  close(): void {
+    this.listeners.clear();
+  }
+}
+
+function instalarEventSource(): void {
+  Object.defineProperty(globalThis, 'EventSource', {
+    value: FakeEventSource,
+    configurable: true,
+    writable: true,
+  });
+}
+
+function quitarEventSource(): void {
+  Reflect.deleteProperty(globalThis, 'EventSource');
 }
 
 const ot: OtResponse = {
@@ -41,13 +73,17 @@ function setup(tecnico: TecnicoResponse | undefined) {
     getOfertasParaTecnico: vi.fn(() => of([oferta])),
     aceptarOferta: vi.fn(() => of(true)),
   };
-  const toast = { success: vi.fn(), error: vi.fn() };
+  const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
+  const sseEventos = new Subject<OfertaCreada>();
+  const sse = { abrirOfertasTecnico: vi.fn(() => sseEventos.asObservable()) };
   TestBed.configureTestingModule({
     imports: [OfertasPage],
     providers: [
       provideRouter([]),
       { provide: AuthService, useValue: { currentUser: () => ({ id: 6 }) } },
       { provide: TecnicosApi, useValue: tecnicosApi },
+      { provide: ApiConfig, useValue: { useMocks: () => false } },
+      { provide: SseService, useValue: sse },
       { provide: ToastService, useValue: toast },
     ],
   });
@@ -55,10 +91,13 @@ function setup(tecnico: TecnicoResponse | undefined) {
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(OfertasPage);
   fixture.detectChanges();
-  return { fixture, tecnicosApi, toast, navigate };
+  return { fixture, tecnicosApi, toast, navigate, sse, sseEventos };
 }
 
 describe('OfertasPage', () => {
+  beforeEach(() => instalarEventSource());
+  afterEach(() => quitarEventSource());
+
   it('carga ofertas al resolver el perfil del técnico', () => {
     const { fixture, tecnicosApi } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
     expect(tecnicosApi.getOfertasParaTecnico).toHaveBeenCalledWith('TEC-1');
@@ -131,19 +170,34 @@ describe('OfertasPage', () => {
       getOfertasParaTecnico: vi.fn(),
       aceptarOferta: vi.fn(),
     };
-    const toast = { success: vi.fn(), error: vi.fn() };
+    const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
+    const sse = { abrirOfertasTecnico: vi.fn(() => new Subject<OfertaCreada>().asObservable()) };
     TestBed.configureTestingModule({
       imports: [OfertasPage],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: { currentUser: () => ({ id: 6 }) } },
         { provide: TecnicosApi, useValue: tecnicosApi },
+        { provide: ApiConfig, useValue: { useMocks: () => false } },
+        { provide: SseService, useValue: sse },
         { provide: ToastService, useValue: toast },
       ],
     });
     const fixture = TestBed.createComponent(OfertasPage);
     fixture.detectChanges();
     expect(toast.error).toHaveBeenCalledWith('Error', expect.any(String));
+  });
+
+  it('avisa que hay una oferta nueva', () => {
+    const { toast, sse, sseEventos } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+    expect(sse.abrirOfertasTecnico).toHaveBeenCalled();
+
+    sseEventos.next({ otId: 'OT-9' });
+
+    expect(toast.info).toHaveBeenCalledWith(
+      'Nueva oferta',
+      'Hay una nueva orden de trabajo disponible cerca de ti.',
+    );
   });
 
   describe('refresco periódico con la pestaña visible', () => {
