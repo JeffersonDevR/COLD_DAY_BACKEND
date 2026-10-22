@@ -38,10 +38,16 @@ Sacar del panel de admin el **alta de proveedores** (que ya existe como auto-reg
 Usuario (2026-10-22): *"dale arranca con esos 2"* — los dos baratos del roadmap (`docs/pendientes.md` §2.2 y §2.3).
 
 ## Acceptance criteria
-- [ ] T1: el panel de admin ya no tiene formulario de alta; el listado muestra `estadoValidacion`; aprobar y rechazar llaman al endpoint de validación con el motivo cuando corresponde; `AdminApi.crearProveedor` ya no existe; suite + tsc + eslint verdes.
+- [x] T1: el panel de admin ya no tiene formulario de alta; el listado muestra `estadoValidacion`; aprobar y rechazar llaman al endpoint de validación con el motivo cuando corresponde; `AdminApi.crearProveedor` ya no existe; suite + tsc + eslint verdes.
+  Evidence: commit `c40f1ee` (4 archivos, +244/−80). Fuera el `<form>` de alta y en el TS `campos`/`form`/`enviando`/`crear()`; el listado ahora muestra el badge `estadoValidacion` (emerald/amber/rose) además de `activo`, con "Validado" discreto cuando ya está `APROBADO` y par aprobar/rechazar para `PENDIENTE`/`RECHAZADO`. Aprobar llama `ProveedoresApi.validarDocumentacion(id,'APROBAR')`; rechazar exige motivo (`minLength 5`) en un modal calcado de `validacion-tecnicos-page`, y manda `'RECHAZAR'` + motivo. Errores 409/404 con copy propia vía `mensajeErrorAccion`; en error no recarga. `AdminApi.crearProveedor` eliminado (sin consumidores; `admin-api.spec.ts` no lo cubría) y su import muerto `ProveedorRequest`; `MockDbService.crearProveedor` se queda porque `ProveedoresApi.registrar` lo usa. Nuevo `proveedores-admin-page.spec.ts` (8 tests). **Frontend 74 archivos / 661 tests / 0 fallos** (+8 desde 653 — esta rama sale de `origin/main`, sin el commit del filtro), `tsc` app+spec 0, `eslint` 0 en los tocados. Parent spot check: suite re-corrida, 661/0 confirmado.
 
 ## Tasks
-- [ ] T1 (frontend, delegated): quitar el alta + validación documental + spec. Route: delegated-direct (3+ archivos no triviales).
+- [x] T1 (frontend, delegated): quitar el alta + validación documental + spec. Route: delegated-direct (3+ archivos no triviales).
+
+## Progress
+- 2026-10-22: doc creado tras el mapeo (con `path:line` del problema).
+- 2026-10-22: T1 DONE (`c40f1ee`). Verificación del writer + spot check del parent: 74/661/0, `tsc` app+spec 0, `eslint` 0. Resta push + PR.
+- Nota: en modo mock `ProveedoresApi.validarDocumentacion` es un no-op documentado, así que validar en mocks no cambia el badge hasta recargar con backend real. No es un bug de la página.
 
 ## Delivery
 - Forecast: ~120–200 líneas netas (se borra el formulario y se agregan las acciones + spec). Un PR, sin cadena.
