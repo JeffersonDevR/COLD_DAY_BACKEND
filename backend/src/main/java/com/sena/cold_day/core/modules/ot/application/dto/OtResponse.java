@@ -2,10 +2,12 @@ package com.sena.cold_day.core.modules.ot.application.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
@@ -45,9 +47,22 @@ public record OtResponse(
         Instant actaFirmadaEn,
         // Instant the assigned technician confirmed the arrival on site. It is a
         // fact, not a transition: null until the technician reports it.
-        Instant llegadaEn) {
+        Instant llegadaEn,
+        // Append-only state history of the order (RNF-09), oldest entry first.
+        // It travels with the OT so the client can render the audit trail from
+        // the same read it already makes, instead of asking for it separately.
+        List<CambioEstado> historial) {
 
     public static OtResponse fromDomain(Ot ot) {
+        return fromDomain(ot, List.of());
+    }
+
+    /**
+     * Same view of the order, with its state history attached. The history is
+     * read from the append-only table, never derived from the aggregate: the
+     * aggregate only knows the changes that are still pending.
+     */
+    public static OtResponse fromDomain(Ot ot, List<CambioEstado> historial) {
         return new OtResponse(ot.getId(), ot.getCodigo(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
                 ot.getCategoriaServicio(), ot.getDescripcionFalla(), ot.getDireccion(), ot.getRadioKm(),
                 ot.getCreadaEn(), ot.getCanceladaPor(), ot.getMotivoCancelacion(), ot.getTarifaVisita(),
@@ -55,6 +70,6 @@ public record OtResponse(
                 ot.getMedioPagoVisita(), ot.getVisitaPagadaEn() != null, ot.getCalificacionEstrellas(),
                 ot.getCalificacionComentario(), ot.getCalificacionEn(), ot.actaFirmada(),
                 ot.getActaCodigoVerificacion() == null ? null : ot.getActaCodigoVerificacion().valor(),
-                ot.getActaFirmadaEn(), ot.getLlegadaEn());
+                ot.getActaFirmadaEn(), ot.getLlegadaEn(), List.copyOf(historial));
     }
 }

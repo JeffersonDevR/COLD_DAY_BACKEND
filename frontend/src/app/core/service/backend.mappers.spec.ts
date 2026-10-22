@@ -218,6 +218,30 @@ describe('backend.mappers — contratos existentes', () => {
     expect(aOtResponse(otDto()).llegadaEn).toBeUndefined();
   });
 
+  it('mapea el historial de estados que viaja en la respuesta de la OT', () => {
+    const dto = otDto({
+      historial: [
+        { estadoOrigen: null, estadoDestino: 'SOLICITADA', actor: 'CLIENTE', ocurridoEn: '2026-01-01T00:00:00', motivo: null },
+        { estadoOrigen: 'SOLICITADA', estadoDestino: 'BUSCANDO_TECNICO', actor: 'CLIENTE', ocurridoEn: '2026-01-01T00:05:00', motivo: 'Buscando técnico' },
+      ],
+    });
+
+    const vm = aOtResponse(dto);
+
+    // El timeline del cliente se dibuja con esto: la entrada se traduce tal
+    // como la emitió el servidor, sin derivar estados ni inventar momentos.
+    expect(vm.historial).toHaveLength(2);
+    expect(vm.historial?.[0]).toMatchObject({
+      estado: 'SOLICITADA', actor: 'CLIENTE', fecha: '2026-01-01T00:00:00',
+    });
+    expect(vm.historial?.[1]).toMatchObject({
+      estado: 'BUSCANDO_TECNICO', actor: 'CLIENTE', motivo: 'Buscando técnico', comentario: 'Buscando técnico',
+    });
+    // Una respuesta sin historial (un listado, una mutación) no se completa con
+    // entradas inventadas.
+    expect(aOtResponse(otDto()).historial).toBeUndefined();
+  });
+
   it('normaliza los formularios de creación de OT y diagnóstico', () => {
     expect(aOtApiRequest({
       categoriaServicio: 'ELECTRICIDAD', descripcionFalla: 'corto', direccion: 'calle 9', latitud: 1, longitud: 2,

@@ -190,8 +190,11 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
     // La llegada es un hecho, no una transición: el instante viaja tal cual lo
     // emitió el servidor y no se deriva de ningún estado.
     llegadaEn: dto.llegadaEn ?? undefined,
-    // Pendiente(backend): barrio/historial requieren campos/endpoints que el
-    // backend aún no expone (historial: GET /api/ot/{id}/historial).
+    // El historial de estados viaja en la respuesta de la orden: se traduce
+    // tal cual lo emitió el servidor, sin derivar entradas ni inventar
+    // momentos. Cuando no viene (un listado, una mutación) queda vacío.
+    historial: dto.historial?.map(aHistorialOtItem),
+    // Pendiente(backend): barrio requiere un campo que el backend aún no expone.
   };
 }
 

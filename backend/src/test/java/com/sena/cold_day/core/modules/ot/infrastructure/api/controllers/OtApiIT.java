@@ -171,9 +171,34 @@ class OtApiIT {
                 .andExpect(jsonPath("$.tecnicoNombre").value(nullValue()));
     }
 
+    /**
+     * The OT read carries its append-only history, so the client renders the
+     * audit trail from the read it already makes instead of asking for it
+     * separately (and showing an empty timeline against the real backend).
+     */
     @Test
-    void rejectsUnauthenticatedCreation() throws Exception {
-        mockMvc.perform(post("/api/ot").contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
+    void theDetailOfAnOrderCarriesItsStateHistory() throws Exception {
+        Long usuarioId = crearUsuario("cliente-historial@example.com", Rol.CLIENTE);
+        crearCliente(usuarioId);
+        String token = jwt(usuarioId, Rol.CLIENTE);
+
+        String body = mockMvc.perform(post("/api/ot")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String otId = com.jayway.jsonpath.JsonPath.read(body, "$.id");
+
+        mockMvc.perform(get("/api/ot/" + otId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.historial[0].estadoDestino").value("SOLICITADA"))
+                .andExpect(jsonPath("$.historial[0].actor").value("CLIENTE"))
+                .andExpect(jsonPath("$.historial[1].estadoOrigen").value("SOLICITADA"))
+                .andExpect(jsonPath("$.historial[1].estadoDestino").value("BUSCANDO_TECNICO"));
+    }
+
+    @Test
+    void rejectsUnauthenticatedCreation() throws Exception {        mockMvc.perform(post("/api/ot").contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
                 .andExpect(status().isUnauthorized());
     }
 

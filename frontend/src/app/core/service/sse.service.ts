@@ -9,6 +9,8 @@ export interface OtEstadoCambiado {
   otId: string;
   origen: EstadoOt;
   destino: EstadoOt;
+  /** Instante en que se pagó la visita, si el evento lo trae (pago de visita). */
+  visitaPagadaEn?: string;
 }
 
 /** Payload del evento `oferta-creada` del canal por tecnico. */
@@ -273,7 +275,12 @@ export class SseService {
       ) {
         return null;
       }
-      return { otId: parsed.otId, origen: parsed.origen, destino: parsed.destino };
+      return {
+        otId: parsed.otId,
+        origen: parsed.origen,
+        destino: parsed.destino,
+        visitaPagadaEn: typeof parsed.visitaPagadaEn === 'string' ? parsed.visitaPagadaEn : undefined,
+      };
     } catch {
       return null;
     }

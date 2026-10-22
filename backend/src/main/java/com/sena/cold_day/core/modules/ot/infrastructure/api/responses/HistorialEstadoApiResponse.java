@@ -16,7 +16,11 @@ public record HistorialEstadoApiResponse(
         String motivo) {
 
     public static HistorialEstadoApiResponse from(OtEstadoHistorial entrada) {
-        CambioEstado cambio = entrada.getCambio();
+        return from(entrada.getCambio());
+    }
+
+    /** Same view from the change itself, for the history that rides on the OT. */
+    public static HistorialEstadoApiResponse from(CambioEstado cambio) {
         return new HistorialEstadoApiResponse(cambio.origen(), cambio.destino(), cambio.actor(),
                 cambio.ocurridoEn(), cambio.motivo());
     }

@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.ot.infrastructure.api.responses;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
@@ -55,7 +56,11 @@ public record OtApiResponse(
         // Arrival is a fact and not a transition, so there is no state to read
         // it from: without this field the client had no way of knowing that
         // the technician was already at the door.
-        Instant llegadaEn) {
+        Instant llegadaEn,
+        // Append-only state history of the order (RNF-09), oldest entry first.
+        // It rides with the OT so the client can render the audit trail from
+        // the read it already makes.
+        List<HistorialEstadoApiResponse> historial) {
 
     public static OtApiResponse from(OtResponse response) {
         return from(response, null, null);
@@ -79,6 +84,7 @@ public record OtApiResponse(
                 clienteNombre, tecnicoNombre, response.auxiliaresRequeridos(),
                 response.medioPagoVisita(), response.calificacionEstrellas(), response.calificacionComentario(),
                 response.calificacionEn(), response.actaFirmada(), response.actaCodigoVerificacion(),
-                response.actaFirmadaEn(), response.llegadaEn());
+                response.actaFirmadaEn(), response.llegadaEn(),
+                response.historial().stream().map(HistorialEstadoApiResponse::from).toList());
     }
 }

@@ -1,11 +1,13 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { PanelTecnicoPage } from './panel-tecnico-page';
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
+import { ApiConfig } from '../../core/service/api.config';
+import { SseService, OfertaCreada } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
@@ -14,6 +16,36 @@ import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 function cambiarPestana(estado: 'visible' | 'hidden'): void {
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => estado });
   document.dispatchEvent(new Event('visibilitychange'));
+}
+
+/**
+ * Doble de `EventSource`: jsdom no lo implementa y la página lo exige (guarda
+ * de SSR) antes de abrir el canal de ofertas.
+ */
+class FakeEventSource {
+  readonly listeners = new Map<string, unknown>();
+
+  constructor(readonly url: string) {}
+
+  addEventListener(tipo: string, listener: unknown): void {
+    this.listeners.set(tipo, listener);
+  }
+
+  close(): void {
+    this.listeners.clear();
+  }
+}
+
+function instalarEventSource(): void {
+  Object.defineProperty(globalThis, 'EventSource', {
+    value: FakeEventSource,
+    configurable: true,
+    writable: true,
+  });
+}
+
+function quitarEventSource(): void {
+  Reflect.deleteProperty(globalThis, 'EventSource');
 }
 
 const tecnico: TecnicoResponse = {
@@ -60,6 +92,8 @@ function setup(opts: {
     detener: vi.fn(),
   };
   const toast = { info: vi.fn(), error: vi.fn() };
+  const sseEventos = new Subject<OfertaCreada>();
+  const sse = { abrirOfertasTecnico: vi.fn(() => sseEventos.asObservable()) };
   TestBed.configureTestingModule({
     imports: [PanelTecnicoPage],
     providers: [
@@ -67,6 +101,8 @@ function setup(opts: {
       { provide: AuthService, useValue: { currentUser: () => ({ id: 6 }) } },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: TecnicoTrackingService, useValue: tracking },
+      { provide: ApiConfig, useValue: { useMocks: () => false } },
+      { provide: SseService, useValue: sse },
       { provide: ToastService, useValue: toast },
     ],
   });
@@ -74,7 +110,7 @@ function setup(opts: {
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(PanelTecnicoPage);
   fixture.detectChanges();
-  return { fixture, tecnicosApi, toast, navigate, tracking };
+  return { fixture, tecnicosApi, toast, navigate, tracking, sse, sseEventos };
 }
 
 /** Botón de la tarjeta de radar por su nombre accesible. */
@@ -84,6 +120,9 @@ function botonRadar(fixture: { nativeElement: HTMLElement }, etiqueta: string): 
 }
 
 describe('PanelTecnicoPage', () => {
+  beforeEach(() => instalarEventSource());
+  afterEach(() => quitarEventSource());
+
   it('carga el técnico y filtra las OTs en curso', () => {
     const { fixture, tecnicosApi } = setup();
     expect(tecnicosApi.getMisOts).toHaveBeenCalled();
@@ -136,6 +175,33 @@ describe('PanelTecnicoPage', () => {
     const { fixture, navigate } = setup();
     fixture.componentInstance.irAOfertas();
     expect(navigate).toHaveBeenCalledWith(['/tecnico/ofertas']);
+  });
+
+  describe('ofertas nuevas', () => {
+    it('abre el canal de ofertas del técnico', () => {
+      const { sse } = setup();
+      expect(sse.abrirOfertasTecnico).toHaveBeenCalled();
+    });
+
+    it('avisa que hay una oferta nueva aunque no esté en la página de ofertas', () => {
+      const { toast, sseEventos } = setup();
+
+      sseEventos.next({ otId: 'OT-9' });
+
+      expect(toast.info).toHaveBeenCalledWith(
+        'Nueva oferta',
+        'Hay una nueva orden de trabajo disponible cerca de ti.',
+      );
+    });
+
+    it('deja de escuchar ofertas al destruirse la página (sin fugas)', () => {
+      const { fixture, sseEventos } = setup();
+      expect(sseEventos.observed).toBe(true);
+
+      fixture.destroy();
+
+      expect(sseEventos.observed).toBe(false);
+    });
   });
 
   it('muestra el estado vacío sin servicios asignados', () => {
