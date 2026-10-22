@@ -167,6 +167,7 @@
             [destino]="orden.punto ?? null"
             [destinoNombre]="orden.barrio || 'Punto de servicio'"
             [tecnicoNombre]="orden.tecnicoNombre || 'El técnico'"
+            [llegada]="!!orden.llegadaEn"
           />
         }
 

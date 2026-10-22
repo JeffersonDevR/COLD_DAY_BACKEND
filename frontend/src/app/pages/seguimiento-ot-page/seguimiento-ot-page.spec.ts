@@ -469,6 +469,8 @@ describe('SeguimientoOtPage', () => {
       // Con el técnico en el sitio la ETA ya no aplica: no se muestra.
       expect(linea.textContent).not.toContain('En camino a tu ubicación');
       expect(fixture.nativeElement.textContent).not.toContain('Llegada estimada');
+      // Y el mapa tampoco puede seguir diciendo "En camino:".
+      expect(fixture.nativeElement.textContent).not.toContain('En camino:');
     });
 
     it('no muestra nada de la llegada mientras el técnico no ha llegado', () => {
@@ -479,6 +481,8 @@ describe('SeguimientoOtPage', () => {
       expect(linea.textContent).not.toContain('El técnico llegó');
       // Sin `llegadaEn` no hay ni mensaje de "todavía no llegó": solo el estado normal.
       expect(linea.textContent).toContain('En camino a tu ubicación');
+      // El mapa sigue en su comportamiento normal: "En camino:" con la distancia.
+      expect(fixture.nativeElement.textContent).toContain('En camino:');
     });
   });
 
