@@ -64,34 +64,52 @@
         </div>
       </div>
 
-      <!-- Servicios Activos en Seguimiento -->
+      <!-- Servicios del Cliente, filtrables por estado -->
       <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">Mis Servicios Técnicos Activos</h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Trazabilidad en tiempo real y asignación perimetral</p>
+            <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">Mis Servicios Técnicos</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ textosFiltro[filtro()].subtitulo }}</p>
           </div>
           <a
             routerLink="/cliente/solicitar"
-            class="text-xs font-bold text-sky-600 hover:text-sky-500 dark:text-sky-400 inline-flex items-center gap-1"
+            class="text-xs font-bold text-sky-600 hover:text-sky-500 dark:text-sky-400 inline-flex items-center gap-1 shrink-0"
           >
             <i class="pi pi-plus text-sm"></i>
             Nueva OT
           </a>
         </div>
 
-        @if (serviciosActivos().length === 0) {
+        <div class="flex flex-wrap gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 w-fit" role="group" aria-label="Filtrar órdenes de trabajo por estado">
+          @for (opcion of opcionesFiltro; track opcion.valor) {
+            <button
+              type="button"
+              (click)="cambiarFiltro(opcion.valor)"
+              [attr.aria-pressed]="filtro() === opcion.valor"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+              [class.bg-white]="filtro() === opcion.valor"
+              [class.dark:bg-slate-900]="filtro() === opcion.valor"
+              [class.text-sky-700]="filtro() === opcion.valor"
+              [class.dark:text-sky-400]="filtro() === opcion.valor"
+              [class.shadow-xs]="filtro() === opcion.valor"
+              [class.text-slate-600]="filtro() !== opcion.valor"
+              [class.dark:text-slate-300]="filtro() !== opcion.valor"
+            >{{ opcion.etiqueta }}</button>
+          }
+        </div>
+
+        @if (serviciosFiltrados().length === 0) {
           <app-empty-state
-            icon="pi pi-check-circle"
-            title="No tienes servicios en curso"
-            description="Todos tus requerimientos técnicos están al día. Si necesitas asistencia para tus aires o electrodomésticos, solicita uno nuevo."
+            icon="pi pi-inbox"
+            [title]="textosFiltro[filtro()].tituloVacio"
+            [description]="textosFiltro[filtro()].descripcionVacio"
             actionLabel="Solicitar Asistencia"
             actionIcon="pi pi-plus-circle"
             (actionClicked)="irASolicitar()"
           />
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @for (ot of serviciosActivos(); track ot.id) {
+            @for (ot of serviciosFiltrados(); track ot.id) {
               <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-sky-400 transition-all flex flex-col justify-between">
                 <div>
                   <div class="flex items-start justify-between gap-2 mb-2">
