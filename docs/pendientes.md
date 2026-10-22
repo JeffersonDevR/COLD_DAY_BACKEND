@@ -21,7 +21,9 @@ Rama `feat/mapa-ruta-tecnico` (desde `origin/main`), **pusheada y sin PR**. Doc 
 
 ## 2. Las 4 features pedidas el 2026-10-19
 
-### 2.1 Alertas en los momentos importantes de la OT — **M**
+### 2.1 Alertas en los momentos importantes de la OT — **M** (CERRADO 2026-10-22)
+
+Cerrado en main (merge 363b83d). Rama feat/alertas-ot (8 commits). Backend 127 suites / 856 tests. Frontend 73 archivos / 653 tests. Verificacion independiente PASS (2 majors cerrados). Doc del feature: odd/tasks/alertas-ot.md. Historial ahora llega al cliente, pago de la visita emite evento, se anuncian 4 alertas mas Visita pagada para el tecnico.
 - Momentos pedidos: el técnico acepta una orden, el cliente paga la visita, el cliente paga/el técnico envía el presupuesto, y otros.
 - Los eventos de dominio **ya existen** (no hay que inventar el modelo): `OtCreada`, `OtAsignada`, `OtFinalizada`, `OtCancelada`, `LiquidacionRegistrada/Aprobada/Rechazada`, `ComprobanteCargado`, `DisputaAbierta/Resuelta`.
 - Lo que falta: **bridges SSE por OT** (el patrón ya está en `OfertaCreadaSseListener` / `OtEstadoCambiadoSseListener`) + el aviso en la UI del cliente y del técnico (toast/aviso en la página de seguimiento, en la de ofertas y en la del técnico).
