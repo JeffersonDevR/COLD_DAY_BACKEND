@@ -1,7 +1,7 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { PanelClientePage } from './panel-cliente-page';
+import { FiltroOts, PanelClientePage } from './panel-cliente-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { OtResponse } from '../../core/models/common.models';
@@ -54,6 +54,25 @@ describe('PanelClientePage', () => {
     expect(getOts).toHaveBeenCalledWith('3');
   });
 
+  /**
+   * Mezcla representativa del panel: una OT en curso con técnico, una finalizada,
+   * una cancelada y una que todavía espera asignación.
+   */
+  function otsDeEjemplo(): OtResponse[] {
+    return [
+      ot({ id: 'en-camino', estado: 'EN_CAMINO', tecnicoId: 'tec-1' }),
+      ot({ id: 'finalizada', estado: 'FINALIZADA', tecnicoId: 'tec-1' }),
+      ot({ id: 'cancelada', estado: 'CANCELADA' }),
+      ot({ id: 'solicitada', estado: 'SOLICITADA' }),
+    ];
+  }
+
+  /** Aplica un filtro y devuelve los ids visibles, en el orden en que se muestran. */
+  function idsVisibles(fixture: ComponentFixture<PanelClientePage>, filtro: FiltroOts): string[] {
+    fixture.componentInstance.filtro.set(filtro);
+    return fixture.componentInstance.serviciosFiltrados().map((o) => o.id);
+  }
+
   it('deja la lista vacía si falla la carga', () => {
     const getOts = vi.fn(() => throwError(() => new Error('sin red')));
     const fixture = setup(getOts);
@@ -97,6 +116,88 @@ describe('PanelClientePage', () => {
       const texto = fixture.nativeElement.textContent as string;
       expect(texto).toContain('Sin código');
       expect(texto).not.toContain(idInterno);
+    });
+  });
+
+  describe('filtro de OTs por estado', () => {
+    it('arranca en la vista de activas, la que el cliente ya conoce', () => {
+      const fixture = setup(vi.fn(() => of(otsDeEjemplo())));
+      expect(fixture.componentInstance.filtro()).toBe('ACTIVAS');
+      expect(fixture.componentInstance.serviciosFiltrados().map((o) => o.id)).toEqual(['en-camino', 'solicitada']);
+    });
+
+    it('TODAS muestra todas las OTs del cliente, incluidas las canceladas', () => {
+      const fixture = setup(vi.fn(() => of(otsDeEjemplo())));
+      expect(idsVisibles(fixture, 'TODAS')).toEqual(['en-camino', 'finalizada', 'cancelada', 'solicitada']);
+    });
+
+    it('ACTIVAS deja fuera las finalizadas y las canceladas', () => {
+      const fixture = setup(vi.fn(() => of(otsDeEjemplo())));
+      expect(idsVisibles(fixture, 'ACTIVAS')).toEqual(['en-camino', 'solicitada']);
+    });
+
+    it('COMPLETADAS muestra solo las finalizadas', () => {
+      const fixture = setup(vi.fn(() => of(otsDeEjemplo())));
+      expect(idsVisibles(fixture, 'COMPLETADAS')).toEqual(['finalizada']);
+    });
+
+    it('SIN_TECNICO muestra solo las que todavía esperan un técnico', () => {
+      const fixture = setup(vi.fn(() => of(otsDeEjemplo())));
+      expect(idsVisibles(fixture, 'SIN_TECNICO')).toEqual(['solicitada']);
+    });
+
+    it('una OT cancelada sin técnico no aparece ni en ACTIVAS ni en SIN_TECNICO', () => {
+      // Cancelar quita la OT de la vista del cliente: no es trabajo pendiente
+      // ni una espera de asignación, y solo se ve en TODAS.
+      const fixture = setup(vi.fn(() => of([ot({ id: 'cancelada', estado: 'CANCELADA' })])));
+      expect(idsVisibles(fixture, 'ACTIVAS')).toEqual([]);
+      expect(idsVisibles(fixture, 'SIN_TECNICO')).toEqual([]);
+      expect(idsVisibles(fixture, 'TODAS')).toEqual(['cancelada']);
+    });
+
+    it('los contadores de las métricas no cambian al cambiar de filtro', () => {
+      const fixture = setup(vi.fn(() => of(otsDeEjemplo())));
+      const activos = fixture.componentInstance.serviciosActivos().length;
+      const finalizados = fixture.componentInstance.serviciosFinalizados().length;
+      expect(activos).toBe(2);
+      expect(finalizados).toBe(1);
+
+      for (const filtro of ['TODAS', 'ACTIVAS', 'COMPLETADAS', 'SIN_TECNICO'] as const) {
+        fixture.componentInstance.filtro.set(filtro);
+        expect(fixture.componentInstance.serviciosActivos().length).toBe(activos);
+        expect(fixture.componentInstance.serviciosFinalizados().length).toBe(finalizados);
+      }
+    });
+
+    it('el control segmentado cambia la vista y marca la opción elegida', () => {
+      const fixture = setup(vi.fn(() => of(otsDeEjemplo())));
+      const grupo = fixture.nativeElement.querySelector('[role="group"]') as HTMLElement;
+      const botones = Array.from(grupo.querySelectorAll('button'));
+      expect(botones.map((b) => b.textContent?.trim())).toEqual(['Todas', 'Activas', 'Completadas', 'Sin técnico']);
+
+      const completadas = botones.find((b) => b.textContent?.trim() === 'Completadas') as HTMLButtonElement;
+      expect(completadas.type).toBe('button');
+      completadas.click();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.filtro()).toBe('COMPLETADAS');
+      expect(completadas.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('el estado vacío dice qué falta según el filtro', () => {
+      // Con técnico asignado: solo queda vacío en COMPLETADAS y en SIN_TECNICO.
+      const fixture = setup(vi.fn(() => of([ot({ id: 'a', estado: 'EN_CAMINO', tecnicoId: 'tec-1' })])));
+
+      fixture.componentInstance.filtro.set('COMPLETADAS');
+      fixture.detectChanges();
+      let texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Todavía no tienes servicios completados');
+      expect(texto).not.toContain('No tienes servicios en curso');
+
+      fixture.componentInstance.filtro.set('SIN_TECNICO');
+      fixture.detectChanges();
+      texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('No tienes servicios esperando técnico');
     });
   });
 

@@ -9,6 +9,16 @@ import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { OtResponse } from '../../core/models/common.models';
 
+/** Vistas del listado de OTs del cliente. */
+export type FiltroOts = 'TODAS' | 'ACTIVAS' | 'COMPLETADAS' | 'SIN_TECNICO';
+
+/** Textos del encabezado y del estado vacío para cada vista. */
+interface TextoFiltro {
+  subtitulo: string;
+  tituloVacio: string;
+  descripcionVacio: string;
+}
+
 @Component({
   selector: 'app-panel-cliente-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +42,55 @@ export class PanelClientePage {
   readonly serviciosFinalizados = computed(() => {
     return this.serviciosCliente().filter(o => o.estado === 'FINALIZADA');
   });
+
+  /** Vista elegida por el cliente; `ACTIVAS` mantiene el comportamiento de entrada. */
+  readonly filtro = signal<FiltroOts>('ACTIVAS');
+
+  /** Lista visible según el filtro. Los contadores de las métricas no dependen de ella. */
+  readonly serviciosFiltrados = computed(() => {
+    const ots = this.serviciosCliente();
+    switch (this.filtro()) {
+      case 'COMPLETADAS':
+        return ots.filter(o => o.estado === 'FINALIZADA');
+      case 'SIN_TECNICO':
+        return ots.filter(o => !o.tecnicoId && o.estado !== 'CANCELADA');
+      case 'ACTIVAS':
+        return ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado));
+      case 'TODAS':
+      default:
+        return ots;
+    }
+  });
+
+  readonly opcionesFiltro: readonly { valor: FiltroOts; etiqueta: string }[] = [
+    { valor: 'TODAS', etiqueta: 'Todas' },
+    { valor: 'ACTIVAS', etiqueta: 'Activas' },
+    { valor: 'COMPLETADAS', etiqueta: 'Completadas' },
+    { valor: 'SIN_TECNICO', etiqueta: 'Sin técnico' },
+  ];
+
+  readonly textosFiltro: Record<FiltroOts, TextoFiltro> = {
+    TODAS: {
+      subtitulo: 'Todas tus órdenes de trabajo, incluidas las canceladas',
+      tituloVacio: 'Todavía no has solicitado un servicio',
+      descripcionVacio: 'Cuando pidas asistencia técnica para tus aires o electrodomésticos, verás aquí el avance de cada orden.',
+    },
+    ACTIVAS: {
+      subtitulo: 'Trazabilidad en tiempo real y asignación perimetral',
+      tituloVacio: 'No tienes servicios en curso',
+      descripcionVacio: 'Todos tus requerimientos técnicos están al día. Si necesitas asistencia para tus aires o electrodomésticos, solicita uno nuevo.',
+    },
+    COMPLETADAS: {
+      subtitulo: 'Órdenes ya finalizadas, con su acta de garantía',
+      tituloVacio: 'Todavía no tienes servicios completados',
+      descripcionVacio: 'Cuando un técnico termine un servicio, quedará listado aquí con su garantía certificada.',
+    },
+    SIN_TECNICO: {
+      subtitulo: 'Órdenes que todavía esperan la asignación de un técnico',
+      tituloVacio: 'No tienes servicios esperando técnico',
+      descripcionVacio: 'Todas tus órdenes ya tienen un técnico asignado o están cerradas.',
+    },
+  };
 
   constructor() {
     const currentId = String(this.authService.currentUser()?.id ?? '');
@@ -59,5 +118,9 @@ export class PanelClientePage {
 
   irASolicitar(): void {
     // routerLink handles this
+  }
+
+  cambiarFiltro(filtro: FiltroOts): void {
+    this.filtro.set(filtro);
   }
 }
