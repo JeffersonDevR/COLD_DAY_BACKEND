@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
+import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.entities.OtEstadoHistorial;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtEstadoHistorialRepository;
@@ -35,11 +36,19 @@ public class ConsultarOtUseCase {
         this.clock = clock;
     }
 
+    /**
+     * Reads an OT with its append-only state history attached.
+     *
+     * <p>The history is read from the history table, not derived from the
+     * aggregate: the aggregate only knows the changes that are still pending,
+     * while the audit trail is the whole sequence of accepted transitions.
+     */
     @Transactional(readOnly = true)
     public OtResponse consultar(OtId id) {
-        return otRepository.buscarPorId(id)
-                .map(OtResponse::fromDomain)
-                .orElseThrow(() -> new OtNoEncontradoException(id));
+        Ot ot = otRepository.buscarPorId(id).orElseThrow(() -> new OtNoEncontradoException(id));
+        return OtResponse.fromDomain(ot, historialRepository.listarPorOt(id).stream()
+                .map(OtEstadoHistorial::getCambio)
+                .toList());
     }
 
     @Transactional(readOnly = true)

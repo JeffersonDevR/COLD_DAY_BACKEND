@@ -342,6 +342,14 @@ export interface OtApiResponse {
    * no hay estado del que deducirla. Viene `null` mientras nadie la reporta.
    */
   llegadaEn?: string | null;
+  /**
+   * Historial de estados de la orden (append-only), tal como lo expone el
+   * backend en la respuesta de la OT.
+   *
+   * Opcional a propósito: un listado o la respuesta de una mutación pueden no
+   * traerlo, y el mapper no completa lo que el servidor no envió.
+   */
+  historial?: HistorialEstadoApiResponse[];
 }
 
 /**
