@@ -1,13 +1,26 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
+import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { ProveedorResponse } from '../../core/models/common.models';
 
 /**
- * Alta y listado de proveedores para el administrador. El rol PROVEEDOR y la
- * contraseña inicial los define el admin en el alta; el listado incluye
- * proveedores inactivos (P4). No hay auto-registro público (D7).
+ * Copy propia de esta pantalla: el 409 de este endpoint significa que el
+ * expediente del proveedor no está completo o tiene documentos vencidos.
+ * Reintentar no sirve, así que el mensaje debe decir qué hacer.
+ */
+const MENSAJES_VALIDACION: Record<number, string> = {
+  409: 'El expediente del proveedor no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.',
+  404: 'El proveedor ya no está registrado. Actualiza la lista e inténtalo de nuevo.',
+};
+
+/**
+ * Validación documental de proveedores para el administrador. El alta ya no
+ * vive aquí: los proveedores se auto-registran desde la página pública
+ * `/registro`. Esta pantalla solo lista (incluye inactivos, P4) y aprueba o
+ * rechaza el expediente de cada proveedor.
  */
 @Component({
   selector: 'app-proveedores-admin-page',
@@ -17,29 +30,12 @@ import { ProveedorResponse } from '../../core/models/common.models';
 })
 export class ProveedoresAdminPage {
   private readonly adminApi = inject(AdminApi);
+  private readonly proveedoresApi = inject(ProveedoresApi);
   private readonly toast = inject(ToastService);
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
-  readonly enviando = signal(false);
-
-  readonly campos = [
-    { key: 'nombre', label: 'Nombre del contacto', type: 'text' },
-    { key: 'correo', label: 'Correo', type: 'email' },
-    { key: 'password', label: 'Contraseña inicial', type: 'password' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'razonSocial', label: 'Razón social', type: 'text' },
-    { key: 'nit', label: 'NIT', type: 'text' },
-  ] as const;
-
-  readonly form = new FormGroup({
-    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    correo: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
-    password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    telefono: new FormControl('', { nonNullable: true }),
-    razonSocial: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    nit: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    aceptaHabeasData: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
-  });
+  readonly proveedorARechazar = signal<ProveedorResponse | null>(null);
+  readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
   constructor() {
     this.cargar();
@@ -52,20 +48,38 @@ export class ProveedoresAdminPage {
     });
   }
 
-  crear(): void {
-    if (this.form.invalid || this.enviando()) return;
-    this.enviando.set(true);
-    this.adminApi.crearProveedor(this.form.getRawValue()).subscribe({
-      next: (prov) => {
-        this.toast.success('Proveedor creado', `${prov.razonSocial} ya puede operar con el rol PROVEEDOR.`);
-        this.form.reset({ aceptaHabeasData: false });
-        this.enviando.set(false);
+  aprobar(prov: ProveedorResponse): void {
+    this.proveedoresApi.validarDocumentacion(prov.id, 'APROBAR').subscribe({
+      next: () => {
+        this.toast.success('Proveedor aprobado', `${prov.razonSocial} puede operar como proveedor de insumos.`);
         this.cargar();
       },
-      error: () => {
-        this.toast.warning('No se pudo crear', 'Revisa si el correo o el NIT ya están registrados.');
-        this.enviando.set(false);
+      // Sin recargar: la fila sigue en pantalla y el admin ve por qué no se aprobó.
+      error: (err) => {
+        this.toast.error('No se pudo aprobar al proveedor', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+      }
+    });
+  }
+
+  abrirModalRechazo(prov: ProveedorResponse): void {
+    this.proveedorARechazar.set(prov);
+  }
+
+  confirmarRechazo(): void {
+    const prov = this.proveedorARechazar();
+    if (!prov || this.motivoCtrl.invalid) return;
+
+    this.proveedoresApi.validarDocumentacion(prov.id, 'RECHAZAR', this.motivoCtrl.value).subscribe({
+      next: () => {
+        this.toast.warning('Proveedor rechazado', `Se notificó el motivo a ${prov.razonSocial}.`);
+        this.proveedorARechazar.set(null);
+        this.motivoCtrl.reset();
+        this.cargar();
       },
+      // El modal queda abierto y el motivo escrito intacto para que el admin reintente.
+      error: (err) => {
+        this.toast.error('No se pudo rechazar la validación', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+      }
     });
   }
 }

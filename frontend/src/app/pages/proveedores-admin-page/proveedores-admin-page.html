@@ -3,53 +3,80 @@
       <div>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">Proveedores Auxiliares</h1>
         <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-          Alta administrada de proveedores de insumos. El acceso al portal es exclusivo del rol PROVEEDOR.
+          Los proveedores se registran desde el formulario público de registro. Aquí el administrador revisa el
+          listado y valida la documentación para habilitarlos a operar.
         </p>
       </div>
-
-      <form [formGroup]="form" (ngSubmit)="crear()"
-        class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-        <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">Nuevo proveedor</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          @for (field of campos; track field.key) {
-            <label class="block">
-              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{{ field.label }}</span>
-              <input [type]="field.type" [formControlName]="field.key"
-                class="mt-1 w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-sky-500" />
-            </label>
-          }
-        </div>
-        <label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-          <input type="checkbox" formControlName="aceptaHabeasData" class="rounded" />
-          El proveedor acepta el tratamiento de datos personales (Habeas Data).
-        </label>
-        <div class="flex justify-end">
-          <button type="submit" [disabled]="form.invalid || enviando()"
-            class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition-colors">
-            {{ enviando() ? 'Creando...' : 'Crear proveedor' }}
-          </button>
-        </div>
-      </form>
 
       <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
         <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Proveedores registrados</h2>
         <div class="divide-y divide-slate-200/70 dark:divide-slate-700/70">
           @for (prov of proveedores(); track prov.id) {
-            <div class="flex items-center justify-between gap-3 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-3 py-3">
               <div>
                 <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ prov.razonSocial }}</p>
                 <p class="text-xs text-slate-500">NIT: {{ prov.nit }} • Tel: {{ prov.telefono || '—' }}</p>
               </div>
-              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold"
-                [class.bg-emerald-100]="prov.activo" [class.text-emerald-800]="prov.activo"
-                [class.bg-slate-200]="!prov.activo" [class.text-slate-600]="!prov.activo">
-                {{ prov.activo ? 'ACTIVO' : 'INACTIVO' }}
-              </span>
+              <div class="flex flex-wrap items-center gap-2">
+                @if (prov.estadoValidacion; as estado) {
+                  <span class="px-2.5 py-1 rounded-full text-[11px] font-bold"
+                    [class.bg-emerald-100]="estado === 'APROBADO'" [class.text-emerald-800]="estado === 'APROBADO'"
+                    [class.bg-amber-100]="estado === 'PENDIENTE'" [class.text-amber-800]="estado === 'PENDIENTE'"
+                    [class.bg-rose-100]="estado === 'RECHAZADO'" [class.text-rose-800]="estado === 'RECHAZADO'">
+                    {{ estado }}
+                  </span>
+                }
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold"
+                  [class.bg-emerald-100]="prov.activo" [class.text-emerald-800]="prov.activo"
+                  [class.bg-slate-200]="!prov.activo" [class.text-slate-600]="!prov.activo">
+                  {{ prov.activo ? 'ACTIVO' : 'INACTIVO' }}
+                </span>
+
+                @if (prov.estadoValidacion === 'APROBADO') {
+                  <span class="text-[11px] font-semibold text-slate-400">Validado</span>
+                } @else {
+                  <button type="button" (click)="abrirModalRechazo(prov)"
+                    class="px-3.5 py-1.5 rounded-xl border border-rose-300 text-rose-600 hover:bg-rose-50 font-bold text-xs transition-colors">
+                    Rechazar
+                  </button>
+                  <button type="button" (click)="aprobar(prov)"
+                    class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1">
+                    <i class="pi pi-check text-xs"></i>
+                    Aprobar
+                  </button>
+                }
+              </div>
             </div>
           } @empty {
             <p class="text-xs text-slate-500 py-3">Aún no hay proveedores registrados.</p>
           }
         </div>
       </div>
+
+      <!-- Modal de Rechazo -->
+      @if (proveedorARechazar(); as prov) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <h3 class="text-base font-bold text-rose-600">Rechazar Validación de {{ prov.razonSocial }}</h3>
+            <p class="text-xs text-slate-500">Indica el motivo o documento con inconformidades para notificar al proveedor:</p>
+            <textarea
+              rows="3"
+              [formControl]="motivoCtrl"
+              placeholder="Ej. RUT vencido, cámara de comercio con más de 30 días de expedición..."
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs outline-none focus:ring-2 focus:ring-rose-500"
+            ></textarea>
+            <div class="flex justify-end gap-2">
+              <button type="button" (click)="proveedorARechazar.set(null)" class="px-3 py-1.5 text-xs text-slate-500">Cancelar</button>
+              <button
+                type="button"
+                [disabled]="motivoCtrl.invalid"
+                (click)="confirmarRechazo()"
+                class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl"
+              >
+                Confirmar Rechazo
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
-  

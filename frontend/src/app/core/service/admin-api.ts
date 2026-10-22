@@ -7,14 +7,12 @@ import {
   DisputaResponse,
   EstadoValidacion,
   OtResponse,
-  ProveedorRequest,
   ProveedorResponse,
 } from '../models/common.models';
 import {
   DisputaApiResponse,
   MetricasAdminApiResponse,
   OtApiResponse,
-  ProveedorApiRequest,
   ProveedorApiResponse,
   ResolverDisputaApiRequest,
   ValidacionTecnicoApiRequest,
@@ -149,16 +147,5 @@ export class AdminApi {
     return this.http
       .get<ProveedorApiResponse[]>(this.apiConfig.url('/proveedores'))
       .pipe(map(list => list.map(aProveedorResponse)));
-  }
-
-  /** POST /api/proveedores → alta de proveedor con rol PROVEEDOR. Solo ADMINISTRADOR. */
-  crearProveedor(req: ProveedorRequest): Observable<ProveedorResponse> {
-    if (this.apiConfig.useMocks()) {
-      return of(this.mockDb.crearProveedor(req)).pipe(delay(300));
-    }
-    const body: ProveedorApiRequest = req;
-    return this.http
-      .post<ProveedorApiResponse>(this.apiConfig.url('/proveedores'), body)
-      .pipe(map(aProveedorResponse));
   }
 }
