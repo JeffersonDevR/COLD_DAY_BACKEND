@@ -30,16 +30,17 @@ Cerrado en main (merge 363b83d). Rama feat/alertas-ot (8 commits). Backend 127 s
 - Ojo: el **envío del presupuesto** no tiene evento propio → hay que emitirlo o derivarlo de `OtEstadoCambiado`.
 - Se reusa el canal por técnico ya construido (`tecnico:{id}`, `GET /api/tecnicos/me/ofertas/stream`).
 
-### 2.2 Quitar el registro de proveedores desde la parte de admin — **S** (PR ABIERTO 2026-10-22)
+### 2.2 Quitar el registro de proveedores desde la parte de admin — **S** (CERRADO 2026-10-22)
 
-Rama `feat/admin-proveedores-validacion` (2 commits, c40f1ee + 752cc0d). Frontend 74 archivos / 661 tests. Doc: `odd/tasks/admin-proveedores-validacion.md`.
-Mapeo: `POST /api/proveedores` **es** el auto-registro público (`permitAll`), y la UI pública ya lo usa desde `registro-page`. El formulario del admin lo duplicaba.
-- Se va el alta completa del panel de admin (form + `AdminApi.crearProveedor`, que quedó sin consumidores).
-- Se queda la validación documental, que el admin **no** tenía en UI aunque el backend sí: `PATCH /api/proveedores/{id}/validacion` vía `ProveedoresApi.validarDocumentacion`. El listado ahora muestra `estadoValidacion` y permite aprobar / rechazar con motivo.
+Cerrado en main (merge 5bf2d47, PR #60). Rama feat/admin-proveedores-validacion (2 commits). Integracion en main: 74 archivos / 671 tests / 0 fallos. Doc del feature: odd/tasks/admin-proveedores-validacion.md. El admin ya no da de alta proveedores; ahora valida la documentacion.
+- Mapeo: `POST /api/proveedores` **es** el auto-registro público (`permitAll`), y la UI pública ya lo usa desde `registro-page`. El formulario del admin lo duplicaba.
+- Se fue el alta completa del panel (form + `AdminApi.crearProveedor`, que quedó sin consumidores ni tests).
+- Se quedó la validación documental, que el backend ya tenía y el admin no exponía: `PATCH /api/proveedores/{id}/validacion` vía `ProveedoresApi.validarDocumentacion`. El listado muestra `estadoValidacion` y permite aprobar / rechazar con motivo (modal con `minLength 5`, patrón de `validacion-tecnicos-page`).
+- Ojo: en modo mock `validarDocumentacion` es un no-op documentado, así que validar no cambia el badge hasta hablar con el backend real.
 
-### 2.3 Filtro de OTs en la parte del cliente — **S** (PR ABIERTO 2026-10-22)
+### 2.3 Filtro de OTs en la parte del cliente — **S** (CERRADO 2026-10-22)
 
-Rama `feat/filtro-ots-cliente` (2 commits, 5f084da + 4a1155c). Frontend 73 archivos / 662 tests (+9). Doc: `odd/tasks/filtro-ots-cliente.md`.
+Cerrado en main (merge cd9b885, PR #59). Rama feat/filtro-ots-cliente (2 commits). Frontend 73 archivos / 662 tests (+9) en su rama. Doc del feature: odd/tasks/filtro-ots-cliente.md. El cliente ya puede ver todas sus OTs, no solo las activas.
 - Filtro **en el front**: el panel ya trae todas las OTs del cliente, no hizo falta query param.
 - 4 vistas: `Todas` / `Activas` (default, la de hoy) / `Completadas` / `Sin técnico` (`!tecnicoId && estado !== 'CANCELADA'`). Las completadas antes solo existían como contador; ahora se listan.
 - Los contadores de las métricas **no** siguen el filtro.
@@ -68,6 +69,6 @@ Rama `feat/filtro-ots-cliente` (2 commits, 5f084da + 4a1155c). Frontend 73 archi
 
 1. Cerrar el feature del mapa (T2 → T5) — es el que pediste en primer lugar.
 2. **Alertas de la OT** (2.1) — reusa el canal SSE ya construido; es el mayor valor por esfuerzo.
-3. ~~Los dos baratos: **filtro de OTs del cliente** (2.3) y **quitar el registro de proveedores en admin** (2.2).~~ HECHO 2026-10-22 — PRs abiertos, falta merge.
+3. ~~Los dos baratos: **filtro de OTs del cliente** (2.3) y **quitar el registro de proveedores en admin** (2.2).~~ HECHO y mergeado 2026-10-22 (#59, #60).
 4. **Repuestos/insumos** (2.4) — toca el mismo dominio de ofertas que el mapa. **Siguiente.**
 5. Los de la sección 3 según impacto (3.1 el crudo y 3.2 los loads son los que más se ven).

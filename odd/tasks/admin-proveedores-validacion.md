@@ -46,7 +46,7 @@ Usuario (2026-10-22): *"dale arranca con esos 2"* — los dos baratos del roadma
 
 ## Progress
 - 2026-10-22: doc creado tras el mapeo (con `path:line` del problema).
-- 2026-10-22: T1 DONE (`c40f1ee`). Verificación del writer + spot check del parent: 74/661/0, `tsc` app+spec 0, `eslint` 0. Resta push + PR.
+- 2026-10-22: T1 DONE (`c40f1ee`). Verificación del writer + spot check del parent: 74/661/0, `tsc` app+spec 0, `eslint` 0. Mergeado en main vía PR #60 (`5bf2d47`); integración en main verificada: 74 archivos / 671 tests / 0 fallos. Cerrada.
 - Nota: en modo mock `ProveedoresApi.validarDocumentacion` es un no-op documentado, así que validar en mocks no cambia el badge hasta recargar con backend real. No es un bug de la página.
 
 ## Delivery

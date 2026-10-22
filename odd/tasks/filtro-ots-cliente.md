@@ -59,7 +59,7 @@ Usuario (2026-10-22): *"dale arranca con esos 2"* — los dos baratos del roadma
 
 ## Progress
 - 2026-10-22: doc creado tras el mapeo (con `path:line` del problema).
-- 2026-10-22: T1 DONE (`5f084da`). Verificación del writer + spot check del parent: 73/662/0, `tsc` app+spec 0, `eslint` 0. Resta push + PR.
+- 2026-10-22: T1 DONE (`5f084da`). Verificación del writer + spot check del parent: 73/662/0, `tsc` app+spec 0, `eslint` 0. Mergeado en main vía PR #59 (`cd9b885`); integración en main verificada: 74 archivos / 671 tests / 0 fallos. Cerrada.
 
 ## Delivery
 - Forecast: ~120–180 líneas (señal + computed + template + spec). Un PR, sin cadena.
