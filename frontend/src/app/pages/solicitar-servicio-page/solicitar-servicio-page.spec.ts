@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { SolicitarServicioPage } from './solicitar-servicio-page';
+import { SolicitarServicioPage, esErrorPerfilClienteFaltante } from './solicitar-servicio-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { MapsApi } from '../../core/service/maps-api';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 const nuevaOt: OtResponse = {
@@ -49,9 +50,11 @@ function setup() {
   });
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  // RouterLink (el CTA de la tarjeta guía) no pasa por `navigate` sino por aquí.
+  const navigateUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(SolicitarServicioPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, mapsApi, toast, navigate };
+  return { fixture, clientesApi, mapsApi, toast, navigate, navigateUrl };
 }
 
 /** Deja el formulario válido con una ubicación ya fijada en el mapa. */
@@ -175,5 +178,78 @@ describe('SolicitarServicioPage', () => {
     clientesApi.crearOt.mockReturnValue(throwError(() => new Error('500')));
     fixture.componentInstance.onSubmit();
     expect(toast.error).toHaveBeenCalledWith('No se pudo crear la solicitud', '500');
+  });
+
+  // T5: el backend rechaza POST /api/ot con 404 "No existe un perfil de cliente
+  // para el usuario: <id>" cuando autenticado dual-role aún no tiene ese perfil.
+  describe('guía al alta de perfil de cliente', () => {
+    function errorPerfilFaltante(): ApiHttpError {
+      return new ApiHttpError('No existe un perfil de cliente para el usuario: 3', 404);
+    }
+
+    function arguesUI(fixture: { nativeElement: HTMLElement }): { aviso: HTMLElement; cta: HTMLAnchorElement } | null {
+      const aviso = fixture.nativeElement.querySelector('[data-test="aviso-perfil-cliente"]') as HTMLElement | null;
+      if (!aviso) return null;
+      const cta = aviso.querySelector('a[data-test="cta-crear-perfil-cliente"]') as HTMLAnchorElement;
+      return { aviso, cta };
+    }
+
+    it('detecta el error de perfil de cliente faltante (404 con el mensaje del backend)', () => {
+      expect(esErrorPerfilClienteFaltante(errorPerfilFaltante())).toBe(true);
+      expect(
+        esErrorPerfilClienteFaltante(new ApiHttpError('No existe un perfil de cliente para el usuario: 7', 409)),
+      ).toBe(true);
+    });
+
+    it('no confunde otros rechazos con el faltante de perfil de cliente', () => {
+      expect(esErrorPerfilClienteFaltante(new ApiHttpError('Otra validación', 404))).toBe(false);
+      expect(esErrorPerfilClienteFaltante(new Error('Otra falla'))).toBe(false);
+    });
+
+    it('muestra la tarjeta guía con el CTA hacia /perfil/agregar y no avisa con toast crudo', () => {
+      const { fixture, clientesApi, toast } = setup();
+      prepararFormularioListo(fixture);
+      clientesApi.crearOt.mockReturnValue(throwError(() => errorPerfilFaltante()));
+      fixture.componentInstance.onSubmit();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.faltoPerfilCliente()).toBe(true);
+      expect(toast.error).not.toHaveBeenCalled();
+      const ui = arguesUI(fixture);
+      expect(ui).not.toBeNull();
+      expect(ui?.cta.getAttribute('routerlink')).toBe('/perfil/agregar');
+      expect(ui?.cta.textContent).toContain('Crear mi perfil de cliente');
+    });
+
+    it('navega a /perfil/agregar al activar el CTA', () => {
+      const { fixture, clientesApi, navigateUrl } = setup();
+      prepararFormularioListo(fixture);
+      clientesApi.crearOt.mockReturnValue(throwError(() => errorPerfilFaltante()));
+      fixture.componentInstance.onSubmit();
+      fixture.detectChanges();
+
+      const cta = arguesUI(fixture)?.cta;
+      cta!.click();
+      // RouterLink entrega un UrlTree (no un string): se compara serializado.
+      const destino = navigateUrl.mock.calls[0]?.[0] as unknown;
+      expect(String(destino)).toBe('/perfil/agregar');
+    });
+
+    it('la tarjeta desaparece al reintentar con éxito', () => {
+      const { fixture, clientesApi, toast } = setup();
+      prepararFormularioListo(fixture);
+      clientesApi.crearOt.mockReturnValueOnce(throwError(() => errorPerfilFaltante()));
+      fixture.componentInstance.onSubmit();
+      fixture.detectChanges();
+      expect(arguesUI(fixture)).not.toBeNull();
+
+      prepararFormularioListo(fixture);
+      fixture.componentInstance.onSubmit();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.faltoPerfilCliente()).toBe(false);
+      expect(arguesUI(fixture)).toBeNull();
+      expect(toast.success).toHaveBeenCalled();
+    });
   });
 });

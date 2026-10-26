@@ -14,6 +14,28 @@
         </div>
       </div>
 
+      <!-- Guía dual-role: la OT se rechaza con 404 si el usuario no tiene perfil de cliente. -->
+      @if (faltoPerfilCliente()) {
+        <div role="alert" data-test="aviso-perfil-cliente" class="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 p-5 space-y-3">
+          <div class="flex items-start gap-3">
+            <i class="pi pi-user-plus text-amber-600 dark:text-amber-400 text-xl"></i>
+            <div class="space-y-1">
+              <h3 class="font-bold text-amber-800 dark:text-amber-200">Tu cuenta todavía no tiene perfil de cliente</h3>
+              <p class="text-sm text-amber-700 dark:text-amber-300">
+                Para pedir una orden primero necesitás crear tu perfil de cliente. Después de crearlo, volvé y enviá la solicitud de nuevo.
+              </p>
+            </div>
+          </div>
+          <a
+            routerLink="/perfil/agregar"
+            data-test="cta-crear-perfil-cliente"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold transition-colors"
+          >
+            <i class="pi pi-plus-circle text-sm"></i> Crear mi perfil de cliente
+          </a>
+        </div>
+      }
+
       <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
         <form [formGroup]="solicitudForm" (ngSubmit)="onSubmit()" class="space-y-6">
           <!-- 1. Selección de Categoría -->
