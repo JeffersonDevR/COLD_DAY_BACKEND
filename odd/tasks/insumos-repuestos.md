@@ -28,11 +28,11 @@ Que el técnico pueda **proponer/agregar repuestos a una OT a posteriori** (no s
 
 ## Checklist
 
-- [ ] **T1** (backend) endpoint `POST /api/ot/{id}/insumos` + guard (técnico asignado, estado OT válido) reusando `SolicitarInsumoUseCase`. Tests: use case + IT (y la rama `SIN_PROVEEDOR`).
-- [ ] **T2** (backend) endpoint `GET /api/ot/{id}/insumos`. Tests: IT 200 del titular / 403 otro técnico / vacío si no hay requerimientos.
+- [x] **T1** (backend) — `c2312cf` `feat(backend): POST /api/ot/{id}/insumos for later parts requests`. `SolicitarInsumosOtUseCase` reusa `SolicitarInsumoUseCase.solicitar` (mismo broadcast, vigencia, `SIN_PROVEEDOR`); guard: técnico asignado (403), estados OT permitidos **ASIGNADA / EN_CAMINO / EN_DIAGNOSTICO / EN_REPARACION / DISPUTADA** (409 con `SolicitudInsumosInvalidaException` en terminales); líneas vacías → 400 (`@NotEmpty`). 201 con el DTO del requerimiento creado. Tests: `SolicitarInsumosOtUseCaseTest` (14) + `OtInsumosIT` (6).
+- [x] **T2** (backend) — `ab10fe9` `feat(backend): GET /api/ot/{id}/insumos listing a technician's parts requests`. `ListarInsumosOtUseCase` + respuesta reusa `SolicitudInsumoApiResponse`, requerimientos newest first; 403 otro técnico, 404 OT inexistente, 200 lista vacía. `OtInsumosIT` ampliado.
 - [ ] **T3** (frontend) sección "Repuestos" en `ejecucion-ot-page` + servicios API con mock. Spec con `HttpTestingController` real.
 - [ ] **T4** (frontend) spec de `solicitudes-proveedor-page`.
-- [ ] **T5** verificación final: suites backend + `npm test -- --watch=false` (frontend, **con `--watch=false`; `npx vitest` sobra**), `tsc` app+spec, `eslint`. Comparar contra baseline: backend 127 suites / 856 tests; frontend 74 archivos / 671 tests.
+- [ ] **T5** verificación final: suites backend (base: 130 suites / 887 tests / 0 tras T1+T2 — el baseline 127/856 del doc equipo ~2 tests rezagados; nueva base para comparar) + `npm test -- --watch=false` (frontend, **no `npx vitest`**), `tsc` app+spec, `eslint`. Baseline frontend: 74 archivos / 671 tests / 0.
 
 ## Criterios de aceptación
 
@@ -50,3 +50,5 @@ Que el técnico pueda **proponer/agregar repuestos a una OT a posteriori** (no s
 ## Progreso
 
 - 2026-10-26: feature doc creado; mapping verificado; arranca T1.
+- 2026-10-26: T1 DONE (`c2312cf`) + T2 DONE (`ab10fe9`). Writer: suite backend completa `gradlew.bat test` → BUILD SUCCESSFUL, **130 suites / 887 tests / 0 fallos**. Spot check del parent: re-corrida de las 3 suites nuevas → `BUILD SUCCESSFUL (2m 24s)`; archivos y commits verificados en el árbol.
+- 2026-10-26: **Review nativa no transitable**: `review assess` con `--agent opencode` → `immutable_review_transport_unsupported` (runtimes de review inmutable soportados: claude-code, codex). RDD sigue **on** (global). Fallback por tier (assess fallido = tier alta): verificador independiente del slice backend en background, sin tocar el switch de review. Pendiente reportar al usuario al cierre.
