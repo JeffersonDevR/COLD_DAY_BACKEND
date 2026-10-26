@@ -115,10 +115,8 @@ Lo que entrego para Stitch:
 3. **Criterios de aceptación**: toda pantalla Stitch ↔ ruta Angular + contrato API real; pantalla sin binding real (reporte) → cortar o achicar.
 
 **Necesito del usuario (para el prompt pack):**
-1. ~~Identidad~~ → paleta actual se mantiene (cambio futura), sin logo nuevo por ahora.
-2. ~~¿Proveedor en Ionic?~~ → **Proveedor entra a Ionic**.
-3. ~~Estilo~~ → **Ionic native**.
-4. ~~Orden~~ → **Cliente → Técnico → flujo OT → Proveedor**.
-
-**Prompt pack creado (2026-10-26): `docs/stitch-prompt-pack.md`** — sistema global (tokens sky/amber/violet, chips de estado, navegación con tabs por rol + switcher), 15 pantallas clientee→técnico→proveedor con bindings a la API real, estados exigidos (load/empty/error/success), y bloque "fuera de alcance". Pendiente solo la confirmación de B15: ¿existe pedido directo a un técnico? (asumido **no** → broadcast puro hasta que digas lo contrario).
+1. Identidad: ¿logo/nombre de marca? ¿mantener paleta actual (sky/amber/slate) o paleta nueva?
+2. ¿Proveedor entra a Ionic o queda web?
+3. ¿Referencias de estilo (screenshots) o diseñamos sobre padrão Ionic native-style?
+4. Aprobar el prompt pack y el orden de pantalla (cliente primero o técnico primero).
 5. Los de la sección 3 según impacto (3.1 el crudo y 3.2 los loads son los que más se ven).
