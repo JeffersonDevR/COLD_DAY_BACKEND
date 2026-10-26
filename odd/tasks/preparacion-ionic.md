@@ -11,8 +11,8 @@ Dejar el código listo para la implementaciónIonic mientras se diseña la UI en
 ## Checklist
 
 ### Slice backend (`feat/prep-ionic-backend`)
-- [ ] **T1 (B1)** — CORS: aceptar schemes `capacitor://` / `file://` (config + SecurityConfig) sin abrir `*`. Tests: IT permit/deny.
-- [ ] **T2 (B3)** — `GET /api/usuarios/me` (autenticado: usuarioId, nombre, correo, rol, roles, perfiles) + `nombre` en el JWT claim (`JwtTokenIssuer`), sin romper tokens viejos (claim opcional). Tests backend + branch mock en `UsuariosApi`.
+- [x] **T1 (B1)** — CORS: aceptar schemes `capacitor://` / `file://` (config + SecurityConfig) sin abrir `*`. Tests: IT permit/deny. — CERRADO en `20e46f2` (allowlist explícita `capacitor://localhost`, `https://localhost`, `ionic://localhost`, sin comodines; `CorsNativeOriginsIT` 5 tests + rejection).
+- [x] **T2 (B3)** — `GET /api/usuarios/me` (autenticado: usuarioId, nombre, correo, rol, roles, perfiles) + `nombre` en el JWT claim (`JwtTokenIssuer`), sin romper tokens viejos (claim opcional). Tests backend + branch mock en `UsuariosApi`. — CERRADO en `3faa8f3` (`nombre` opcional, legacy = nombre vacío en el principal; `/me` lee SIEMPRE del agregado; ids de perfil scalars via `PerfilesDeUsuarioPort`).
 - [ ] **T3 (B4, parcial)** — documentar (no code) la verificación de la key de Maps para origin nativo; lo ejecuta el usuario en Google Console.
 
 ### Slice frontend A — transporte + bugs (`feat/prep-ionic-frontend-a`)
