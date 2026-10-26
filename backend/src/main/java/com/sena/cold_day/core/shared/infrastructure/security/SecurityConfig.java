@@ -128,7 +128,9 @@ public class SecurityConfig {
     /**
      * CORS solo para los origenes configurados (app.cors.allowed-origins). La
      * autenticacion viaja en el header Authorization (sin cookies), por eso no
-     * se habilitan credenciales.
+     * se habilitan credenciales. La coincidencia es exacta por origen completo,
+     * tambien para esquemas nativos como capacitor://localhost o
+     * https://localhost (WebView de Capacitor); nunca se acepta un comodin.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource(CorsProperties props) {
