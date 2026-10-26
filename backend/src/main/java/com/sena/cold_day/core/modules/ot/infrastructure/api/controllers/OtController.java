@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,11 +27,13 @@ import com.sena.cold_day.core.modules.ot.application.usecases.ConsultarOtUseCase
 import com.sena.cold_day.core.modules.ot.application.usecases.CrearOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.FinalizarOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.ListarInsumosOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.NombresOtResolver;
 import com.sena.cold_day.core.modules.ot.application.usecases.PagarVisitaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RechazarPresupuestoUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarActaGarantiaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RegistrarDiagnosticoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.SolicitarInsumosOtUseCase;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CalificarOtApiRequest;
@@ -38,6 +41,7 @@ import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.CancelarOtA
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.DiagnosticoApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.FirmarActaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.InsumoLineaApiRequest;
+import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.InsumoSolicitudApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.OtApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.PagarVisitaApiRequest;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.RechazoPresupuestoApiRequest;
@@ -45,6 +49,8 @@ import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.ActaGarant
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.HistorialEstadoApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.TecnicoUbicacionApiResponse;
+import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.SolicitudInsumoApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.security.AutorizacionPropietario;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
@@ -73,10 +79,12 @@ public class OtController {
     private final PagarVisitaUseCase pagarVisita;
     private final CalificarOtUseCase calificarOt;
     private final RegistrarActaGarantiaUseCase registrarActaGarantia;
+    private final SolicitarInsumosOtUseCase solicitarInsumos;
+    private final ListarInsumosOtUseCase listarInsumos;
     private final AutorizacionPropietario autorizacion;
     private final NombresOtResolver nombres;
 
-    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (12 casos de uso del mismo agregado). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 12 params a otro ctor.
+    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (14 casos de uso del mismo agregado insumos incluidos). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 14 params a otro ctor.
     public OtController(CrearOtUseCase crear, ConsultarOtUseCase consultar, CancelarOtUseCase cancelar,
             IniciarDesplazamientoUseCase iniciarDesplazamiento,
             RegistrarDiagnosticoUseCase registrarDiagnostico,
@@ -84,6 +92,7 @@ public class OtController {
             RechazarPresupuestoUseCase rechazarPresupuesto, FinalizarOtUseCase finalizar,
             ConfirmarLlegadaUseCase confirmarLlegada, PagarVisitaUseCase pagarVisita,
             CalificarOtUseCase calificarOt, RegistrarActaGarantiaUseCase registrarActaGarantia,
+            SolicitarInsumosOtUseCase solicitarInsumos, ListarInsumosOtUseCase listarInsumos,
             AutorizacionPropietario autorizacion, NombresOtResolver nombres) {
         this.crear = crear;
         this.consultar = consultar;
@@ -97,6 +106,8 @@ public class OtController {
         this.pagarVisita = pagarVisita;
         this.calificarOt = calificarOt;
         this.registrarActaGarantia = registrarActaGarantia;
+        this.solicitarInsumos = solicitarInsumos;
+        this.listarInsumos = listarInsumos;
         this.autorizacion = autorizacion;
         this.nombres = nombres;
     }
@@ -178,6 +189,48 @@ public class OtController {
                 request.insumos() == null ? List.of()
                         : request.insumos().stream().map(InsumoLineaApiRequest::toDomain).toList());
         return conNombres(registrarDiagnostico.registrar(principal.usuarioId(), id, diagnostico));
+    }
+
+    /**
+     * RF-2.4 "repuestos a posteriori": the assigned technician raises a parts
+     * request once the OT is bound to him, reusing the same broadcast/vigencia
+     * machinery the diagnóstico trigger uses (same {@code RequerimientoInsumo}
+     * root, same offers, same {@code SIN_PROVEEDOR} branch). Allowed OT states:
+     * ASIGNADA, EN_CAMINO, EN_DIAGNOSTICO, EN_REPARACION and DISPUTADA;
+     * SOLICITADA/BUSCANDO_TECNICO have no bound technician, and FINALIZADA,
+     * CANCELADA and SIN_TECNICOS_DISPONIBLES are terminal.
+     *
+     * <p>There is no single-request invariant: every accepted call creates a
+     * new request row, which is exactly what makes the {@code SIN_PROVEEDOR}
+     * branch retriable.
+     */
+    @PostMapping("/{id}/insumos")
+    @PreAuthorize("hasRole('TECNICO')")
+    public ResponseEntity<SolicitudInsumoApiResponse> solicitarInsumos(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id, @Valid @RequestBody InsumoSolicitudApiRequest request) {
+        Optional<RequerimientoInsumo> creado = solicitarInsumos.solicitar(principal.usuarioId(), id,
+                request.insumos().stream().map(InsumoLineaApiRequest::toDomain).toList(),
+                request.observaciones());
+        // Defensive: @NotEmpty on the request guarantees the delegate has lines.
+        RequerimientoInsumo requerimiento = creado.orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Se requiere al menos un insumo"));
+        return ResponseEntity.created(URI.create("/api/ot/" + id.valor() + "/insumos"))
+                .body(SolicitudInsumoApiResponse.from(requerimiento));
+    }
+
+    /**
+     * Read side for the "Repuestos" screen (roadmap 2.4): every parts request
+     * raised on this OT, newest first. No lifecycle condition: the technician
+     * inspects the request history on a terminal order too. An OT without
+     * requests yields an empty list, not an error.
+     */
+    @GetMapping("/{id}/insumos")
+    @PreAuthorize("hasRole('TECNICO')")
+    public List<SolicitudInsumoApiResponse> listarInsumos(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id) {
+        return listarInsumos.listar(principal.usuarioId(), id).stream()
+                .map(SolicitudInsumoApiResponse::from).toList();
     }
 
     /** RF-F1-20: the owning client approves the budget ({@code EN_REPARACION}). */

@@ -18,6 +18,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.MotivoRequeridoExcepti
 import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.SolicitudInsumosInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.VisitaNoPagadaException;
@@ -66,6 +67,16 @@ public class OtControllerAdvice {
     /** Illegal state-machine transition (design D1): conflict, state unchanged. */
     @ExceptionHandler(TransicionOtInvalidaException.class)
     ResponseEntity<ApiError> handleIllegalTransition(TransicionOtInvalidaException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /**
+     * Parts requests are only raisable while the technician is bound to a
+     * non-terminal OT (repuestos a posteriori, design D2): a conflict with the
+     * OT lifecycle, and nothing is written.
+     */
+    @ExceptionHandler(SolicitudInsumosInvalidaException.class)
+    ResponseEntity<ApiError> handleSolicitudInsumosInvalida(SolicitudInsumosInvalidaException exception) {
         return error(HttpStatus.CONFLICT, exception);
     }
 
