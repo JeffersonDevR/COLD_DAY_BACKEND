@@ -12,6 +12,7 @@ import { SugerenciaApiResponse } from '../../core/models/backend.dto';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 
 /** Mensaje exacto que devuelve el backend (404) cuando el usuario no tiene perfil de cliente. */
 const PATRON_PERFIL_CLIENTE_FALTANTE = /no existe un perfil de cliente/i;
@@ -214,7 +215,7 @@ export class SolicitarServicioPage {
             this.faltoPerfilCliente.set(true);
             return;
           }
-          this.toast.error('No se pudo crear la solicitud', err.message || 'Intenta de nuevo.');
+          this.toast.error('No se pudo crear la solicitud', mensajeErrorAccion(err));
         }
       });
   }

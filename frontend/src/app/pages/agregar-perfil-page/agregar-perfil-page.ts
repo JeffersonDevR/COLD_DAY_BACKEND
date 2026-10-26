@@ -5,6 +5,7 @@ import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { CategoriaServicio, TipoCliente } from '../../core/models/common.models';
 import { CertificacionApi } from '../../core/models/backend.dto';
 
@@ -141,7 +142,12 @@ export class AgregarPerfilPage {
 
   private errorAdquirir(err: Error): void {
     this.cargando.set(false);
-    this.toast.error('No se pudo crear el perfil', err.message || 'Intenta nuevamente.');
+    // El 409 real es perfil ya adquirido (backend: "El usuario ya tiene un
+    // perfil de cliente: <id>"): la copy no repite ids de dominio.
+    this.toast.error(
+      'No se pudo crear el perfil',
+      mensajeErrorAccion(err, { 409: 'Ya tenés ese perfil. Volvé al panel y actualizá la página si es necesario.' }),
+    );
   }
 
   /** Cierra la sesión revocada y aterriza en el login para reautenticarse. */

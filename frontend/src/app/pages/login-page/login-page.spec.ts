@@ -5,6 +5,7 @@ import { LoginPage } from './login-page';
 import { UsuariosApi } from '../../core/service/usuarios-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
@@ -73,13 +74,18 @@ describe('LoginPage', () => {
   });
 
   it('muestra el error de autenticación', () => {
-    const login = vi.fn(() => throwError(() => new Error('Credenciales inválidas')));
+    // 401 real del backend en el login: credenciales que no matchean
+    // (`CredencialesInvalidasException`), no una sesión expirada.
+    const login = vi.fn(() => throwError(() => new ApiHttpError('Credenciales inválidas', 401)));
     const { fixture, toast } = setup(login);
 
     fixture.componentInstance.loginForm.setValue({ correo: 'maria.gomez@gmail.com', password: 'demo1234' });
     fixture.componentInstance.onSubmit();
 
-    expect(toast.error).toHaveBeenCalledWith('Error de autenticación', 'Credenciales inválidas');
+    expect(toast.error).toHaveBeenCalledWith(
+      'Error de autenticación',
+      'Credenciales incorrectas. Verificá tu correo y tu contraseña.',
+    );
     expect(fixture.componentInstance.loading()).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import {
   EstadoRequerimiento,
@@ -140,7 +141,7 @@ export class SolicitudesProveedorPage implements OnInit {
             ? 'No existe un requerimiento asignado a tu empresa con ese identificador.'
             : 'La solicitud ya no está disponible.';
         default:
-          return err.message;
+          return mensajeErrorAccion(err);
       }
     }
     return 'Ocurrió un error inesperado. Inténtalo de nuevo.';

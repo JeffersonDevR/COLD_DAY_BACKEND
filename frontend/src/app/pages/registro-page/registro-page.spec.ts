@@ -11,6 +11,7 @@ import { ApiConfig } from '../../core/service/api.config';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
@@ -176,12 +177,19 @@ describe('RegistroPage', () => {
 
   it('muestra error si falla el alta', () => {
     const { fixture, mocks } = setup();
-    mocks.clientesApi.registrarCliente.mockReturnValue(throwError(() => new Error('correo duplicado')));
+    // 409 real del backend: `CorreoDuplicadoException` llega con el correo.
+    mocks.clientesApi.registrarCliente.mockReturnValue(
+      throwError(() => new ApiHttpError('Correo duplicado: maria@x.com', 409)),
+    );
     llenarFormulario(fixture);
 
     fixture.componentInstance.onSubmit();
 
-    expect(mocks.toast.error).toHaveBeenCalledWith('Error al registrar', 'correo duplicado');
+    // La copy no repite el correo sanitizado del backend.
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      'Error al registrar',
+      'Ya existe una cuenta con ese correo. Iniciá sesión o recuperá tu contraseña.',
+    );
   });
 
   describe('alta de proveedor', () => {
@@ -248,13 +256,17 @@ describe('RegistroPage', () => {
 
     it('propaga el error del alta del proveedor', () => {
       const { fixture, mocks } = setup();
+      // Error no HTTP (p. ej. una falla de red downstream): copy neutra.
       mocks.proveedoresApi.registrar.mockReturnValue(throwError(() => new Error('NIT duplicado')));
       llenarFormulario(fixture);
       fixture.componentInstance.selectedRol.set('PROVEEDOR');
 
       fixture.componentInstance.onSubmit();
 
-      expect(mocks.toast.error).toHaveBeenCalledWith('Error al registrar', 'NIT duplicado');
+      expect(mocks.toast.error).toHaveBeenCalledWith(
+        'Error al registrar',
+        'No se pudo completar la acción. Inténtalo de nuevo.',
+      );
       expect(mocks.usuariosApi.login).not.toHaveBeenCalled();
     });
   });

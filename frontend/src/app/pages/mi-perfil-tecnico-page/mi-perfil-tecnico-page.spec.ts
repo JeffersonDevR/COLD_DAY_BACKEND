@@ -107,9 +107,10 @@ describe('MiPerfilTecnicoPage', () => {
     page.toggleCategoria('ELECTRICIDAD');
     page.guardar();
 
+    // Error no HTTP (p. ej. falla de red): copy neutra; la selección queda para reintentar.
     expect(toast.error).toHaveBeenCalledWith(
       'No se pudieron guardar las especialidades',
-      'Debes conservar al menos una especialidad',
+      'No se pudo completar la acción. Inténtalo de nuevo.',
     );
     expect(page.estaSeleccionada('REFRIGERACION')).toBe(true);
     expect(page.estaSeleccionada('ELECTRICIDAD')).toBe(true);

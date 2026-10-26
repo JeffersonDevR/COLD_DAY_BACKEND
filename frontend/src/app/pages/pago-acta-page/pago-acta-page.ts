@@ -9,6 +9,17 @@ import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+
+/**
+ * Copy propia del registro del acta de garantía: el 409 es conflicto con el
+ * ciclo de vida (no finalizada o ya firmada; reintentar no cambia nada) y el
+ * 400 es firma ilegible; ambos se traducen a instrucción concreta.
+ */
+const MENSAJES_ACTA: Record<number, string> = {
+  409: 'La orden ya no admite registrar el acta de garantía: puede estar ya registrada o no estar finalizada todavía. Actualizá la página para ver el estado actual.',
+  400: 'La firma no es válida. Volvé a dibujarla y enviá el acta de nuevo.',
+};
 
 @Component({
   selector: 'app-pago-acta-page',
@@ -246,10 +257,10 @@ export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
         );
       },
       error: (err: Error) => {
-        // Se muestra el mensaje real del backend (409 por OT no finalizada o
-        // acta ya firmada, 400 por firma vacía o demasiado grande, 403 si la
-        // orden no es del cliente). Un "éxito" acá volvería a mentir.
-        this.toast.error('No pudimos registrar tu acta', err.message);
+        // 409 (OT no finalizada o acta ya firmada), 400 (firma vacía o demasiado
+        // grande) y 403 (orden ajena) tienen copy propia; el resto cae en el
+        // genérico por status. Un "éxito" acá volvería a mentir.
+        this.toast.error('No pudimos registrar tu acta', mensajeErrorAccion(err, MENSAJES_ACTA));
       },
       complete: () => this.guardando.set(false),
     });

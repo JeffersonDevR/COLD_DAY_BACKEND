@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { Loader } from '../../shared/loader/loader';
@@ -120,11 +121,7 @@ export class MiPerfilTecnicoPage {
       error: (err: Error) => {
         this.guardando.set(false);
         // La selección local NO se descarta: el técnico corrige y reintenta.
-        // Un 400 del backend (conjunto vacío) se muestra tal cual lo emitió.
-        this.toast.error(
-          'No se pudieron guardar las especialidades',
-          err.message || 'Intenta de nuevo.',
-        );
+        this.toast.error('No se pudieron guardar las especialidades', mensajeErrorAccion(err));
       },
     });
   }

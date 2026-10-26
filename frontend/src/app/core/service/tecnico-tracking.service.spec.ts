@@ -76,19 +76,24 @@ describe('TecnicoTrackingService', () => {
     expect(service.activo()).toBe(false);
   });
 
-  it('expone el mensaje del error del stream y se detiene', () => {
+  it('expone copy humana cuando el stream de posición falla y se detiene', () => {
     const service = setup();
     service.iniciar();
-    posiciones.error(new Error('Permiso de ubicación denegado. Habilítalo en el navegador para continuar.'));
+    posiciones.error(new Error('User denied Geolocation'));
     expect(service.activo()).toBe(false);
-    expect(service.motivo()).toBe('Permiso de ubicación denegado. Habilítalo en el navegador para continuar.');
+    // El mensaje crudo del navegador (en inglés) no se muestra: copy neutra.
+    expect(service.motivo()).toBe(
+      'No se pudo reportar tu ubicación. Revisá el permiso de geolocalización de tu navegador y reintentá.',
+    );
   });
 
   it('limpia el motivo al recibir una posición válida', () => {
     const service = setup();
     service.iniciar();
     posiciones.error(new Error('sin gps'));
-    expect(service.motivo()).toBe('sin gps');
+    expect(service.motivo()).toBe(
+      'No se pudo reportar tu ubicación. Revisá el permiso de geolocalización de tu navegador y reintentá.',
+    );
 
     // Un reintento exitoso no debe arrastrar el motivo anterior.
     posiciones = new Subject<Point>();

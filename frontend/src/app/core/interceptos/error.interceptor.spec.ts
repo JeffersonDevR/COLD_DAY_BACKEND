@@ -81,6 +81,18 @@ describe('errorInterceptor', () => {
     expect(caught).toBe(original);
   });
 
+  // Filtros resueltos: un status sin cuerpo legible jamás expone el mensaje
+  // crudo de Angular (que incluye la URL) ni un código de status pelado.
+  it('un status sin cuerpo legible responde copy neutra, no el mensaje crudo con la URL', async () => {
+    const error = new HttpErrorResponse({ status: 500, error: null, url: 'http://backend.local/api/admin/metricas' });
+    const { promise } = run('/api/admin/metricas', error, false);
+    const caught = await capture(promise);
+    expect(caught).toBeInstanceOf(ApiHttpError);
+    expect((caught as ApiHttpError).message).toBe('Ocurrió un error inesperado. Inténtalo de nuevo.');
+    expect((caught as ApiHttpError).message).not.toContain('Http failure');
+    expect((caught as ApiHttpError).message).not.toContain('backend.local');
+  });
+
   it('cierra sesión ante 401 en un endpoint protegido', async () => {
     const error = new HttpErrorResponse({ status: 401, error: null, url: '/api/ot' });
     const { promise, auth, toast } = run('/api/ot', error, true);

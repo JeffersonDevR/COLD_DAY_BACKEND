@@ -344,7 +344,7 @@ export class SeguimientoOtPage implements OnInit {
         this.toast.warning('Disputa Abierta', 'Un administrador revisará tu caso.');
         this.recargarOt();
       },
-      error: (err: Error) => this.toast.error('No se pudo abrir la disputa', err.message),
+      error: (err: Error) => this.toast.error('No se pudo abrir la disputa', mensajeErrorAccion(err)),
     });
   }
 
@@ -364,7 +364,7 @@ export class SeguimientoOtPage implements OnInit {
       },
       error: (err: Error) => {
         this.pagandoVisita.set(false);
-        this.toast.error('No se pudo pagar la visita', err.message);
+        this.toast.error('No se pudo pagar la visita', mensajeErrorAccion(err));
       },
     });
   }

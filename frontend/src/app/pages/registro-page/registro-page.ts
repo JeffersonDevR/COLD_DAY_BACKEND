@@ -11,6 +11,7 @@ import { ProveedorRegistroService } from '../../core/service/proveedor-registro.
 import { ApiConfig } from '../../core/service/api.config';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { Rol, CategoriaServicio, TokenResponse } from '../../core/models/common.models';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 
@@ -193,6 +194,11 @@ export class RegistroPage {
 
   private errorAlta(err: Error): void {
     this.loading.set(false);
-    this.toast.error('Error al registrar', err.message || 'Por favor intenta nuevamente.');
+    // El 409 real del alta es correo duplicado: la copy evita repetir el
+    // correo sanitizado del backend y ofrece el camino alternativo.
+    this.toast.error(
+      'Error al registrar',
+      mensajeErrorAccion(err, { 409: 'Ya existe una cuenta con ese correo. Iniciá sesión o recuperá tu contraseña.' }),
+    );
   }
 }

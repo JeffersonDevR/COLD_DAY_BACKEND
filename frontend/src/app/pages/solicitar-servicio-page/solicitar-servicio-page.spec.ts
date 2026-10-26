@@ -175,9 +175,15 @@ describe('SolicitarServicioPage', () => {
   it('muestra error si falla la creación', () => {
     const { fixture, clientesApi, toast } = setup();
     prepararFormularioListo(fixture);
-    clientesApi.crearOt.mockReturnValue(throwError(() => new Error('500')));
+    // Error no HTTP (p. ej. falla de red): copy neutra de mensaje-error.
+    clientesApi.crearOt.mockReturnValue(
+      throwError(() => new ApiHttpError('500', 500)),
+    );
     fixture.componentInstance.onSubmit();
-    expect(toast.error).toHaveBeenCalledWith('No se pudo crear la solicitud', '500');
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo crear la solicitud',
+      'Ocurrió un error en el servidor. Inténtalo de nuevo en unos minutos.',
+    );
   });
 
   // T5: el backend rechaza POST /api/ot con 404 "No existe un perfil de cliente

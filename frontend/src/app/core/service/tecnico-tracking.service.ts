@@ -15,6 +15,9 @@ import { TecnicosApi } from './tecnicos-api';
   providedIn: 'root',
 })
 export class TecnicoTrackingService {
+  /** Copy por cualquier falla del watch (permiso denegado, señal, tiempo de espera excedido). */
+  private static readonly MENSAJE_FALLA_GPS =
+    'No se pudo reportar tu ubicación. Revisá el permiso de geolocalización de tu navegador y reintentá.';
   private readonly geo = inject(GeolocationService);
   private readonly tecnicosApi = inject(TecnicosApi);
 
@@ -46,12 +49,13 @@ export class TecnicoTrackingService {
       .pipe(throttleTime(intervaloMs, undefined, { leading: true, trailing: true }))
       .subscribe({
         next: (punto) => this.emitir(punto),
-        error: (error: Error) => {
+        error: () => {
           // Un error del watch (p. ej. permiso denegado) corta la suscripción.
           // `detener()` limpia el motivo, así que se restaura después para que
-          // la UI pueda explicar por qué ya no se reporta.
+          // la UI pueda explicar por qué ya no se reporta. Sin el mensaje
+          // crudo del navegador (en inglés): copy neutra en español.
           this.detener();
-          this.motivo.set(error.message);
+          this.motivo.set(TecnicoTrackingService.MENSAJE_FALLA_GPS);
         },
       });
   }

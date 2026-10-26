@@ -6,6 +6,7 @@ import { OtApi } from '../../core/service/ot-api';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { ActaGarantia, OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
@@ -179,20 +180,21 @@ describe('PagoActaPage', () => {
   });
 
   it('NO anuncia el acta si el servidor la rechaza', () => {
+    // 409 real del backend: OT no FINALIZADA o acta ya firmada.
     const firmarActaGarantia = vi.fn(() =>
-      throwError(() => new Error('Solo se puede firmar el acta de una OT FINALIZADA, estado actual: EN_CAMINO.')),
+      throwError(() => new ApiHttpError('Solo se puede firmar el acta de una OT FINALIZADA, estado actual: EN_CAMINO.', 409)),
     );
     const { fixture, toast } = setup(firmarActaGarantia);
     const page = conFirma(fixture);
 
     page.guardarYDescargarActa();
 
-    // El error que se muestra es el del servidor, no un "éxito" genérico:
-    // el toast anterior decía "Acta Generada" sin que existiera el documento.
+    // El copy del 409 nombra el conflicto del ciclo de vida sin repetir el
+    // mensaje crudo del servidor; lo importante es que NO es un "éxito".
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith(
       'No pudimos registrar tu acta',
-      expect.stringContaining('Solo se puede firmar el acta de una OT FINALIZADA'),
+      'La orden ya no admite registrar el acta de garantía: puede estar ya registrada o no estar finalizada todavía. Actualizá la página para ver el estado actual.',
     );
     expect(page.acta()).toBeNull();
   });

@@ -5,6 +5,7 @@ import { CalificarServicioPage } from './calificar-servicio-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
@@ -77,11 +78,17 @@ describe('CalificarServicioPage', () => {
   });
 
   it('muestra error si la calificación falla en el backend', () => {
-    const calificar = vi.fn(() => throwError(() => new Error('Solo se puede calificar una OT FINALIZADA')));
+    // 409 real del backend (`CalificacionInvalidaException`).
+    const calificar = vi.fn(() =>
+      throwError(() => new ApiHttpError('Solo se puede calificar una OT FINALIZADA', 409)),
+    );
     const { fixture, toast } = setup(calificar);
 
     fixture.componentInstance.enviarCalificacion();
 
-    expect(toast.error).toHaveBeenCalledWith('Calificación no disponible', 'Solo se puede calificar una OT FINALIZADA');
+    expect(toast.error).toHaveBeenCalledWith(
+      'Calificación no disponible',
+      'Esta orden todavía no se puede calificar: puede ser que aún no esté finalizada o que ya tengas una reseña registrada.',
+    );
   });
 });
