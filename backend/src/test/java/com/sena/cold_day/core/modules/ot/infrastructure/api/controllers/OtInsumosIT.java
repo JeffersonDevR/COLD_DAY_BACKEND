@@ -32,8 +32,11 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.repository.RequerimientoInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.InsumoLinea;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataOfertaInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataProveedorRepository;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataRequerimientoInsumoRepository;
@@ -74,6 +77,7 @@ class OtInsumosIT {
     @Autowired SpringDataTecnicoRepository springDataTecnico;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired ProveedorRepository proveedorRepository;
+    @Autowired RequerimientoInsumoRepository requerimientoRepository;
     @Autowired SpringDataRequerimientoInsumoRepository springDataRequerimiento;
     @Autowired SpringDataOfertaInsumoRepository springDataOferta;
     @Autowired SpringDataProveedorRepository springDataProveedor;
@@ -260,8 +264,87 @@ class OtInsumosIT {
     }
 
     // ------------------------------------------------------------------
+    // GET /api/ot/{id}/insumos (T2)
+    // ------------------------------------------------------------------
+
+    /** The list must read newest first so the last retry is what the UI shows. */
+    @Test
+    void theAssignedTechnicianReadsItsRequestsNewestFirst() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-lectura@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("tecnico-lectura@example.com", Rol.TECNICO);
+        TecnicoId tecnicoId = crearTecnico(tecnicoUsuario, true);
+        Ot ot = otEnEstado(cliente.getId(), tecnicoId, EstadoOt.EN_REPARACION);
+        RequerimientoInsumo masViejo = requerimientoDe(ot, tecnicoId,
+                Instant.parse("2026-09-01T10:00:00Z"));
+        RequerimientoInsumo masNuevo = requerimientoDe(ot, tecnicoId,
+                Instant.parse("2026-09-02T10:00:00Z"));
+
+        mockMvc.perform(get("/api/ot/" + ot.getId().valor() + "/insumos")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(masNuevo.getId().valor().toString()))
+                .andExpect(jsonPath("$[0].estado").value("SOLICITADO"))
+                .andExpect(jsonPath("$[0].items[0].descripcion").value("Filtro secadora"))
+                .andExpect(jsonPath("$[0].items[0].cantidad").value(2))
+                .andExpect(jsonPath("$[1].id").value(masViejo.getId().valor().toString()));
+    }
+
+    @Test
+    void anotherTechnicianCannotReadThePartsOfTheOtAndUnauthenticatedIsRejected() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-privada@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long duenoUsuario = crearUsuario("tecnico-privada@example.com", Rol.TECNICO);
+        TecnicoId dueno = crearTecnico(duenoUsuario, true);
+        Long intrusoUsuario = crearUsuario("tecnico-intruso-lectura@example.com", Rol.TECNICO);
+        crearTecnico(intrusoUsuario, false);
+        Ot ot = otEnEstado(cliente.getId(), dueno, EstadoOt.EN_REPARACION);
+
+        mockMvc.perform(get("/api/ot/" + ot.getId().valor() + "/insumos")
+                        .header("Authorization", "Bearer " + jwt(intrusoUsuario, Rol.TECNICO)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+
+        mockMvc.perform(get("/api/ot/" + ot.getId().valor() + "/insumos"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void anOtWithoutRequestsReadsAsAnEmptyList() throws Exception {
+        Long clienteUsuario = crearUsuario("cliente-sin-requerimientos@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(clienteUsuario);
+        Long tecnicoUsuario = crearUsuario("tecnico-sin-requerimientos@example.com", Rol.TECNICO);
+        TecnicoId tecnicoId = crearTecnico(tecnicoUsuario, true);
+        Ot ot = otEnEstado(cliente.getId(), tecnicoId, EstadoOt.FINALIZADA);
+
+        mockMvc.perform(get("/api/ot/" + ot.getId().valor() + "/insumos")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void anUnknownOtIsNotFoundOnTheReadPath() throws Exception {
+        Long tecnicoUsuario = crearUsuario("tecnico-got-desconocida@example.com", Rol.TECNICO);
+        crearTecnico(tecnicoUsuario, true);
+
+        mockMvc.perform(get("/api/ot/" + UUID.randomUUID() + "/insumos")
+                        .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    // ------------------------------------------------------------------
     // Shared fixtures
     // ------------------------------------------------------------------
+
+    /** A persisted request row with an explicit creation instant, for ordering. */
+    private RequerimientoInsumo requerimientoDe(Ot ot, TecnicoId tecnicoId, Instant creadaEn) {
+        return requerimientoRepository.save(RequerimientoInsumo.crear(ot.getId().valor(), tecnicoId.valor(),
+                List.of(new InsumoLinea("Filtro secadora", 2)),
+                null, creadaEn, creadaEn.plusSeconds(900)));
+    }
 
     private void crearProveedorActivo(String nit, String correo) {
         Long usuarioId = crearUsuario(correo, Rol.PROVEEDOR);

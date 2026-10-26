@@ -27,6 +27,7 @@ import com.sena.cold_day.core.modules.ot.application.usecases.ConsultarOtUseCase
 import com.sena.cold_day.core.modules.ot.application.usecases.CrearOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.FinalizarOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.IniciarDesplazamientoUseCase;
+import com.sena.cold_day.core.modules.ot.application.usecases.ListarInsumosOtUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.NombresOtResolver;
 import com.sena.cold_day.core.modules.ot.application.usecases.PagarVisitaUseCase;
 import com.sena.cold_day.core.modules.ot.application.usecases.RechazarPresupuestoUseCase;
@@ -79,10 +80,11 @@ public class OtController {
     private final CalificarOtUseCase calificarOt;
     private final RegistrarActaGarantiaUseCase registrarActaGarantia;
     private final SolicitarInsumosOtUseCase solicitarInsumos;
+    private final ListarInsumosOtUseCase listarInsumos;
     private final AutorizacionPropietario autorizacion;
     private final NombresOtResolver nombres;
 
-    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (13 casos de uso del mismo agregado insumos incluidos). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 13 params a otro ctor.
+    @SuppressWarnings("java:S107") // Superficie REST cohesiva de OT (14 casos de uso del mismo agregado insumos incluidos). Dividir el controller romperia la cohesion por recurso /api/ot; la alternativa Facade solo moveria los 14 params a otro ctor.
     public OtController(CrearOtUseCase crear, ConsultarOtUseCase consultar, CancelarOtUseCase cancelar,
             IniciarDesplazamientoUseCase iniciarDesplazamiento,
             RegistrarDiagnosticoUseCase registrarDiagnostico,
@@ -90,7 +92,7 @@ public class OtController {
             RechazarPresupuestoUseCase rechazarPresupuesto, FinalizarOtUseCase finalizar,
             ConfirmarLlegadaUseCase confirmarLlegada, PagarVisitaUseCase pagarVisita,
             CalificarOtUseCase calificarOt, RegistrarActaGarantiaUseCase registrarActaGarantia,
-            SolicitarInsumosOtUseCase solicitarInsumos,
+            SolicitarInsumosOtUseCase solicitarInsumos, ListarInsumosOtUseCase listarInsumos,
             AutorizacionPropietario autorizacion, NombresOtResolver nombres) {
         this.crear = crear;
         this.consultar = consultar;
@@ -105,6 +107,7 @@ public class OtController {
         this.calificarOt = calificarOt;
         this.registrarActaGarantia = registrarActaGarantia;
         this.solicitarInsumos = solicitarInsumos;
+        this.listarInsumos = listarInsumos;
         this.autorizacion = autorizacion;
         this.nombres = nombres;
     }
@@ -214,6 +217,20 @@ public class OtController {
                 HttpStatus.BAD_REQUEST, "Se requiere al menos un insumo"));
         return ResponseEntity.created(URI.create("/api/ot/" + id.valor() + "/insumos"))
                 .body(SolicitudInsumoApiResponse.from(requerimiento));
+    }
+
+    /**
+     * Read side for the "Repuestos" screen (roadmap 2.4): every parts request
+     * raised on this OT, newest first. No lifecycle condition: the technician
+     * inspects the request history on a terminal order too. An OT without
+     * requests yields an empty list, not an error.
+     */
+    @GetMapping("/{id}/insumos")
+    @PreAuthorize("hasRole('TECNICO')")
+    public List<SolicitudInsumoApiResponse> listarInsumos(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable OtId id) {
+        return listarInsumos.listar(principal.usuarioId(), id).stream()
+                .map(SolicitudInsumoApiResponse::from).toList();
     }
 
     /** RF-F1-20: the owning client approves the budget ({@code EN_REPARACION}). */
