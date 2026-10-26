@@ -14,6 +14,7 @@ import {
   DisputaResponse,
   DocumentoTecnico,
   HistorialOtItem,
+  InsumoSolicitud,
   LiquidacionResponse,
   MetricasAdminResponse,
   OfertaInsumoResponse,
@@ -36,6 +37,7 @@ import {
   DisputaApiResponse,
   DocumentoTecnicoApiResponse,
   HistorialEstadoApiResponse,
+  InsumoSolicitudApiRequest,
   LiquidacionApiResponse,
   MetricasAdminApiResponse,
   OfertaInsumoApiResponse,
@@ -243,6 +245,23 @@ export function aDiagnosticoApiRequest(diag: DiagnosticoRequest): DiagnosticoApi
     // al contrato real del backend (POST /api/ot/{id}/diagnostico).
     insumos: (diag.insumos ?? []).map((linea) => ({
       descripcion: linea.descripcion,
+      cantidad: linea.cantidad,
+    })),
+  };
+}
+
+/**
+ * POST /api/ot/{id}/insumos: normaliza la solicitud de repuestos a posteriori.
+ * Sin líneas el backend responde 400 (`@NotEmpty`), así que el gate de "no hay
+ * líneas" queda en la página; acá solo se recortan textos y `observaciones`
+ * viaja como `null` cuando el técnico no escribió nada (opcional en el wire).
+ */
+export function aInsumoSolicitudApiRequest(solicitud: InsumoSolicitud): InsumoSolicitudApiRequest {
+  const observaciones = solicitud.observaciones?.trim();
+  return {
+    observaciones: observaciones ?? null,
+    insumos: solicitud.insumos.map((linea) => ({
+      descripcion: linea.descripcion.trim(),
       cantidad: linea.cantidad,
     })),
   };

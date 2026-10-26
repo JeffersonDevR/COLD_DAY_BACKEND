@@ -423,6 +423,17 @@ export interface DiagnosticoApiRequest {
   insumos?: InsumoLineaApi[];
 }
 
+/**
+ * POST /api/ot/{id}/insumos (InsumoSolicitudApiRequest.java): solicitud de
+ * repuestos a posteriori del técnico asignado. A diferencia del diagnóstico,
+ * las líneas son obligatorias (`@NotEmpty`: una petición vacía es 400, no un
+ * no-op) y `observaciones` es opcional (max 1000, el backend la limpia).
+ */
+export interface InsumoSolicitudApiRequest {
+  observaciones: string | null;
+  insumos: InsumoLineaApi[];
+}
+
 export interface CancelarOtApiRequest {
   motivo: string;
 }
