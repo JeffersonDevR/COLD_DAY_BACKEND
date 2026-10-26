@@ -75,4 +75,48 @@ Cerrado en main (merges 4ae81d5 PR #62 backend + a8e5a04 PR #63 frontend, apilad
 2. **Alertas de la OT** (2.1) — reusa el canal SSE ya construido; es el mayor valor por esfuerzo.
 3. ~~Los dos baratos: **filtro de OTs del cliente** (2.3) y **quitar el registro de proveedores en admin** (2.2).~~ HECHO y mergeado 2026-10-22 (#59, #60).
 4. ~~**Repuestos/insumos** (2.4)~~ HECHO y mergeado 2026-10-26 (#62 backend + #63 frontend, apilados).
+5. **Preparación Ionic + revamp Stitch** — ver §5: quickwins web primero, después backend móvil, revamp de pantallas cliente/técnico con Stitch (admin queda en Angular web).
+
+## 5. Preparación Ionic + revamp Stitch (NUEVO 2026-10-26)
+
+**Corte de superficies propuesto:** Ionic móvil = **cliente + técnico**. El **panel admin queda en Angular web** (comodidad del cliente, pantallas densas, teclado). Proveedor: pendiente decidir (ver preguntas abajo). Común: auth, SSE, servicios, config con `API_ORIGIN` inyectable.
+
+### 5.1 Blockers de arquitectura móvil (antes de migrar)
+- [ ] **B1** (`S`) backend: CORS aceptar schemes `capacitor://` / `file://` (`SecurityConfig.java:134-144`).
+- [ ] **B2** (`S`) frontend: `API_ORIGIN` inyectable en `api.config.ts` (hoy relativo `'/api'` → roto en Capacitor) + build del workspace móvil.
+- [ ] **B3** (`M`) backend: `GET /api/usuarios/me` + `nombre` en JWT (`JwtTokenIssuer.java:44-52`, hoy sin nombre y sin `/me` → la app móvil no puede mostrar "Bienvenido, X").
+- [ ] **B4** (`S`) verificar: Maps key con restricciones para origin nativo; `EventSource` no sobrevive en background (el poll de respaldo cubre).
+
+### 5.2 Bugs que bloquean el móvil
+- [ ] **B5** (`S`) **técnico no puede pedir una orden**: `POST /api/ot` exige perfil Cliente y tira "No existe un perfil de cliente para el usuario: 1". Fix frontend: detectar ese error al crear OT → guiar a `agregar-perfil-page` (la página y el endpoint `POST /api/clientes/perfil` ya existen). Verificar el flujo dual-role del registro mientras.
+- [ ] **B6** (`S/M`) mensajes crudos del backend en 12+ sitios: adoptar `mensajeErrorAccion` (baseline del fix de `errores-silenciosos-acciones`). Sitios: `seguimiento:347,367`, `panel-tecnico:155`, `pago-acta:252`, `calificar:65`, `solicitar:193`, `login:55`, `registro:196`, `mi-perfil:126`, `agregar-perfil:144`, `selector-ubicacion:128`, `solicitudes-proveedor:143`.
+- [ ] **B7** (`S`) carga de OT en silencio: `ot-carga.ts:41` sin error → 5 páginas en blanco. Estado de error con reintento (mismo patrón de la sección Repuestos).
+- [ ] **B8** (`S`, web only) cargas admin silenciosas ×6 (dashboard, monitoreo, consignaciones, validación, disputas, proveedores): pasa por `next:` sin error.
+- [ ] **B9** (`S`, decisión del usuario) `LOCALE_ID` es-CO: afecta todas las fechas de la app.
+- [ ] **B10** (`S`) polls sin visibilidad gate: ubicación 15 s (`seguimiento`) y poll de OT (`ot-api.ts:139` enmascara 404 **y 401/5xx**): batería en móvil.
+- [ ] **B11** (`S`) 401 doble aviso (interceptor to + tira la página). Dejar un solo toast.
+- [ ] **B12** (`M`) **"Mis equipos" renovación funcional**: hoy `historial-equipos-page` es **hardcoded con datos imaginarios en ambos modos**. Fuente real existe: `ClientesApi.getOtsPorCliente` → derivar equipo por categoría + descripción de falla + última OT (fecha, técnico, estado, garantía/acta) + link al seguimiento. Sin backend nuevo.
+- [ ] **B13** (`S`) chat de diagnóstico **fake**: auto-responde en modo real (`diagnostico-ot-page.ts:169-186`) → quitar o ocultar tras banner "próximamente".
+- [ ] **B14** (`S`) defaults falsos pre-pobla-dos: diagnóstico (`ejecucion:108-116`), comprobante (`liquidaciones:66-67`), 5 estrellas default (`calificar:28-29`).
+
+### 5.3 UX dual-role: buscar ofertas vs pedir una orden
+- [ ] **B15** (`M`) el mismo usuario puede ser cliente y técnico, y el UI no distingue el contexto. Propuesta: **selector de rol activo** (chip de "Modo cliente / Modo técnico" en app móvil) + reglas de navegación: "Solicitar servicio" solo visible en modo cliente, "Ofertas/Radar" solo en modo técnico, y el panel redirige según el modo elegido, no solo por rol primario. Además copy del radar: explicar que la oferta es broadcast al primer técnico que acepta (no pedido directo). Evita la confusión que originó B5 y que cualquiera se equivoque de contextos.
+- [ ] (Designer) Necesito confirmación del flujo: ¿existe "solicitud directa a un técnico concreto" hoy (técnicos cercanos) o todo es broadcast? Si la directa no existe, documentarla como fuera de alcance.
+
+### 5.4 Revamp UI mobile con Google Stitch
+Screens a rediseñar (inventario del audit 2026-10-26):
+- **Cliente (Ionic):** login · registro · agregar-perfil · panel (Mi equipo cards + OT activa) · solicitar (mapa + dirección) · seguimiento (mapa + historial) · diagnóstico/aprobar-presupuesto · pago-acta · calificar.
+- **Técnico (Ionic):** panel-ofertas (radar) · aceptación de oferta · ejecución OT (diagnóstico, repuestos, acta, firma) · perfil + documentos.
+- **Admin (web, fuera de este revamp):** luego, cuando el móvial salga.
+
+Lo que entrego para Stitch:
+1. **Stitch prompt pack por pantalla**: lista de componentes, estados (empty/error/carga/succeso), datos reales y bindings correspondientes al DTO existente (sin inventar campos), contra folder/app/admins-existing.
+2. **Token set actual** para consistencia: `sky-600` primario, `amber` acciones pagas, `violet` repuestos, `slate` fondo/mdo, `PrimeNG` toasts.
+3. **Criterios de aceptación**: toda pantalla Stitch ↔ ruta Angular + contrato API real; pantalla sin binding real (reporte) → cortar o achicar.
+
+**Necesito del usuario (para el prompt pack):**
+1. Identidad: ¿logo/nombre de marca? ¿mantener paleta actual (sky/amber/slate) o paleta nueva?
+2. ¿Proveedor entra a Ionic o queda web?
+3. ¿Referencias de estilo (screenshots) o diseñamos sobre padrão Ionic native-style?
+4. Aprobar el prompt pack y el orden de pantalla (cliente primero o técnico primero).
 5. Los de la sección 3 según impacto (3.1 el crudo y 3.2 los loads son los que más se ven).
