@@ -40,7 +40,8 @@ public class AutenticarUsuarioUseCase {
         // Option C: capabilities are derived server-side from persisted profile
         // rows; nothing from the request body can widen them (M3/M5).
         Set<Rol> roles = rolesDePerfil.resolver(usuario.getUsuarioId(), usuario.getRol());
-        var token = tokenIssuer.emitir(usuario.getUsuarioId(), roles, usuario.getRol(), usuario.getTokenVersion());
+        var token = tokenIssuer.emitir(usuario.getUsuarioId(), usuario.getNombre(), roles,
+                usuario.getRol(), usuario.getTokenVersion());
         return new TokenResponse(token.valor(), token.expiracion(), usuario.getRol().name(), List.copyOf(roles));
     }
 }

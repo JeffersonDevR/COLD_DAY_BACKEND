@@ -5,17 +5,21 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
+
 import com.sena.cold_day.core.modules.usuarios.application.dto.TokenResponse;
 import com.sena.cold_day.core.modules.usuarios.application.dto.UsuarioRequest;
 import com.sena.cold_day.core.modules.usuarios.application.dto.UsuarioResponse;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.AutenticarUsuarioUseCase;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.ListarUsuariosUseCase;
+import com.sena.cold_day.core.modules.usuarios.application.usecases.ObtenerMiPerfilUseCase;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.RecuperarContrasenaUseCase;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.RegistrarUsuarioUseCase;
 import com.sena.cold_day.core.modules.usuarios.application.usecases.RestablecerContrasenaUseCase;
@@ -23,6 +27,7 @@ import com.sena.cold_day.core.modules.usuarios.infrastructure.api.requests.Crede
 import com.sena.cold_day.core.modules.usuarios.infrastructure.api.requests.RecuperarContrasenaApiRequest;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.api.requests.RestablecerContrasenaApiRequest;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.api.requests.UsuarioApiRequest;
+import com.sena.cold_day.core.modules.usuarios.infrastructure.api.responses.MiPerfilApiResponse;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.api.responses.UsuarioApiResponse;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 
@@ -37,15 +42,28 @@ public class UsuarioController {
     private final RecuperarContrasenaUseCase recuperar;
     private final RestablecerContrasenaUseCase restablecer;
     private final ListarUsuariosUseCase listarUsuarios;
+    private final ObtenerMiPerfilUseCase obtenerMiPerfil;
 
     public UsuarioController(RegistrarUsuarioUseCase registrar, AutenticarUsuarioUseCase autenticar,
             RecuperarContrasenaUseCase recuperar, RestablecerContrasenaUseCase restablecer,
-            ListarUsuariosUseCase listarUsuarios) {
+            ListarUsuariosUseCase listarUsuarios, ObtenerMiPerfilUseCase obtenerMiPerfil) {
         this.registrar = registrar;
         this.autenticar = autenticar;
         this.recuperar = recuperar;
         this.restablecer = restablecer;
         this.listarUsuarios = listarUsuarios;
+        this.obtenerMiPerfil = obtenerMiPerfil;
+    }
+
+    /**
+     * Roadmap B3: "who am I" for the native app. Authenticated read only — the
+     * principal is never taken from the request (only an adjudicated JWT can
+     * produce it) and the response carries the persisted identity plus the
+     * cliente/tecnico/proveedor profile ids derived from the persisted rows.
+     */
+    @GetMapping("/me")
+    public MiPerfilApiResponse miPerfil(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return MiPerfilApiResponse.from(obtenerMiPerfil.obtener(principal.usuarioId()));
     }
 
     /** Lista todos los usuarios del sistema (solo ADMINISTRADOR). */

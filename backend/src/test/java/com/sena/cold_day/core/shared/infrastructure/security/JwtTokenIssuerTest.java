@@ -65,4 +65,27 @@ class JwtTokenIssuerTest {
         assertThat(claims.get("roles", List.class)).containsExactlyInAnyOrder("CLIENTE", "TECNICO");
         assertThat(claims.get("rol", String.class)).isEqualTo("CLIENTE");
     }
+
+    /**
+     * Roadmap B3: the display name travels as the optional {@code nombre} claim
+     * so the native app knows who is logged in without another roundtrip.
+     */
+    @Test
+    void embedsTheDisplayNameClaim() {
+        JwtTokenIssuer issuer = new JwtTokenIssuer(new JwtProperties(SECRET, 60_000));
+
+        Token token = issuer.emitir(new UsuarioId(20L), "Ana Lopez", Set.of(Rol.CLIENTE), Rol.CLIENTE, 0);
+
+        assertThat(parse(token.valor()).get("nombre", String.class)).isEqualTo("Ana Lopez");
+    }
+
+    /** A blank display name must not serialize a sentinel: the claim is omitted. */
+    @Test
+    void omitsTheNombreClaimWhenTheDisplayNameIsBlank() {
+        JwtTokenIssuer issuer = new JwtTokenIssuer(new JwtProperties(SECRET, 60_000));
+
+        Token token = issuer.emitir(new UsuarioId(20L), "   ", Set.of(Rol.CLIENTE), Rol.CLIENTE, 0);
+
+        assertThat(parse(token.valor()).get("nombre")).isNull();
+    }
 }

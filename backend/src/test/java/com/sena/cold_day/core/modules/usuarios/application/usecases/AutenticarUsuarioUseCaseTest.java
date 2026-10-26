@@ -48,7 +48,7 @@ class AutenticarUsuarioUseCaseTest {
         when(usuarioRepository.buscarPorCorreo("ana@example.com")).thenReturn(java.util.Optional.of(usuario()));
         when(passwordEncoder.matches("secreto", "hash")).thenReturn(true);
         when(rolesDePerfil.resolver(new UsuarioId(10L), Rol.TECNICO)).thenReturn(Set.of(Rol.TECNICO));
-        when(tokenIssuer.emitir(new UsuarioId(10L), Set.of(Rol.TECNICO), Rol.TECNICO, 0))
+        when(tokenIssuer.emitir(new UsuarioId(10L), "Ana", Set.of(Rol.TECNICO), Rol.TECNICO, 0))
                 .thenReturn(Token.de("jwt", Instant.now().plusSeconds(60)));
 
         TokenResponse response = autenticar.autenticar("ana@example.com", "secreto");
@@ -57,7 +57,7 @@ class AutenticarUsuarioUseCaseTest {
         assertThat(response.rol()).isEqualTo("TECNICO");
         assertThat(response.roles()).containsExactly(Rol.TECNICO);
         assertThat(response.expiracion()).isNotNull();
-        verify(tokenIssuer).emitir(new UsuarioId(10L), Set.of(Rol.TECNICO), Rol.TECNICO, 0);
+        verify(tokenIssuer).emitir(new UsuarioId(10L), "Ana", Set.of(Rol.TECNICO), Rol.TECNICO, 0);
     }
 
     @Test
@@ -66,13 +66,13 @@ class AutenticarUsuarioUseCaseTest {
         when(passwordEncoder.matches("secreto", "hash")).thenReturn(true);
         when(rolesDePerfil.resolver(new UsuarioId(10L), Rol.TECNICO))
                 .thenReturn(Set.of(Rol.TECNICO, Rol.CLIENTE));
-        when(tokenIssuer.emitir(new UsuarioId(10L), Set.of(Rol.TECNICO, Rol.CLIENTE), Rol.TECNICO, 0))
+        when(tokenIssuer.emitir(new UsuarioId(10L), "Ana", Set.of(Rol.TECNICO, Rol.CLIENTE), Rol.TECNICO, 0))
                 .thenReturn(Token.de("jwt", Instant.now().plusSeconds(60)));
 
         TokenResponse response = autenticar.autenticar("ana@example.com", "secreto");
 
         assertThat(response.roles()).containsExactlyInAnyOrder(Rol.TECNICO, Rol.CLIENTE);
-        verify(tokenIssuer).emitir(new UsuarioId(10L), Set.of(Rol.TECNICO, Rol.CLIENTE), Rol.TECNICO, 0);
+        verify(tokenIssuer).emitir(new UsuarioId(10L), "Ana", Set.of(Rol.TECNICO, Rol.CLIENTE), Rol.TECNICO, 0);
     }
 
     @Test
@@ -82,7 +82,7 @@ class AutenticarUsuarioUseCaseTest {
 
         assertThatThrownBy(() -> autenticar.autenticar("ana@example.com", "mal"))
                 .isInstanceOf(CredencialesInvalidasException.class);
-        verify(tokenIssuer, never()).emitir(any(), any(), any(), anyInt());
+        verify(tokenIssuer, never()).emitir(any(), any(), any(), any(), anyInt());
     }
 
     @Test
@@ -91,6 +91,6 @@ class AutenticarUsuarioUseCaseTest {
 
         assertThatThrownBy(() -> autenticar.autenticar("na@example.com", "secreto"))
                 .isInstanceOf(CredencialesInvalidasException.class);
-        verify(tokenIssuer, never()).emitir(any(), any(), any(), anyInt());
+        verify(tokenIssuer, never()).emitir(any(), any(), any(), any(), anyInt());
     }
 }
