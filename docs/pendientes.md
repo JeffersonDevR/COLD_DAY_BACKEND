@@ -45,9 +45,13 @@ Cerrado en main (merge cd9b885, PR #59). Rama feat/filtro-ots-cliente (2 commits
 - 4 vistas: `Todas` / `Activas` (default, la de hoy) / `Completadas` / `Sin técnico` (`!tecnicoId && estado !== 'CANCELADA'`). Las completadas antes solo existían como contador; ahora se listan.
 - Los contadores de las métricas **no** siguen el filtro.
 
-### 2.4 Repuestos (insumos) para proveedores + que el técnico los agregue desde su OT — **M/L**
-- El dominio ya tiene `Insumo`, `OfertaInsumo`, `RequerimientoInsumo` y `oferta.requerimientoId` (que en T4 dejamos de exponer por ser un id interno).
-- Falta la UI de insumos del proveedor y el flujo de que el técnico proponga/agregue repuestos desde su vista de la OT.
+### 2.4 Repuestos (insumos) para proveedores + que el técnico los agregue desde su OT — **M/L** (CERRADO 2026-10-26)
+
+Cerrado en main (merges 4ae81d5 PR #62 backend + a8e5a04 PR #63 frontend, apilados). Ramas feat/insumos-backend (5 commits) + feat/insumos-frontend (4). Backend 130 suites / 887 tests. Frontend 75 archivos / 696 tests en la integración de main. Verificación: verificador independiente PASS (1 minor cerrado; la review nativa fue no transitable en este runtime: `immutable_review_transport_unsupported`). Doc del feature: odd/tasks/insumos-repuestos.md. El técnico ya puede pedir repuestos desde su OT fuera del diagnóstico; el proveedor quedó con tests.
+- Mapeo corregido contra el código: **no existe entidad `Insumo` ni catálogo** (decisión del dominio en `RequerimientoInsumo`); la UI del proveedor **ya existía** (`solicitudes-proveedor-page`) y el faltante real era el flujo del técnico a posteriori. Sin catálogo nuevo.
+- Backend: `POST /api/ot/{id}/insumos` (estados permitidos `ASIGNADA/EN_CAMINO/EN_DIAGNOSTICO/EN_REPARACION/DISPUTADA`; 403 del técnico asignado dispara antes del 409 en estados sin técnico; retriable tras `SIN_PROVEEDOR`) + `GET /api/ot/{id}/insumos` (newest first). Reusa `SolicitarInsumoUseCase`: mismo broadcast por proveedor activo, misma vigencia, misma rama `SIN_PROVEEDOR`.
+- Frontend: sección "Repuestos" en `ejecucion-ot-page` (líneas libres como el diagnóstico, guard in-flight anti doble broadcast, copy humana en toda la ruta de error) + primera spec de `solicitudes-proveedor-page` (10 tests).
+- Nits documentados (no bloquean): 201 `Location` apunta a la colección; sin idempotencia backend por diseño — el debounce vive en la UI.
 
 ## 3. Pendientes acumulados de la sesión
 
@@ -70,5 +74,5 @@ Cerrado en main (merge cd9b885, PR #59). Rama feat/filtro-ots-cliente (2 commits
 1. Cerrar el feature del mapa (T2 → T5) — es el que pediste en primer lugar.
 2. **Alertas de la OT** (2.1) — reusa el canal SSE ya construido; es el mayor valor por esfuerzo.
 3. ~~Los dos baratos: **filtro de OTs del cliente** (2.3) y **quitar el registro de proveedores en admin** (2.2).~~ HECHO y mergeado 2026-10-22 (#59, #60).
-4. **Repuestos/insumos** (2.4) — toca el mismo dominio de ofertas que el mapa. **Siguiente.**
+4. ~~**Repuestos/insumos** (2.4)~~ HECHO y mergeado 2026-10-26 (#62 backend + #63 frontend, apilados).
 5. Los de la sección 3 según impacto (3.1 el crudo y 3.2 los loads son los que más se ven).
