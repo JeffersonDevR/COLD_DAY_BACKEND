@@ -412,7 +412,7 @@
 
                   <button
                     type="submit"
-                    [disabled]="repuestosForm.invalid || repuestosForm.controls.insumos.length === 0"
+                    [disabled]="repuestosForm.invalid || repuestosForm.controls.insumos.length === 0 || repuestosEnviando()"
                     class="w-full py-3 rounded-2xl bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition-colors flex items-center justify-center gap-2"
                   >
                     <i class="pi pi-send text-sm"></i>

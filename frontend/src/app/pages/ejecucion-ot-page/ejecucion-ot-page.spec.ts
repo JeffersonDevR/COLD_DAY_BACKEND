@@ -356,6 +356,17 @@ describe('EjecucionOtPage', () => {
       expect(toast.success).not.toHaveBeenCalled();
     });
 
+    it('un doble clic con la solicitud en vuelo no despacha dos broadcasts', () => {
+      const { fixture, tecnicosApi } = setup();
+      const c = fixture.componentInstance;
+      construirLineas(c, 'Bomba de drenaje', 1);
+      // La primera llamada queda pendiente (en vuelo); la segunda debe cortarse.
+      tecnicosApi.solicitarInsumos.mockReturnValue(new Subject());
+      c.enviarRepuestos();
+      c.enviarRepuestos();
+      expect(tecnicosApi.solicitarInsumos).toHaveBeenCalledTimes(1);
+    });
+
     it('un 409 al enviar muestra copy humana y conserva el formulario', () => {
       const { fixture, tecnicosApi, toast } = setup();
       const c = fixture.componentInstance;

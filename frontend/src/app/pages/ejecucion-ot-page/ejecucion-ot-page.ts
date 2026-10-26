@@ -165,6 +165,8 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   /** Estado de la carga del listado, con copy humana si falló (nunca en blanco). */
   readonly repuestosCargando = signal<boolean>(false);
   readonly repuestosErrorCarga = signal<string | null>(null);
+  /** Guard in-flight: evita que un doble clic despache dos broadcasts. */
+  readonly repuestosEnviando = signal<boolean>(false);
 
   /**
    * Form de repuestos a posteriori: mismas líneas libres que el diagnóstico
@@ -227,6 +229,9 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   enviarRepuestos(): void {
     const lines = this.repuestosForm.controls.insumos;
     if (this.repuestosForm.invalid || lines.length === 0) return;
+    // Un clic doble no puede despachar dos broadcasts a los proveedores.
+    if (this.repuestosEnviando()) return;
+    this.repuestosEnviando.set(true);
 
     const insumos: InsumoLinea[] = lines.controls.map((grupo) => {
       const linea = grupo.getRawValue() as { descripcion: string; cantidad: number };
@@ -236,6 +241,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
 
     this.tecnicosApi.solicitarInsumos(this.otId(), { observaciones: observaciones || undefined, insumos }).subscribe({
       next: (requerimiento) => {
+        this.repuestosEnviando.set(false);
         // Actualización en sitio: el GET del backend ya volvió newest first,
         // así que el requerimiento recién creado va al frente de la lista.
         this.insumosOt.update((listaAnterior) => [requerimiento, ...listaAnterior]);
@@ -257,6 +263,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       },
       // El form queda intacto para que el técnico pueda reintentar.
       error: (err) => {
+        this.repuestosEnviando.set(false);
         this.toast.error('No se pudieron solicitar los repuestos', mensajeErrorAccion(err, MENSAJES_REPUESTOS));
       },
     });
