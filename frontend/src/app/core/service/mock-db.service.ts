@@ -25,6 +25,7 @@ import {
   Point,
   SolicitudInsumoResponse,
   OfertaInsumoResponse,
+  InsumoSolicitud,
   TarifaEstimadaResponse,
 } from '../models/common.models';
 import { ApiHttpError } from '../interceptos/error.interceptor';
@@ -1512,6 +1513,51 @@ export class MockDbService {
       list.map(o => (o.id === oferta.id ? { ...o, requerimiento: entregado } : o))
     );
     return entregado;
+  }
+
+  /**
+   * Crea la solicitud de repuestos a posteriori del técnico (roadmap 2.4).
+   * Espeja POST /api/ot/{id}/insumos del backend: la petición exige al menos
+   * una línea (sin líneas el backend responde 400, no es un no-op — ver
+   * InsumoSolicitudApiRequest) y el requerimiento nace `SOLICITADO`, nunca
+   * `SIN_PROVEEDOR` (en el backend el estado lo decide si hay proveedores
+   * elegibles; el mock siempre simula que hay alguno).
+   */
+  crearSolicitudInsumos(otId: string, solicitud: InsumoSolicitud): SolicitudInsumoResponse {
+    if (solicitud.insumos.length === 0) {
+      throw new ApiHttpError('Se requiere al menos un insumo.', 400);
+    }
+    const fecha = new Date().toISOString();
+    const requerimiento: SolicitudInsumoResponse = {
+      id: `REQ-INSUMO-${Date.now()}`,
+      otId,
+      tecnicoId: 'TEC-001',
+      estado: 'SOLICITADO',
+      observaciones: solicitud.observaciones?.trim() || undefined,
+      items: solicitud.insumos.map(linea => ({
+        descripcion: linea.descripcion.trim(),
+        cantidad: linea.cantidad,
+      })),
+      creadaEn: fecha,
+      expiraEn: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    };
+
+    // El broadcast llega al portal del proveedor: se añade al frente para que
+    // las listas queden newest-first y GET-after-POST lo encuentre.
+    this.solicitudesProveedor.update(list => [
+      {
+        id: `OFERTA-INSUMO-${Date.now()}`,
+        requerimientoId: requerimiento.id,
+        proveedorId: 'PROV-001',
+        estado: 'PENDIENTE',
+        creadaEn: fecha,
+        expiraEn: requerimiento.expiraEn,
+        requerimiento,
+      },
+      ...list,
+    ]);
+
+    return requerimiento;
   }
 
   private haversineKm(a: Point, b: Point): number {

@@ -380,6 +380,106 @@ describe('TecnicosApi', () => {
     expect(await doc).toBeUndefined();
   });
 
+  it('getInsumosOt hace GET /api/ot/{id}/insumos y traduce el listado', async () => {
+    const promise = firstValueFrom(api.getInsumosOt('ot1'));
+    const req = http.expectOne('/api/ot/ot1/insumos');
+    expect(req.request.method).toBe('GET');
+    req.flush([
+      {
+        id: 'req-1',
+        otId: 'ot1',
+        tecnicoId: 'TEC-001',
+        estado: 'SOLICITADO',
+        observaciones: 'Entrega en sitio',
+        items: [{ descripcion: 'Capacitor 45uF', cantidad: 2 }],
+        creadaEn: '2026-10-26T10:00:00Z',
+        expiraEn: '2026-10-26T10:15:00Z',
+        resueltaEn: null,
+      },
+      {
+        id: 'req-2',
+        otId: 'ot1',
+        tecnicoId: 'TEC-001',
+        estado: 'SIN_PROVEEDOR',
+        observaciones: null,
+        items: [{ descripcion: 'Bomba de drenaje', cantidad: 1 }],
+        creadaEn: '2026-10-25T10:00:00Z',
+        expiraEn: null,
+        resueltaEn: '2026-10-25T10:15:00Z',
+      },
+    ]);
+    const requerimientos = await promise;
+    expect(requerimientos).toHaveLength(2);
+    expect(requerimientos[0].estado).toBe('SOLICITADO');
+    expect(requerimientos[0].items).toEqual([{ descripcion: 'Capacitor 45uF', cantidad: 2 }]);
+    // El wire trae null: el modelo de vista usa undefined para mantener la
+    // misma forma que el resto de la app.
+    expect(requerimientos[0].resueltaEn).toBeUndefined();
+    expect(requerimientos[1].observaciones).toBeUndefined();
+  });
+
+  it('getInsumosOt en modo mock trae los requerimientos de la OT, newest first', async () => {
+    config.setUseMocks(true);
+    const requerimientos = await firstValueFrom(api.getInsumosOt('OT-2026-002'));
+    // Seed: la OT-2026-002 tiene el requerimiento REQ-INSUMO-001.
+    expect(requerimientos).toHaveLength(1);
+    expect(requerimientos[0].id).toBe('REQ-INSUMO-001');
+  });
+
+  it('solicitarInsumos hace POST con el body normalizado y mapea el 201', async () => {
+    const promise = firstValueFrom(
+      api.solicitarInsumos('ot1', {
+        observaciones: '  Entrega en sitio  ',
+        insumos: [{ descripcion: '  Capacitor 45uF  ', cantidad: 1 }],
+      }),
+    );
+    const req = http.expectOne('/api/ot/ot1/insumos');
+    expect(req.request.method).toBe('POST');
+    // Textos recortados y observaciones null cuando viene vacía: el backend
+    // exige al menos un insumo (@NotEmpty → 400), ese gate vive en la página.
+    expect(req.request.body).toEqual({
+      observaciones: 'Entrega en sitio',
+      insumos: [{ descripcion: 'Capacitor 45uF', cantidad: 1 }],
+    });
+    req.flush({
+      id: 'req-nuevo',
+      otId: 'ot1',
+      tecnicoId: 'TEC-001',
+      estado: 'SOLICITADO',
+      observaciones: null,
+      items: [{ descripcion: 'Capacitor 45uF', cantidad: 1 }],
+      creadaEn: '2026-10-26T10:30:00Z',
+      expiraEn: '2026-10-26T10:45:00Z',
+      resueltaEn: null,
+    });
+    const requerimiento = await promise;
+    expect(requerimiento.id).toBe('req-nuevo');
+    expect(requerimiento.estado).toBe('SOLICITADO');
+  });
+
+  it('solicitarInsumos en modo mock añade el requerimiento y GET-after-POST lo entrega', async () => {
+    config.setUseMocks(true);
+    const creado = await firstValueFrom(
+      api.solicitarInsumos('OT-2026-002', {
+        insumos: [{ descripcion: 'Compresor 1/2HP', cantidad: 1 }],
+      }),
+    );
+    expect(creado.estado).toBe('SOLICITADO');
+    expect(creado.otId).toBe('OT-2026-002');
+
+    const historial = await firstValueFrom(api.getInsumosOt('OT-2026-002'));
+    expect(historial.map((r) => r.otId)).toEqual(['OT-2026-002', 'OT-2026-002']);
+    // Newest first: el recién creado va al frente.
+    expect(historial[0].id).toBe(creado.id);
+  });
+
+  it('solicitarInsumos en modo mock rechaza la solicitud sin líneas (400)', async () => {
+    config.setUseMocks(true);
+    await expect(
+      firstValueFrom(api.solicitarInsumos('OT-2026-002', { insumos: [] })),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
   it('actualizarUbicacion hace PUT /api/tecnicos/me/ubicacion', async () => {
     const promise = firstValueFrom(api.actualizarUbicacion({ latitud: 1, longitud: 2 }));
     const req = http.expectOne('/api/tecnicos/me/ubicacion');

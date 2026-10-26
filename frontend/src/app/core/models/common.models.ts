@@ -279,6 +279,16 @@ export interface InsumoLinea {
   cantidad: number;
 }
 
+/**
+ * Solicitud de repuestos a posteriori (roadmap 2.4): lo que el técnico declara
+ * fuera del diagnóstico en POST /api/ot/{id}/insumos. Mismo contrato de líneas
+ * libres que el diagnóstico (AD5: descripción + cantidad, sin catálogo).
+ */
+export interface InsumoSolicitud {
+  observaciones?: string;
+  insumos: InsumoLinea[];
+}
+
 /** Estados raíz del despacho de insumos (EstadoRequerimiento.java). */
 export type EstadoRequerimiento = 'SOLICITADO' | 'ASIGNADO' | 'ENTREGADO' | 'SIN_PROVEEDOR';
 

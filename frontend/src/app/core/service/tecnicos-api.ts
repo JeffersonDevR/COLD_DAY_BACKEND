@@ -13,6 +13,8 @@ import {
   MedioPago,
   TipoDocumentoTecnico,
   CategoriaServicio,
+  SolicitudInsumoResponse,
+  InsumoSolicitud,
   Point
 } from '../models/common.models';
 import {
@@ -20,6 +22,7 @@ import {
   OfertaOtApiResponse,
   OfertaOtConResumen,
   OtApiResponse,
+  SolicitudInsumoApiResponse,
   TecnicoApiRequest,
   TecnicoApiResponse,
   TecnicoCercanoApiResponse,
@@ -29,12 +32,14 @@ import {
 import {
   aDiagnosticoApiRequest,
   aDocumentoTecnico,
+  aInsumoSolicitudApiRequest,
   aOfertaTecnico,
   aOtResponse,
+  aSolicitudInsumoResponse,
   aTecnicoCercano,
   aTecnicoResponse,
 } from './backend.mappers';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, defer, of, throwError } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 import { pendienteBackend } from '../errorStatus/pendiente-backend';
 
@@ -308,6 +313,48 @@ export class TecnicosApi {
       return of(undefined).pipe(delay(300));
     }
     return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/diagnostico`), aDiagnosticoApiRequest(diag));
+  }
+
+  /**
+   * GET /api/ot/{otId}/insumos (roadmap 2.4): requerimientos de repuestos de la
+   * OT, newest first. El backend responde 200 con lista vacía cuando la orden
+   * no tiene ninguno; el 403 de otro técnico se deja propagar para que la
+   * página lo trate como error de carga (nunca en blanco).
+   */
+  getInsumosOt(otId: string): Observable<SolicitudInsumoResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      // La fuente en memoria es el portal del proveedor: cada oferta lleva su
+      // requerimiento embebido, así que los requerimientos de la OT se leen de
+      // ahí (y GET-after-POST funciona sin otra tabla paralela).
+      const esDeEstaOt = (r: SolicitudInsumoResponse | null): r is SolicitudInsumoResponse =>
+        r !== null && r.otId === otId;
+      const requerimientos = this.mockDb
+        .solicitudesProveedor()
+        .map((o) => o.requerimiento)
+        .filter(esDeEstaOt)
+        // Newest first, igual que el backend (creadaEn descendente).
+        .sort((a, b) => (b.creadaEn ?? '').localeCompare(a.creadaEn ?? ''));
+      return of(requerimientos).pipe(delay(250));
+    }
+    return this.http
+      .get<SolicitudInsumoApiResponse[]>(this.apiConfig.url(`/ot/${otId}/insumos`))
+      .pipe(map((list) => list.map(aSolicitudInsumoResponse)));
+  }
+
+  /**
+   * POST /api/ot/{otId}/insumos (roadmap 2.4): repuestos pedidos a posteriori
+   * por el técnico asignado. El backend exige al menos una línea (400) y solo
+   * acepta OT en ASIGNADA / EN_CAMINO / EN_DIAGNOSTICO / EN_REPARACION /
+   * DISPUTADA (409 en terminales); 201 devuelve el requerimiento creado
+   * (`SOLICITADO` o `SIN_PROVEEDOR` cuando no hay proveedores elegibles).
+   */
+  solicitarInsumos(otId: string, solicitud: InsumoSolicitud): Observable<SolicitudInsumoResponse> {
+    if (this.apiConfig.useMocks()) {
+      return defer(() => of(this.mockDb.crearSolicitudInsumos(otId, solicitud))).pipe(delay(300));
+    }
+    return this.http
+      .post<SolicitudInsumoApiResponse>(this.apiConfig.url(`/ot/${otId}/insumos`), aInsumoSolicitudApiRequest(solicitud))
+      .pipe(map(aSolicitudInsumoResponse));
   }
 
   /**

@@ -16,7 +16,7 @@ import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
-import { OtResponse, MedioPago, EstadoOt } from '../../core/models/common.models';
+import { OtResponse, MedioPago, EstadoOt, SolicitudInsumoResponse, EstadoRequerimiento, InsumoLinea } from '../../core/models/common.models';
 
 /**
  * Copy propia de esta pantalla: el 409 de `POST /ot/{id}/desplazamiento` es
@@ -26,6 +26,30 @@ import { OtResponse, MedioPago, EstadoOt } from '../../core/models/common.models
 const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
   409: 'No se pudo iniciar el desplazamiento: el cliente puede no haber pagado la visita todavía, o la orden pudo cambiar de estado en otro dispositivo. Actualiza la página e inténtalo de nuevo.',
 };
+
+/**
+ * Copy propia de esta pantalla: el 409 de `POST /ot/{id}/insumos` es
+ * `SolicitudInsumosInvalidaException`, que casi siempre significa que la orden
+ * llegó a un estado terminal mientras se redactaba la petición. Refrescar sí
+ * sirve acá: la lista vuelve del GET y el form se bloquea.
+ */
+const MENSAJES_REPUESTOS: Record<number, string> = {
+  409: 'La orden cambió de estado y ya no acepta repuestos nuevos. Actualiza la página para ver el estado actual.',
+};
+
+/**
+ * Estados de la OT en los que el técnico puede pedir repuestos
+ * (roadmap 2.4): espeja la guarda del backend (`SolicitarInsumosOtUseCase`).
+ * Fuera de este set el backend siempre respondería 409, así que la UI no
+ * muestra el form para no montar un envío garantizado a fallar.
+ */
+const ESTADOS_REPUESTOS_PERMITIDOS = new Set<EstadoOt>([
+  'ASIGNADA',
+  'EN_CAMINO',
+  'EN_DIAGNOSTICO',
+  'EN_REPARACION',
+  'DISPUTADA',
+]);
 
 @Component({
   selector: 'app-ejecucion-ot-page',
@@ -133,6 +157,137 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     this.insumos.removeAt(index);
   }
 
+  // --- Repuestos a posteriori (roadmap 2.4) ---
+
+  /** Requerimientos de repuestos de la OT, newest first (GET del backend). */
+  readonly insumosOt = signal<SolicitudInsumoResponse[]>([]);
+
+  /** Estado de la carga del listado, con copy humana si falló (nunca en blanco). */
+  readonly repuestosCargando = signal<boolean>(false);
+  readonly repuestosErrorCarga = signal<string | null>(null);
+
+  /**
+   * Form de repuestos a posteriori: mismas líneas libres que el diagnóstico
+   * (descripcion + cantidad, AD5) más observaciones opcionales. Vive dentro de
+   * la sección "Repuestos" y se envía a POST /api/ot/{id}/insumos.
+   */
+  readonly repuestosForm = new FormGroup({
+    observaciones: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(1000)] }),
+    insumos: new FormArray<FormGroup>([]),
+  });
+
+  private nuevaLineaRepuesto(): FormGroup {
+    return new FormGroup({
+      descripcion: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(500)] }),
+      cantidad: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
+    });
+  }
+
+  agregarRepuesto(): void {
+    this.repuestosForm.controls.insumos.push(this.nuevaLineaRepuesto());
+  }
+
+  quitarRepuesto(index: number): void {
+    this.repuestosForm.controls.insumos.removeAt(index);
+  }
+
+  /**
+   * Espeja la guarda de estados del backend: con una OT terminal el POST
+   * respondería 409, así que el form ni se muestra.
+   */
+  readonly repuestosPermitidos = computed<boolean>(() => {
+    const estado = this.ot()?.estado;
+    return !!estado && ESTADOS_REPUESTOS_PERMITIDOS.has(estado);
+  });
+
+  /**
+   * Carga el historial de repuestos de la OT. Tolerante: un fallo (403 de otro
+   * técnico, 404, red) deja la sección renderizada con el aviso de error y
+   * NUNCA deja la página en blanco (clase "loads silenciosos").
+   */
+  cargarInsumos(): void {
+    const id = this.otId();
+    if (!id) return;
+    this.repuestosCargando.set(true);
+    this.repuestosErrorCarga.set(null);
+    this.tecnicosApi.getInsumosOt(id).subscribe({
+      next: (requerimientos) => {
+        this.insumosOt.set(requerimientos);
+        this.repuestosCargando.set(false);
+      },
+      error: () => {
+        this.repuestosCargando.set(false);
+        this.repuestosErrorCarga.set(
+          'No se pudo cargar el historial de repuestos de esta orden. Revisa tu conexión e inténtalo de nuevo.',
+        );
+      },
+    });
+  }
+
+  enviarRepuestos(): void {
+    const lines = this.repuestosForm.controls.insumos;
+    if (this.repuestosForm.invalid || lines.length === 0) return;
+
+    const insumos: InsumoLinea[] = lines.controls.map((grupo) => {
+      const linea = grupo.getRawValue() as { descripcion: string; cantidad: number };
+      return { descripcion: linea.descripcion.trim(), cantidad: linea.cantidad };
+    });
+    const observaciones = this.repuestosForm.controls.observaciones.value.trim();
+
+    this.tecnicosApi.solicitarInsumos(this.otId(), { observaciones: observaciones || undefined, insumos }).subscribe({
+      next: (requerimiento) => {
+        // Actualización en sitio: el GET del backend ya volvió newest first,
+        // así que el requerimiento recién creado va al frente de la lista.
+        this.insumosOt.update((listaAnterior) => [requerimiento, ...listaAnterior]);
+        this.repuestosForm.reset();
+        lines.clear();
+        // Un requerimiento SIN_PROVEEDOR no es un fallo: se creó, pero nadie
+        // lo recibió y el POST puede repetirse.
+        if (requerimiento.estado === 'SIN_PROVEEDOR') {
+          this.toast.info(
+            'Sin proveedores disponibles',
+            'Tus repuestos quedaron registrados, pero por ahora no hay proveedores disponibles. Podrás reintentar en unos minutos.',
+          );
+        } else {
+          this.toast.success(
+            'Repuestos solicitados',
+            'Se despacharon a los proveedores activos. Los verás reflejados en la lista.',
+          );
+        }
+      },
+      // El form queda intacto para que el técnico pueda reintentar.
+      error: (err) => {
+        this.toast.error('No se pudieron solicitar los repuestos', mensajeErrorAccion(err, MENSAJES_REPUESTOS));
+      },
+    });
+  }
+
+  etiquetaRepuesto(estado: EstadoRequerimiento): string {
+    switch (estado) {
+      case 'SOLICITADO': return 'Solicitado';
+      case 'ASIGNADO': return 'Asignado';
+      case 'ENTREGADO': return 'Entregado';
+      case 'SIN_PROVEEDOR': return 'Sin proveedor';
+    }
+  }
+
+  tonoRepuesto(estado: EstadoRequerimiento): 'pendiente' | 'ok' | 'error' {
+    switch (estado) {
+      case 'SOLICITADO': return 'pendiente';
+      case 'ASIGNADO':
+      case 'ENTREGADO': return 'ok';
+      case 'SIN_PROVEEDOR': return 'error';
+    }
+  }
+
+  claseBadgeRepuesto(estado: EstadoRequerimiento): string {
+    switch (this.tonoRepuesto(estado)) {
+      case 'pendiente': return 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300';
+      case 'ok': return 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300';
+      case 'error': return 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300';
+    }
+  }
+
   ngOnInit(): void {
     cargarOtDesdeRuta(
       this.route,
@@ -141,6 +296,8 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
         this.otId.set(id);
         this.enSitio.set(false);
         this.escucharCambiosDeEstado(id);
+        // Historial de repuestos (roadmap 2.4): tolerante a fallo, nunca en blanco.
+        this.cargarInsumos();
       },
       (orden) => this._otRemoto.set(orden),
     );

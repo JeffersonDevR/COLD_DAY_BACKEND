@@ -15,7 +15,7 @@ import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { OtResponse, Point } from '../../core/models/common.models';
+import { OtResponse, Point, SolicitudInsumoResponse } from '../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
   return {
@@ -33,12 +33,29 @@ function orden(overrides: Partial<OtResponse> = {}): OtResponse {
   };
 }
 
-function setup(opts: { useMocks?: boolean; ot?: OtResponse } = {}) {
+function requerimiento(overrides: Partial<SolicitudInsumoResponse> = {}): SolicitudInsumoResponse {
+  return {
+    id: 'REQ-001',
+    otId: 'ot1',
+    tecnicoId: 'TEC-001',
+    estado: 'SOLICITADO',
+    observaciones: 'Entrega en sitio',
+    items: [{ descripcion: 'Capacitor 45uF', cantidad: 2 }],
+    creadaEn: '2026-10-26T10:00:00Z',
+    ...overrides,
+  };
+}
+
+function setup(
+  opts: { useMocks?: boolean; ot?: OtResponse; insumos?: SolicitudInsumoResponse[] } = {},
+) {
   const tecnicosApi = {
     iniciarDesplazamiento: vi.fn(() => of(undefined)),
     llegarADomicilio: vi.fn(() => of(undefined)),
     registrarDiagnostico: vi.fn(() => of(undefined)),
     finalizarServicio: vi.fn(() => of(undefined)),
+    getInsumosOt: vi.fn(() => of(opts.insumos ?? [])),
+    solicitarInsumos: vi.fn(() => of(requerimiento({ id: 'REQ-NUEVO' }))),
   };
   const posicion = signal<Point | null>(null);
   const tracking = { ultimaPosicion: posicion.asReadonly(), iniciar: vi.fn(), detener: vi.fn() };
@@ -257,6 +274,112 @@ describe('EjecucionOtPage', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Ejecución OT: OT-2026-0017');
     expect(texto).not.toContain(idInterno);
+  });
+
+  describe('Repuestos a posteriori (roadmap 2.4)', () => {
+    function construirLineas(c: EjecucionOtPage, descripcion: string, cantidad = 1): void {
+      c.agregarRepuesto();
+      const insumos = c.repuestosForm.controls.insumos;
+      const ultimoIndice = insumos.length - 1;
+      insumos.at(ultimoIndice).patchValue({ descripcion, cantidad });
+    }
+
+    it('carga el historial de repuestos al abrir la OT', () => {
+      const { tecnicosApi } = setup();
+      expect(tecnicosApi.getInsumosOt).toHaveBeenCalledWith('ot1');
+    });
+
+    it('lista vacía se muestra como estado vacío, no como error', () => {
+      const { fixture } = setup();
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Todavía no pediste repuestos para esta orden.');
+      expect(fixture.componentInstance.repuestosErrorCarga()).toBeNull();
+    });
+
+    it('renderiza estado, observaciones e ítems de cada solicitud', () => {
+      const { fixture } = setup({ insumos: [requerimiento()] });
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Solicitado');
+      expect(texto).toContain('Entrega en sitio');
+      expect(texto).toContain('2 × Capacitor 45uF');
+    });
+
+    it('SIN_PROVEEDOR se lee como reintentable, no como fila rota', () => {
+      const { fixture } = setup({
+        insumos: [requerimiento({ estado: 'SIN_PROVEEDOR', observaciones: undefined })],
+      });
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Sin proveedor');
+      expect(texto).toContain('Sin proveedores disponibles — podés reintentar.');
+    });
+
+    it('un fallo de carga deja la página en pie y muestra aviso con reintentar', () => {
+      const { fixture, tecnicosApi } = setup();
+      tecnicosApi.getInsumosOt.mockReturnValue(throwError(() => new ApiHttpError('ot ajena', 403)));
+      fixture.componentInstance.cargarInsumos();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.repuestosErrorCarga()).toBe(
+        'No se pudo cargar el historial de repuestos de esta orden. Revisa tu conexión e inténtalo de nuevo.',
+      );
+      const texto = fixture.nativeElement.textContent as string;
+      // La página sigue de pie: la cabecera no desaparece por un GET fallido.
+      expect(texto).toContain('Ejecución OT: OT-2026-0002');
+      expect(texto).toContain('Reintentar');
+      // Nunca se escupe el mensaje crudo del backend.
+      expect(texto).not.toContain('ot ajena');
+    });
+
+    it('envía la solicitud con líneas normalizadas y antepone el requerimiento creado', () => {
+      const { fixture, tecnicosApi, toast } = setup();
+      const c = fixture.componentInstance;
+      c.repuestosForm.controls.observaciones.setValue('  urgente  ');
+      construirLineas(c, ' Capacitor 45uF ', 2);
+      c.enviarRepuestos();
+
+      expect(tecnicosApi.solicitarInsumos).toHaveBeenCalledWith('ot1', {
+        observaciones: 'urgente',
+        insumos: [{ descripcion: 'Capacitor 45uF', cantidad: 2 }],
+      });
+      expect(c.insumosOt()[0].id).toBe('REQ-NUEVO');
+      expect(c.repuestosForm.controls.insumos.length).toBe(0);
+      expect(toast.success).toHaveBeenCalledWith('Repuestos solicitados', expect.any(String));
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it('sin líneas la solicitud no se envía', () => {
+      const { fixture, tecnicosApi, toast } = setup();
+      const c = fixture.componentInstance;
+      c.enviarRepuestos();
+      expect(tecnicosApi.solicitarInsumos).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    it('un 409 al enviar muestra copy humana y conserva el formulario', () => {
+      const { fixture, tecnicosApi, toast } = setup();
+      const c = fixture.componentInstance;
+      construirLineas(c, 'Bomba de drenaje', 1);
+      tecnicosApi.solicitarInsumos.mockReturnValue(
+        throwError(() => new ApiHttpError('SolicitudInsumosInvalida', 409)),
+      );
+      c.enviarRepuestos();
+
+      expect(toast.error).toHaveBeenCalledWith(
+        'No se pudieron solicitar los repuestos',
+        'La orden cambió de estado y ya no acepta repuestos nuevos. Actualiza la página para ver el estado actual.',
+      );
+      // El form queda intacto para reintentar.
+      expect(c.repuestosForm.controls.insumos.length).toBe(1);
+    });
+
+    it('bloquea el envío cuando la OT quedó en estado terminal', () => {
+      const { fixture } = setup({ ot: orden({ estado: 'FINALIZADA' }) });
+      const c = fixture.componentInstance;
+      expect(c.repuestosPermitidos()).toBe(false);
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Esta orden ya no acepta repuestos nuevos.');
+    });
   });
 
   describe('distancia y ETA locales (sin llamadas a Google Maps)', () => {
