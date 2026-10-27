@@ -26,11 +26,16 @@ Un usuario TÉCNICO (o PROVEEDOR) que pide un servicio como cliente debe poder: 
 - [x] **D8** — Specs: draft (persistencia/restore/limpieza), un-tap (crear+reintentar+éxito), sesión sin logout, panel sin perfil. — verificación en este commit (`docs(odd): record dual-role cliente closure evidence`).
 
 ## Evidencia de cierre (2026-10-27)
-- Frontend: `npm test -- --watch=false` → **77 archivos / 768 tests / 0 fallos** (baseline 76/749/0; +1 spec, +19 tests).
+- Backend: **132 suites / 914 tests / 0** (`BUILD SUCCESSFUL`); targeted `PerfilAcquisitionIT` 8/0, `OtApiIT` 16/0, `AutorizacionPropietarioTest` 5/0.
+- Frontend: `npm test -- --watch=false` → **77 archivos / 777 tests / 0 fallos** (baseline 76/749/0).
 - `npx tsc --noEmit -p tsconfig.app.json` → 0 errores.
 - `npx tsc --noEmit -p tsconfig.spec.json` → 0 errores.
 - `npm run lint` → solo los 8 errores pre-existentes (2 `no-explicit-any` en `maps-geocoder-cliente.spec.ts`, 6 `label-has-associated-control` en `agregar-perfil-page.html`).
 - Revisión de la API del backend verificada contra `ClienteApiResponse.conToken` / `TecnicoApiResponse` de `70da717` y `5af2c89`: la clave `token` es aditiva y se omite cuando es nula.
+
+## Correcciones post-verificación (2026-10-27)
+- **D7 estaba inalcanzable (MAJOR del verificador)**: `/clientes/me/ots` exigía `hasRole('CLIENTE')`, así que un técnico sin perfil recibía **403**, nunca el 404 que clasifica el estado de negocio; el spec lo ocultaba mockeando un 404 inexistente. Corregido en `1006f72`: el endpoint acepta cualquier autenticado, `ListarOtUseCase` devuelve 404 real cuando no hay perfil, y 403 queda reservado a participación en OTs. Tests HTTP nuevos: técnico sin perfil → 404 con mensaje; técnico con perfil → 200 solo sus OTs; anónimo → 401; aislamiento entre clientes; técnico no-dueño y otro cliente → 403 en detalle/historial.
+- **Fricción residual** (`801e59a`): 409 tras perfil ya creado ahora da copy accionable ("iniciá sesión; tu solicitud quedó guardada") en vez de loop; `returnUrl` valida solo rutas internas (rechaza absolutas y `//host`); la dirección editada en la tarjeta también se usa para la OT reintentada; specs de no-creación-en-carga y anti doble-submit; mock con token decodable.
 
 ## Fuera de alcance
 - Auto-provisión del perfil cliente en `POST /api/ot` (Opción 2, decisión de negocio aparte).
