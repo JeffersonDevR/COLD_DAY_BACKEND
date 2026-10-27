@@ -94,9 +94,18 @@ public class ClienteController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Lists the OTs of the authenticated client (RF-F1-25). */
+    /**
+     * Lists the OTs of the authenticated client (RF-F1-25).
+     * <p>
+     * "My orders" is resolved entirely from the principal and scoped to that
+     * usuario's client profile, so it is authenticated-only rather than
+     * client-role-only: a dual-role usuario (TECNICO) without a client profile
+     * must receive the business state "no client profile" (404 from
+     * {@code ListarOtUseCase#listarPorCliente}) instead of a role rejection
+     * (403), which is what the frontend renders as the missing-profile state.
+     */
     @GetMapping("/me/ots")
-    @PreAuthorize("hasRole('CLIENTE')")
+    @PreAuthorize("isAuthenticated()")
     public List<OtApiResponse> misOts(@AuthenticationPrincipal AuthenticatedUser principal) {
         return listarOts.listarPorCliente(principal.usuarioId()).stream()
                 .map(resumen -> OtApiResponse.from(resumen.ot(), resumen.clienteNombre(), resumen.tecnicoNombre()))

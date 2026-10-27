@@ -37,8 +37,8 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Second-profile acquisition (spec capability {@code second-profile-acquisition}):
  * the technician profile is created for the authenticated principal, the role
- * comes only from the endpoint, and the token version is bumped so the new
- * capability is honored at the next login.
+ * comes only from the endpoint, and the token version is bumped so the token in
+ * flight is revoked; the controller returns its replacement.
  */
 @ExtendWith(MockitoExtension.class)
 class RegistrarPerfilTecnicoUseCaseTest {
@@ -70,7 +70,7 @@ class RegistrarPerfilTecnicoUseCaseTest {
         assertThat(response.numeroIdentificacion()).isEqualTo("123");
         assertThat(response.estadoValidacion()).isEqualTo(EstadoValidacion.PENDIENTE);
         assertThat(response.categoriasServicio()).containsExactly(CategoriaServicio.REFRIGERACION);
-        // The capability takes effect at the next login: the in-flight token is revoked.
+        // The in-flight token is revoked; the controller returns the replacement.
         assertThat(principal.getTokenVersion()).isEqualTo(1);
         verify(usuarioRepository).save(principal);
     }

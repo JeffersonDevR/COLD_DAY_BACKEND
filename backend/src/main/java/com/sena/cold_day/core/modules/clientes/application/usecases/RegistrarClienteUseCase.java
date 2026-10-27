@@ -81,8 +81,9 @@ public class RegistrarClienteUseCase {
                 usuario.getUsuarioId(), request.tipoCliente(), DireccionPrincipal.con(request.calle(), request.ciudad(), request.barrio(), request.ubicacion())
         ));
 
-        // Second-profile acquisition: bump the token version so the new
-        // CLIENTE capability is honored at the next login (design D3).
+        // Second-profile acquisition: bump the token version, which revokes the
+        // token in flight (design D3). The controller returns the replacement
+        // carrying the new CLIENTE capability, so no re-login is needed.
         usuario.incrementarTokenVersion();
         usuarioRepository.save(usuario);
 

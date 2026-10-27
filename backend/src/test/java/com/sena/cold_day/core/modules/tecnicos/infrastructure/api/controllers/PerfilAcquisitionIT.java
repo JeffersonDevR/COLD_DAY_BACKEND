@@ -76,7 +76,8 @@ class PerfilAcquisitionIT {
         assertThat(tecnicoRepository.findByUsuarioId(usuarioId)).isPresent();
         assertThat(usuarioRepository.findByCorreo("dual-tec@example.com").orElseThrow().getTokenVersion()).isEqualTo(1);
 
-        // The pre-acquisition token is revoked: the new capability requires a re-login.
+        // The pre-acquisition token is revoked; the caller must use the replacement
+        // returned by the acquisition instead of signing in again.
         mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numeroIdentificacion\":\"T-1b\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
