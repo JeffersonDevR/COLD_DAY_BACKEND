@@ -5,6 +5,7 @@ import { HistorialEquiposPage } from './historial-equipos-page';
 import { AuthService } from '../../core/service/auth.service';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtResponse } from '../../core/models/common.models';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 
 function ot(overrides: Partial<OtResponse>): OtResponse {
   return {
@@ -110,6 +111,22 @@ describe('HistorialEquiposPage', () => {
     expect(texto).toContain('Todavía no tenés equipos registrados');
     expect(texto).toContain('Solicitar un servicio');
     expect(texto).not.toContain('LG Dual Inverter');
+  });
+
+  it('sin perfil de cliente ofrece el alta honesta, no un error de carga', () => {
+    const fixture = setup(
+      vi.fn(() => throwError(() => new ApiHttpError('No existe un perfil de cliente para el usuario: 6', 404))),
+    );
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(fixture.componentInstance.sinPerfilCliente()).toBe(true);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(texto).toContain('Todavía no tenés perfil de cliente');
+    expect(texto).not.toContain('No pudimos cargar tus equipos');
+    const link = fixture.nativeElement.querySelector(
+      '[data-test="crear-perfil-desde-historial"]',
+    ) as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toContain('/perfil/agregar');
   });
 
   it('avisa si la carga falla y reintenta', () => {

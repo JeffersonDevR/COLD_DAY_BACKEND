@@ -13,21 +13,10 @@ import { SugerenciaApiResponse } from '../../core/models/backend.dto';
 import { CIUDAD_OPERACION, MapaConfigService } from '../../core/service/mapa-config.service';
 import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
-import { ApiHttpError } from '../../core/interceptos/error.interceptor';
+import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-cliente';
 
-/** Mensaje exacto que devuelve el backend (404) cuando el usuario no tiene perfil de cliente. */
-const PATRON_PERFIL_CLIENTE_FALTANTE = /no existe un perfil de cliente/i;
-
-/**
- * Detecta el rechazo `POST /api/ot` por falta de perfil de cliente: el backend
- * responde 404 (o 409 en variantes de validación) con ese mensaje, y el
- * interceptor lo entrega como ApiHttpError con el cuerpo ya mapeado.
- */
-export function esErrorPerfilClienteFaltante(err: unknown): boolean {
-  if (!(err instanceof ApiHttpError)) return false;
-  if (err.status !== 404 && err.status !== 409) return false;
-  return PATRON_PERFIL_CLIENTE_FALTANTE.test(err.message);
-}
+// Se reexporta para conservar la API pública previa de la página.
+export { esErrorPerfilClienteFaltante };
 
 @Component({
   selector: 'app-solicitar-servicio-page',

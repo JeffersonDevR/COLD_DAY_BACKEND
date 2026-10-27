@@ -6,6 +6,7 @@ import { CategoriaServicio, EstadoOt, OtResponse } from '../../core/models/commo
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { CargaError } from '../../shared/carga-error/carga-error';
+import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-cliente';
 
 /**
  * Un "equipo" del cliente: la categoría de servicio que ya fue intervenida,
@@ -57,6 +58,8 @@ export class HistorialEquiposPage implements OnInit {
   /** Carga silenciosa: el fallo se ve y se puede reintentar. */
   readonly cargando = signal<boolean>(false);
   readonly errorCarga = signal<boolean>(false);
+  /** 404 de perfil de cliente faltante: se ofrece el alta, no un error de carga. */
+  readonly sinPerfilCliente = signal<boolean>(false);
 
   readonly equipos = computed<EquipoCliente[]>(() => this.agrupar(this.ots()));
 
@@ -67,14 +70,19 @@ export class HistorialEquiposPage implements OnInit {
   cargar(): void {
     this.cargando.set(true);
     this.errorCarga.set(false);
+    this.sinPerfilCliente.set(false);
     this.clientesApi.getOtsPorCliente(String(this.authService.currentUser()?.id ?? '')).subscribe({
       next: (ots) => {
         this.ots.set(ots);
         this.cargando.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.ots.set([]);
         this.cargando.set(false);
+        if (esErrorPerfilClienteFaltante(err)) {
+          this.sinPerfilCliente.set(true);
+          return;
+        }
         this.errorCarga.set(true);
       },
     });

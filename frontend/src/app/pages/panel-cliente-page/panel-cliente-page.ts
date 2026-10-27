@@ -8,6 +8,7 @@ import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { OtResponse } from '../../core/models/common.models';
+import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-cliente';
 
 /** Vistas del listado de OTs del cliente. */
 export type FiltroOts = 'TODAS' | 'ACTIVAS' | 'COMPLETADAS' | 'SIN_TECNICO';
@@ -32,6 +33,13 @@ export class PanelClientePage {
 
   private readonly _ots = signal<OtResponse[]>([]);
   readonly serviciosCliente = computed(() => this._ots());
+
+  /**
+   * `GET /clientes/me/ots` responde 404 cuando la cuenta todavía no tiene
+   * perfil de cliente (técnico dual-role recién llegado). No es una falla de
+   * carga: la página ofrece crear el perfil.
+   */
+  readonly sinPerfilCliente = signal<boolean>(false);
 
   readonly serviciosActivos = computed(() => {
     return this.serviciosCliente().filter(o =>
@@ -109,8 +117,16 @@ export class PanelClientePage {
    */
   private cargarOts(currentId: string, inicial: boolean): void {
     this.clientesApi.getOtsPorCliente(currentId).subscribe({
-      next: (ots) => this._ots.set(ots),
-      error: () => {
+      next: (ots) => {
+        this.sinPerfilCliente.set(false);
+        this._ots.set(ots);
+      },
+      error: (err: unknown) => {
+        if (esErrorPerfilClienteFaltante(err)) {
+          this.sinPerfilCliente.set(true);
+          this._ots.set([]);
+          return;
+        }
         if (inicial) this._ots.set([]);
       },
     });
