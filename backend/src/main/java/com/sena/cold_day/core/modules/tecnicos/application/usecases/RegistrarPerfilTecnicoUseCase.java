@@ -18,8 +18,9 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
  * Second-profile acquisition: an already authenticated usuario adds a technician
  * profile. The target usuario is the authenticated principal — never a path id
  * or body field — and the created role is determined solely by this endpoint
- * (TECNICO). On success the principal's {@code tokenVersion} is bumped so the
- * new capability is honored at the next login (design D3).
+ * (TECNICO). On success the principal's {@code tokenVersion} is bumped, which
+ * revokes the token in flight (design D3); the controller hands back the
+ * replacement so the caller stays signed in with the new capability.
  */
 @Service
 public class RegistrarPerfilTecnicoUseCase {
@@ -48,7 +49,8 @@ public class RegistrarPerfilTecnicoUseCase {
         Tecnico tecnico = tecnicoRepository.save(Tecnico.crear(usuarioId.valor(),
                 request.numeroIdentificacion(), request.categoriasServicio(), request.certificaciones()));
 
-        // Revokes the in-flight token so the new capability takes effect at the next login.
+        // Revokes the in-flight token; the controller mints its replacement so the
+        // caller does not have to sign in again.
         usuario.incrementarTokenVersion();
         usuarioRepository.save(usuario);
 

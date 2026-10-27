@@ -1,9 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ClientesApi } from './clientes-api';
 import { ApiConfig } from './api.config';
+import { AuthService } from './auth.service';
+import { ToastService } from '../alertas/toast.service';
 import { OtApiResponse } from '../models/backend.dto';
 import { OtRequest } from '../models/common.models';
 
@@ -47,8 +50,14 @@ describe('ClientesApi', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    window.localStorage.clear();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: ToastService, useValue: { warning: vi.fn(), error: vi.fn(), success: vi.fn() } },
+      ],
     });
     api = TestBed.inject(ClientesApi);
     config = TestBed.inject(ApiConfig);
@@ -205,6 +214,51 @@ describe('ClientesApi', () => {
     expect(creado.id).toContain('cliente-mock-');
     expect(creado.tipoCliente).toBe('B2B');
     expect(creado.direccion.ciudad).toBe('Bogotá');
+    http.verify();
+  });
+
+  it('crearMiPerfil en modo mock devuelve un token de reemplazo decodificable', async () => {
+    config.setUseMocks(true);
+    const creado = await firstValueFrom(
+      api.crearMiPerfil({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta' }),
+    );
+
+    expect(creado.token).toBeTruthy();
+    const payload = JSON.parse(atob((creado.token as string).split('.')[1])) as Record<string, unknown>;
+    expect(payload['roles']).toContain('CLIENTE');
+    expect(payload).toMatchObject({
+      sub: expect.anything(),
+      correo: expect.any(String),
+      ver: expect.any(Number),
+      iat: expect.any(Number),
+      exp: expect.any(Number),
+    });
+    http.verify();
+  });
+
+  it('crearMiPerfil en modo mock conserva el nombre y el id de la sesión al adoptar el token', async () => {
+    config.setUseMocks(true);
+    // Sesión vigente del técnico demo: `setCurrentUser` emite el token simulado
+    // con `nombre` e `id`, igual que el login del mock.
+    const auth = TestBed.inject(AuthService);
+    auth.setCurrentUser({
+      id: 6,
+      nombre: 'Juan Pérez',
+      correo: 'juan.tecnico@coldday.com.co',
+      rol: 'TECNICO',
+      habeasDataAceptado: true,
+      activo: true,
+    });
+
+    const creado = await firstValueFrom(
+      api.crearMiPerfil({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta' }),
+    );
+    const sesion = auth.adoptarToken(creado.token as string);
+
+    // `nombreDeSesion` lee el claim `nombre`: el mock no puede degradarlo a vacío.
+    expect(sesion.nombre).toBe('Juan Pérez');
+    expect(sesion.id).toBe(6);
+    expect([...auth.userRoles()].sort()).toEqual(['CLIENTE', 'TECNICO']);
     http.verify();
   });
 

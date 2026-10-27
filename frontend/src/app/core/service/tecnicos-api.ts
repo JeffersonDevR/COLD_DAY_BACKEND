@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
+import { TokenStorageService } from './token-storage.service';
 import {
   TecnicoResponse,
   TecnicoCercano,
@@ -68,6 +69,7 @@ export class TecnicosApi {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
+  private readonly tokenStorage = inject(TokenStorageService);
 
   /**
    * POST /api/tecnicos: endpoint público que crea el Usuario (rol TECNICO) y su
@@ -81,8 +83,9 @@ export class TecnicosApi {
    * POST /api/tecnicos/perfil: adquisición del SEGUNDO perfil (TECNICO) por un
    * usuario ya autenticado. El backend resuelve el usuario desde el principal,
    * así que no viaja ningún id en la ruta ni en el cuerpo; el rol sale del tipo
-   * de perfil, nunca del body (M5). En éxito el backend sube `tokenVersion`, lo
-   * que revoca el JWT en vuelo: el llamador DEBE pedir re-login.
+   * de perfil, nunca del body (M5). En éxito el backend sube `tokenVersion` y
+   * devuelve en `token` el JWT de reemplazo: el llamador lo adopta sin cerrar la
+   * sesión. Solo un backend legado sin `token` obliga a reautenticarse.
    */
   crearMiPerfil(request: TecnicoPerfilApiRequest): Observable<TecnicoApiResponse> {
     if (this.apiConfig.useMocks()) {
@@ -102,6 +105,7 @@ export class TecnicosApi {
         activo: true,
         ubicacion: null,
         ubicacionActualizadaEn: null,
+        token: this.tokenStorage.createMockJwtConRolAdicional('TECNICO'),
       };
       return of(fake).pipe(delay(300));
     }

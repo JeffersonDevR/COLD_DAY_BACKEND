@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -172,6 +173,40 @@ class OtApiIT {
     }
 
     /**
+     * D1 (dual-role-cliente-ot): a technician who requested the service as a
+     * client opens their own order. The listing already returned it; the detail
+     * used to answer 403 only because the caller also held the TECNICO
+     * capability, which subtracted access they already had as the owner.
+     */
+    @Test
+    void theDualRoleClientOwnerReadsTheOrderTheyRequested() throws Exception {
+        Long usuarioId = crearUsuario("dual-detail@example.com", Rol.TECNICO);
+        Cliente cliente = crearCliente(usuarioId);
+        Instant ahora = Instant.parse("2026-10-27T10:00:00Z");
+        Ot propia = otRepository.save(Ot.reconstituir(OtId.nueva(), cliente.getId(), null,
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1",
+                new Point(4.6, -74.0), EstadoOt.BUSCANDO_TECNICO, 10.0, ahora.plusSeconds(60), ahora,
+                null, null, null, null, null, null, null));
+        String dual = tokenIssuer.emitir(new UsuarioId(usuarioId), Set.of(Rol.CLIENTE, Rol.TECNICO),
+                Rol.TECNICO, 0).valor();
+
+        mockMvc.perform(get("/api/ot/" + propia.getId().valor()).header("Authorization", "Bearer " + dual))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(propia.getId().valor().toString()))
+                .andExpect(jsonPath("$.clienteId").value(cliente.getId().valor().toString()));
+
+        mockMvc.perform(get("/api/ot/" + propia.getId().valor() + "/historial")
+                        .header("Authorization", "Bearer " + dual))
+                .andExpect(status().isOk());
+
+        // Tracking is a privacy endpoint: access shows up as "no location yet"
+        // (404), never as the authorization 403.
+        mockMvc.perform(get("/api/ot/" + propia.getId().valor() + "/tecnico-ubicacion")
+                        .header("Authorization", "Bearer " + dual))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
      * The OT read carries its append-only history, so the client renders the
      * audit trail from the read it already makes instead of asking for it
      * separately (and showing an empty timeline against the real backend).
@@ -264,6 +299,120 @@ class OtApiIT {
 
         assertThat(otRepository.buscarPorId(persisted.getId()))
                 .hasValueSatisfying(found -> assertThat(found.getEstado()).isEqualTo(EstadoOt.CANCELADA));
+    }
+
+    /**
+     * B1: "my orders" is scoped to the client profile, not to the CLIENTE role.
+     * A technician without a client profile must see the business state "no
+     * client profile" (404), which is what the panel renders as the
+     * missing-profile state — a 403 role rejection would never reach it.
+     */
+    @Test
+    void aTechnicianWithoutClientProfileGetsTheMissingProfileNotFound() throws Exception {
+        Long usuarioId = crearUsuario("tec-sin-perfil-cli@example.com", Rol.TECNICO);
+        tecnicoRepository.save(Tecnico.crear(usuarioId, "ID-" + UUID.randomUUID(),
+                Set.of(CategoriaServicio.REFRIGERACION), Set.of()));
+
+        mockMvc.perform(get("/api/clientes/me/ots").header("Authorization", "Bearer " + jwt(usuarioId, Rol.TECNICO)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message",
+                        containsString("No existe un perfil de cliente para el usuario")));
+    }
+
+    /** B1: the same technician with a client profile reads only their own orders. */
+    @Test
+    void aTechnicianWithAClientProfileReadsOnlyTheirOwnOrders() throws Exception {
+        Long usuarioId = crearUsuario("tec-con-perfil-cli@example.com", Rol.TECNICO);
+        tecnicoRepository.save(Tecnico.crear(usuarioId, "ID-" + UUID.randomUUID(),
+                Set.of(CategoriaServicio.REFRIGERACION), Set.of()));
+        Cliente propio = crearCliente(usuarioId);
+        Ot propia = otRepository.save(otDe(propio));
+
+        mockMvc.perform(get("/api/clientes/me/ots").header("Authorization", "Bearer " + jwt(usuarioId, Rol.TECNICO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(propia.getId().valor().toString()))
+                .andExpect(jsonPath("$[0].clienteId").value(propio.getId().valor().toString()));
+    }
+
+    @Test
+    void myOrdersRequiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/clientes/me/ots")).andExpect(status().isUnauthorized());
+    }
+
+    /** B1: the listing is scoped by the caller's client profile, never by id. */
+    @Test
+    void myOrdersDoesNotLeakAnotherClientsOrders() throws Exception {
+        Long usuarioA = crearUsuario("iso-a@example.com", Rol.CLIENTE);
+        Cliente clienteA = crearCliente(usuarioA);
+        otRepository.save(otDe(clienteA));
+
+        Long usuarioB = crearUsuario("iso-b@example.com", Rol.CLIENTE);
+        Cliente clienteB = crearCliente(usuarioB);
+        Ot otB = otRepository.save(otDe(clienteB));
+
+        mockMvc.perform(get("/api/clientes/me/ots").header("Authorization", "Bearer " + jwt(usuarioB, Rol.CLIENTE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(otB.getId().valor().toString()));
+    }
+
+    /**
+     * B2: denial over HTTP. A technician who neither owns the order nor is the
+     * assigned one is rejected by the participation rule, not admitted by the
+     * endpoint-level role gate.
+     */
+    @Test
+    void aTechnicianWhoNeitherOwnsNorIsAssignedTheOrderIsDenied() throws Exception {
+        Long duenoUsuario = crearUsuario("deny-tec-dueno@example.com", Rol.CLIENTE);
+        Cliente dueno = crearCliente(duenoUsuario);
+        Long asignadoUsuario = crearUsuario("deny-tec-asignado@example.com", Rol.TECNICO);
+        TecnicoId asignado = tecnicoRepository.save(Tecnico.crear(asignadoUsuario, "ID-" + UUID.randomUUID(),
+                Set.of(CategoriaServicio.REFRIGERACION), Set.of())).getId();
+        Ot orden = otRepository.save(otDe(dueno, asignado));
+
+        Long otroUsuario = crearUsuario("deny-tec-otro@example.com", Rol.TECNICO);
+        tecnicoRepository.save(Tecnico.crear(otroUsuario, "ID-" + UUID.randomUUID(),
+                Set.of(CategoriaServicio.REFRIGERACION), Set.of()));
+        String token = jwt(otroUsuario, Rol.TECNICO);
+
+        mockMvc.perform(get("/api/ot/" + orden.getId().valor()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/ot/" + orden.getId().valor() + "/historial")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    /** B2: another client, with a profile of their own, still cannot read the order. */
+    @Test
+    void aDifferentClientIsDeniedTheOrder() throws Exception {
+        Long duenoUsuario = crearUsuario("deny-cli-dueno@example.com", Rol.CLIENTE);
+        Cliente dueno = crearCliente(duenoUsuario);
+        Ot orden = otRepository.save(otDe(dueno));
+
+        Long otroUsuario = crearUsuario("deny-cli-otro@example.com", Rol.CLIENTE);
+        crearCliente(otroUsuario);
+        String token = jwt(otroUsuario, Rol.CLIENTE);
+
+        mockMvc.perform(get("/api/ot/" + orden.getId().valor()).header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/ot/" + orden.getId().valor() + "/historial")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden());
+    }
+
+    private Ot otDe(Cliente cliente) {
+        return otDe(cliente, null);
+    }
+
+    private Ot otDe(Cliente cliente, TecnicoId tecnicoId) {
+        Instant ahora = Instant.parse("2026-10-27T10:00:00Z");
+        return Ot.reconstituir(OtId.nueva(), cliente.getId(), tecnicoId, CategoriaServicio.REFRIGERACION,
+                "No enciende", List.of(), "Calle 1", new Point(4.6, -74.0),
+                tecnicoId == null ? EstadoOt.BUSCANDO_TECNICO : EstadoOt.ASIGNADA, 10.0,
+                ahora.plusSeconds(60), ahora, tecnicoId == null ? null : ahora,
+                null, null, null, null, null, null);
     }
 
     private Cliente crearCliente(Long usuarioId) {

@@ -14,7 +14,31 @@
         </div>
       </div>
 
-      @if (errorCarga()) {
+      @if (sinPerfilCliente()) {
+        <div
+          role="status"
+          data-test="historial-sin-perfil-cliente"
+          class="rounded-3xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 p-6 sm:p-8 space-y-4"
+        >
+          <div class="flex items-start gap-3">
+            <i class="pi pi-user-plus text-amber-600 dark:text-amber-400 text-2xl"></i>
+            <div class="space-y-1">
+              <h2 class="text-lg font-black text-amber-900 dark:text-amber-100">Todavía no tenés perfil de cliente</h2>
+              <p class="text-sm text-amber-800 dark:text-amber-200">
+                Para ver tus equipos primero necesitamos tus datos de cliente. Podés crearlos ahora con la dirección de la solicitud que tengas en curso.
+              </p>
+            </div>
+          </div>
+          <a
+            routerLink="/perfil/agregar"
+            [queryParams]="{ returnUrl: '/cliente/equipos' }"
+            data-test="crear-perfil-desde-historial"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold transition-colors w-fit"
+          >
+            <i class="pi pi-plus-circle text-sm"></i> Crear mi perfil de cliente
+          </a>
+        </div>
+      } @else if (errorCarga()) {
         <app-carga-error
           mensaje="No pudimos cargar tus equipos. Revisá tu conexión e intentalo de nuevo."
           (reintentar)="cargar()"

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { TecnicosApi } from './tecnicos-api';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
+import { TokenStorageService } from './token-storage.service';
 import { OtApiResponse } from '../models/backend.dto';
 
 function otDto(overrides: Partial<OtApiResponse> = {}): OtApiResponse {
@@ -39,6 +40,7 @@ describe('TecnicosApi', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
+    window.localStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -112,6 +114,35 @@ describe('TecnicosApi', () => {
     expect(creado.numeroIdentificacion).toBe('999');
     expect(creado.categoriasServicio).toEqual(['LAVADORAS']);
     expect(creado.estadoValidacion).toBe('PENDIENTE');
+    http.verify();
+  });
+
+  it('crearMiPerfil en modo mock devuelve un token con TECNICO sumado y la identidad intacta', async () => {
+    config.setUseMocks(true);
+    const storage = TestBed.inject(TokenStorageService);
+    // Sesión vigente de una clienta que adquiere el segundo perfil.
+    storage.saveToken(
+      storage.createMockJwt({
+        id: 3,
+        nombre: 'María Gómez',
+        correo: 'maria.gomez@gmail.com',
+        rol: 'CLIENTE',
+        roles: ['CLIENTE'],
+      }),
+    );
+
+    const creado = await firstValueFrom(
+      api.crearMiPerfil({ numeroIdentificacion: '999', categoriasServicio: ['LAVADORAS'] }),
+    );
+
+    expect(creado.token).toBeTruthy();
+    // El token se adopta sin logout: debe traer el rol nuevo y no perder a la persona.
+    storage.saveToken(creado.token as string);
+    const decoded = storage.getDecodedToken();
+    expect(decoded?.roles).toEqual(['CLIENTE', 'TECNICO']);
+    expect(decoded?.rol).toBe('CLIENTE');
+    expect(decoded?.nombre).toBe('María Gómez');
+    expect(decoded?.id).toBe(3);
     http.verify();
   });
 

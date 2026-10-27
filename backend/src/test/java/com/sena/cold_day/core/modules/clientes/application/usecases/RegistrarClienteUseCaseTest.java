@@ -35,8 +35,9 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 /**
  * Second-profile acquisition (spec capability {@code second-profile-acquisition}):
  * the client profile is created for the authenticated principal and the token
- * version is bumped so the new capability is honored at the next login. The
- * public onboarding path ({@code registrarNuevo}) must not change.
+ * version is bumped so the token in flight is revoked; the controller returns
+ * its replacement. The public onboarding path ({@code registrarNuevo}) must not
+ * change.
  */
 @ExtendWith(MockitoExtension.class)
 class RegistrarClienteUseCaseTest {

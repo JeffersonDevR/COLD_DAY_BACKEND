@@ -5,9 +5,23 @@
     </a>
     <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">Completar mi perfil</h1>
     <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-      Sumá un segundo rol a tu cuenta. El nuevo perfil se habilita al volver a iniciar sesión.
+      Sumá un segundo rol a tu cuenta. El nuevo perfil queda habilitado al instante.
     </p>
   </div>
+
+  @if (errorPerfilExistente()) {
+    <div role="alert" data-test="perfil-ya-existe" class="rounded-3xl border border-amber-200 bg-amber-50 p-6 sm:p-8 space-y-3">
+      <p class="text-sm font-semibold text-amber-900">{{ errorPerfilExistente() }}</p>
+      <button
+        type="button"
+        data-test="iniciar-sesion-perfil-existente"
+        (click)="irAIniciarSesion()"
+        class="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500"
+      >
+        <i class="pi pi-sign-in"></i> Iniciar sesión
+      </button>
+    </div>
+  }
 
   @if (sesionActualizada()) {
     <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 sm:p-8 space-y-3">
@@ -88,7 +102,7 @@
 
             <button
               type="submit"
-              [disabled]="cargando()"
+              [disabled]="cargando() || !!errorPerfilExistente()"
               class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-500 disabled:opacity-60"
             >
               <i class="pi pi-check"></i> Crear mi perfil de técnico
@@ -141,7 +155,7 @@
 
             <button
               type="submit"
-              [disabled]="cargando()"
+              [disabled]="cargando() || !!errorPerfilExistente()"
               class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-500 disabled:opacity-60"
             >
               <i class="pi pi-check"></i> Crear mi perfil de cliente

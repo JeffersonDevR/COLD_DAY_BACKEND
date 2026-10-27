@@ -44,7 +44,9 @@ export const routes: Routes = [
   // Rutas de Clientes
   {
     path: 'cliente/panel',
-    canActivate: [authGuard, roleGuard(['CLIENTE', 'ADMINISTRADOR'])],
+    // El menú ya ofrece "Mis Órdenes" a TECNICO: el guard debe coincidir, o el
+    // usuario rebota al panel técnico aunque tenga OTs como cliente.
+    canActivate: [authGuard, roleGuard(['CLIENTE', 'TECNICO', 'ADMINISTRADOR'])],
     loadComponent: () => import('./pages/panel-cliente-page/panel-cliente-page').then(m => m.PanelClientePage),
     title: 'Panel Cliente - COLD DAY'
   },

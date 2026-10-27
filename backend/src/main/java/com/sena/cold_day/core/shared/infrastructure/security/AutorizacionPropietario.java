@@ -82,19 +82,17 @@ public class AutorizacionPropietario {
      * ADMINISTRADOR, the owning client, or the assigned technician. Used by the
      * read paths of an OT, including the one that exposes the technician's live
      * location.
+     * <p>
+     * Participation is decided by the resource rows, never by the other roles the
+     * caller happens to hold: a dual-role user (TECNICO who also owns the client
+     * profile that requested the OT) is the owner of that order like any other
+     * CLIENTE, so the technician capability cannot subtract access they already
+     * have. The technician branch only grants access to the assigned technician,
+     * so a technician who is neither the owner nor the assignee is still denied.
      */
     public boolean esParticipanteOAdmin(AuthenticatedUser principal, OtResponse ot) {
         if (principal.tieneRol(Rol.ADMINISTRADOR)) {
             return true;
-        }
-        // A technician may act as a service requester (CLIENTE side) but must
-        // never see or operate the orders they created themselves: only other
-        // technicians' orders. Their own requester orders stay out of their view.
-        if (principal.tieneRol(Rol.TECNICO)
-                && clienteRepository.findByUsuarioId(principal.usuarioId())
-                        .filter(cliente -> cliente.getId().equals(ot.clienteId()))
-                        .isPresent()) {
-            return false;
         }
         if (clienteRepository.findByUsuarioId(principal.usuarioId())
                 .filter(cliente -> cliente.getId().equals(ot.clienteId()))

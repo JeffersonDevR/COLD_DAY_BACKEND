@@ -52,6 +52,13 @@ interface ConfigMapaApiResponse {
   radioPasoKm?: number;
 }
 
+/**
+ * Ciudad única de operación del servicio. El backend publica el centro y los
+ * radios del área metropolitana, pero no el nombre de la ciudad: este literal es
+ * el default editable del alta rápida de perfil de cliente.
+ */
+export const CIUDAD_OPERACION = 'Cúcuta';
+
 /** Respaldo: los mismos valores por defecto que declara el backend. */
 const CONFIG_POR_DEFECTO: MapaConfig = {
   centro: { lat: 7.8939, lng: -72.5078 },

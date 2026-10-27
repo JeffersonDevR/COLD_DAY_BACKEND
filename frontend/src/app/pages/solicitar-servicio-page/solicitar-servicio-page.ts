@@ -7,26 +7,25 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
-import { CategoriaServicio, Point } from '../../core/models/common.models';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
+import { CategoriaServicio, Point, TipoCliente } from '../../core/models/common.models';
 import { MapsApi } from '../../core/service/maps-api';
 import { SugerenciaApiResponse } from '../../core/models/backend.dto';
-import { MapaConfigService } from '../../core/service/mapa-config.service';
+import { CIUDAD_OPERACION, MapaConfigService } from '../../core/service/mapa-config.service';
+import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
-import { ApiHttpError } from '../../core/interceptos/error.interceptor';
+import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-cliente';
 
-/** Mensaje exacto que devuelve el backend (404) cuando el usuario no tiene perfil de cliente. */
-const PATRON_PERFIL_CLIENTE_FALTANTE = /no existe un perfil de cliente/i;
+// Se reexporta para conservar la API pública previa de la página.
+export { esErrorPerfilClienteFaltante };
 
 /**
- * Detecta el rechazo `POST /api/ot` por falta de perfil de cliente: el backend
- * responde 404 (o 409 en variantes de validación) con ese mensaje, y el
- * interceptor lo entrega como ApiHttpError con el cuerpo ya mapeado.
+ * Copy del 409 al adquirir el perfil: el alta ya se commiteó antes (el token de
+ * reemplazo no llegó), así que reintentar no ayuda. Hay que reautenticarse y el
+ * borrador sigue guardado.
  */
-export function esErrorPerfilClienteFaltante(err: unknown): boolean {
-  if (!(err instanceof ApiHttpError)) return false;
-  if (err.status !== 404 && err.status !== 409) return false;
-  return PATRON_PERFIL_CLIENTE_FALTANTE.test(err.message);
-}
+const MENSAJE_PERFIL_CLIENTE_YA_EXISTE =
+  'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.';
 
 @Component({
   selector: 'app-solicitar-servicio-page',
@@ -42,6 +41,7 @@ export class SolicitarServicioPage {
   private readonly mapsApi = inject(MapsApi);
   private readonly destroyRef = inject(DestroyRef);
   private readonly mapaConfig = inject(MapaConfigService);
+  private readonly draftService = inject(SolicitudDraftService);
 
   readonly categoriaActual = signal<CategoriaServicio>('AIRE_ACONDICIONADO');
   readonly loading = signal<boolean>(false);
@@ -70,11 +70,37 @@ export class SolicitarServicioPage {
     evidenciaUrl: new FormControl('')
   });
 
+  /**
+   * Alta rápida del perfil de cliente sin salir de la solicitud: la dirección
+   * ya tipeada y el punto del mapa son los datos que el backend necesita.
+   */
+  readonly perfilForm = new FormGroup({
+    tipoCliente: new FormControl<TipoCliente>('B2C', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    calle: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    ciudad: new FormControl(CIUDAD_OPERACION, { nonNullable: true, validators: [Validators.required] }),
+    barrio: new FormControl('', { nonNullable: true }),
+  });
+  readonly tiposCliente: TipoCliente[] = ['B2C', 'B2B'];
+  readonly creandoPerfil = signal<boolean>(false);
+  /** Error honesto del alta rápida; el borrador y el formulario quedan intactos. */
+  readonly errorCrearPerfil = signal<string | null>(null);
+  /** El backend contestó 409: el perfil ya existe y la sesión en vuelo no sirve. */
+  readonly perfilYaExistia = signal<boolean>(false);
+
   get listoParaEnviar(): boolean {
     return this.solicitudForm.valid && this.coordenadas() !== null && !this.loading();
   }
 
   constructor() {
+    // Volver desde el alta del perfil (o un F5) no puede costar re-tipear todo.
+    this.restaurarBorrador();
+    this.solicitudForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.guardarBorrador());
+
     // El autocompletado solo se dispara con lo que ESCRIBE el usuario. Los
     // cambios programáticos de `direccion` (geocodificación directa/inversa) se
     // aplican con `emitEvent: false` para no reabrir el menú de sugerencias.
@@ -110,6 +136,7 @@ export class SolicitarServicioPage {
 
   setCategoria(cat: CategoriaServicio): void {
     this.categoriaActual.set(cat);
+    this.guardarBorrador();
   }
 
   /**
@@ -126,6 +153,7 @@ export class SolicitarServicioPage {
       next: (d) => {
         this.buscandoDireccion.set(false);
         this.solicitudForm.patchValue({ direccion: d.direccionFormateada }, { emitEvent: false });
+        this.guardarBorrador();
       },
       error: () => {
         this.buscandoDireccion.set(false);
@@ -145,6 +173,7 @@ export class SolicitarServicioPage {
           { direccion: direccion.direccionFormateada, latitud: direccion.latitud, longitud: direccion.longitud },
           { emitEvent: false },
         );
+        this.guardarBorrador();
       },
       error: () => {
         this.buscandoDireccion.set(false);
@@ -171,11 +200,94 @@ export class SolicitarServicioPage {
   onSubmit(): void {
     if (this.solicitudForm.invalid) return;
 
+    if (!this.coordenadas()) {
+      this.toast.error('Falta la ubicación', 'Fija tu domicilio en el mapa o con tu ubicación GPS.');
+      return;
+    }
+
+    this.guardarBorrador();
+    this.enviarSolicitud();
+  }
+
+  setTipoCliente(tipo: TipoCliente): void {
+    this.perfilForm.controls.tipoCliente.setValue(tipo);
+  }
+
+  /**
+   * Alta de perfil en un solo toque: crea el perfil de cliente con la dirección
+   * y el punto que ya están en la solicitud, adopta el token devuelto y
+   * reintenta la MISMA OT sin pedir un solo dato de nuevo. El tap es el
+   * consentimiento: nunca se crea el perfil en silencio.
+   */
+  crearPerfilYEnviar(): void {
+    if (this.creandoPerfil() || this.loading()) return;
+    if (this.perfilForm.invalid) {
+      this.perfilForm.markAllAsTouched();
+      return;
+    }
+
     const punto = this.coordenadas();
     if (!punto) {
       this.toast.error('Falta la ubicación', 'Fija tu domicilio en el mapa o con tu ubicación GPS.');
       return;
     }
+
+    const valor = this.perfilForm.getRawValue();
+    // La tarjeta es la fuente de verdad: si se corrigió la dirección, la OT se
+    // reintenta con ese valor y no con el que tenía el formulario original.
+    this.solicitudForm.patchValue({ direccion: valor.calle.trim() }, { emitEvent: false });
+    this.guardarBorrador();
+    this.creandoPerfil.set(true);
+    this.errorCrearPerfil.set(null);
+    this.perfilYaExistia.set(false);
+
+    this.clientesApi
+      .crearMiPerfil({
+        tipoCliente: valor.tipoCliente,
+        calle: valor.calle.trim(),
+        ciudad: valor.ciudad.trim(),
+        barrio: valor.barrio.trim() || undefined,
+        ubicacion: punto,
+      })
+      .subscribe({
+        next: (perfil) => {
+          this.creandoPerfil.set(false);
+          if (!perfil.token) {
+            // Backend legado: el JWT en vuelo quedó revocado. No se reintenta
+            // con una sesión muerta; el borrador sigue intacto para después.
+            this.errorCrearPerfil.set(
+              'Creamos tu perfil, pero la sesión necesita renovarse. Iniciá sesión de nuevo y volvé a enviar la solicitud.',
+            );
+            return;
+          }
+          this.authService.adoptarToken(perfil.token);
+          this.enviarSolicitud();
+        },
+        error: (err: Error) => {
+          this.creandoPerfil.set(false);
+          if (err instanceof ApiHttpError && err.status === 409) {
+            // El perfil ya está commiteado: reintentar el alta repite el 409.
+            // Se ofrece reautenticarse y el borrador queda intacto.
+            this.perfilYaExistia.set(true);
+            this.errorCrearPerfil.set(MENSAJE_PERFIL_CLIENTE_YA_EXISTE);
+            return;
+          }
+          this.errorCrearPerfil.set(
+            'No pudimos crear tu perfil de cliente. Tus datos siguen acá; probá de nuevo.',
+          );
+        },
+      });
+  }
+
+  /** Cierra la sesión revocada y aterriza en el login para reautenticarse. */
+  irAIniciarSesion(): void {
+    this.authService.logout();
+  }
+
+  /** Crea (o reintenta) la OT con el formulario y el punto actuales. */
+  private enviarSolicitud(): void {
+    const punto = this.coordenadas();
+    if (!punto || this.loading()) return;
 
     this.loading.set(true);
     this.faltoPerfilCliente.set(false);
@@ -199,6 +311,8 @@ export class SolicitarServicioPage {
       .subscribe({
         next: (nuevaOt) => {
           this.loading.set(false);
+          // La solicitud ya existe: el borrador cumplió su función.
+          this.draftService.limpiar();
           this.toast.success('Solicitud Creada', `OT ${nuevaOt.codigo || 'Sin código'} transmitida por broadcast (${this.mapaConfig.radioInicialKm()} km)`);
           const roles = this.authService.userRoles();
           if (roles.has('TECNICO') && !roles.has('CLIENTE')) {
@@ -210,13 +324,61 @@ export class SolicitarServicioPage {
         error: (err: Error) => {
           this.loading.set(false);
           if (esErrorPerfilClienteFaltante(err)) {
-            // Técnico dual-role sin perfil de cliente: no se puede pedir una
-            // orden. En vez de un toast que se pierde, guía al alta del perfil.
-            this.faltoPerfilCliente.set(true);
+            // Técnico dual-role sin perfil de cliente: en vez de un toast que se
+            // pierde, se ofrece el alta con los datos que ya están cargados.
+            this.mostrarAltaPerfil();
             return;
           }
           avisarErrorAccion(this.toast, 'No se pudo crear la solicitud', err);
         }
       });
+  }
+
+  /** Abre la tarjeta de alta rápida con la dirección y la ciudad ya resueltas. */
+  private mostrarAltaPerfil(): void {
+    const form = this.solicitudForm.getRawValue();
+    this.perfilForm.patchValue({
+      tipoCliente: 'B2C',
+      calle: form.direccion ?? '',
+      ciudad: CIUDAD_OPERACION,
+      barrio: '',
+    });
+    this.errorCrearPerfil.set(null);
+    this.perfilYaExistia.set(false);
+    this.faltoPerfilCliente.set(true);
+  }
+
+  /** Persiste el borrador con lo que el usuario ya cargó (form + mapa + categoría). */
+  private guardarBorrador(): void {
+    const form = this.solicitudForm.getRawValue();
+    this.draftService.guardar({
+      categoria: this.categoriaActual(),
+      descripcion: form.descripcionFalla ?? '',
+      direccion: form.direccion ?? '',
+      coordenadas: this.coordenadas(),
+      evidenciaUrl: form.evidenciaUrl ?? '',
+      actualizadoEn: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Restaura el borrador sin reabrir el autocompletado (`emitEvent: false`):
+   * el usuario retoma exactamente el formulario que dejó.
+   */
+  private restaurarBorrador(): void {
+    const draft = this.draftService.leer();
+    if (!draft) return;
+    this.categoriaActual.set(draft.categoria);
+    this.coordenadas.set(draft.coordenadas);
+    this.solicitudForm.patchValue(
+      {
+        descripcionFalla: draft.descripcion,
+        direccion: draft.direccion,
+        latitud: draft.coordenadas?.latitud ?? null,
+        longitud: draft.coordenadas?.longitud ?? null,
+        evidenciaUrl: draft.evidenciaUrl,
+      },
+      { emitEvent: false },
+    );
   }
 }

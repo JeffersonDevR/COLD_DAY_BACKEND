@@ -6,6 +6,7 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { OtResponse } from '../../core/models/common.models';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 
 /** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
 function cambiarPestana(estado: 'visible' | 'hidden'): void {
@@ -77,6 +78,31 @@ describe('PanelClientePage', () => {
     const getOts = vi.fn(() => throwError(() => new Error('sin red')));
     const fixture = setup(getOts);
     expect(fixture.componentInstance.serviciosCliente()).toEqual([]);
+  });
+
+  it('un técnico sin perfil de cliente ve el alta honesta, no la lista vacía', () => {
+    const getOts = vi.fn(() =>
+      throwError(() => new ApiHttpError('No existe un perfil de cliente para el usuario: 6', 404)),
+    );
+    const fixture = setup(getOts, { id: 6, nombre: 'Juan' });
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(fixture.componentInstance.sinPerfilCliente()).toBe(true);
+    expect(fixture.nativeElement.querySelector('[data-test="panel-sin-perfil-cliente"]')).not.toBeNull();
+    expect(texto).toContain('Todavía no tenés perfil de cliente');
+    expect(texto).toContain('Crear mi perfil de cliente');
+    // El 404 de perfil no es una falla de carga ni un listado vacío genérico.
+    expect(texto).not.toContain('No tienes servicios en curso');
+  });
+
+  it('un técnico con perfil de cliente ve sus órdenes', () => {
+    const fixture = setup(
+      vi.fn(() => of([ot({ id: 'en-camino', estado: 'EN_CAMINO', tecnicoId: 'tec-1' })])),
+      { id: 6, nombre: 'Juan' },
+    );
+
+    expect(fixture.componentInstance.sinPerfilCliente()).toBe(false);
+    expect(fixture.componentInstance.serviciosActivos().map((o) => o.id)).toEqual(['en-camino']);
   });
 
   it('muestra el estado vacío sin servicios activos', () => {

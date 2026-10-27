@@ -95,6 +95,12 @@ export interface ClienteApiResponse {
   tipoCliente: TipoCliente;
   direccion: DireccionPrincipalApi;
   activo: boolean;
+  /**
+   * Solo viene en POST /api/clientes/perfil: el alta del segundo perfil sube
+   * `tokenVersion` y entrega acá el JWT de reemplazo. En cualquier otra lectura
+   * la clave está ausente (el backend omite el null).
+   */
+  token?: string;
 }
 
 export interface ClienteApiRequest {
@@ -162,6 +168,12 @@ export interface TecnicoApiResponse {
   ubicacion: Point | null;
   /** Instante ISO-8601 de `ubicacion`; `null` si nunca reportó. */
   ubicacionActualizadaEn: string | null;
+  /**
+   * Solo viene en POST /api/tecnicos/perfil: el alta del segundo perfil sube
+   * `tokenVersion` y entrega acá el JWT de reemplazo. En cualquier otra lectura
+   * la clave está ausente (el backend omite el null).
+   */
+  token?: string;
 }
 
 export interface TecnicoCercanoApiResponse {

@@ -1,13 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { CategoriaServicio, TipoCliente } from '../../core/models/common.models';
 import { CertificacionApi } from '../../core/models/backend.dto';
+import { CIUDAD_OPERACION } from '../../core/service/mapa-config.service';
+import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 
 /** Perfiles que un usuario ya autenticado puede adquirir como segundo rol. */
 export type TipoPerfilAdquirible = 'TECNICO' | 'CLIENTE';
@@ -26,10 +29,26 @@ export function parseCertificaciones(texto: string): CertificacionApi[] {
 }
 
 /**
+ * Normaliza el `returnUrl` de la query: vacío/espacios cuenta como ausente y
+ * solo se aceptan rutas internas. Un valor absoluto (`https://…`),
+ * protocolo-relativo (`//host`), con esquema o con backslashes cae al panel del
+ * perfil recién adquirido, nunca a una navegación rota.
+ */
+function normalizarReturnUrl(valor: string | null): string | null {
+  const destino = valor?.trim() ?? '';
+  if (!destino.startsWith('/') || destino.startsWith('//')) return null;
+  if (destino.includes('\\')) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(destino)) return null;
+  return destino;
+}
+
+/**
  * CTA de adquisición del segundo perfil (Cliente o Técnico). Solo ofrece los
  * perfiles que al usuario AÚN le faltan (`auth.userRoles()`). Al crear el perfil
- * el backend sube `tokenVersion` y revoca el JWT en vuelo, así que tras el éxito
- * la pantalla pide re-login en vez de conservar la sesión revocada.
+ * el backend sube `tokenVersion` y devuelve el JWT de reemplazo en la misma
+ * respuesta: la pantalla lo adopta, vuelve al `returnUrl` (o al panel del perfil
+ * recién creado) y nunca cierra la sesión. Solo si la respuesta no trae `token`
+ * (backend legado) se conserva el aviso de re-login.
  */
 @Component({
   selector: 'app-agregar-perfil-page',
@@ -42,6 +61,17 @@ export class AgregarPerfilPage {
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly clientesApi = inject(ClientesApi);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly draftService = inject(SolicitudDraftService);
+
+  /**
+   * Pantalla que pidió el alta del perfil; `null` cae al panel del perfil
+   * creado. Solo se aceptan rutas internas (ver `normalizarReturnUrl`).
+   */
+  private readonly returnUrl = normalizarReturnUrl(
+    this.route.snapshot.queryParamMap.get('returnUrl'),
+  );
 
   readonly categorias: CategoriaServicio[] = [
     'CAMARAS_VIGILANCIA',
@@ -59,6 +89,8 @@ export class AgregarPerfilPage {
   readonly categoriasSeleccionadas = signal<CategoriaServicio[]>([]);
   readonly cargando = signal(false);
   readonly sesionActualizada = signal(false);
+  /** Copy accionable cuando el backend responde 409: el perfil ya existe. */
+  readonly errorPerfilExistente = signal<string | null>(null);
 
   readonly formTecnico = new FormGroup({
     numeroIdentificacion: new FormControl('', {
@@ -74,9 +106,17 @@ export class AgregarPerfilPage {
       validators: [Validators.required],
     }),
     calle: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    ciudad: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    ciudad: new FormControl(CIUDAD_OPERACION, { nonNullable: true, validators: [Validators.required] }),
     barrio: new FormControl('', { nonNullable: true }),
   });
+
+  constructor() {
+    // Si el alta nace de una solicitud en curso, la dirección ya está tipeada.
+    const draft = this.draftService.leer();
+    if (draft?.direccion) {
+      this.formCliente.patchValue({ calle: draft.direccion });
+    }
+  }
 
   elegir(tipo: TipoPerfilAdquirible): void {
     this.seleccion.set(tipo);
@@ -101,6 +141,7 @@ export class AgregarPerfilPage {
       return;
     }
     const valor = this.formTecnico.getRawValue();
+    this.errorPerfilExistente.set(null);
     this.cargando.set(true);
     this.tecnicosApi
       .crearMiPerfil({
@@ -109,8 +150,8 @@ export class AgregarPerfilPage {
         certificaciones: parseCertificaciones(valor.certificaciones),
       })
       .subscribe({
-        next: () => this.marcarSesionActualizada(),
-        error: (err: Error) => this.errorAdquirir(err),
+        next: (perfil) => this.completarAdquisicion('TECNICO', perfil.token),
+        error: (err: Error) => this.errorAdquirir(err, 'TECNICO'),
       });
   }
 
@@ -120,6 +161,8 @@ export class AgregarPerfilPage {
       return;
     }
     const valor = this.formCliente.getRawValue();
+    const ubicacion = this.draftService.leer()?.coordenadas ?? undefined;
+    this.errorPerfilExistente.set(null);
     this.cargando.set(true);
     this.clientesApi
       .crearMiPerfil({
@@ -127,26 +170,57 @@ export class AgregarPerfilPage {
         calle: valor.calle.trim(),
         ciudad: valor.ciudad.trim(),
         barrio: valor.barrio.trim() || undefined,
+        ...(ubicacion ? { ubicacion } : {}),
       })
       .subscribe({
-        next: () => this.marcarSesionActualizada(),
-        error: (err: Error) => this.errorAdquirir(err),
+        next: (perfil) => this.completarAdquisicion('CLIENTE', perfil.token),
+        error: (err: Error) => this.errorAdquirir(err, 'CLIENTE'),
       });
   }
 
-  /** La adquisición subió `tokenVersion`: el JWT en vuelo quedó revocado. */
-  private marcarSesionActualizada(): void {
+  /**
+   * Cierra el alta: con token adopta la sesión nueva y vuelve a la pantalla de
+   * origen (o al panel del perfil adquirido) sin logout. Sin token —backend
+   * legado— el JWT en vuelo quedó revocado y hay que reautenticarse.
+   */
+  private completarAdquisicion(tipo: TipoPerfilAdquirible, token?: string): void {
     this.cargando.set(false);
-    this.sesionActualizada.set(true);
+    if (!token) {
+      this.sesionActualizada.set(true);
+      return;
+    }
+    this.auth.adoptarToken(token);
+    this.router.navigateByUrl(this.returnUrl ?? this.auth.getDashboardRouteForRole(tipo));
   }
 
-  private errorAdquirir(err: Error): void {
+  private errorAdquirir(err: Error, tipo: TipoPerfilAdquirible): void {
     this.cargando.set(false);
-    // El 409 real es perfil ya adquirido (backend: "El usuario ya tiene un
-    // perfil de cliente: <id>"): la copy no repite ids de dominio.
-    avisarErrorAccion(this.toast, 'No se pudo crear el perfil', err, {
-      409: 'Ya tenés ese perfil. Volvé al panel y actualizá la página si es necesario.',
-    });
+    if (err instanceof ApiHttpError && err.status === 409) {
+      // El backend commitea el perfil y después mintea el token: si el minteo
+      // falló, el reintento responde 409. Reintentar no ayuda; hay que
+      // reautenticarse.
+      const mensaje = this.copyPerfilExistente(tipo);
+      this.errorPerfilExistente.set(mensaje);
+      this.toast.error('No se pudo crear el perfil', mensaje);
+      return;
+    }
+    this.errorPerfilExistente.set(null);
+    avisarErrorAccion(this.toast, 'No se pudo crear el perfil', err);
+  }
+
+  /**
+   * Copy del 409. La solicitud guardada solo se promete cuando existe un
+   * borrador de este usuario: la pantalla también se abre sin ninguno (por
+   * ejemplo, desde el CTA de perfil faltante del panel de cliente).
+   */
+  private copyPerfilExistente(tipo: TipoPerfilAdquirible): string {
+    if (tipo !== 'CLIENTE') {
+      return 'Tu perfil de técnico ya existe. Iniciá sesión para continuar.';
+    }
+    const base = 'Tu perfil de cliente ya existe. Iniciá sesión para continuar';
+    return this.draftService.leer()
+      ? `${base}; tu solicitud quedó guardada.`
+      : `${base}.`;
   }
 
   /** Cierra la sesión revocada y aterriza en el login para reautenticarse. */

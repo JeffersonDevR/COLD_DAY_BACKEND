@@ -190,6 +190,34 @@ describe('AuthService', () => {
     expect([...service.userRoles()].sort()).toEqual(['CLIENTE', 'TECNICO']);
   });
 
+  it('adoptarToken renueva la sesión sin cerrarla y suma el rol nuevo', () => {
+    const service = create();
+    service.establecerSesionDesdeToken(
+      {
+        token: tokenWith({ sub: '9', rol: 'TECNICO', roles: ['TECNICO'], exp: expEn(3600) }),
+        expiracion: '',
+        rol: 'TECNICO',
+      },
+      'tecnico@x.co',
+    );
+
+    const renovado = tokenWith({
+      sub: '9',
+      rol: 'TECNICO',
+      roles: ['TECNICO', 'CLIENTE'],
+      nombre: 'Juan Perez',
+      exp: expEn(3600),
+    });
+    const usuario = service.adoptarToken(renovado);
+
+    expect(usuario.nombre).toBe('Juan Perez');
+    expect(service.isAuthenticated()).toBe(true);
+    expect([...service.userRoles()].sort()).toEqual(['CLIENTE', 'TECNICO']);
+    expect(window.localStorage.getItem(TOKEN_KEY)).toBe(renovado);
+    // Adoptar no cierra la sesión: el flujo no vuelve al login.
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
   it('logout limpia la sesión y navega al login', () => {
     const service = create();
     service.setCurrentUser(adminUser);
