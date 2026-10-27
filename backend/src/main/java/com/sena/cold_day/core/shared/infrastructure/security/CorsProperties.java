@@ -8,13 +8,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * CORS configuration (prefix app.cors).
  * <ul>
  * <li>local/test: default {@code http://localhost:4200} (Angular dev server)
- * from {@code application.properties}.</li>
+ * plus the Ionic/Capacitor native WebView schemes from
+ * {@code application-dev.properties}</li>.
  * <li>prod ({@code application-prod.properties}): {@code CORS_ALLOWED_ORIGINS}
  * env var is mandatory (comma-separated exact origins, e.g.
- * {@code https://cold-day.onrender.com}) — Spring fails at startup if it is
- * missing.</li>
+ * {@code https://cold-day.onrender.com,capacitor://localhost}) — Spring fails at
+ * startup if it is missing. Native app deployments must list their WebView
+ * schemes there (default Capacitor 3+: {@code capacitor://localhost} on iOS
+ * and {@code https://localhost} on Android; {@code ionic://localhost} covers
+ * legacy Capacitor 2 iOS builds).</li>
  * </ul>
- * Origins are matched exactly (scheme + host + port, no trailing slash).
+ * Origins are matched exactly (scheme + host + port, no trailing slash, case
+ * insensitive). A custom scheme such as {@code capacitor://localhost} matches
+ * the same exact rule as any web origin; no wildcard is ever accepted.
  */
 @ConfigurationProperties(prefix = "app.cors")
 public record CorsProperties(List<String> allowedOrigins) {

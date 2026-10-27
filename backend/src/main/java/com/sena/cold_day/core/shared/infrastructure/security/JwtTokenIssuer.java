@@ -28,7 +28,7 @@ public class JwtTokenIssuer implements TokenIssuer {
     }
 
     @Override
-    public Token emitir(UsuarioId usuarioId, Set<Rol> roles, Rol rolPrincipal, int tokenVersion) {
+    public Token emitir(UsuarioId usuarioId, String nombre, Set<Rol> roles, Rol rolPrincipal, int tokenVersion) {
         Instant ahora = Instant.now();
         Instant expira = ahora.plusMillis(expiracionMs);
         // JWT NumericDate (RFC 7519) en segundos: 100% java.time, sin
@@ -41,11 +41,17 @@ public class JwtTokenIssuer implements TokenIssuer {
         // mantiene como rol primario para display/back-compat y para que los
         // tokens antiguos (sin "roles") sigan autenticando via el fallback del
         // filtro.
-        String jwt = Jwts.builder()
+        var constructor = Jwts.builder()
                 .subject(usuarioId.valor().toString())
                 .claim("rol", rolPrincipal.name())
                 .claim("roles", roles.stream().map(Enum::name).toList())
-                .claim("ver", tokenVersion)
+                .claim("ver", tokenVersion);
+        // "nombre" es opcional: un valor vacio/nulo (formularios de
+        // conveniencia, tooling) simplemente omite el claim, sin centinela.
+        if (nombre != null && !nombre.isBlank()) {
+            constructor = constructor.claim("nombre", nombre);
+        }
+        String jwt = constructor
                 .claim("iat", ahora.getEpochSecond())
                 .claim("exp", expira.getEpochSecond())
                 .signWith(key)

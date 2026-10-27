@@ -94,7 +94,7 @@ public class DevAuthBypassFilter extends OncePerRequestFilter {
         // Option C: same derivation as production login, so a dual-role dev user
         // exercises the same expanded authority set as a real dual user.
         Set<Rol> roles = rolesDePerfil.resolver(usuarioId, usuario.getRol());
-        var principal = new AuthenticatedUser(usuarioId, usuario.getRol(), roles);
+        var principal = new AuthenticatedUser(usuarioId, usuario.getRol(), roles, usuario.getNombre());
         var authorities = roles.stream()
                 .map(r -> new SimpleGrantedAuthority("ROLE_" + r.name()))
                 .toList();

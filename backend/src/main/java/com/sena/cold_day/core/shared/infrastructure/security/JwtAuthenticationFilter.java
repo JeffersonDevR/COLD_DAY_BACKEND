@@ -57,7 +57,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Stale ver → revoked by a password reset (design D11).
                     SecurityContextHolder.clearContext();
                 } else {
-                    AuthenticatedUser principal = new AuthenticatedUser(usuarioId, rol, roles);
+                    // The optional "nombre" claim (preparacion-ionic B3) travels
+                    // into the principal when present. Deterministic fallback:
+                    // legacy tokens without it authenticate unchanged and carry
+                    // an empty display name until re-login; the filter never
+                    // consults the repository for it (see AuthenticatedUser).
+                    String nombre = claims.get("nombre", String.class);
+                    AuthenticatedUser principal = new AuthenticatedUser(usuarioId, rol, roles, nombre);
                     // Option C: exactly one authority per role in the set, so every
                     // existing hasRole(...) gate keeps working unchanged.
                     var authorities = roles.stream()

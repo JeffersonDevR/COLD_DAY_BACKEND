@@ -1,12 +1,16 @@
 package com.sena.cold_day.core.modules.usuarios.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.jupiter.api.AfterEach;
@@ -20,8 +24,21 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
+import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
+import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
+import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
+import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
+import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
+import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
@@ -44,6 +61,9 @@ class UsuariosApiIT {
     @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired SpringDataTokenRecuperacionRepository tokenRepository;
     @Autowired JwtTokenIssuer tokenIssuer;
+    @Autowired ClienteRepository clienteRepository;
+    @Autowired TecnicoRepository tecnicoRepository;
+    @Autowired ProveedorRepository proveedorRepository;
 
     @BeforeEach
     void clearCaptures() { RECOVERIES.clear(); }
@@ -51,6 +71,9 @@ class UsuariosApiIT {
     @AfterEach
     void cleanup() {
         tokenRepository.deleteAll();
+        proveedorRepository.deleteAll();
+        tecnicoRepository.deleteAll();
+        clienteRepository.deleteAll();
         usuarioRepository.deleteAll();
     }
 
@@ -194,6 +217,67 @@ class UsuariosApiIT {
                 .andExpect(jsonPath("$[0].passwordHash").doesNotExist());
     }
 
+    // ------------------------------------------------------------------
+    // GET /api/usuarios/me (preparacion-ionic B3)
+    // ------------------------------------------------------------------
+
+    /**
+     * The dual-profile mobile app needs identity + "which profiles do I already
+     * have" in one authenticated read. Identity never comes from the token: the
+     * aggregate is the source of truth, and the profile ids are wire-safe
+     * scalars (DTO only, no entity projection).
+     */
+    @Test
+    void meReturnsPersistedIdentityAndEveryOwnedProfileId() throws Exception {
+        Long usuarioId = crearUsuario("ana-me-full@example.com", Rol.CLIENTE);
+        Cliente cliente = crearCliente(usuarioId);
+        String tecnicoId = crearTecnico(usuarioId).toString();
+        String proveedorId = crearProveedor(usuarioId).toString();
+
+        mockMvc.perform(get("/api/usuarios/me").header("Authorization", "Bearer " + token(usuarioId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(usuarioId))
+                .andExpect(jsonPath("$.nombre").value("Ana"))
+                .andExpect(jsonPath("$.correo").value("ana-me-full@example.com"))
+                .andExpect(jsonPath("$.rol").value("CLIENTE"))
+                .andExpect(jsonPath("$.roles.length()").value(3))
+                .andExpect(jsonPath("$.roles", org.hamcrest.Matchers.containsInAnyOrder(
+                        "CLIENTE", "TECNICO", "PROVEEDOR")))
+                .andExpect(jsonPath("$.clientePerfilId").value(cliente.getId().valor().toString()))
+                .andExpect(jsonPath("$.tecnicoPerfilId").value(tecnicoId))
+                .andExpect(jsonPath("$.proveedorPerfilId").value(proveedorId));
+    }
+
+    /** A usuario without profile rows yet still answers 200, with null profile ids. */
+    @Test
+    void meWithoutProfileRowsAnswers200WithNullProfileIds() throws Exception {
+        Long usuarioId = crearUsuario("ana-me-solo@example.com", Rol.CLIENTE);
+
+        mockMvc.perform(get("/api/usuarios/me").header("Authorization", "Bearer " + token(usuarioId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(usuarioId))
+                .andExpect(jsonPath("$.nombre").value("Ana"))
+                .andExpect(jsonPath("$.correo").value("ana-me-solo@example.com"))
+                .andExpect(jsonPath("$.rol").value("CLIENTE"))
+                .andExpect(jsonPath("$.roles.length()").value(1))
+                .andExpect(jsonPath("$.roles[0]").value("CLIENTE"))
+                .andExpect(jsonPath("$.clientePerfilId").value(nullValue()))
+                .andExpect(jsonPath("$.tecnicoPerfilId").value(nullValue()))
+                .andExpect(jsonPath("$.proveedorPerfilId").value(nullValue()));
+    }
+
+    @Test
+    void meRequiresAuthentication() throws Exception {
+        Long usuarioId = crearUsuario("ana-me-sin-token@example.com", Rol.CLIENTE);
+
+        mockMvc.perform(get("/api/usuarios/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ------------------------------------------------------------------
+    // Shared fixtures
+    // ------------------------------------------------------------------
+
     /**
      * The stale {@code "rol":"TECNICO"} is kept on purpose: the endpoint no
      * longer declares that field, so Jackson drops it and the account is still
@@ -207,6 +291,45 @@ class UsuariosApiIT {
 
     private String resetPayload(String token, String nuevaPassword) {
         return "{\"token\":\"" + token + "\",\"nuevaPassword\":\"" + nuevaPassword + "\"}";
+    }
+
+    /** Registers + persists a usuario directly (no HTTP), mirroring the OT ITs. */
+    private Long crearUsuario(String correo, Rol rol) {
+        Usuario usuario = Usuario.registrar("Ana", correo, "secreto", "3001234567", null, rol, true,
+                new PasswordEncoderPort() {
+                    public String encode(String p) { return "fake:" + p; }
+
+                    public boolean matches(String p, String h) { return ("fake:" + p).equals(h); }
+                });
+        return usuarioRepository.save(UsuarioJpaEntity.fromDomain(usuario)).getId();
+    }
+
+    private Cliente crearCliente(Long usuarioId) {
+        return clienteRepository.save(Cliente.registrar(new UsuarioId(usuarioId), TipoCliente.B2C,
+                DireccionPrincipal.sinUbicacion("Calle 1", "Bogota", "Centro")));
+    }
+
+    private UUID crearTecnico(Long usuarioId) {
+        Tecnico tecnico = Tecnico.crear(usuarioId, "ID-" + UUID.randomUUID(),
+                Set.of(CategoriaServicio.REFRIGERACION), Set.of());
+        tecnico.actualizarUbicacion(new Point(4.71, -74.07), Instant.now());
+        return tecnicoRepository.save(tecnico).getId().valor();
+    }
+
+    private UUID crearProveedor(Long usuarioId) {
+        Proveedor proveedor = proveedorRepository.save(
+                Proveedor.crear(usuarioId, "Suministros me", "900-ME", "3105550001", null, null, Set.of()));
+        return proveedor.getId().valor();
+    }
+
+    /** Token for the test issuer: ver matches the persisted tokenVersion (0). */
+    private String token(Long usuarioId) {
+        return tokenIssuer.emitir(new UsuarioId(usuarioId), rolPrimario(usuarioId), 0).valor();
+    }
+
+    private Rol rolPrimario(Long usuarioId) {
+        return usuarioRepository.findById(usuarioId).map(entity -> entity.toDomain().getRol())
+                .orElse(Rol.CLIENTE);
     }
 
     private String loginAndGetToken(String password) throws Exception {

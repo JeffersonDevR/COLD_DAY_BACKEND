@@ -93,6 +93,37 @@ class JwtAuthenticationFilterTest {
         assertThat(((AuthenticatedUser) auth.getPrincipal()).roles()).containsExactly(Rol.TECNICO);
     }
 
+    /**
+     * Roadmap B3: the optional {@code nombre} claim rides into the principal
+     * when the token carries it.
+     */
+    @Test
+    void freshTokenSurfacesTheDisplayNameClaim() throws Exception {
+        String jwt = issuer.emitir(new UsuarioId(11L), "Ana Perez", Set.of(Rol.CLIENTE), Rol.CLIENTE, 0).valor();
+
+        Authentication auth = authenticate(jwt);
+
+        assertThat(((AuthenticatedUser) auth.getPrincipal()).nombre()).isEqualTo("Ana Perez");
+        assertThat(authorities(auth)).containsExactly("ROLE_CLIENTE");
+    }
+
+    /** Deterministic fallback: legacy tokens keep authenticating with an empty display name. */
+    @Test
+    void legacyTokenWithoutNombreClaimAuthenticatesWithAnEmptyDisplayName() throws Exception {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String legacy = Jwts.builder()
+                .subject("5")
+                .claim("rol", "CLIENTE")
+                .claim("ver", 0)
+                .signWith(key)
+                .compact();
+
+        Authentication auth = authenticate(legacy);
+
+        assertThat(auth).isNotNull();
+        assertThat(((AuthenticatedUser) auth.getPrincipal()).nombre()).isEmpty();
+    }
+
     @Test
     void administradorPrimaryRoleStillGrantsTheAdminAuthority() throws Exception {
         String jwt = issuer.emitir(new UsuarioId(1L), Set.of(Rol.ADMINISTRADOR), Rol.ADMINISTRADOR, 0).valor();
