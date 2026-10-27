@@ -172,6 +172,40 @@ class OtApiIT {
     }
 
     /**
+     * D1 (dual-role-cliente-ot): a technician who requested the service as a
+     * client opens their own order. The listing already returned it; the detail
+     * used to answer 403 only because the caller also held the TECNICO
+     * capability, which subtracted access they already had as the owner.
+     */
+    @Test
+    void theDualRoleClientOwnerReadsTheOrderTheyRequested() throws Exception {
+        Long usuarioId = crearUsuario("dual-detail@example.com", Rol.TECNICO);
+        Cliente cliente = crearCliente(usuarioId);
+        Instant ahora = Instant.parse("2026-10-27T10:00:00Z");
+        Ot propia = otRepository.save(Ot.reconstituir(OtId.nueva(), cliente.getId(), null,
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1",
+                new Point(4.6, -74.0), EstadoOt.BUSCANDO_TECNICO, 10.0, ahora.plusSeconds(60), ahora,
+                null, null, null, null, null, null, null));
+        String dual = tokenIssuer.emitir(new UsuarioId(usuarioId), Set.of(Rol.CLIENTE, Rol.TECNICO),
+                Rol.TECNICO, 0).valor();
+
+        mockMvc.perform(get("/api/ot/" + propia.getId().valor()).header("Authorization", "Bearer " + dual))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(propia.getId().valor().toString()))
+                .andExpect(jsonPath("$.clienteId").value(cliente.getId().valor().toString()));
+
+        mockMvc.perform(get("/api/ot/" + propia.getId().valor() + "/historial")
+                        .header("Authorization", "Bearer " + dual))
+                .andExpect(status().isOk());
+
+        // Tracking is a privacy endpoint: access shows up as "no location yet"
+        // (404), never as the authorization 403.
+        mockMvc.perform(get("/api/ot/" + propia.getId().valor() + "/tecnico-ubicacion")
+                        .header("Authorization", "Bearer " + dual))
+                .andExpect(status().isNotFound());
+    }
+
+    /**
      * The OT read carries its append-only history, so the client renders the
      * audit trail from the read it already makes instead of asking for it
      * separately (and showing an empty timeline against the real backend).
