@@ -9,6 +9,7 @@ import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.serv
 import { ApiConfig } from '../../core/service/api.config';
 import { SseService, OfertaCreada } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 
@@ -166,9 +167,15 @@ describe('PanelTecnicoPage', () => {
 
   it('muestra error si el backend rechaza el cambio de estado', () => {
     const { fixture, tecnicosApi, toast } = setup();
-    tecnicosApi.actualizarEstadoOperativo.mockReturnValue(throwError(() => new Error('OT activa')));
+    // 409 real del backend mientras hay una OT activa (RF-F1-05).
+    tecnicosApi.actualizarEstadoOperativo.mockReturnValue(
+      throwError(() => new ApiHttpError('OT activa', 409)),
+    );
     fixture.componentInstance.cambiarEstadoOperativo('DISPONIBLE');
-    expect(toast.error).toHaveBeenCalledWith('No se pudo cambiar el estado', 'OT activa');
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo cambiar el estado',
+      'Tenés una orden en curso. No podés cambiar tu disponibilidad hasta finalizarla o cancelarla.',
+    );
   });
 
   it('navega al radar de ofertas', () => {

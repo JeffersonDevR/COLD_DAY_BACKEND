@@ -11,6 +11,22 @@ import { MapsApi } from '../../core/service/maps-api';
 import { SugerenciaApiResponse } from '../../core/models/backend.dto';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+
+/** Mensaje exacto que devuelve el backend (404) cuando el usuario no tiene perfil de cliente. */
+const PATRON_PERFIL_CLIENTE_FALTANTE = /no existe un perfil de cliente/i;
+
+/**
+ * Detecta el rechazo `POST /api/ot` por falta de perfil de cliente: el backend
+ * responde 404 (o 409 en variantes de validación) con ese mensaje, y el
+ * interceptor lo entrega como ApiHttpError con el cuerpo ya mapeado.
+ */
+export function esErrorPerfilClienteFaltante(err: unknown): boolean {
+  if (!(err instanceof ApiHttpError)) return false;
+  if (err.status !== 404 && err.status !== 409) return false;
+  return PATRON_PERFIL_CLIENTE_FALTANTE.test(err.message);
+}
 
 @Component({
   selector: 'app-solicitar-servicio-page',
@@ -29,6 +45,8 @@ export class SolicitarServicioPage {
 
   readonly categoriaActual = signal<CategoriaServicio>('AIRE_ACONDICIONADO');
   readonly loading = signal<boolean>(false);
+  /** True cuando el backend rechaza la OT porque el usuario no tiene perfil de cliente. */
+  readonly faltoPerfilCliente = signal<boolean>(false);
   /** Radio inicial de búsqueda: lo publica el backend (app.maps.radio-inicial-km). */
   readonly radioInicialKm = computed(() => this.mapaConfig.radioInicialKm());
   readonly sugerencias = signal<SugerenciaApiResponse[]>([]);
@@ -160,6 +178,7 @@ export class SolicitarServicioPage {
     }
 
     this.loading.set(true);
+    this.faltoPerfilCliente.set(false);
     this.sugerencias.set([]);
     const form = this.solicitudForm.getRawValue();
     const user = this.authService.currentUser();
@@ -190,7 +209,13 @@ export class SolicitarServicioPage {
         },
         error: (err: Error) => {
           this.loading.set(false);
-          this.toast.error('No se pudo crear la solicitud', err.message || 'Intenta de nuevo.');
+          if (esErrorPerfilClienteFaltante(err)) {
+            // Técnico dual-role sin perfil de cliente: no se puede pedir una
+            // orden. En vez de un toast que se pierde, guía al alta del perfil.
+            this.faltoPerfilCliente.set(true);
+            return;
+          }
+          this.toast.error('No se pudo crear la solicitud', mensajeErrorAccion(err));
         }
       });
   }

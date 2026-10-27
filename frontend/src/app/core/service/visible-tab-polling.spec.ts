@@ -1,5 +1,5 @@
 import { Subscription } from 'rxjs';
-import { POLL_INTERVAL_MS, pollVisibleTab } from './visible-tab-polling';
+import { POLL_INTERVAL_MS, pollVisibleTab, visibleTabChanges } from './visible-tab-polling';
 
 /**
  * jsdom expone `document.visibilityState` como getter de solo lectura sobre el
@@ -66,8 +66,24 @@ describe('pollVisibleTab', () => {
     expect(ticks.length).toBe(2);
   });
 
-  it('deja de emitir al desuscribirse', () => {
-    const ticks: number[] = [];
+  it('visibleTabChanges emite el estado actual y cada cambio, sin repetidos', () => {
+    const estados: boolean[] = [];
+    suscripcion = visibleTabChanges().subscribe((visible) => estados.push(visible));
+
+    expect(estados).toEqual([true]);
+
+    simularVisibilidad('hidden');
+    expect(estados).toEqual([true, false]);
+
+    // Un evento sin cambio real no vuelve a emitir.
+    simularVisibilidad('hidden');
+    expect(estados).toEqual([true, false]);
+
+    simularVisibilidad('visible');
+    expect(estados).toEqual([true, false, true]);
+  });
+
+  it('deja de emitir al desuscribirse', () => {    const ticks: number[] = [];
     suscripcion = pollVisibleTab().subscribe((tick) => ticks.push(tick));
     vi.advanceTimersByTime(POLL_INTERVAL_MS);
     expect(ticks.length).toBe(1);

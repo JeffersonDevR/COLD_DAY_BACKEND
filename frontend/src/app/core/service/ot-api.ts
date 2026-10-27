@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
 import {
@@ -25,9 +25,18 @@ import {
   aOtResponse,
   aTarifaEstimadaResponse,
 } from './backend.mappers';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
 import { pendienteBackend } from '../errorStatus/pendiente-backend';
+import { ApiHttpError } from '../interceptos/error.interceptor';
+
+/** Un 404 en `tecnico-ubicacion` significa "todavía no hay posición", no un fallo. */
+function esSinUbicacion(err: unknown): boolean {
+  if (err instanceof ApiHttpError || err instanceof HttpErrorResponse) {
+    return err.status === 404;
+  }
+  return false;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -121,7 +130,11 @@ export class OtApi {
 
   /**
    * GET /api/ot/{otId}/tecnico-ubicacion → última posición del técnico asignado.
-   * Devuelve null si aún no reporta ubicación (404) o si la OT no tiene técnico.
+   *
+   * El 404 es el único "sin dato" honesto: todavía no hay posición reportada.
+   * Un 401/403/5xx o una caída de red NO son ausencia de ubicación y se
+   * propagan: tragarlos convertía una sesión vencida o un backend caído en un
+   * mapa vacío que parecía normal.
    */
   getTecnicoUbicacion(otId: string): Observable<Point | null> {
     if (this.apiConfig.useMocks()) {
@@ -136,7 +149,7 @@ export class OtApi {
       .get<{ latitud: number; longitud: number }>(this.apiConfig.url(`/ot/${otId}/tecnico-ubicacion`))
       .pipe(
         map((ubicacion) => ({ latitud: ubicacion.latitud, longitud: ubicacion.longitud })),
-        catchError(() => of(null)),
+        catchError((err: unknown) => (esSinUbicacion(err) ? of(null) : throwError(() => err))),
       );
   }
 

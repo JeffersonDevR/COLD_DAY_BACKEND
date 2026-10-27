@@ -16,6 +16,7 @@ import { GoogleMap, MapMarker } from '@angular/google-maps';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
 import { GeolocationService } from '../../core/service/geolocation.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { Point } from '../../core/models/common.models';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 
@@ -125,7 +126,7 @@ export class SelectorUbicacionMapa implements OnInit {
         },
         error: (err: Error) => {
           this.resolviendoGps.set(false);
-          this.toast.error('Ubicación no disponible', err.message);
+          this.toast.error('Ubicación no disponible', mensajeErrorAccion(err));
         },
       });
   }

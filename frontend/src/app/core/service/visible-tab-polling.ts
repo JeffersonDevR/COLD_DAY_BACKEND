@@ -1,4 +1,4 @@
-import { EMPTY, Observable, fromEvent, interval } from 'rxjs';
+import { EMPTY, Observable, fromEvent, interval, of } from 'rxjs';
 import { distinctUntilChanged, map, startWith, switchMap } from 'rxjs/operators';
 
 /**
@@ -10,6 +10,27 @@ export const POLL_INTERVAL_MS = 25_000;
 /** `true` mientras la pestaña está visible. En SSR (sin `document`) se asume visible. */
 export function tabVisible(): boolean {
   return typeof document === 'undefined' || document.visibilityState === 'visible';
+}
+
+/**
+ * Estado de visibilidad de la pestaña: emite el valor actual y luego cada
+ * cambio, sin repetidos.
+ *
+ * Es la base de `pollVisibleTab` y de cualquier trabajo periódico que deba
+ * parar cuando la pestaña queda en segundo plano (GPS, reportes de posición):
+ * un timer que sigue corriendo escondido gasta batería y cuota sin que nadie
+ * mire el resultado.
+ */
+export function visibleTabChanges(): Observable<boolean> {
+  if (typeof document === 'undefined') {
+    // Sin `document` no hay pestaña que ocultar: una sola emisión alcanza.
+    return of(true);
+  }
+  return fromEvent(document, 'visibilitychange').pipe(
+    map(() => tabVisible()),
+    startWith(tabVisible()),
+    distinctUntilChanged(),
+  );
 }
 
 /**
@@ -28,11 +49,5 @@ export function pollVisibleTab(intervaloMs: number = POLL_INTERVAL_MS): Observab
     return EMPTY;
   }
 
-  const visibilidad$ = fromEvent(document, 'visibilitychange').pipe(
-    map(() => tabVisible()),
-    startWith(tabVisible()),
-    distinctUntilChanged(),
-  );
-
-  return visibilidad$.pipe(switchMap((visible) => (visible ? interval(intervaloMs) : EMPTY)));
+  return visibleTabChanges().pipe(switchMap((visible) => (visible ? interval(intervaloMs) : EMPTY)));
 }

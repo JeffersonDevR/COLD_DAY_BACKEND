@@ -33,8 +33,14 @@ const MENSAJES_POR_STATUS: Record<number, string> = {
   0: 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.',
 };
 
+/** Copy neutra: status sin cuerpo legible y sin causa conocida. Sin detalles de URL ni de red. */
+const MENSAJE_SIN_DETALLE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+
 function mensajeFallback(err: HttpErrorResponse): string {
-  return MENSAJES_POR_STATUS[err.status] || err.message || `Error ${err.status}`;
+  // PENDIENTE corregido: acá se filtraba `err.message` crudo ("Http failure
+  // response for http://...") al usuario. El status sin body tampoco expone
+  // detalles: copy neutra status-agnóstica.
+  return MENSAJES_POR_STATUS[err.status] || MENSAJE_SIN_DETALLE;
 }
 
 function normalizarError(err: unknown): ApiHttpError | Error {

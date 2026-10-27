@@ -11,8 +11,30 @@ import { ProveedorRegistroService } from '../../core/service/proveedor-registro.
 import { ApiConfig } from '../../core/service/api.config';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { Rol, CategoriaServicio, TokenResponse } from '../../core/models/common.models';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
+
+/**
+ * 409 en el alta: el status solo dice "conflicto", no la causa. En el alta de
+ * cliente la única causa es el correo; técnico y proveedor también chocan con su
+ * campo único (identificación / NIT), así que ahí no se puede afirmar cuál fue y
+ * solo se nombran los campos plausibles.
+ */
+const CAMPO_UNICO_POR_ROL: Partial<Record<Rol, string>> = {
+  TECNICO: 'tu número de identificación',
+  PROVEEDOR: 'el NIT de tu empresa',
+};
+
+function copyConflictoAlta(rol: Rol): string {
+  if (rol === 'CLIENTE') {
+    return 'Ya existe una cuenta con ese correo. Iniciá sesión o recuperá tu contraseña.';
+  }
+  const campo = CAMPO_UNICO_POR_ROL[rol];
+  return campo
+    ? `Ya existe una cuenta con ese correo o ${campo} ya está registrado. Revisá los datos o iniciá sesión si ya tenés cuenta.`
+    : 'Ya existe una cuenta con ese correo o un dato único ya registrado. Revisá los datos o iniciá sesión si ya tenés cuenta.';
+}
 
 @Component({
   selector: 'app-registro-page',
@@ -103,10 +125,10 @@ export class RegistroPage {
           });
           this.usuariosApi.login(formVal.correo, formVal.password).subscribe({
             next: (res) => this.completarAlta(res, formVal.correo),
-            error: (err: Error) => this.errorAlta(err),
+            error: (err: Error) => this.errorAlta(err, rol),
           });
         },
-        error: (err: Error) => this.errorAlta(err),
+        error: (err: Error) => this.errorAlta(err, rol),
       });
       return;
     }
@@ -127,7 +149,7 @@ export class RegistroPage {
           this.toast.success('Cuenta Creada Exitosamente', `Bienvenido a COLD DAY, ${user.nombre}`);
           this.router.navigate([this.authService.getDashboardRouteForRole(user.rol)]);
         },
-        error: (err: Error) => this.errorAlta(err),
+        error: (err: Error) => this.errorAlta(err, rol),
       });
       return;
     }
@@ -147,6 +169,7 @@ export class RegistroPage {
         }),
         formVal.correo,
         formVal.password,
+        rol,
       );
       return;
     }
@@ -167,16 +190,17 @@ export class RegistroPage {
       }),
       formVal.correo,
       formVal.password,
+      rol,
     );
   }
 
   /** Crea el usuario/perfil y encadena el login real para iniciar sesión. */
-  private altaConLogin(fuente$: Observable<unknown>, correo: string, password: string): void {
+  private altaConLogin(fuente$: Observable<unknown>, correo: string, password: string, rol: Rol): void {
     fuente$
       .pipe(switchMap(() => this.usuariosApi.login(correo, password)))
       .subscribe({
         next: (res) => this.completarAlta(res, correo),
-        error: (err: Error) => this.errorAlta(err),
+        error: (err: Error) => this.errorAlta(err, rol),
       });
   }
 
@@ -191,8 +215,10 @@ export class RegistroPage {
     this.router.navigate([destino]);
   }
 
-  private errorAlta(err: Error): void {
+  private errorAlta(err: Error, rol: Rol): void {
     this.loading.set(false);
-    this.toast.error('Error al registrar', err.message || 'Por favor intenta nuevamente.');
+    // El 409 no repite el correo sanitizado del backend y su copy depende de la
+    // ruta: cada alta tiene su propio campo único (ver copyConflictoAlta).
+    this.toast.error('Error al registrar', mensajeErrorAccion(err, { 409: copyConflictoAlta(rol) }));
   }
 }

@@ -5,6 +5,7 @@ import { CalificarServicioPage } from './calificar-servicio-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
 const orden: OtResponse = {
@@ -17,14 +18,14 @@ const orden: OtResponse = {
   tecnicoNombre: 'Juan Pérez',
 };
 
-function setup(calificar: ReturnType<typeof vi.fn>) {
+function setup(calificar: ReturnType<typeof vi.fn>, getOtById: () => unknown = () => of(orden)) {
   const toast = { success: vi.fn(), error: vi.fn() };
   TestBed.configureTestingModule({
     imports: [CalificarServicioPage],
     providers: [
       provideRouter([]),
       { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'ot1' })) } },
-      { provide: OtApi, useValue: { getOtById: () => of(orden) } },
+      { provide: OtApi, useValue: { getOtById } },
       { provide: ClientesApi, useValue: { calificarServicio: calificar } },
       { provide: ToastService, useValue: toast },
     ],
@@ -77,11 +78,38 @@ describe('CalificarServicioPage', () => {
   });
 
   it('muestra error si la calificación falla en el backend', () => {
-    const calificar = vi.fn(() => throwError(() => new Error('Solo se puede calificar una OT FINALIZADA')));
+    // 409 real del backend (`CalificacionInvalidaException`).
+    const calificar = vi.fn(() =>
+      throwError(() => new ApiHttpError('Solo se puede calificar una OT FINALIZADA', 409)),
+    );
     const { fixture, toast } = setup(calificar);
 
     fixture.componentInstance.enviarCalificacion();
 
-    expect(toast.error).toHaveBeenCalledWith('Calificación no disponible', 'Solo se puede calificar una OT FINALIZADA');
+    expect(toast.error).toHaveBeenCalledWith(
+      'Calificación no disponible',
+      'Esta orden todavía no se puede calificar: puede ser que aún no esté finalizada o que ya tengas una reseña registrada.',
+    );
+  });
+
+  it('muestra el aviso de carga con reintentar y recupera la OT al reintentar', () => {
+    const getOtById = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new ApiHttpError('boom', 500)))
+      .mockReturnValueOnce(of(orden));
+    const { fixture } = setup(vi.fn(() => of(undefined)), getOtById);
+    const page = fixture.componentInstance;
+
+    expect(page.otErrorCarga()).toBe('Ocurrió un error en el servidor. Inténtalo de nuevo en unos minutos.');
+    expect(fixture.nativeElement.textContent).toContain('Ocurrió un error en el servidor');
+
+    const boton = fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement;
+    expect(boton.textContent?.trim()).toBe('Reintentar');
+    boton.click();
+    fixture.detectChanges();
+
+    expect(getOtById).toHaveBeenCalledTimes(2);
+    expect(page.otErrorCarga()).toBeNull();
+    expect(page.ot()?.id).toBe('ot1');
   });
 });

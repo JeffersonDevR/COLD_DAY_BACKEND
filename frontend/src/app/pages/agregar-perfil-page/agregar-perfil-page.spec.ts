@@ -6,6 +6,7 @@ import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { Rol } from '../../core/models/common.models';
 
 interface Mocks {
@@ -121,7 +122,10 @@ describe('AgregarPerfilPage', () => {
 
   it('muestra error si el backend rechaza la adquisición', () => {
     const { fixture, mocks } = setup(['CLIENTE']);
-    mocks.tecnicosApi.crearMiPerfil.mockReturnValue(throwError(() => new Error('Ya tenés perfil de técnico')));
+    // 409 real del backend: el usuario ya tiene ese perfil adquirido.
+    mocks.tecnicosApi.crearMiPerfil.mockReturnValue(
+      throwError(() => new ApiHttpError('El usuario ya tiene un perfil de tecnico: 3', 409)),
+    );
     const page = fixture.componentInstance;
     page.elegir('TECNICO');
     page.formTecnico.controls.numeroIdentificacion.setValue('1098765001');
@@ -129,7 +133,10 @@ describe('AgregarPerfilPage', () => {
 
     page.enviarTecnico();
 
-    expect(mocks.toast.error).toHaveBeenCalledWith('No se pudo crear el perfil', 'Ya tenés perfil de técnico');
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      'No se pudo crear el perfil',
+      'Ya tenés ese perfil. Volvé al panel y actualizá la página si es necesario.',
+    );
     expect(page.sesionActualizada()).toBe(false);
   });
 

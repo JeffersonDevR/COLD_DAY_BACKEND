@@ -7,6 +7,12 @@ import { Button } from 'primeng/button';
 import { AuthService } from '../../core/service/auth.service';
 import { UsuariosApi } from '../../core/service/usuarios-api';
 import { ToastService } from '../../core/alertas/toast.service';
+import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+
+/** Copy propia: en el login un 401 son credenciales que no matchean, no sesión expirada. */
+const MENSAJES_LOGIN: Record<number, string> = {
+  401: 'Credenciales incorrectas. Verificá tu correo y tu contraseña.',
+};
 
 @Component({
   selector: 'app-login-page',
@@ -52,7 +58,7 @@ export class LoginPage {
       },
       error: (err) => {
         this.loading.set(false);
-        this.toast.error('Error de autenticación', err.message || 'Verifica tus credenciales');
+        this.toast.error('Error de autenticación', mensajeErrorAccion(err, MENSAJES_LOGIN));
       }
     });
   }

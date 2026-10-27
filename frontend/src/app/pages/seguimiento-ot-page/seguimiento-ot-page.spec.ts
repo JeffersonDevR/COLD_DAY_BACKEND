@@ -133,14 +133,20 @@ describe('SeguimientoOtPage', () => {
     expect(fixture.componentInstance.mostrarModalDisputa()).toBe(false);
   });
 
-  it('reporta error al abrir la disputa', () => {
+  it('reporta error con copy humana al abrir la disputa', () => {
     const { fixture, clientesApi, toast } = setup();
-    clientesApi.abrirDisputa.mockReturnValue(throwError(() => new Error('backend')));
+    // 409 real del backend: la orden cambió de estado o ya tiene disputa.
+    clientesApi.abrirDisputa.mockReturnValue(
+      throwError(() => new ApiHttpError('backend', 409)),
+    );
     fixture.componentInstance.motivoDisputaControl.setValue('motivo válido');
 
     fixture.componentInstance.confirmarDisputa();
 
-    expect(toast.error).toHaveBeenCalledWith('No se pudo abrir la disputa', 'backend');
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo abrir la disputa',
+      'La operación no se pudo completar porque el registro cambió de estado. Actualiza la página e inténtalo de nuevo.',
+    );
   });
 
   it('actualiza el radio de búsqueda', () => {
@@ -213,11 +219,17 @@ describe('SeguimientoOtPage', () => {
 
   it('reporta el error del backend al pagar la visita', () => {
     const { fixture, clientesApi, toast } = setup({ ...orden, estado: 'CANCELADA' });
-    clientesApi.pagarVisita.mockReturnValue(throwError(() => new Error('doble cobro')));
+    // 409 real del backend mientras el estado no admite el pago.
+    clientesApi.pagarVisita.mockReturnValue(
+      throwError(() => new ApiHttpError('doble cobro', 409)),
+    );
 
     fixture.componentInstance.pagarVisita();
 
-    expect(toast.error).toHaveBeenCalledWith('No se pudo pagar la visita', 'doble cobro');
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo pagar la visita',
+      'La operación no se pudo completar porque el registro cambió de estado. Actualiza la página e inténtalo de nuevo.',
+    );
     expect(fixture.componentInstance.pagandoVisita()).toBe(false);
   });
 
@@ -378,6 +390,30 @@ describe('SeguimientoOtPage', () => {
 
       expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(5);
       http.expectNone('/api/maps/distancia');
+    });
+
+    it('no sondea la ubicación con la pestaña oculta y reanuda al volver', () => {
+      const visibilidad = (estado: 'visible' | 'hidden'): void => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => estado });
+        document.dispatchEvent(new Event('visibilitychange'));
+      };
+      visibilidad('visible');
+      try {
+        const { otApi } = setup();
+        // Primer sondeo inmediato, como en el resto de la página.
+        expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(1);
+
+        visibilidad('hidden');
+        vi.advanceTimersByTime(15000 * 3);
+        // En segundo plano no se gasta GPS ni red: cero pedidos.
+        expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(1);
+
+        visibilidad('visible');
+        vi.advanceTimersByTime(15000);
+        expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(2);
+      } finally {
+        delete (document as { visibilityState?: string }).visibilityState;
+      }
     });
 
     it('sin posición del técnico no muestra ningún número', () => {
