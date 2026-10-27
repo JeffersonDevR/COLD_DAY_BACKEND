@@ -165,6 +165,29 @@ export class AuthService {
     return usuario;
   }
 
+  /**
+   * Adopta el JWT que devuelve la adquisición de un segundo perfil.
+   *
+   * El backend sube `tokenVersion` al crear el perfil y entrega el reemplazo en
+   * la misma respuesta. Delegar en `establecerSesionDesdeToken` mantiene una
+   * sola ruta de construcción de sesión: se refrescan `currentUser`,
+   * `userRoles` y el temporizador de expiración como en el login. No hay
+   * logout: la sesión sigue viva con el conjunto de roles nuevo.
+   */
+  adoptarToken(token: string): UsuarioResponse {
+    this.tokenStorage.saveToken(token);
+    const decoded = this.tokenStorage.getDecodedToken();
+    return this.establecerSesionDesdeToken(
+      {
+        token,
+        expiracion: '',
+        rol: decoded?.rol ?? this._currentUser()?.rol ?? 'CLIENTE',
+        roles: decoded?.roles,
+      },
+      this._currentUser()?.correo ?? '',
+    );
+  }
+
   logout(): void {
     if (this.expiryTimer) {
       clearTimeout(this.expiryTimer);
