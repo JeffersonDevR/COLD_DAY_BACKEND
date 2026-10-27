@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { EMPTY, Subscription, switchMap, throttleTime } from 'rxjs';
-import { GeolocationService } from './geolocation.service';
+import { GeolocationService, mensajeErrorGeolocation } from './geolocation.service';
 import { Point } from '../models/common.models';
 import { TecnicosApi } from './tecnicos-api';
 import { visibleTabChanges } from './visible-tab-polling';
@@ -16,9 +16,6 @@ import { visibleTabChanges } from './visible-tab-polling';
   providedIn: 'root',
 })
 export class TecnicoTrackingService {
-  /** Copy por cualquier falla del watch (permiso denegado, señal, tiempo de espera excedido). */
-  private static readonly MENSAJE_FALLA_GPS =
-    'No se pudo reportar tu ubicación. Revisá el permiso de geolocalización de tu navegador y reintentá.';
   private readonly geo = inject(GeolocationService);
   private readonly tecnicosApi = inject(TecnicosApi);
 
@@ -64,13 +61,14 @@ export class TecnicoTrackingService {
       )
       .subscribe({
         next: (punto) => this.emitir(punto),
-        error: () => {
-          // Un error del watch (p. ej. permiso denegado) corta la suscripción.
-          // `detener()` limpia el motivo, así que se restaura después para que
-          // la UI pueda explicar por qué ya no se reporta. Sin el mensaje
-          // crudo del navegador (en inglés): copy neutra en español.
+        error: (err: unknown) => {
+          // Un error del watch (permiso denegado, sin señal, timeout) corta la
+          // suscripción. `detener()` limpia el motivo, así que se restaura
+          // después para que la UI pueda explicar por qué ya no se reporta.
+          // La causa la traduce GeolocationService: el mensaje crudo del
+          // navegador (en inglés) nunca llega a la pantalla.
           this.detener();
-          this.motivo.set(TecnicoTrackingService.MENSAJE_FALLA_GPS);
+          this.motivo.set(mensajeErrorGeolocation(err));
         },
       });
   }

@@ -89,24 +89,37 @@ describe('TecnicoTrackingService', () => {
     expect(service.activo()).toBe(false);
   });
 
-  it('expone copy humana cuando el stream de posición falla y se detiene', () => {
+  it('conserva la causa del GPS: un timeout no se reporta como falta de permiso', () => {
     const service = setup();
     service.iniciar();
-    posiciones.error(new Error('User denied Geolocation'));
+    // Lo que `vigilarPosicion` emite de verdad: un `Error` con la causa ya
+    // traducida. El timeout no puede leerse como falta de permiso.
+    posiciones.error(new Error('Se agotó el tiempo para obtener la ubicación.'));
     expect(service.activo()).toBe(false);
-    // El mensaje crudo del navegador (en inglés) no se muestra: copy neutra.
+    expect(service.motivo()).toBe('Se agotó el tiempo para obtener la ubicación.');
+  });
+
+  it('traduce el permiso denegado a su causa específica', () => {
+    const service = setup();
+    service.iniciar();
+    posiciones.error({ code: 1, message: 'User denied Geolocation' });
     expect(service.motivo()).toBe(
-      'No se pudo reportar tu ubicación. Revisá el permiso de geolocalización de tu navegador y reintentá.',
+      'Permiso de ubicación denegado. Habilítalo en el navegador para continuar.',
     );
+  });
+
+  it('usa un fallback neutro cuando el error no trae una causa reconocible', () => {
+    const service = setup();
+    service.iniciar();
+    posiciones.error(new Error('sin gps'));
+    expect(service.motivo()).toBe('No se pudo obtener la ubicación.');
   });
 
   it('limpia el motivo al recibir una posición válida', () => {
     const service = setup();
     service.iniciar();
-    posiciones.error(new Error('sin gps'));
-    expect(service.motivo()).toBe(
-      'No se pudo reportar tu ubicación. Revisá el permiso de geolocalización de tu navegador y reintentá.',
-    );
+    posiciones.error({ code: 2, message: 'Position unavailable' });
+    expect(service.motivo()).toBe('La ubicación no está disponible en este momento.');
 
     // Un reintento exitoso no debe arrastrar el motivo anterior.
     posiciones = new Subject<Point>();
