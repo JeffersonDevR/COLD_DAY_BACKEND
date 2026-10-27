@@ -7,7 +7,7 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoLiquidacion, LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
 
@@ -88,7 +88,7 @@ export class LiquidacionesTecnicoPage {
       },
       // El modal queda abierto con los datos del comprobante para reintentar.
       error: (err) => {
-        this.toast.error('No se pudo enviar el comprobante', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo enviar el comprobante', err);
       },
     });
   }

@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { mensajeErrorAccion, sesionYaNotificada } from '../../core/alertas/mensaje-error';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import {
   EstadoRequerimiento,
@@ -78,6 +78,7 @@ export class SolicitudesProveedorPage implements OnInit {
       },
       error: (err) => {
         this.accionEnCurso.set(null);
+        if (sesionYaNotificada(err)) return;
         const mensaje = this.mensajeError(err, 'aceptar');
         this.anunciar(mensaje);
         this.toast.error('No se pudo aceptar', mensaje);
@@ -96,6 +97,7 @@ export class SolicitudesProveedorPage implements OnInit {
       },
       error: (err) => {
         this.accionEnCurso.set(null);
+        if (sesionYaNotificada(err)) return;
         const mensaje = this.mensajeError(err, 'rechazar');
         this.anunciar(mensaje);
         this.toast.error('No se pudo rechazar', mensaje);
@@ -119,6 +121,7 @@ export class SolicitudesProveedorPage implements OnInit {
       },
       error: (err) => {
         this.accionEnCurso.set(null);
+        if (sesionYaNotificada(err)) return;
         const mensaje = this.mensajeError(err, 'entregar');
         this.anunciar(mensaje);
         this.toast.error('No se pudo confirmar la entrega', mensaje);

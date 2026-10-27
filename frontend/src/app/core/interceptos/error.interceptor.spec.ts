@@ -98,8 +98,10 @@ describe('errorInterceptor', () => {
     const { promise, auth, toast } = run('/api/ot', error, true);
     const caught = await capture(promise);
     expect(caught).toBeInstanceOf(ApiHttpError);
-    expect(toast.warning).toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalledTimes(1);
     expect(auth.logout).toHaveBeenCalled();
+    // El error viaja marcado: la página que lo reciba no repite el aviso.
+    expect((caught as ApiHttpError).sesionNotificada).toBe(true);
   });
 
   it('no cierra sesión ante 401 en el login', async () => {
@@ -108,5 +110,16 @@ describe('errorInterceptor', () => {
     const caught = await capture(promise);
     expect(caught).toBeInstanceOf(ApiHttpError);
     expect(auth.logout).not.toHaveBeenCalled();
+    // Sin aviso del interceptor, la página conserva su propio aviso.
+    expect((caught as ApiHttpError).sesionNotificada).toBe(false);
+  });
+
+  it('un 401 sin sesión activa no marca el error como notificado', async () => {
+    const error = new HttpErrorResponse({ status: 401, error: null, url: '/api/ot' });
+    const { promise, auth, toast } = run('/api/ot', error, false);
+    const caught = await capture(promise);
+    expect(toast.warning).not.toHaveBeenCalled();
+    expect(auth.logout).not.toHaveBeenCalled();
+    expect((caught as ApiHttpError).sesionNotificada).toBe(false);
   });
 });

@@ -4,7 +4,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { TecnicoResponse } from '../../core/models/common.models';
 
 /**
@@ -51,7 +51,7 @@ export class ValidacionTecnicosPage {
       },
       // Sin recargar: la fila sigue en pantalla y el admin ve por qué no se habilitó.
       error: (err) => {
-        this.toast.error('No se pudo habilitar al técnico', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+        avisarErrorAccion(this.toast, 'No se pudo habilitar al técnico', err, MENSAJES_VALIDACION);
       }
     });
   }
@@ -73,7 +73,7 @@ export class ValidacionTecnicosPage {
       },
       // El modal queda abierto y el motivo escrito intacto para que el admin reintente.
       error: (err) => {
-        this.toast.error('No se pudo rechazar la validación', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+        avisarErrorAccion(this.toast, 'No se pudo rechazar la validación', err, MENSAJES_VALIDACION);
       }
     });
   }

@@ -4,7 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { TipoDocumentoTecnico, DocumentoTecnicoResponse, TecnicoResponse } from '../../core/models/common.models';
 
 @Component({
@@ -56,7 +56,7 @@ export class PerfilDocumentosPage {
       },
       // El formulario queda abierto con los datos cargados para que el técnico reintente.
       error: (err) => {
-        this.toast.error('No se pudo subir el documento', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo subir el documento', err);
       },
     });
   }

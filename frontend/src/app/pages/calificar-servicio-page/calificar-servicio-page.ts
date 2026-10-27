@@ -5,7 +5,7 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
 import { cargarOtDesdeRuta, CargaOtEstado } from '../../core/service/ot-carga';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtResponse } from '../../core/models/common.models';
 
 /**
@@ -88,7 +88,7 @@ export class CalificarServicioPage implements OnInit {
         this.router.navigate(['/cliente/ot', this.otId()]);
       },
       error: (err: Error) => {
-        this.toast.error('Calificación no disponible', mensajeErrorAccion(err, MENSAJES_CALIFICACION));
+        avisarErrorAccion(this.toast, 'Calificación no disponible', err, MENSAJES_CALIFICACION);
       }
     });
   }

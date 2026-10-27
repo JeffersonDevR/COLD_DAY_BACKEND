@@ -3,7 +3,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { ProveedorResponse } from '../../core/models/common.models';
 
 /**
@@ -56,7 +56,7 @@ export class ProveedoresAdminPage {
       },
       // Sin recargar: la fila sigue en pantalla y el admin ve por qué no se aprobó.
       error: (err) => {
-        this.toast.error('No se pudo aprobar al proveedor', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+        avisarErrorAccion(this.toast, 'No se pudo aprobar al proveedor', err, MENSAJES_VALIDACION);
       }
     });
   }
@@ -78,7 +78,7 @@ export class ProveedoresAdminPage {
       },
       // El modal queda abierto y el motivo escrito intacto para que el admin reintente.
       error: (err) => {
-        this.toast.error('No se pudo rechazar la validación', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+        avisarErrorAccion(this.toast, 'No se pudo rechazar la validación', err, MENSAJES_VALIDACION);
       }
     });
   }

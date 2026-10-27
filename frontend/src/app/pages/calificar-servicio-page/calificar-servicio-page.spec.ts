@@ -92,6 +92,19 @@ describe('CalificarServicioPage', () => {
     );
   });
 
+  it('ante un 401 ya avisado por el interceptor no agrega un segundo aviso', () => {
+    const expirada = new ApiHttpError('Sesión inválida o expirada. Inicia sesión de nuevo.', 401);
+    // El interceptor avisó y cerró sesión antes de entregar este error.
+    expirada.sesionNotificada = true;
+    const calificar = vi.fn(() => throwError(() => expirada));
+    const { fixture, toast } = setup(calificar);
+
+    fixture.componentInstance.enviarCalificacion();
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
   it('muestra el aviso de carga con reintentar y recupera la OT al reintentar', () => {
     const getOtById = vi
       .fn()

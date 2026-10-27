@@ -9,11 +9,11 @@ import { ApiConfig } from '../../core/service/api.config';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 
 /**
  * Copy propia: el 409 de `PUT /tecnicos/me/estado` es la guarda de OT activa
@@ -162,7 +162,7 @@ export class PanelTecnicoPage {
       error: (err: Error) => {
         // El backend rechaza el cambio mientras hay una OT activa (RF-F1-05).
         // Esa causa es conocida: el copy la nombra en vez del genérico de 409.
-        this.toast.error('No se pudo cambiar el estado', mensajeErrorAccion(err, MENSAJES_ESTADO_OPERATIVO));
+        avisarErrorAccion(this.toast, 'No se pudo cambiar el estado', err, MENSAJES_ESTADO_OPERATIVO);
       }
     });
   }

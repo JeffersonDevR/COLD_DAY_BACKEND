@@ -15,7 +15,7 @@ import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';
 import { MapaRadar } from '../../shared/mapa-radar/mapa-radar';
 import { MapaSeguimiento } from '../../shared/mapa-seguimiento/mapa-seguimiento';
@@ -351,7 +351,7 @@ export class SeguimientoOtPage implements OnInit {
       },
       // El modal queda abierto con el motivo escrito para que el cliente reintente.
       error: (err) => {
-        this.toast.error('No se pudo cancelar el servicio', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo cancelar el servicio', err);
       },
     });
   }
@@ -365,7 +365,7 @@ export class SeguimientoOtPage implements OnInit {
         this.toast.warning('Disputa Abierta', 'Un administrador revisará tu caso.');
         this.recargarOt();
       },
-      error: (err: Error) => this.toast.error('No se pudo abrir la disputa', mensajeErrorAccion(err)),
+      error: (err: Error) => avisarErrorAccion(this.toast, 'No se pudo abrir la disputa', err),
     });
   }
 
@@ -385,7 +385,7 @@ export class SeguimientoOtPage implements OnInit {
       },
       error: (err: Error) => {
         this.pagandoVisita.set(false);
-        this.toast.error('No se pudo pagar la visita', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo pagar la visita', err);
       },
     });
   }

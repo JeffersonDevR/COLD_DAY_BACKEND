@@ -14,7 +14,7 @@ import { cargarOtDesdeRuta, otDesdeFuente, CargaOtEstado } from '../../core/serv
 import { rutaLocal } from '../../core/service/distancia-local';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { OtResponse, MedioPago, EstadoOt, SolicitudInsumoResponse, EstadoRequerimiento, InsumoLinea } from '../../core/models/common.models';
 
@@ -267,7 +267,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       // El form queda intacto para que el técnico pueda reintentar.
       error: (err) => {
         this.repuestosEnviando.set(false);
-        this.toast.error('No se pudieron solicitar los repuestos', mensajeErrorAccion(err, MENSAJES_REPUESTOS));
+        avisarErrorAccion(this.toast, 'No se pudieron solicitar los repuestos', err, MENSAJES_REPUESTOS);
       },
     });
   }
@@ -347,7 +347,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       },
       // Sin recargar: la OT sigue en ASIGNADA y el técnico ve por qué no salió.
       error: (err) => {
-        this.toast.error('No se pudo iniciar el desplazamiento', mensajeErrorAccion(err, MENSAJES_DESPLAZAMIENTO));
+        avisarErrorAccion(this.toast, 'No se pudo iniciar el desplazamiento', err, MENSAJES_DESPLAZAMIENTO);
       },
     });
   }
@@ -366,7 +366,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       },
       // El formulario de diagnóstico no se habilita: la llegada no quedó registrada.
       error: (err) => {
-        this.toast.error('No se pudo registrar la llegada', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo registrar la llegada', err);
       },
     });
   }
@@ -389,7 +389,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       },
       // El formulario queda tal como estaba para que el técnico pueda reintentar.
       error: (err) => {
-        this.toast.error('No se pudo enviar el diagnóstico', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo enviar el diagnóstico', err);
       },
     });
   }
@@ -403,7 +403,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       },
       // No se detiene el tracking ni se registra el pago: la OT no se finalizó.
       error: (err) => {
-        this.toast.error('No se pudo finalizar el servicio', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo finalizar el servicio', err);
       },
     });
   }
@@ -501,7 +501,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       // La OT ya quedó FINALIZADA; solo falló el registro del pago, así que el
       // aviso lo dice para que el técnico no crea que el cobro se guardó.
       error: (err) => {
-        this.toast.error('No se pudo registrar el pago del servicio', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo registrar el pago del servicio', err);
       },
     });
   }

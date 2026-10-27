@@ -10,6 +10,12 @@ import { ToastService } from '../alertas/toast.service';
  * del backend para que las páginas puedan mostrar mensajes útiles.
  */
 export class ApiHttpError extends Error {
+  /**
+   * `true` cuando el interceptor ya avisó del fallo y cerró la sesión. Las
+   * páginas lo consultan para no repetir el mismo aviso al usuario.
+   */
+  sesionNotificada = false;
+
   constructor(
     message: string,
     readonly status: number,
@@ -76,7 +82,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       const normalizado = normalizarError(err);
 
       // Sesión inválida/expirada: se limpia la sesión y se vuelve al login para
-      // no seguir disparando peticiones que el backend rechaza con 401.
+      // no seguir disparando peticiones que el backend rechaza con 401. Este
+      // aviso es el ÚNICO del fallo: el error sale marcado para que la página
+      // que lo reciba no lo vuelva a notificar.
       if (
         normalizado instanceof ApiHttpError &&
         normalizado.status === HttpStatusCode.Unauthorized &&
@@ -84,6 +92,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         auth.isAuthenticated()
       ) {
         toast.warning('Sesión expirada', 'Inicia sesión de nuevo para continuar.');
+        normalizado.sesionNotificada = true;
         auth.logout();
       }
 

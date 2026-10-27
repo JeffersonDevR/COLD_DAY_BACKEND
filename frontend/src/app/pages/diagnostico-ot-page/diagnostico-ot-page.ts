@@ -10,7 +10,7 @@ import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { cargarOtDesdeRuta, CargaOtEstado } from '../../core/service/ot-carga';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtResponse, Point, TarifaEstimadaResponse } from '../../core/models/common.models';
 
 interface ChatMensaje {
@@ -157,7 +157,7 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
       },
       // No navega: la aprobación no quedó registrada y el cliente debe reintentar.
       error: (err) => {
-        this.toast.error('No se pudo aprobar el presupuesto', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo aprobar el presupuesto', err);
       },
     });
   }
@@ -173,7 +173,7 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
       },
       // El modal queda abierto con el motivo intacto para que el cliente reintente.
       error: (err) => {
-        this.toast.error('No se pudo rechazar el presupuesto', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo rechazar el presupuesto', err);
       },
     });
   }

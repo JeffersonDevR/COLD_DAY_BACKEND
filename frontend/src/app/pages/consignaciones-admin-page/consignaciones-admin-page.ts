@@ -4,7 +4,7 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
 
@@ -63,7 +63,7 @@ export class ConsignacionesAdminPage {
       },
       // Sin recargar: la fila sigue en pantalla y el admin ve por qué no se aprobó.
       error: (err) => {
-        this.toast.error('No se pudo aprobar la conciliación', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo aprobar la conciliación', err);
       },
     });
   }
@@ -85,7 +85,7 @@ export class ConsignacionesAdminPage {
       },
       // El modal queda abierto y el motivo escrito intacto para que el admin reintente.
       error: (err) => {
-        this.toast.error('No se pudo rechazar la liquidación', mensajeErrorAccion(err));
+        avisarErrorAccion(this.toast, 'No se pudo rechazar la liquidación', err);
       },
     });
   }
