@@ -23,11 +23,11 @@ Dejar el código listo para la implementaciónIonic mientras se diseña la UI en
 - [x] **T8 (B10)** — polls con visibilidad gate: ubicación 15 s y poll de OT deja de enmascarar 404 vs 401/5xx (`ot-api.ts:139`). — CERRADO en `a25bac0` (`getTecnicoUbicacion` devuelve `null` solo en 404 y propaga 401/403/5xx/red; `pollVisibleTab(15000)` en seguimiento y `visibleTabChanges()` para el `watchPosition` del tracking; specs de ambos gates).
 
 ### Slice frontend B — honestidad + admin web (`feat/prep-ionic-frontend-b`)
-- [ ] **T9 (B11)** — 401-msg single-toast: record pří interceptorto + pages ya notifican al mismo fallo.
-- [ ] **T10 (B13)** — quitar chat fake de diagnóstico (banner "próximamente" no funcional interactivo).
-- [ ] **T11 (B14)** — quitar defaults falsos: diagnóstico pre-llenado, comprobante `BCOL-8492048`, 5 estrellas default en calificar.
-- [ ] **T12 (B8, web)** — cargas admin silenciosas con estado de error (dashboard, monitoreo, consignaciones, validación, disputas, proveedores).
-- [ ] **T13 (B12)** — "Mis equipos" funcional: derivar tarjetas reales de `ClientesApi.getOtsPorCliente` (categoría + descripción de falla + última OT + estado + fecha + link al seguimiento). Sin backend nuevo. Spec.
+- [x] **T9 (B11)** — 401 single-toast: el interceptor es dueño del aviso y las páginas no lo repiten. — CERRADO en `71b94e7` (el interceptor marca `sesionNotificada` en el 401 que ya avisó y `avisarErrorAccion` omite el segundo toast en todos los sitios de acción; specs del interceptor, del helper y de calificar-servicio).
+- [x] **T10 (B13)** — quitar chat fake de diagnóstico (banner "próximamente" no funcional interactivo). — CERRADO en `e8643bc` (banner no interactivo; se fueron `chatMensajes`, `enviarMensaje`, el input y la auto-respuesta simulada).
+- [x] **T11 (B14)** — quitar defaults falsos: diagnóstico pre-llenado, comprobante `BCOL-8492048`, 5 estrellas default en calificar. — CERRADO en `c700e5a` (formulario del técnico vacío y no enviable vacío; comprobante sin referencia ni URL inventadas; calificar sin estrellas/aspectos/comentario preseleccionados; la vista del cliente muestra el dictamen real y no inventa montos).
+- [x] **T12 (B8, web)** — cargas admin silenciosas con estado de error (dashboard, monitoreo, consignaciones, validación, disputas, proveedores). — CERRADO en `0934881` (`app-carga-error` compartido con `cargando`/`errorCarga` en las seis pantallas; el poll de monitoreo no reemplaza la tabla por el aviso).
+- [x] **T13 (B12)** — "Mis equipos" funcional: derivar tarjetas reales de `ClientesApi.getOtsPorCliente`. — CERRADO en `d2843cf` (tarjetas por categoría con última OT, falla, estado, fecha y link al seguimiento; estado vacío y error con reintentar; spec con lista mockeada).
 
 ## Fuera de alcance
 - B9 (LOCALE_ID es-CO) — decisión del usuario pendiente.
