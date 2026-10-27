@@ -30,3 +30,31 @@ export function mensajeErrorAccion(err: unknown, mensajes: Record<number, string
   }
   return MENSAJE_INESPERADO;
 }
+
+/**
+ * `true` cuando el interceptor de errores ya avisó de este fallo (401 con
+ * sesión activa: toast de "Sesión expirada" + logout). La página puede usar el
+ * dato para decidir su propio estado, pero no debe volver a notificarlo.
+ */
+export function sesionYaNotificada(err: unknown): boolean {
+  return err instanceof ApiHttpError && err.sesionNotificada;
+}
+
+/** Lo mínimo que necesita un aviso de error: la fachada de toasts o un mock. */
+export interface ToastDeError {
+  error(titulo: string, mensaje?: string): void;
+}
+
+/**
+ * Aviso de error de una acción iniciada por el usuario. Si el interceptor ya
+ * avisó del 401, se calla: un fallo, una sola notificación.
+ */
+export function avisarErrorAccion(
+  toast: ToastDeError,
+  titulo: string,
+  err: unknown,
+  mensajes: Record<number, string> = {},
+): void {
+  if (sesionYaNotificada(err)) return;
+  toast.error(titulo, mensajeErrorAccion(err, mensajes));
+}

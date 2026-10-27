@@ -93,6 +93,17 @@ describe('PagoActaPage', () => {
     expect(fixture.componentInstance.totalMonto()).toBe(185000);
   });
 
+  it('sin presupuesto no inventa montos y lo dice', () => {
+    const { fixture } = setup(vi.fn(() => of(undefined)), { ...orden, presupuesto: undefined });
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(texto).toContain('Sin presupuesto registrado');
+    expect(texto).not.toContain('80.000');
+    expect(texto).not.toContain('70.000');
+    // El total solo suma lo que el servidor reportó: la tarifa de visita.
+    expect(fixture.componentInstance.totalMonto()).toBe(35000);
+  });
+
   it('registra la firma al dibujar y la limpia', () => {
     const { fixture, ctxStub } = setup(vi.fn(() => of(undefined)));
     const page = fixture.componentInstance;

@@ -63,6 +63,7 @@
             </div>
             <span class="text-xs font-bold text-amber-500 block">
               @switch (estrellas()) {
+                @case (0) { Elegí una puntuación para continuar }
                 @case (5) { ¡Excelente servicio impecable! }
                 @case (4) { Muy buen trabajo técnico }
                 @case (3) { Aceptable, con aspectos por mejorar }
@@ -117,8 +118,9 @@
           <div class="flex justify-end gap-2 pt-2">
             <button
               type="button"
+              [disabled]="estrellas() === 0"
               (click)="enviarCalificacion()"
-              class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow-md transition-colors inline-flex items-center gap-2"
+              class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-md transition-colors inline-flex items-center gap-2"
             >
               <i class="pi pi-send text-sm"></i>
               Guardar Calificación

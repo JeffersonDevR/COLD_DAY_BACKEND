@@ -7,9 +7,9 @@ import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { cargarOtDesdeRuta, CargaOtEstado } from '../../core/service/ot-carga';
 import { ToastService } from '../../core/alertas/toast.service';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 
 /**
  * Copy propia del registro del acta de garantía: el 409 es conflicto con el
@@ -272,7 +272,7 @@ export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
         // 409 (OT no finalizada o acta ya firmada), 400 (firma vacía o demasiado
         // grande) y 403 (orden ajena) tienen copy propia; el resto cae en el
         // genérico por status. Un "éxito" acá volvería a mentir.
-        this.toast.error('No pudimos registrar tu acta', mensajeErrorAccion(err, MENSAJES_ACTA));
+        avisarErrorAccion(this.toast, 'No pudimos registrar tu acta', err, MENSAJES_ACTA);
       },
       complete: () => this.guardando.set(false),
     });

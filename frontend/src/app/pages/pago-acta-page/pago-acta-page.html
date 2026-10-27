@@ -163,14 +163,20 @@
                     Visita pagada: el técnico ya puede iniciar el desplazamiento.
                   </p>
                 }
-                <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  <span class="text-slate-500">Mano de Obra:</span>
-                  <span class="font-bold">$ {{ (orden.presupuesto?.manoDeObra || 80000).toLocaleString('es-CO') }}</span>
-                </div>
-                <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  <span class="text-slate-500">Repuestos:</span>
-                  <span class="font-bold">$ {{ (orden.presupuesto?.repuestos || 70000).toLocaleString('es-CO') }}</span>
-                </div>
+                @if (orden.presupuesto; as presupuesto) {
+                  <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Mano de Obra:</span>
+                    <span class="font-bold">$ {{ (presupuesto.manoDeObra ?? presupuesto.manoObra).toLocaleString('es-CO') }}</span>
+                  </div>
+                  <div class="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Repuestos:</span>
+                    <span class="font-bold">$ {{ presupuesto.repuestos.toLocaleString('es-CO') }}</span>
+                  </div>
+                } @else {
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                    Sin presupuesto registrado: el técnico todavía no cargó los montos del servicio.
+                  </p>
+                }
                 <div class="flex justify-between p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-900 dark:text-sky-100 font-black text-sm">
                   <span>Total a Pagar:</span>
                   <span>$ {{ totalMonto().toLocaleString('es-CO') }} COP</span>

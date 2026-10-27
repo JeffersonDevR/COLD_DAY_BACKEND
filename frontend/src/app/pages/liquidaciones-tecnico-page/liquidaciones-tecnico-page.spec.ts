@@ -81,16 +81,34 @@ describe('LiquidacionesTecnicoPage', () => {
   it('envía el comprobante y recarga', () => {
     const { fixture, liquidacionApi, toast } = setup();
     fixture.componentInstance.abrirSubida(liquidacion({}));
+    fixture.componentInstance.comprobanteForm.setValue({
+      referencia: 'NQ-91823',
+      comprobanteUrl: 'https://coldday.com.co/recibos/consignacion.jpg',
+    });
 
     fixture.componentInstance.enviarComprobante();
 
     expect(liquidacionApi.subirComprobante).toHaveBeenCalledWith(
       'L1',
-      'https://coldday.com.co/recibos/consignacion-bancolombia.jpg',
-      'BCOL-8492048',
+      'https://coldday.com.co/recibos/consignacion.jpg',
+      'NQ-91823',
     );
     expect(toast.success).toHaveBeenCalled();
     expect(fixture.componentInstance.liqSeleccionada()).toBeNull();
+  });
+
+  it('no inventa un comprobante por defecto ni envía el formulario vacío', () => {
+    const { fixture, liquidacionApi } = setup();
+    fixture.componentInstance.abrirSubida(liquidacion({}));
+
+    expect(fixture.componentInstance.comprobanteForm.getRawValue()).toEqual({
+      referencia: '',
+      comprobanteUrl: '',
+    });
+
+    fixture.componentInstance.enviarComprobante();
+
+    expect(liquidacionApi.subirComprobante).not.toHaveBeenCalled();
   });
 
   it('no envía sin comprobante seleccionado', () => {
@@ -111,7 +129,10 @@ describe('LiquidacionesTecnicoPage', () => {
       throwError(() => new ApiHttpError('La liquidación no admite comprobante', 409)),
     );
     fixture.componentInstance.abrirSubida(liquidacion({}));
-    fixture.componentInstance.comprobanteForm.controls.referencia.setValue('BCOL-123');
+    fixture.componentInstance.comprobanteForm.setValue({
+      referencia: 'BCOL-123',
+      comprobanteUrl: 'https://coldday.com.co/recibos/consignacion.jpg',
+    });
 
     fixture.componentInstance.enviarComprobante();
 

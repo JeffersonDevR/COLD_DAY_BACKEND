@@ -116,7 +116,7 @@
                     ></textarea>
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label for="mano-obra" class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Mano de Obra (COP) *</label>
                       <input
@@ -135,20 +135,11 @@
                         class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
                       />
                     </div>
-                    <div>
-                      <label for="tiempo-estimado" class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Tiempo Estimado (Horas) *</label>
-                      <input
-                        id="tiempo-estimado"
-                        type="number"
-                        formControlName="tiempoEstimadoHoras"
-                        class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold"
-                      />
-                    </div>
                   </div>
 
                   <div class="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between font-bold">
                     <span>Total Presupuesto a Enviar al Cliente:</span>
-                    <span class="text-sm">$ {{ (diagnosticoForm.getRawValue().manoDeObra + diagnosticoForm.getRawValue().repuestos).toLocaleString('es-CO') }} COP</span>
+                    <span class="text-sm">$ {{ totalPresupuesto().toLocaleString('es-CO') }} COP</span>
                   </div>
 
                   <!-- Insumos requeridos: alimentan el despacho al proveedor (AD5). -->

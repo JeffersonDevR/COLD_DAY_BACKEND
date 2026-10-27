@@ -3,11 +3,12 @@ import { RouterLink } from '@angular/router';
 import { AdminApi } from '../../core/service/admin-api';
 import { CategoriaServicio, MetricasAdminResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
+import { CargaError } from '../../shared/carga-error/carga-error';
 
 @Component({
   selector: 'app-dashboard-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, CargaError],
   templateUrl: './dashboard-admin-page.html'
 })
 export class DashboardAdminPage implements OnInit {
@@ -16,6 +17,10 @@ export class DashboardAdminPage implements OnInit {
   /** Comisión de la plataforma (15%), alineada al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
   readonly metricas = signal<MetricasAdminResponse | null>(null);
+
+  /** Carga silenciosa: si las métricas no llegan, la torre lo dice y reintenta. */
+  readonly cargando = signal<boolean>(false);
+  readonly errorCarga = signal<boolean>(false);
 
   private readonly coloresCategoria: Record<CategoriaServicio, string> = {
     CAMARAS_VIGILANCIA: '#8b5cf6',
@@ -53,8 +58,22 @@ export class DashboardAdminPage implements OnInit {
   );
 
   ngOnInit(): void {
+    this.cargarMetricas();
+  }
+
+  cargarMetricas(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(false);
     this.adminApi.getMetricas().subscribe({
-      next: (data) => this.metricas.set(data)
+      next: (data) => {
+        this.metricas.set(data);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.metricas.set(null);
+        this.cargando.set(false);
+        this.errorCarga.set(true);
+      },
     });
   }
 }

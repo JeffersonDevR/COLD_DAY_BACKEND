@@ -23,9 +23,9 @@ function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionRespon
   };
 }
 
-function setup() {
+function setup(getTodasLiquidaciones?: ReturnType<typeof vi.fn>, tecnicosSinRed = false) {
   const liquidacionApi = {
-    getTodasLiquidaciones: vi.fn(() =>
+    getTodasLiquidaciones: getTodasLiquidaciones ?? vi.fn(() =>
       of([
         liquidacion({ id: 'L1', estado: 'EN_VERIFICACION' }),
         liquidacion({ id: 'L2', estado: 'APROBADA', comision: 5000 }),
@@ -36,10 +36,12 @@ function setup() {
   };
   const tecnicosApi = {
     getTecnicos: vi.fn(() =>
-      of<TecnicoResponse[]>([
-        { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'BLOQUEADO_POR_LIQUIDACION' },
-        { id: 'TEC-2', nombre: 'Ana', correo: 'a@x.co', estadoOperativo: 'DISPONIBLE' },
-      ]),
+      tecnicosSinRed
+        ? throwError(() => new Error('sin red'))
+        : of<TecnicoResponse[]>([
+            { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'BLOQUEADO_POR_LIQUIDACION' },
+            { id: 'TEC-2', nombre: 'Ana', correo: 'a@x.co', estadoOperativo: 'DISPONIBLE' },
+          ]),
     ),
   };
   const toast = { success: vi.fn(), warning: vi.fn(), error: vi.fn() };
@@ -71,6 +73,52 @@ describe('ConsignacionesAdminPage', () => {
     expect(texto).toContain('OT-2026-0004');
     expect(texto).not.toContain('L1');
     expect(texto).not.toContain('OT-1');
+  });
+
+  it('no reporta 0 técnicos bloqueados cuando el listado de técnicos no carga', () => {
+    const { fixture } = setup(undefined, true);
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(fixture.componentInstance.tecnicosDesconocidos()).toBe(true);
+    expect(texto).toContain('No disponible: no pudimos cargar los técnicos');
+    expect(texto).not.toContain('Con servicios en mora');
+    // La cola de liquidaciones cargó bien: el fallo de técnicos no la tumba.
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    // Y su única fila mockeada sigue renderizada, con los totales del resumen.
+    const filas = fixture.nativeElement.querySelectorAll('tbody tr');
+    expect(filas.length).toBe(2);
+    expect(filas[0].textContent).toContain('OT-2026-0004');
+    expect(texto).not.toContain('Sin datos');
+  });
+
+  it('avisa si las liquidaciones no cargan y reintenta', () => {
+    const getTodasLiquidaciones = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('sin red')))
+      .mockReturnValueOnce(of([liquidacion({ id: 'L1' })]));
+    const { fixture } = setup(getTodasLiquidaciones);
+
+    expect(fixture.componentInstance.errorCarga()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('No pudimos cargar las liquidaciones.');
+
+    // Un fallo no autoriza a publicar ceros: el resumen se declara desconocido.
+    const textoConError = fixture.nativeElement.textContent as string;
+    expect(textoConError).toContain('No disponible: sin datos de liquidaciones');
+    expect(textoConError).toContain('Sin datos');
+    expect(textoConError).not.toContain('registros totales');
+    expect(textoConError).not.toContain('Comisiones ingresadas en firme');
+    expect(textoConError).not.toContain('Pendientes por conciliar extracto');
+    expect(textoConError).not.toContain('$ 0 COP');
+
+    (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.liquidaciones().length).toBe(1);
+    // Con datos reales, el resumen vuelve a mostrar hechos.
+    expect(fixture.nativeElement.textContent).toContain('1 registros totales');
+    expect(fixture.nativeElement.textContent).toContain('Comisiones ingresadas en firme');
   });
 
   it('aprueba una liquidación y avisa', () => {

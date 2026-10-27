@@ -8,6 +8,7 @@ import { ApiConfig } from '../../core/service/api.config';
 import { SseService, OfertaCreada } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../core/models/common.models';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 
 /** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
@@ -155,13 +156,42 @@ describe('OfertasPage', () => {
     );
   });
 
-  it('reporta error de concurrencia al fallar la aceptación', () => {
+  it('ante un 409 sí afirma que otro técnico tomó la orden', () => {
     const { fixture, tecnicosApi, toast } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
-    tecnicosApi.aceptarOferta.mockReturnValue(throwError(() => new Error('409')));
+    tecnicosApi.aceptarOferta.mockReturnValue(throwError(() => new ApiHttpError('La oferta ya fue aceptada', 409)));
 
     fixture.componentInstance.aceptarOferta(ot);
 
-    expect(toast.error).toHaveBeenCalledWith('Error de Concurrencia', expect.any(String));
+    expect(toast.error).toHaveBeenCalledWith(
+      'Error de Concurrencia',
+      'Esta orden ya fue tomada por otro técnico en el perímetro.',
+    );
+    expect(fixture.componentInstance.loadingOt()).toBeNull();
+  });
+
+  it('ante un 500 no atribuye el fallo a otro técnico', () => {
+    const { fixture, tecnicosApi, toast } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+    tecnicosApi.aceptarOferta.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+
+    fixture.componentInstance.aceptarOferta(ot);
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo tomar la orden',
+      'Ocurrió un error en el servidor. Inténtalo de nuevo en unos minutos.',
+    );
+    expect(toast.error).not.toHaveBeenCalledWith('Error de Concurrencia', expect.anything());
+  });
+
+  it('no emite un segundo aviso cuando el 401 ya lo notificó el interceptor', () => {
+    const { fixture, tecnicosApi, toast } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+    const error = new ApiHttpError('Sesión inválida o expirada', 401);
+    error.sesionNotificada = true;
+    tecnicosApi.aceptarOferta.mockReturnValue(throwError(() => error));
+
+    fixture.componentInstance.aceptarOferta(ot);
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.loadingOt()).toBeNull();
   });
 
   it('reporta error si no se carga el perfil', () => {
@@ -185,7 +215,7 @@ describe('OfertasPage', () => {
     });
     const fixture = TestBed.createComponent(OfertasPage);
     fixture.detectChanges();
-    expect(toast.error).toHaveBeenCalledWith('Error', expect.any(String));
+    expect(toast.error).toHaveBeenCalledWith('No se pudo cargar tu perfil de técnico', expect.any(String));
   });
 
   it('avisa que hay una oferta nueva', () => {

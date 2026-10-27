@@ -51,9 +51,27 @@ describe('CalificarServicioPage', () => {
     expect(texto).not.toContain('ot1');
   });
 
+  it('no arranca con estrellas ni aspectos elegidos', () => {
+    const { fixture } = setup(vi.fn(() => of(undefined)));
+    const page = fixture.componentInstance;
+
+    expect(page.estrellas()).toBe(0);
+    expect(page.tagsSeleccionados()).toEqual([]);
+    expect(page.comentarioCtrl.value).toBe('');
+    expect(fixture.nativeElement.textContent).toContain('Elegí una puntuación para continuar');
+
+    const botones = Array.from(
+      fixture.nativeElement.querySelectorAll('button'),
+    ) as HTMLButtonElement[];
+    const guardar = botones.find((b) => b.textContent?.includes('Guardar Calificación'));
+    expect(guardar?.disabled).toBe(true);
+  });
+
   it('alterna los tags destacados', () => {
     const { fixture } = setup(vi.fn(() => of(undefined)));
     const page = fixture.componentInstance;
+    expect(page.hasTag('Puntualidad en llegada')).toBe(false);
+    page.toggleTag('Puntualidad en llegada');
     expect(page.hasTag('Puntualidad en llegada')).toBe(true);
     page.toggleTag('Puntualidad en llegada');
     expect(page.hasTag('Puntualidad en llegada')).toBe(false);
@@ -61,17 +79,30 @@ describe('CalificarServicioPage', () => {
     expect(page.hasTag('Calidad técnica impecable')).toBe(true);
   });
 
+  it('no envía la calificación sin puntuación elegida', () => {
+    const calificar = vi.fn(() => of(undefined));
+    const { fixture } = setup(calificar);
+
+    fixture.componentInstance.enviarCalificacion();
+
+    expect(calificar).not.toHaveBeenCalled();
+  });
+
   it('envía la calificación con estrellas, comentario y tags', () => {
     const calificar = vi.fn(() => of(undefined));
     const { fixture, toast, navigate } = setup(calificar);
-    fixture.componentInstance.estrellas.set(4);
+    const page = fixture.componentInstance;
+    page.estrellas.set(4);
+    page.comentarioCtrl.setValue('Llegó puntual.');
+    page.toggleTag('Puntualidad en llegada');
+    page.toggleTag('Limpieza del área');
 
-    fixture.componentInstance.enviarCalificacion();
+    page.enviarCalificacion();
 
     expect(calificar).toHaveBeenCalledWith(
       'ot1',
       4,
-      expect.stringContaining('[Aspectos: Puntualidad en llegada, Limpieza del área]'),
+      'Llegó puntual. [Aspectos: Puntualidad en llegada, Limpieza del área]',
     );
     expect(toast.success).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'ot1']);
@@ -83,6 +114,7 @@ describe('CalificarServicioPage', () => {
       throwError(() => new ApiHttpError('Solo se puede calificar una OT FINALIZADA', 409)),
     );
     const { fixture, toast } = setup(calificar);
+    fixture.componentInstance.estrellas.set(4);
 
     fixture.componentInstance.enviarCalificacion();
 
@@ -90,6 +122,19 @@ describe('CalificarServicioPage', () => {
       'Calificación no disponible',
       'Esta orden todavía no se puede calificar: puede ser que aún no esté finalizada o que ya tengas una reseña registrada.',
     );
+  });
+
+  it('ante un 401 ya avisado por el interceptor no agrega un segundo aviso', () => {
+    const expirada = new ApiHttpError('Sesión inválida o expirada. Inicia sesión de nuevo.', 401);
+    // El interceptor avisó y cerró sesión antes de entregar este error.
+    expirada.sesionNotificada = true;
+    const calificar = vi.fn(() => throwError(() => expirada));
+    const { fixture, toast } = setup(calificar);
+
+    fixture.componentInstance.enviarCalificacion();
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it('muestra el aviso de carga con reintentar y recupera la OT al reintentar', () => {

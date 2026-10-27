@@ -8,8 +8,19 @@ import { ApiConfig } from '../../core/service/api.config';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
+
+/**
+ * Copy propia de esta pantalla: el 409 de `POST /ofertas/{id}/aceptar` es
+ * concurrencia real (otro técnico tomó la orden primero). Cualquier otro
+ * status usa el copy genérico del helper: no autoriza a afirmar la causa.
+ */
+const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
+  409: 'Esta orden ya fue tomada por otro técnico en el perímetro.',
+};
 
 @Component({
   selector: 'app-ofertas-page',
@@ -73,7 +84,7 @@ export class OfertasPage implements OnInit {
           this.cargarOfertas(tecnico.id);
         }
       },
-      () => this.toast.error('Error', 'No se pudo cargar tu perfil de técnico.'),
+      (err) => avisarErrorAccion(this.toast, 'No se pudo cargar tu perfil de técnico', err),
     );
     // Refresco del radar: cada 25 s y solo con la pestaña visible. Es silencioso
     // para no repetir el aviso de error en cada vuelta.
@@ -94,8 +105,8 @@ export class OfertasPage implements OnInit {
   private cargarOfertas(tecnicoId: string, inicial = true): void {
     this.tecnicosApi.getOfertasParaTecnico(tecnicoId).subscribe({
       next: (ofertas) => this.ofertas.set(ofertas),
-      error: () => {
-        if (inicial) this.toast.error('Error de Conexión', 'No se pudieron consultar las ofertas disponibles.');
+      error: (err) => {
+        if (inicial) avisarErrorAccion(this.toast, 'No se pudieron cargar las ofertas', err);
       },
     });
   }
@@ -161,9 +172,18 @@ export class OfertasPage implements OnInit {
         );
         this.router.navigate(['/tecnico/ejecucion', ot.id]);
       },
-      error: () => {
+      error: (err) => {
         this.loadingOt.set(null);
-        this.toast.error('Error de Concurrencia', 'Esta orden ya fue tomada por otro técnico en el perímetro.');
+        // Solo un 409 prueba que otro técnico tomó la orden antes. Un 401/403/5xx
+        // o un fallo de red no lo prueba, así que no se afirma esa causa (y un
+        // 401 ya notificado por el interceptor no recibe un segundo aviso).
+        const concurrencia = err instanceof ApiHttpError && err.status === 409;
+        avisarErrorAccion(
+          this.toast,
+          concurrencia ? 'Error de Concurrencia' : 'No se pudo tomar la orden',
+          err,
+          MENSAJES_ACEPTAR_OFERTA,
+        );
       }
     });
   }

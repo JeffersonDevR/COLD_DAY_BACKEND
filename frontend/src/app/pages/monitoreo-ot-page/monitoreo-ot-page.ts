@@ -5,12 +5,13 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
+import { CargaError } from '../../shared/carga-error/carga-error';
 import { OtResponse } from '../../core/models/common.models';
 
 @Component({
   selector: 'app-monitoreo-ot-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReactiveFormsModule, EstadoBadge],
+  imports: [RouterLink, ReactiveFormsModule, EstadoBadge, CargaError],
   templateUrl: './monitoreo-ot-page.html'
 })
 export class MonitoreoOtPage {
@@ -22,6 +23,9 @@ export class MonitoreoOtPage {
   readonly filtroEstadoCtrl = new FormControl('TODOS');
 
   readonly ordenes = signal<OtResponse[]>([]);
+  /** Carga silenciosa: el primer fallo se ve y se puede reintentar. */
+  readonly cargando = signal<boolean>(false);
+  readonly errorCarga = signal<boolean>(false);
 
   constructor() {
     this.cargarOrdenes(true);
@@ -32,12 +36,28 @@ export class MonitoreoOtPage {
       .subscribe(() => this.cargarOrdenes(false));
   }
 
+  /** Reintento manual desde el aviso de error. */
+  reintentar(): void {
+    this.cargarOrdenes(true);
+  }
+
   /** `inicial` distingue la primera carga (que vacía si falla) del refresco periódico. */
   private cargarOrdenes(inicial: boolean): void {
+    if (inicial) {
+      this.cargando.set(true);
+      this.errorCarga.set(false);
+    }
     this.adminApi.getTodasOts().subscribe({
-      next: (ots) => this.ordenes.set(ots),
+      next: (ots) => {
+        this.ordenes.set(ots);
+        this.cargando.set(false);
+      },
       error: () => {
-        if (inicial) this.ordenes.set([]);
+        this.cargando.set(false);
+        if (inicial) {
+          this.ordenes.set([]);
+          this.errorCarga.set(true);
+        }
       },
     });
   }

@@ -73,6 +73,52 @@ describe('MonitoreoOtPage', () => {
     expect(fixture.componentInstance.otsFiltradas()).toEqual([]);
   });
 
+  it('no muestra un monto inventado cuando la OT no tiene presupuesto', () => {
+    const fixture = setup(vi.fn(() => of([ot({ id: 'OT-3', codigo: 'OT-2026-0003' })])));
+    fixture.detectChanges();
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(texto).toContain('Sin presupuesto');
+    expect(texto).not.toContain('$');
+  });
+
+  it('avisa cuando la carga falla y reintenta con el botón', () => {
+    const getTodasOts = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('sin red')))
+      .mockReturnValueOnce(of(ots));
+    const fixture = setup(getTodasOts);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.errorCarga()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('No pudimos cargar las órdenes de trabajo.');
+
+    (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(getTodasOts).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.otsFiltradas().length).toBe(2);
+  });
+
+  it('un fallo del refresco periódico no reemplaza la tabla por el aviso', () => {
+    vi.useFakeTimers();
+    cambiarPestana('visible');
+    const getTodasOts = vi
+      .fn()
+      .mockReturnValueOnce(of(ots))
+      .mockReturnValueOnce(throwError(() => new Error('sin red')));
+    const fixture = setup(getTodasOts);
+
+    vi.advanceTimersByTime(POLL_INTERVAL_MS);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.otsFiltradas().length).toBe(2);
+    vi.useRealTimers();
+    delete (document as { visibilityState?: string }).visibilityState;
+  });
+
   describe('columna de técnico', () => {
     it('muestra el nombre real del técnico asignado', () => {
       const fixture = setup(vi.fn(() => of([ot({ id: 'OT-1', clienteNombre: 'Ana', tecnicoNombre: 'Juan Pérez' })])));

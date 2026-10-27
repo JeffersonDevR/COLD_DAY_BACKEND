@@ -4,8 +4,9 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { TecnicoResponse } from '../../core/models/common.models';
+import { CargaError } from '../../shared/carga-error/carga-error';
 
 /**
  * Copy propia de esta pantalla: el 409 de este endpoint es
@@ -20,7 +21,7 @@ const MENSAJES_VALIDACION: Record<number, string> = {
 @Component({
   selector: 'app-validacion-tecnicos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, CargaError],
   templateUrl: './validacion-tecnicos-page.html'
 })
 export class ValidacionTecnicosPage {
@@ -32,14 +33,27 @@ export class ValidacionTecnicosPage {
   readonly tecnicoARechazar = signal<TecnicoResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
+  /** Carga silenciosa: si falla, la pantalla lo dice y ofrece reintentar. */
+  readonly cargando = signal<boolean>(false);
+  readonly errorCarga = signal<boolean>(false);
+
   constructor() {
     this.cargarTecnicos();
   }
 
-  private cargarTecnicos(): void {
+  cargarTecnicos(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(false);
     this.tecnicosApi.getTecnicos().subscribe({
-      next: (tecnicos) => this.tecnicos.set(tecnicos),
-      error: () => this.tecnicos.set([]),
+      next: (tecnicos) => {
+        this.tecnicos.set(tecnicos);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.tecnicos.set([]);
+        this.cargando.set(false);
+        this.errorCarga.set(true);
+      },
     });
   }
 
@@ -51,7 +65,7 @@ export class ValidacionTecnicosPage {
       },
       // Sin recargar: la fila sigue en pantalla y el admin ve por qué no se habilitó.
       error: (err) => {
-        this.toast.error('No se pudo habilitar al técnico', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+        avisarErrorAccion(this.toast, 'No se pudo habilitar al técnico', err, MENSAJES_VALIDACION);
       }
     });
   }
@@ -73,7 +87,7 @@ export class ValidacionTecnicosPage {
       },
       // El modal queda abierto y el motivo escrito intacto para que el admin reintente.
       error: (err) => {
-        this.toast.error('No se pudo rechazar la validación', mensajeErrorAccion(err, MENSAJES_VALIDACION));
+        avisarErrorAccion(this.toast, 'No se pudo rechazar la validación', err, MENSAJES_VALIDACION);
       }
     });
   }

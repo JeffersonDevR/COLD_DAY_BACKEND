@@ -1,0 +1,10 @@
+<div role="alert" class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-xs space-y-2">
+  <p>{{ mensaje() }}</p>
+  <button
+    type="button"
+    (click)="reintentar.emit()"
+    class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors"
+  >
+    Reintentar
+  </button>
+</div>

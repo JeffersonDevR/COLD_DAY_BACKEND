@@ -91,23 +91,49 @@ describe('DiagnosticoOtPage', () => {
     expect(clientesApi.rechazarDiagnostico).not.toHaveBeenCalled();
   });
 
-  it('envía un mensaje al chat', () => {
+  it('reemplaza el chat falso por un banner no interactivo de "Próximamente"', () => {
     const { fixture } = setup();
-    const antes = fixture.componentInstance.chatMensajes().length;
-    fixture.componentInstance.nuevoMensajeCtrl.setValue('¿Cuánto tarda?');
+    fixture.detectChanges();
+    const html = fixture.nativeElement as HTMLElement;
 
-    fixture.componentInstance.enviarMensaje();
-
-    const mensajes = fixture.componentInstance.chatMensajes();
-    expect(mensajes.length).toBe(antes + 1);
-    expect(mensajes.at(-1)).toMatchObject({ emisor: 'CLIENTE', texto: '¿Cuánto tarda?' });
+    expect(html.textContent).toContain('Chat con Juan');
+    expect(html.textContent).toContain('Próximamente');
+    expect(html.textContent).toContain('Todavía no podés escribirle desde acá');
+    // Sin formulario, sin input y sin burbujas de conversación inventadas.
+    expect(html.querySelector('form')).toBeNull();
+    expect(html.querySelector('input[type="text"]')).toBeNull();
+    expect(html.textContent).not.toContain('En Línea');
+    expect(html.textContent).not.toContain('garantía de 90 días');
   });
 
-  it('no envía mensajes vacíos', () => {
-    const { fixture } = setup();
-    const antes = fixture.componentInstance.chatMensajes().length;
-    fixture.componentInstance.enviarMensaje();
-    expect(fixture.componentInstance.chatMensajes().length).toBe(antes);
+  it('sin dictamen ni presupuesto no inventa texto ni cifras', () => {
+    const { fixture } = setup({ ...orden, diagnostico: undefined, presupuesto: undefined });
+    fixture.detectChanges();
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(texto).toContain('El técnico todavía no cargó el dictamen de este equipo.');
+    expect(texto).toContain('El técnico todavía no cargó el presupuesto');
+    expect(texto).not.toContain('condensador sucio');
+    expect(texto).not.toContain('Capacitor 45uF');
+    expect(texto).not.toContain('80.000');
+    expect(texto).not.toContain('70.000');
+  });
+
+  it('muestra el dictamen y los montos reales cuando existen', () => {
+    const { fixture } = setup({
+      ...orden,
+      diagnostico: { diagnostico: 'Fuga en la soldadura de baja presión.' },
+      presupuesto: { aprobado: false, total: 150000, manoObra: 90000, repuestos: 60000 },
+    });
+    fixture.detectChanges();
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(texto).toContain('Fuga en la soldadura de baja presión.');
+    expect(texto).not.toContain('[object Object]');
+    expect(texto).toContain('90.000');
+    expect(texto).toContain('60.000');
+    // El backend no expone un tiempo estimado: la vista no lo inventa.
+    expect(texto).not.toContain('Tiempo estimado');
   });
 
   it('abre el stream de cambios de estado de la OT cargada', () => {
@@ -189,7 +215,7 @@ describe('DiagnosticoOtPage', () => {
       fixture.detectChanges();
       const texto = fixture.nativeElement.textContent as string;
       expect(texto).toContain('Revisión en sitio por un técnico por asignar');
-      expect(texto).toContain('Buscando técnico…');
+      expect(texto).toContain('Chat con el técnico por asignar');
       expect(texto).not.toContain('el técnico asignado');
     });
   });

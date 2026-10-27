@@ -4,6 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ProveedorRegistroService } from '../../core/service/proveedor-registro.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import {
   DocumentoProveedorResponse,
   EstadoValidacionProveedor,
@@ -71,8 +72,8 @@ export class DocumentosProveedorPage {
         this.mostrarForm.set(false);
         this.cargarDocumentos();
       },
-      error: () => {
-        this.toast.error('No se pudo declarar', 'Intenta de nuevo en un momento.');
+      error: (err) => {
+        avisarErrorAccion(this.toast, 'No se pudo declarar', err);
       },
     });
   }

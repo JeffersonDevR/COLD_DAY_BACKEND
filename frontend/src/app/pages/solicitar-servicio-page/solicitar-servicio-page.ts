@@ -6,13 +6,13 @@ import { catchError, debounceTime, distinctUntilChanged, of, switchMap, tap } fr
 import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { CategoriaServicio, Point } from '../../core/models/common.models';
 import { MapsApi } from '../../core/service/maps-api';
 import { SugerenciaApiResponse } from '../../core/models/backend.dto';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 
 /** Mensaje exacto que devuelve el backend (404) cuando el usuario no tiene perfil de cliente. */
 const PATRON_PERFIL_CLIENTE_FALTANTE = /no existe un perfil de cliente/i;
@@ -215,7 +215,7 @@ export class SolicitarServicioPage {
             this.faltoPerfilCliente.set(true);
             return;
           }
-          this.toast.error('No se pudo crear la solicitud', mensajeErrorAccion(err));
+          avisarErrorAccion(this.toast, 'No se pudo crear la solicitud', err);
         }
       });
   }
