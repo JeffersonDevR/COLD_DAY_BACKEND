@@ -215,7 +215,7 @@ describe('AgregarPerfilPage', () => {
       expect(navigateByUrl).toHaveBeenCalledWith('/tecnico/ofertas');
     });
 
-    it.each(['https://evil.com', '//evil.com', ''])(
+    it.each(['https://evil.com', '//evil.com', '', '   ', '/\\evil.com'])(
       'ignora el returnUrl no interno %p y cae al panel del perfil',
       (returnUrl) => {
         const { fixture, mocks, navigateByUrl } = setup(['TECNICO'], returnUrl);
@@ -271,8 +271,32 @@ describe('AgregarPerfilPage', () => {
     expect(fixture.nativeElement.querySelector('[data-test="iniciar-sesion-perfil-existente"]')).not.toBeNull();
   });
 
-  it('un 409 al adquirir el perfil de cliente muestra copy accionable y ofrece login', () => {
+  it('un 409 al adquirir el perfil de cliente sin borrador no promete una solicitud guardada', () => {
     const { fixture, mocks } = setup(['TECNICO']);
+    mocks.clientesApi.crearMiPerfil.mockReturnValue(
+      throwError(() => new ApiHttpError('El usuario ya tiene un perfil de cliente: 3', 409)),
+    );
+    const page = fixture.componentInstance;
+    page.elegir('CLIENTE');
+    page.formCliente.setValue({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta', barrio: '' });
+
+    page.enviarCliente();
+    fixture.detectChanges();
+
+    const copy = 'Tu perfil de cliente ya existe. Iniciá sesión para continuar.';
+    expect(mocks.toast.error).toHaveBeenCalledWith('No se pudo crear el perfil', copy);
+    expect(texto(fixture)).toContain(copy);
+    expect(page.errorPerfilExistente()).toBe(copy);
+    // Sin borrador no se afirma nada sobre la solicitud.
+    expect(texto(fixture)).not.toContain('solicitud quedó guardada');
+    expect(fixture.nativeElement.querySelector('[data-test="iniciar-sesion-perfil-existente"]')).not.toBeNull();
+  });
+
+  it('un 409 al adquirir el perfil de cliente con borrador muestra copy accionable y ofrece login', () => {
+    const { fixture, mocks } = setup(['TECNICO'], undefined, {
+      direccion: 'Calle 15 # 3E-28, Caobos',
+      coordenadas: { latitud: 7.9, longitud: -72.49 },
+    });
     mocks.clientesApi.crearMiPerfil.mockReturnValue(
       throwError(() => new ApiHttpError('El usuario ya tiene un perfil de cliente: 3', 409)),
     );

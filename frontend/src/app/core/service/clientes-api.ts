@@ -192,42 +192,12 @@ export class ClientesApi {
           ubicacion: request.ubicacion ?? null,
         },
         activo: true,
-        token: this.tokenMockCliente(),
+        token: this.tokenStorage.createMockJwtConRolAdicional('CLIENTE'),
       };
       return of(fake).pipe(delay(300));
     }
 
     return this.http.post<ClienteApiResponse>(this.apiConfig.url('/clientes/perfil'), request);
-  }
-
-  /**
-   * JWT de reemplazo del modo mock: decodificable por
-   * `AuthService.establecerSesionDesdeToken` y con CLIENTE sumado a los roles
-   * vigentes, para poder ejercitar el flujo sin logout. Solo se invoca dentro
-   * de la rama `useMocks()`.
-   */
-  private tokenMockCliente(): string {
-    const decoded = this.tokenStorage.getDecodedToken();
-    const rolesActuales = decoded?.roles?.length
-      ? decoded.roles
-      : decoded?.rol
-        ? [decoded.rol]
-        : [];
-    const roles = rolesActuales.includes('CLIENTE') ? rolesActuales : [...rolesActuales, 'CLIENTE'];
-    const ahora = Math.floor(Date.now() / 1000);
-    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-    const payload = btoa(
-      JSON.stringify({
-        sub: decoded?.sub ?? String(decoded?.id ?? 0),
-        correo: decoded?.correo ?? '',
-        rol: decoded?.rol ?? 'CLIENTE',
-        roles,
-        ver: (decoded?.ver ?? 0) + 1,
-        iat: ahora,
-        exp: ahora + 86400 * 7,
-      }),
-    );
-    return `${header}.${payload}.mock-signature`;
   }
 
   /**

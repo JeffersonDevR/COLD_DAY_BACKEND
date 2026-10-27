@@ -198,17 +198,29 @@ export class AgregarPerfilPage {
     if (err instanceof ApiHttpError && err.status === 409) {
       // El backend commitea el perfil y después mintea el token: si el minteo
       // falló, el reintento responde 409. Reintentar no ayuda; hay que
-      // reautenticarse y el borrador de la solicitud sigue intacto.
-      const mensaje =
-        tipo === 'CLIENTE'
-          ? 'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.'
-          : 'Tu perfil de técnico ya existe. Iniciá sesión para continuar.';
+      // reautenticarse.
+      const mensaje = this.copyPerfilExistente(tipo);
       this.errorPerfilExistente.set(mensaje);
       this.toast.error('No se pudo crear el perfil', mensaje);
       return;
     }
     this.errorPerfilExistente.set(null);
     avisarErrorAccion(this.toast, 'No se pudo crear el perfil', err);
+  }
+
+  /**
+   * Copy del 409. La solicitud guardada solo se promete cuando existe un
+   * borrador de este usuario: la pantalla también se abre sin ninguno (por
+   * ejemplo, desde el CTA de perfil faltante del panel de cliente).
+   */
+  private copyPerfilExistente(tipo: TipoPerfilAdquirible): string {
+    if (tipo !== 'CLIENTE') {
+      return 'Tu perfil de técnico ya existe. Iniciá sesión para continuar.';
+    }
+    const base = 'Tu perfil de cliente ya existe. Iniciá sesión para continuar';
+    return this.draftService.leer()
+      ? `${base}; tu solicitud quedó guardada.`
+      : `${base}.`;
   }
 
   /** Cierra la sesión revocada y aterriza en el login para reautenticarse. */

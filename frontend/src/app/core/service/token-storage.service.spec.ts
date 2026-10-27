@@ -4,7 +4,11 @@ import { TokenStorageService } from './token-storage.service';
 const TOKEN_KEY = 'coldday.token';
 
 function jwtWith(payload: Record<string, unknown>): string {
-  return `${btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${btoa(JSON.stringify(payload))}.signature`;
+  // Igual que un JWT real: el payload es base64 de UTF-8 (con tildes).
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `${btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${btoa(binary)}.signature`;
 }
 
 describe('TokenStorageService', () => {
@@ -77,5 +81,29 @@ describe('TokenStorageService', () => {
     });
     service.saveToken(token);
     expect(service.getDecodedToken()?.roles).toEqual(['CLIENTE', 'TECNICO']);
+  });
+
+  it('createMockJwtConRolAdicional suma el rol, sube ver y conserva nombre e id', () => {
+    service.saveToken(
+      jwtWith({ sub: '6', id: 6, nombre: 'Juan Pérez', correo: 'juan@x.co', rol: 'TECNICO', roles: ['TECNICO'], ver: 2 }),
+    );
+
+    service.saveToken(service.createMockJwtConRolAdicional('CLIENTE'));
+
+    const decoded = service.getDecodedToken();
+    expect(decoded?.roles).toEqual(['TECNICO', 'CLIENTE']);
+    expect(decoded?.rol).toBe('TECNICO');
+    expect(decoded?.nombre).toBe('Juan Pérez');
+    expect(decoded?.id).toBe(6);
+    expect(decoded?.ver).toBe(3);
+  });
+
+  it('createMockJwtConRolAdicional sin sesión previa crea una mínima con ese rol', () => {
+    service.saveToken(service.createMockJwtConRolAdicional('TECNICO'));
+
+    const decoded = service.getDecodedToken();
+    expect(decoded?.roles).toEqual(['TECNICO']);
+    expect(decoded?.rol).toBe('TECNICO');
+    expect(decoded?.ver).toBe(1);
   });
 });
