@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { AgregarPerfilPage, parseCertificaciones } from './agregar-perfil-page';
 import { AuthService } from '../../core/service/auth.service';
@@ -10,15 +10,28 @@ import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { Rol } from '../../core/models/common.models';
 
 interface Mocks {
-  auth: { userRoles: ReturnType<typeof vi.fn>; logout: ReturnType<typeof vi.fn> };
+  auth: {
+    userRoles: ReturnType<typeof vi.fn>;
+    logout: ReturnType<typeof vi.fn>;
+    adoptarToken: ReturnType<typeof vi.fn>;
+    getDashboardRouteForRole: ReturnType<typeof vi.fn>;
+  };
   tecnicosApi: { crearMiPerfil: ReturnType<typeof vi.fn> };
   clientesApi: { crearMiPerfil: ReturnType<typeof vi.fn> };
   toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 }
 
-function setup(roles: Rol[]): { fixture: ComponentFixture<AgregarPerfilPage>; mocks: Mocks } {
+function setup(
+  roles: Rol[],
+  returnUrl?: string,
+): { fixture: ComponentFixture<AgregarPerfilPage>; mocks: Mocks; navigateByUrl: ReturnType<typeof vi.fn> } {
   const mocks: Mocks = {
-    auth: { userRoles: vi.fn(() => new Set(roles)), logout: vi.fn() },
+    auth: {
+      userRoles: vi.fn(() => new Set(roles)),
+      logout: vi.fn(),
+      adoptarToken: vi.fn(),
+      getDashboardRouteForRole: vi.fn((rol: Rol) => (rol === 'TECNICO' ? '/tecnico/ofertas' : '/panel')),
+    },
     tecnicosApi: { crearMiPerfil: vi.fn(() => of({ id: 't9' })) },
     clientesApi: { crearMiPerfil: vi.fn(() => of({ id: 'cl2' })) },
     toast: { success: vi.fn(), error: vi.fn() },
@@ -28,15 +41,24 @@ function setup(roles: Rol[]): { fixture: ComponentFixture<AgregarPerfilPage>; mo
     imports: [AgregarPerfilPage],
     providers: [
       provideRouter([]),
+      {
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: {
+            queryParamMap: convertToParamMap(returnUrl ? { returnUrl } : {}),
+          },
+        },
+      },
       { provide: AuthService, useValue: mocks.auth },
       { provide: TecnicosApi, useValue: mocks.tecnicosApi },
       { provide: ClientesApi, useValue: mocks.clientesApi },
       { provide: ToastService, useValue: mocks.toast },
     ],
   });
+  const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
   const fixture = TestBed.createComponent(AgregarPerfilPage);
   fixture.detectChanges();
-  return { fixture, mocks };
+  return { fixture, mocks, navigateByUrl };
 }
 
 function texto(fixture: ComponentFixture<AgregarPerfilPage>): string {
@@ -118,6 +140,50 @@ describe('AgregarPerfilPage', () => {
       barrio: 'Centro',
     });
     expect(page.sesionActualizada()).toBe(true);
+  });
+
+  describe('sesión renovada al adquirir el segundo perfil', () => {
+    it('con token adopta la sesión nueva y vuelve al returnUrl sin logout', () => {
+      const { fixture, mocks, navigateByUrl } = setup(['TECNICO'], '/cliente/solicitar');
+      mocks.clientesApi.crearMiPerfil.mockReturnValue(of({ id: 'cl2', token: 'nuevo.jwt' }));
+      const page = fixture.componentInstance;
+      page.elegir('CLIENTE');
+      page.formCliente.setValue({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta', barrio: '' });
+
+      page.enviarCliente();
+
+      expect(mocks.auth.adoptarToken).toHaveBeenCalledWith('nuevo.jwt');
+      expect(navigateByUrl).toHaveBeenCalledWith('/cliente/solicitar');
+      expect(mocks.auth.logout).not.toHaveBeenCalled();
+      expect(page.sesionActualizada()).toBe(false);
+    });
+
+    it('sin returnUrl vuelve al panel del perfil recién adquirido', () => {
+      const { fixture, mocks, navigateByUrl } = setup(['TECNICO']);
+      mocks.tecnicosApi.crearMiPerfil.mockReturnValue(of({ id: 't9', token: 'nuevo.jwt' }));
+      const page = fixture.componentInstance;
+      page.elegir('TECNICO');
+      page.formTecnico.controls.numeroIdentificacion.setValue('1098765001');
+      page.toggleCategoria('REFRIGERACION');
+
+      page.enviarTecnico();
+
+      expect(mocks.auth.getDashboardRouteForRole).toHaveBeenCalledWith('TECNICO');
+      expect(navigateByUrl).toHaveBeenCalledWith('/tecnico/ofertas');
+    });
+
+    it('sin token conserva el aviso de re-login legado y no navega', () => {
+      const { fixture, mocks, navigateByUrl } = setup(['TECNICO']);
+      const page = fixture.componentInstance;
+      page.elegir('CLIENTE');
+      page.formCliente.setValue({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta', barrio: '' });
+
+      page.enviarCliente();
+
+      expect(mocks.auth.adoptarToken).not.toHaveBeenCalled();
+      expect(navigateByUrl).not.toHaveBeenCalled();
+      expect(page.sesionActualizada()).toBe(true);
+    });
   });
 
   it('muestra error si el backend rechaza la adquisición', () => {

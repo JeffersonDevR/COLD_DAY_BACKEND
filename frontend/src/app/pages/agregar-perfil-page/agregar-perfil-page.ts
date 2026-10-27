@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/service/auth.service';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ClientesApi } from '../../core/service/clientes-api';
@@ -28,8 +28,10 @@ export function parseCertificaciones(texto: string): CertificacionApi[] {
 /**
  * CTA de adquisición del segundo perfil (Cliente o Técnico). Solo ofrece los
  * perfiles que al usuario AÚN le faltan (`auth.userRoles()`). Al crear el perfil
- * el backend sube `tokenVersion` y revoca el JWT en vuelo, así que tras el éxito
- * la pantalla pide re-login en vez de conservar la sesión revocada.
+ * el backend sube `tokenVersion` y devuelve el JWT de reemplazo en la misma
+ * respuesta: la pantalla lo adopta, vuelve al `returnUrl` (o al panel del perfil
+ * recién creado) y nunca cierra la sesión. Solo si la respuesta no trae `token`
+ * (backend legado) se conserva el aviso de re-login.
  */
 @Component({
   selector: 'app-agregar-perfil-page',
@@ -42,6 +44,11 @@ export class AgregarPerfilPage {
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly clientesApi = inject(ClientesApi);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  /** Pantalla que pidió el alta del perfil; `null` cae al panel del perfil creado. */
+  private readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
 
   readonly categorias: CategoriaServicio[] = [
     'CAMARAS_VIGILANCIA',
@@ -109,7 +116,7 @@ export class AgregarPerfilPage {
         certificaciones: parseCertificaciones(valor.certificaciones),
       })
       .subscribe({
-        next: () => this.marcarSesionActualizada(),
+        next: (perfil) => this.completarAdquisicion('TECNICO', perfil.token),
         error: (err: Error) => this.errorAdquirir(err),
       });
   }
@@ -129,15 +136,24 @@ export class AgregarPerfilPage {
         barrio: valor.barrio.trim() || undefined,
       })
       .subscribe({
-        next: () => this.marcarSesionActualizada(),
+        next: (perfil) => this.completarAdquisicion('CLIENTE', perfil.token),
         error: (err: Error) => this.errorAdquirir(err),
       });
   }
 
-  /** La adquisición subió `tokenVersion`: el JWT en vuelo quedó revocado. */
-  private marcarSesionActualizada(): void {
+  /**
+   * Cierra el alta: con token adopta la sesión nueva y vuelve a la pantalla de
+   * origen (o al panel del perfil adquirido) sin logout. Sin token —backend
+   * legado— el JWT en vuelo quedó revocado y hay que reautenticarse.
+   */
+  private completarAdquisicion(tipo: TipoPerfilAdquirible, token?: string): void {
     this.cargando.set(false);
-    this.sesionActualizada.set(true);
+    if (!token) {
+      this.sesionActualizada.set(true);
+      return;
+    }
+    this.auth.adoptarToken(token);
+    this.router.navigateByUrl(this.returnUrl ?? this.auth.getDashboardRouteForRole(tipo));
   }
 
   private errorAdquirir(err: Error): void {
