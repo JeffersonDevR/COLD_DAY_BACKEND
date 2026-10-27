@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
+import { TokenStorageService } from './token-storage.service';
 import { DisputaResponse, MedioPago, OtRequest, OtResponse } from '../models/common.models';
 import {
   ClienteApiRequest,
@@ -22,6 +23,7 @@ export class ClientesApi {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
+  private readonly tokenStorage = inject(TokenStorageService);
 
   /** POST /api/ot con el body normalizado al contrato del backend; el cliente sale del JWT. */
   crearOt(request: OtRequest, clienteId: string, clienteNombre: string): Observable<OtResponse> {
@@ -169,8 +171,9 @@ export class ClientesApi {
    * POST /api/clientes/perfil: adquisición del SEGUNDO perfil (CLIENTE) por un
    * usuario ya autenticado. El backend resuelve el usuario desde el principal,
    * así que no viaja ningún id en la ruta ni en el cuerpo; el rol sale del tipo
-   * de perfil, nunca del body (M5). En éxito el backend sube `tokenVersion`, lo
-   * que revoca el JWT en vuelo: el llamador DEBE pedir re-login.
+   * de perfil, nunca del body (M5). En éxito el backend sube `tokenVersion` y
+   * devuelve en `token` el JWT de reemplazo: el llamador lo adopta sin cerrar
+   * la sesión. Solo un backend legado sin `token` obliga a reautenticarse.
    */
   crearMiPerfil(request: ClientePerfilApiRequest): Observable<ClienteApiResponse> {
     if (this.apiConfig.useMocks()) {
@@ -189,11 +192,42 @@ export class ClientesApi {
           ubicacion: request.ubicacion ?? null,
         },
         activo: true,
+        token: this.tokenMockCliente(),
       };
       return of(fake).pipe(delay(300));
     }
 
     return this.http.post<ClienteApiResponse>(this.apiConfig.url('/clientes/perfil'), request);
+  }
+
+  /**
+   * JWT de reemplazo del modo mock: decodificable por
+   * `AuthService.establecerSesionDesdeToken` y con CLIENTE sumado a los roles
+   * vigentes, para poder ejercitar el flujo sin logout. Solo se invoca dentro
+   * de la rama `useMocks()`.
+   */
+  private tokenMockCliente(): string {
+    const decoded = this.tokenStorage.getDecodedToken();
+    const rolesActuales = decoded?.roles?.length
+      ? decoded.roles
+      : decoded?.rol
+        ? [decoded.rol]
+        : [];
+    const roles = rolesActuales.includes('CLIENTE') ? rolesActuales : [...rolesActuales, 'CLIENTE'];
+    const ahora = Math.floor(Date.now() / 1000);
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    const payload = btoa(
+      JSON.stringify({
+        sub: decoded?.sub ?? String(decoded?.id ?? 0),
+        correo: decoded?.correo ?? '',
+        rol: decoded?.rol ?? 'CLIENTE',
+        roles,
+        ver: (decoded?.ver ?? 0) + 1,
+        iat: ahora,
+        exp: ahora + 86400 * 7,
+      }),
+    );
+    return `${header}.${payload}.mock-signature`;
   }
 
   /**

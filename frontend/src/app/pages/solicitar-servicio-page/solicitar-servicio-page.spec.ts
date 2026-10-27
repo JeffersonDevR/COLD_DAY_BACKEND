@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { SolicitarServicioPage, esErrorPerfilClienteFaltante } from './solicitar-servicio-page';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
@@ -34,6 +34,7 @@ function setup() {
       roles = ['TECNICO', 'CLIENTE'];
       return { id: 3, nombre: 'María', rol: 'TECNICO' };
     }),
+    logout: vi.fn(),
   };
   const mapsApi = {
     autocompletar: vi.fn(() => of([{ descripcion: 'Calle 15, Caobos', placeId: 'p1' }])),
@@ -296,6 +297,14 @@ describe('SolicitarServicioPage', () => {
       expect(aviso?.textContent).toContain('Prefiero completar mi perfil por separado');
     });
 
+    it('renderizar la tarjeta de perfil faltante no crea el perfil: el alta solo ocurre al tocar', () => {
+      const { fixture, clientesApi } = abrirTarjeta();
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.faltoPerfilCliente()).toBe(true);
+      expect(clientesApi.crearMiPerfil).not.toHaveBeenCalled();
+    });
+
     it('el enlace separado vuelve a /perfil/agregar con el returnUrl de la solicitud', () => {
       const { fixture, navigateUrl } = abrirTarjeta();
       const enlace = tarjeta(fixture)?.querySelector(
@@ -344,6 +353,39 @@ describe('SolicitarServicioPage', () => {
       expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'OT-99']);
     });
 
+    it('la dirección corregida en la tarjeta también se usa en la OT reintentada', () => {
+      const { fixture, clientesApi } = abrirTarjeta();
+      const page = fixture.componentInstance;
+      page.perfilForm.controls.calle.setValue('Calle 10 # 4-20, Centro');
+      const boton = fixture.nativeElement.querySelector(
+        '[data-test="crear-perfil-y-enviar"]',
+      ) as HTMLButtonElement;
+
+      boton.click();
+      fixture.detectChanges();
+
+      expect(clientesApi.crearMiPerfil).toHaveBeenCalledWith(
+        expect.objectContaining({ calle: 'Calle 10 # 4-20, Centro' }),
+      );
+      const reintento = (clientesApi.crearOt.mock.calls[1] as unknown[])[0] as Record<string, unknown>;
+      expect(reintento).toEqual(
+        expect.objectContaining({ direccion: 'Calle 10 # 4-20, Centro' }),
+      );
+    });
+
+    it('un doble toque no dispara dos altas de perfil', () => {
+      const { fixture, clientesApi } = abrirTarjeta();
+      const pendiente = new Subject<{ id: string; token: string }>();
+      clientesApi.crearMiPerfil.mockReturnValue(pendiente.asObservable());
+      const page = fixture.componentInstance;
+
+      page.crearPerfilYEnviar();
+      page.crearPerfilYEnviar();
+
+      expect(clientesApi.crearMiPerfil).toHaveBeenCalledTimes(1);
+      pendiente.complete();
+    });
+
     it('si falla el alta del perfil muestra un error honesto y conserva el borrador', () => {
       const { fixture, clientesApi } = abrirTarjeta();
       clientesApi.crearMiPerfil.mockReturnValue(throwError(() => new ApiHttpError('500', 500)));
@@ -357,6 +399,37 @@ describe('SolicitarServicioPage', () => {
       expect(fixture.componentInstance.errorCrearPerfil()).toContain('Tus datos siguen acá');
       expect(fixture.nativeElement.querySelector('[data-test="error-crear-perfil"]')).not.toBeNull();
       // No se crea la OT con un perfil que no existe.
+      expect(clientesApi.crearOt).toHaveBeenCalledTimes(1);
+      expect(TestBed.inject(SolicitudDraftService).leer()).not.toBeNull();
+    });
+
+    it('un 409 al crear el perfil muestra copy accionable, ofrece login y conserva el borrador', () => {
+      const { fixture, clientesApi, auth } = abrirTarjeta();
+      clientesApi.crearMiPerfil.mockReturnValue(
+        throwError(() => new ApiHttpError('El usuario ya tiene un perfil de cliente: 3', 409)),
+      );
+      const page = fixture.componentInstance;
+
+      const boton = fixture.nativeElement.querySelector(
+        '[data-test="crear-perfil-y-enviar"]',
+      ) as HTMLButtonElement;
+      boton.click();
+      fixture.detectChanges();
+
+      expect(page.errorCrearPerfil()).toBe(
+        'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.',
+      );
+      // No se afirma que el alta falló: el perfil ya está commiteado.
+      expect(page.errorCrearPerfil()).not.toContain('No pudimos crear');
+      // El alta no se reintenta: se ofrece reautenticarse.
+      expect(fixture.nativeElement.querySelector('[data-test="crear-perfil-y-enviar"]')).toBeNull();
+      const login = fixture.nativeElement.querySelector(
+        '[data-test="iniciar-sesion-perfil-existente"]',
+      ) as HTMLButtonElement;
+      expect(login).not.toBeNull();
+      login.click();
+      expect(auth.logout).toHaveBeenCalled();
+      // No se crea la OT con una sesión revocada y el borrador sigue intacto.
       expect(clientesApi.crearOt).toHaveBeenCalledTimes(1);
       expect(TestBed.inject(SolicitudDraftService).leer()).not.toBeNull();
     });

@@ -208,6 +208,25 @@ describe('ClientesApi', () => {
     http.verify();
   });
 
+  it('crearMiPerfil en modo mock devuelve un token de reemplazo decodificable', async () => {
+    config.setUseMocks(true);
+    const creado = await firstValueFrom(
+      api.crearMiPerfil({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta' }),
+    );
+
+    expect(creado.token).toBeTruthy();
+    const payload = JSON.parse(atob((creado.token as string).split('.')[1])) as Record<string, unknown>;
+    expect(payload['roles']).toContain('CLIENTE');
+    expect(payload).toMatchObject({
+      sub: expect.anything(),
+      correo: expect.any(String),
+      ver: expect.any(Number),
+      iat: expect.any(Number),
+      exp: expect.any(Number),
+    });
+    http.verify();
+  });
+
   it('actualizarUbicacion hace PUT /api/clientes/me/ubicacion', async () => {
     const promise = firstValueFrom(api.actualizarUbicacion({ latitud: 1, longitud: 2 }));
     const req = http.expectOne('/api/clientes/me/ubicacion');

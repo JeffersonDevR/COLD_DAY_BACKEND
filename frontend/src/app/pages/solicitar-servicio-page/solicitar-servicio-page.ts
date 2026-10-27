@@ -7,6 +7,7 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { CategoriaServicio, Point, TipoCliente } from '../../core/models/common.models';
 import { MapsApi } from '../../core/service/maps-api';
 import { SugerenciaApiResponse } from '../../core/models/backend.dto';
@@ -17,6 +18,14 @@ import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-clie
 
 // Se reexporta para conservar la API pública previa de la página.
 export { esErrorPerfilClienteFaltante };
+
+/**
+ * Copy del 409 al adquirir el perfil: el alta ya se commiteó antes (el token de
+ * reemplazo no llegó), así que reintentar no ayuda. Hay que reautenticarse y el
+ * borrador sigue guardado.
+ */
+const MENSAJE_PERFIL_CLIENTE_YA_EXISTE =
+  'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.';
 
 @Component({
   selector: 'app-solicitar-servicio-page',
@@ -78,6 +87,8 @@ export class SolicitarServicioPage {
   readonly creandoPerfil = signal<boolean>(false);
   /** Error honesto del alta rápida; el borrador y el formulario quedan intactos. */
   readonly errorCrearPerfil = signal<string | null>(null);
+  /** El backend contestó 409: el perfil ya existe y la sesión en vuelo no sirve. */
+  readonly perfilYaExistia = signal<boolean>(false);
 
   get listoParaEnviar(): boolean {
     return this.solicitudForm.valid && this.coordenadas() !== null && !this.loading();
@@ -222,8 +233,13 @@ export class SolicitarServicioPage {
     }
 
     const valor = this.perfilForm.getRawValue();
+    // La tarjeta es la fuente de verdad: si se corrigió la dirección, la OT se
+    // reintenta con ese valor y no con el que tenía el formulario original.
+    this.solicitudForm.patchValue({ direccion: valor.calle.trim() }, { emitEvent: false });
+    this.guardarBorrador();
     this.creandoPerfil.set(true);
     this.errorCrearPerfil.set(null);
+    this.perfilYaExistia.set(false);
 
     this.clientesApi
       .crearMiPerfil({
@@ -247,13 +263,25 @@ export class SolicitarServicioPage {
           this.authService.adoptarToken(perfil.token);
           this.enviarSolicitud();
         },
-        error: () => {
+        error: (err: Error) => {
           this.creandoPerfil.set(false);
+          if (err instanceof ApiHttpError && err.status === 409) {
+            // El perfil ya está commiteado: reintentar el alta repite el 409.
+            // Se ofrece reautenticarse y el borrador queda intacto.
+            this.perfilYaExistia.set(true);
+            this.errorCrearPerfil.set(MENSAJE_PERFIL_CLIENTE_YA_EXISTE);
+            return;
+          }
           this.errorCrearPerfil.set(
             'No pudimos crear tu perfil de cliente. Tus datos siguen acá; probá de nuevo.',
           );
         },
       });
+  }
+
+  /** Cierra la sesión revocada y aterriza en el login para reautenticarse. */
+  irAIniciarSesion(): void {
+    this.authService.logout();
   }
 
   /** Crea (o reintenta) la OT con el formulario y el punto actuales. */
@@ -316,6 +344,7 @@ export class SolicitarServicioPage {
       barrio: '',
     });
     this.errorCrearPerfil.set(null);
+    this.perfilYaExistia.set(false);
     this.faltoPerfilCliente.set(true);
   }
 

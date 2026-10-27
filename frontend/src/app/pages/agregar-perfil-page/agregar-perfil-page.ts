@@ -6,6 +6,7 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
+import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { CategoriaServicio, TipoCliente } from '../../core/models/common.models';
 import { CertificacionApi } from '../../core/models/backend.dto';
 import { CIUDAD_OPERACION } from '../../core/service/mapa-config.service';
@@ -25,6 +26,20 @@ export function parseCertificaciones(texto: string): CertificacionApi[] {
     .map((linea) => linea.trim())
     .filter((linea) => linea.length > 0)
     .map((nombre) => ({ nombre, institucion: null, fechaObtencion: null, fechaVencimiento: null }));
+}
+
+/**
+ * Normaliza el `returnUrl` de la query: vacío/espacios cuenta como ausente y
+ * solo se aceptan rutas internas. Un valor absoluto (`https://…`),
+ * protocolo-relativo (`//host`), con esquema o con backslashes cae al panel del
+ * perfil recién adquirido, nunca a una navegación rota.
+ */
+function normalizarReturnUrl(valor: string | null): string | null {
+  const destino = valor?.trim() ?? '';
+  if (!destino.startsWith('/') || destino.startsWith('//')) return null;
+  if (destino.includes('\\')) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(destino)) return null;
+  return destino;
 }
 
 /**
@@ -50,8 +65,13 @@ export class AgregarPerfilPage {
   private readonly route = inject(ActivatedRoute);
   private readonly draftService = inject(SolicitudDraftService);
 
-  /** Pantalla que pidió el alta del perfil; `null` cae al panel del perfil creado. */
-  private readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+  /**
+   * Pantalla que pidió el alta del perfil; `null` cae al panel del perfil
+   * creado. Solo se aceptan rutas internas (ver `normalizarReturnUrl`).
+   */
+  private readonly returnUrl = normalizarReturnUrl(
+    this.route.snapshot.queryParamMap.get('returnUrl'),
+  );
 
   readonly categorias: CategoriaServicio[] = [
     'CAMARAS_VIGILANCIA',
@@ -69,6 +89,8 @@ export class AgregarPerfilPage {
   readonly categoriasSeleccionadas = signal<CategoriaServicio[]>([]);
   readonly cargando = signal(false);
   readonly sesionActualizada = signal(false);
+  /** Copy accionable cuando el backend responde 409: el perfil ya existe. */
+  readonly errorPerfilExistente = signal<string | null>(null);
 
   readonly formTecnico = new FormGroup({
     numeroIdentificacion: new FormControl('', {
@@ -119,6 +141,7 @@ export class AgregarPerfilPage {
       return;
     }
     const valor = this.formTecnico.getRawValue();
+    this.errorPerfilExistente.set(null);
     this.cargando.set(true);
     this.tecnicosApi
       .crearMiPerfil({
@@ -128,7 +151,7 @@ export class AgregarPerfilPage {
       })
       .subscribe({
         next: (perfil) => this.completarAdquisicion('TECNICO', perfil.token),
-        error: (err: Error) => this.errorAdquirir(err),
+        error: (err: Error) => this.errorAdquirir(err, 'TECNICO'),
       });
   }
 
@@ -139,6 +162,7 @@ export class AgregarPerfilPage {
     }
     const valor = this.formCliente.getRawValue();
     const ubicacion = this.draftService.leer()?.coordenadas ?? undefined;
+    this.errorPerfilExistente.set(null);
     this.cargando.set(true);
     this.clientesApi
       .crearMiPerfil({
@@ -150,7 +174,7 @@ export class AgregarPerfilPage {
       })
       .subscribe({
         next: (perfil) => this.completarAdquisicion('CLIENTE', perfil.token),
-        error: (err: Error) => this.errorAdquirir(err),
+        error: (err: Error) => this.errorAdquirir(err, 'CLIENTE'),
       });
   }
 
@@ -169,13 +193,22 @@ export class AgregarPerfilPage {
     this.router.navigateByUrl(this.returnUrl ?? this.auth.getDashboardRouteForRole(tipo));
   }
 
-  private errorAdquirir(err: Error): void {
+  private errorAdquirir(err: Error, tipo: TipoPerfilAdquirible): void {
     this.cargando.set(false);
-    // El 409 real es perfil ya adquirido (backend: "El usuario ya tiene un
-    // perfil de cliente: <id>"): la copy no repite ids de dominio.
-    avisarErrorAccion(this.toast, 'No se pudo crear el perfil', err, {
-      409: 'Ya tenés ese perfil. Volvé al panel y actualizá la página si es necesario.',
-    });
+    if (err instanceof ApiHttpError && err.status === 409) {
+      // El backend commitea el perfil y después mintea el token: si el minteo
+      // falló, el reintento responde 409. Reintentar no ayuda; hay que
+      // reautenticarse y el borrador de la solicitud sigue intacto.
+      const mensaje =
+        tipo === 'CLIENTE'
+          ? 'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.'
+          : 'Tu perfil de técnico ya existe. Iniciá sesión para continuar.';
+      this.errorPerfilExistente.set(mensaje);
+      this.toast.error('No se pudo crear el perfil', mensaje);
+      return;
+    }
+    this.errorPerfilExistente.set(null);
+    avisarErrorAccion(this.toast, 'No se pudo crear el perfil', err);
   }
 
   /** Cierra la sesión revocada y aterriza en el login para reautenticarse. */

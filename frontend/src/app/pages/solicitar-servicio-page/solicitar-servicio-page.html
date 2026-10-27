@@ -93,20 +93,33 @@
             </p>
           }
 
-          <div class="flex flex-wrap items-center gap-3">
+          @if (perfilYaExistia()) {
             <button
               type="button"
-              data-test="crear-perfil-y-enviar"
-              (click)="crearPerfilYEnviar()"
-              [disabled]="creandoPerfil() || loading()"
-              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-bold transition-colors"
+              data-test="iniciar-sesion-perfil-existente"
+              (click)="irAIniciarSesion()"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold transition-colors"
             >
-              @if (creandoPerfil()) {
-                <i class="pi pi-sync animate-spin text-sm"></i> Creando perfil...
-              } @else {
-                <i class="pi pi-check-circle text-sm"></i> Crear perfil de cliente y enviar solicitud
-              }
+              <i class="pi pi-sign-in text-sm"></i> Iniciar sesión
             </button>
+          }
+
+          <div class="flex flex-wrap items-center gap-3">
+            @if (!perfilYaExistia()) {
+              <button
+                type="button"
+                data-test="crear-perfil-y-enviar"
+                (click)="crearPerfilYEnviar()"
+                [disabled]="creandoPerfil() || loading()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-bold transition-colors"
+              >
+                @if (creandoPerfil()) {
+                  <i class="pi pi-sync animate-spin text-sm"></i> Creando perfil...
+                } @else {
+                  <i class="pi pi-check-circle text-sm"></i> Crear perfil de cliente y enviar solicitud
+                }
+              </button>
+            }
             <a
               routerLink="/perfil/agregar"
               [queryParams]="{ returnUrl: '/cliente/solicitar' }"

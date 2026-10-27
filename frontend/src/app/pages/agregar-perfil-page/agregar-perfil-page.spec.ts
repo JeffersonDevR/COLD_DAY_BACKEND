@@ -52,7 +52,7 @@ function setup(
         provide: ActivatedRoute,
         useValue: {
           snapshot: {
-            queryParamMap: convertToParamMap(returnUrl ? { returnUrl } : {}),
+            queryParamMap: convertToParamMap(returnUrl !== undefined ? { returnUrl } : {}),
           },
         },
       },
@@ -215,6 +215,22 @@ describe('AgregarPerfilPage', () => {
       expect(navigateByUrl).toHaveBeenCalledWith('/tecnico/ofertas');
     });
 
+    it.each(['https://evil.com', '//evil.com', ''])(
+      'ignora el returnUrl no interno %p y cae al panel del perfil',
+      (returnUrl) => {
+        const { fixture, mocks, navigateByUrl } = setup(['TECNICO'], returnUrl);
+        mocks.clientesApi.crearMiPerfil.mockReturnValue(of({ id: 'cl2', token: 'nuevo.jwt' }));
+        const page = fixture.componentInstance;
+        page.elegir('CLIENTE');
+        page.formCliente.setValue({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta', barrio: '' });
+
+        page.enviarCliente();
+
+        expect(mocks.auth.adoptarToken).toHaveBeenCalledWith('nuevo.jwt');
+        expect(navigateByUrl).toHaveBeenCalledWith('/panel');
+      },
+    );
+
     it('sin token conserva el aviso de re-login legado y no navega', () => {
       const { fixture, mocks, navigateByUrl } = setup(['TECNICO']);
       const page = fixture.componentInstance;
@@ -244,9 +260,41 @@ describe('AgregarPerfilPage', () => {
 
     expect(mocks.toast.error).toHaveBeenCalledWith(
       'No se pudo crear el perfil',
-      'Ya tenés ese perfil. Volvé al panel y actualizá la página si es necesario.',
+      'Tu perfil de técnico ya existe. Iniciá sesión para continuar.',
+    );
+    expect(page.errorPerfilExistente()).toBe(
+      'Tu perfil de técnico ya existe. Iniciá sesión para continuar.',
     );
     expect(page.sesionActualizada()).toBe(false);
+    // La acción de login queda visible y el botón de alta ya no se ofrece.
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-test="iniciar-sesion-perfil-existente"]')).not.toBeNull();
+  });
+
+  it('un 409 al adquirir el perfil de cliente muestra copy accionable y ofrece login', () => {
+    const { fixture, mocks } = setup(['TECNICO']);
+    mocks.clientesApi.crearMiPerfil.mockReturnValue(
+      throwError(() => new ApiHttpError('El usuario ya tiene un perfil de cliente: 3', 409)),
+    );
+    const page = fixture.componentInstance;
+    page.elegir('CLIENTE');
+    page.formCliente.setValue({ tipoCliente: 'B2C', calle: 'calle 1', ciudad: 'Cúcuta', barrio: '' });
+
+    page.enviarCliente();
+    fixture.detectChanges();
+
+    const copy =
+      'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.';
+    expect(mocks.toast.error).toHaveBeenCalledWith('No se pudo crear el perfil', copy);
+    expect(texto(fixture)).toContain(copy);
+    expect(page.errorPerfilExistente()).toBe(copy);
+    const login = fixture.nativeElement.querySelector(
+      '[data-test="iniciar-sesion-perfil-existente"]',
+    ) as HTMLButtonElement;
+    login.click();
+    expect(mocks.auth.logout).toHaveBeenCalled();
+    // No se afirma que el alta falló: el perfil ya existe.
+    expect(texto(fixture)).not.toContain('No pudimos crear');
   });
 
   it('al confirmar, cierra la sesión revocada y vuelve a login', () => {
