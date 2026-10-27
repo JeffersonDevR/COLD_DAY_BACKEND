@@ -93,8 +93,10 @@ describe('HistorialEquiposPage', () => {
     expect(texto).toContain('Refrigeración');
     expect(texto).toContain('hace ruido el compresor');
     expect(texto).toContain('OT-2026-0007');
-    expect(texto).toContain('2 servicios registrados');
+    expect(texto).toContain('2 OTs registradas');
     expect(texto).toContain('En Diagnóstico');
+    // El historial no tiene datos de garantía: el título no debe prometerlos.
+    expect(texto).not.toContain('Garantías');
 
     const links = Array.from(fixture.nativeElement.querySelectorAll('a')) as HTMLAnchorElement[];
     expect(links.some((a) => a.getAttribute('href') === '/cliente/ot/ot-nueva')).toBe(true);

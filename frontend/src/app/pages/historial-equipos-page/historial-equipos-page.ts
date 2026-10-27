@@ -128,4 +128,5 @@ export class HistorialEquiposPage implements OnInit {
       month: 'short',
       year: 'numeric',
     }).format(new Date(ms));
-  }}
+  }
+}

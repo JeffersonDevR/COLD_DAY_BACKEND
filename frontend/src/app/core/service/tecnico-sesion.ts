@@ -10,13 +10,13 @@ import { TecnicosApi } from './tecnicos-api';
 export function cargarTecnicoAutenticado(
   tecnicosApi: TecnicosApi,
   onTecnico: (tecnico: TecnicoResponse | undefined) => void,
-  onError?: () => void,
+  onError?: (err: unknown) => void,
 ): void {
   tecnicosApi.getMiPerfil().subscribe({
     next: onTecnico,
-    error: () => {
+    error: (err) => {
       onTecnico(undefined);
-      onError?.();
+      onError?.(err);
     },
   });
 }
