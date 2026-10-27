@@ -192,6 +192,23 @@ describe('RegistroPage', () => {
     );
   });
 
+  it('no achica el 409 del técnico al correo: también puede ser la identificación', () => {
+    const { fixture, mocks } = setup();
+    // TecnicoControllerAdvice mapea identificación duplicada al mismo 409 que el correo.
+    mocks.tecnicosApi.registrar.mockReturnValue(
+      throwError(() => new ApiHttpError('Numero de identificacion duplicado', 409)),
+    );
+    llenarFormulario(fixture);
+    fixture.componentInstance.selectedRol.set('TECNICO');
+
+    fixture.componentInstance.onSubmit();
+
+    expect(mocks.toast.error).toHaveBeenCalledWith(
+      'Error al registrar',
+      'Ya existe una cuenta con ese correo o tu número de identificación ya está registrado. Revisá los datos o iniciá sesión si ya tenés cuenta.',
+    );
+  });
+
   describe('alta de proveedor', () => {
     it('exige razón social y NIT antes de llamar al backend', () => {
       const { fixture, mocks } = setup();
@@ -252,6 +269,23 @@ describe('RegistroPage', () => {
       expect(navigate).toHaveBeenCalledWith(['/proveedor/documentos']);
       expect(mocks.clientesApi.registrarCliente).not.toHaveBeenCalled();
       expect(mocks.usuariosApi.registro).not.toHaveBeenCalled();
+    });
+
+    it('explica el 409 del proveedor sin adjudicarlo solo al correo', () => {
+      const { fixture, mocks } = setup();
+      // ProveedorControllerAdvice manda el NIT duplicado al mismo 409 que el correo.
+      mocks.proveedoresApi.registrar.mockReturnValue(
+        throwError(() => new ApiHttpError('NIT duplicado o dato unico ya registrado', 409)),
+      );
+      llenarFormulario(fixture);
+      fixture.componentInstance.selectedRol.set('PROVEEDOR');
+
+      fixture.componentInstance.onSubmit();
+
+      expect(mocks.toast.error).toHaveBeenCalledWith(
+        'Error al registrar',
+        'Ya existe una cuenta con ese correo o el NIT de tu empresa ya está registrado. Revisá los datos o iniciá sesión si ya tenés cuenta.',
+      );
     });
 
     it('propaga el error del alta del proveedor', () => {
