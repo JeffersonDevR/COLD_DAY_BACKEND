@@ -44,7 +44,13 @@
               </div>
 
               <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                {{ orden.diagnostico || 'Diagnóstico preliminar: condensador sucio, capacitor desvalorizado y fuga leve de refrigerante en soldadura de baja presión.' }}
+                @if (orden.diagnostico?.diagnostico; as dictamen) {
+                  {{ dictamen }}
+                } @else if (orden.diagnostico?.fallaDetectada; as falla) {
+                  {{ falla }}
+                } @else {
+                  <span class="text-slate-500 dark:text-slate-400">El técnico todavía no cargó el dictamen de este equipo.</span>
+                }
               </div>
 
               <!-- Desglose de Costos Transparente -->
@@ -82,20 +88,34 @@
                   <div class="flex justify-between p-3.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                     <div class="space-y-0.5">
                       <span class="font-bold text-slate-800 dark:text-slate-200">Mano de Obra Certificada</span>
-                      <p class="text-[11px] text-slate-400">Tiempo estimado: {{ orden.presupuesto?.tiempoEstimadoHoras || 2 }} hora(s)</p>
+                      <p class="text-[11px] text-slate-400">
+                        @if (orden.presupuesto; as presupuesto) {
+                          Tiempo estimado: {{ presupuesto.tiempoEstimadoHoras ?? 0 }} hora(s)
+                        } @else {
+                          El técnico todavía no cargó el presupuesto
+                        }
+                      </p>
                     </div>
                     <span class="font-bold text-slate-900 dark:text-slate-100">
-                      $ {{ (orden.presupuesto?.manoDeObra || 80000).toLocaleString('es-CO') }}
+                      @if (orden.presupuesto; as presupuesto) {
+                        $ {{ (presupuesto.manoObra ?? presupuesto.manoDeObra ?? 0).toLocaleString('es-CO') }}
+                      } @else {
+                        Por confirmar
+                      }
                     </span>
                   </div>
 
                   <div class="flex justify-between p-3.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                     <div class="space-y-0.5">
                       <span class="font-bold text-slate-800 dark:text-slate-200">Repuestos & Materiales Homologados</span>
-                      <p class="text-[11px] text-slate-400">Capacitor 45uF + gas ecológico R410A</p>
+                      <p class="text-[11px] text-slate-400">Repuestos declarados por el técnico</p>
                     </div>
                     <span class="font-bold text-slate-900 dark:text-slate-100">
-                      $ {{ (orden.presupuesto?.repuestos || 70000).toLocaleString('es-CO') }}
+                      @if (orden.presupuesto; as presupuesto) {
+                        $ {{ presupuesto.repuestos.toLocaleString('es-CO') }}
+                      } @else {
+                        Por confirmar
+                      }
                     </span>
                   </div>
 

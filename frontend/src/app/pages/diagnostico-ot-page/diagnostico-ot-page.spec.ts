@@ -106,6 +106,35 @@ describe('DiagnosticoOtPage', () => {
     expect(html.textContent).not.toContain('garantía de 90 días');
   });
 
+  it('sin dictamen ni presupuesto no inventa texto ni cifras', () => {
+    const { fixture } = setup({ ...orden, diagnostico: undefined, presupuesto: undefined });
+    fixture.detectChanges();
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(texto).toContain('El técnico todavía no cargó el dictamen de este equipo.');
+    expect(texto).toContain('El técnico todavía no cargó el presupuesto');
+    expect(texto).not.toContain('condensador sucio');
+    expect(texto).not.toContain('Capacitor 45uF');
+    expect(texto).not.toContain('80.000');
+    expect(texto).not.toContain('70.000');
+  });
+
+  it('muestra el dictamen y los montos reales cuando existen', () => {
+    const { fixture } = setup({
+      ...orden,
+      diagnostico: { diagnostico: 'Fuga en la soldadura de baja presión.' },
+      presupuesto: { aprobado: false, total: 150000, manoObra: 90000, repuestos: 60000, tiempoEstimadoHoras: 3 },
+    });
+    fixture.detectChanges();
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(texto).toContain('Fuga en la soldadura de baja presión.');
+    expect(texto).not.toContain('[object Object]');
+    expect(texto).toContain('90.000');
+    expect(texto).toContain('60.000');
+    expect(texto).toContain('Tiempo estimado: 3 hora(s)');
+  });
+
   it('abre el stream de cambios de estado de la OT cargada', () => {
     const { sse } = setup();
     expect(sse.abrirOtStream).toHaveBeenCalledWith('ot1');

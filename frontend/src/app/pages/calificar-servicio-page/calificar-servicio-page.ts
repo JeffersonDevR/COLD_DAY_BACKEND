@@ -36,9 +36,10 @@ export class CalificarServicioPage implements OnInit {
   /** Estado de la carga: el fallo SIEMPRE se ve (con reintentar), nunca en blanco. */
   private cargaOtEstado: CargaOtEstado | null = null;
 
-  readonly estrellas = signal<number>(5);
-  readonly tagsSeleccionados = signal<string[]>(['Puntualidad en llegada', 'Limpieza del área']);
-  readonly comentarioCtrl = new FormControl('Excelente trabajo, dejó el aire enfriando a 16°C y limpió el desagüe.');
+  /** Sin valor inicial: el cliente elige. Enviar sin elegir está bloqueado. */
+  readonly estrellas = signal<number>(0);
+  readonly tagsSeleccionados = signal<string[]>([]);
+  readonly comentarioCtrl = new FormControl('');
 
   readonly tagsDisponibles = [
     'Puntualidad en llegada',
@@ -81,6 +82,9 @@ export class CalificarServicioPage implements OnInit {
   }
 
   enviarCalificacion(): void {
+    // Sin puntuación elegida no hay calificación que enviar.
+    if (this.estrellas() === 0) return;
+
     const comentario = `${this.comentarioCtrl.value || ''} [Aspectos: ${this.tagsSeleccionados().join(', ')}]`;
     this.clientesApi.calificarServicio(this.otId(), this.estrellas(), comentario).subscribe({
       next: () => {

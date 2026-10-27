@@ -132,15 +132,31 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Diagnóstico + presupuesto: arranca vacío. El técnico no hereda un dictamen
+   * ni un precio inventados; el submit queda bloqueado hasta completarlo.
+   */
   readonly diagnosticoForm = new FormGroup({
-    diagnostico: new FormControl('Condensador con suciedad severa y capacitor desvalorizado. Requiere lavado químico y reemplazo de capacitor 45uF.', {
+    diagnostico: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required]
     }),
-    manoDeObra: new FormControl(80000, { nonNullable: true, validators: [Validators.required] }),
-    repuestos: new FormControl(70000, { nonNullable: true, validators: [Validators.required] }),
-    tiempoEstimadoHoras: new FormControl(2, { nonNullable: true, validators: [Validators.required] })
+    manoDeObra: new FormControl<number | null>(null, {
+      validators: [Validators.required, Validators.min(0)]
+    }),
+    repuestos: new FormControl<number | null>(null, {
+      validators: [Validators.required, Validators.min(0)]
+    }),
+    tiempoEstimadoHoras: new FormControl<number | null>(null, {
+      validators: [Validators.required, Validators.min(1)]
+    })
   });
+
+  /** Total que se enviará al cliente; 0 mientras falten los montos. */
+  totalPresupuesto(): number {
+    const val = this.diagnosticoForm.getRawValue();
+    return (val.manoDeObra ?? 0) + (val.repuestos ?? 0);
+  }
 
   /** Líneas de insumo declaradas por el técnico; cero líneas es un caso normal. */
   readonly insumos = new FormArray<FormGroup>([]);
@@ -380,7 +396,14 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       return { descripcion: linea.descripcion.trim(), cantidad: linea.cantidad };
     });
 
-    this.tecnicosApi.registrarDiagnostico(this.otId(), { ...val, insumos }).subscribe({
+    this.tecnicosApi.registrarDiagnostico(this.otId(), {
+      diagnostico: val.diagnostico.trim(),
+      // Los vacíos viajan como ausencia de dato, no como 0 inventado.
+      manoDeObra: val.manoDeObra ?? undefined,
+      repuestos: val.repuestos ?? undefined,
+      tiempoEstimadoHoras: val.tiempoEstimadoHoras ?? undefined,
+      insumos,
+    }).subscribe({
       next: () => {
         const detalle =
           insumos.length > 0 ? ` Se despacharon ${insumos.length} insumo(s) a los proveedores.` : '';

@@ -144,14 +144,45 @@ describe('EjecucionOtPage', () => {
     expect(toast.success).toHaveBeenCalled();
   });
 
-  it('envía el diagnóstico', () => {
+  it('envía el diagnóstico con lo que cargó el técnico', () => {
     const { fixture, tecnicosApi, toast } = setup();
+    const form = fixture.componentInstance.diagnosticoForm;
+    form.setValue({
+      diagnostico: 'Capacitor desvalorizado, requiere reemplazo.',
+      manoDeObra: 120000,
+      repuestos: 45000,
+      tiempoEstimadoHoras: 3,
+    });
+
     fixture.componentInstance.enviarDiagnostico();
+
     expect(tecnicosApi.registrarDiagnostico).toHaveBeenCalledWith(
       'ot1',
-      expect.objectContaining({ manoDeObra: 80000, repuestos: 70000 }),
+      expect.objectContaining({
+        diagnostico: 'Capacitor desvalorizado, requiere reemplazo.',
+        manoDeObra: 120000,
+        repuestos: 45000,
+        tiempoEstimadoHoras: 3,
+      }),
     );
     expect(toast.success).toHaveBeenCalled();
+  });
+
+  it('no arranca con dictamen ni precios inventados y no envía vacío', () => {
+    const { fixture, tecnicosApi } = setup();
+    const form = fixture.componentInstance.diagnosticoForm;
+
+    expect(form.getRawValue()).toEqual({
+      diagnostico: '',
+      manoDeObra: null,
+      repuestos: null,
+      tiempoEstimadoHoras: null,
+    });
+    expect(fixture.componentInstance.totalPresupuesto()).toBe(0);
+
+    fixture.componentInstance.enviarDiagnostico();
+
+    expect(tecnicosApi.registrarDiagnostico).not.toHaveBeenCalled();
   });
 
   it('finaliza el servicio y registra el pago', () => {

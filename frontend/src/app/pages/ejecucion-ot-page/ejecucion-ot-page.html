@@ -148,7 +148,7 @@
 
                   <div class="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between font-bold">
                     <span>Total Presupuesto a Enviar al Cliente:</span>
-                    <span class="text-sm">$ {{ (diagnosticoForm.getRawValue().manoDeObra + diagnosticoForm.getRawValue().repuestos).toLocaleString('es-CO') }} COP</span>
+                    <span class="text-sm">$ {{ totalPresupuesto().toLocaleString('es-CO') }} COP</span>
                   </div>
 
                   <!-- Insumos requeridos: alimentan el despacho al proveedor (AD5). -->

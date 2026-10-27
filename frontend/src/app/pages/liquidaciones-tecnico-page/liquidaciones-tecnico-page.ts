@@ -63,8 +63,8 @@ export class LiquidacionesTecnicoPage {
   }
 
   readonly comprobanteForm = new FormGroup({
-    referencia: new FormControl('BCOL-8492048', { nonNullable: true, validators: [Validators.required] }),
-    comprobanteUrl: new FormControl('https://coldday.com.co/recibos/consignacion-bancolombia.jpg', {
+    referencia: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    comprobanteUrl: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required]
     })
