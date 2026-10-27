@@ -1,9 +1,15 @@
 package com.sena.cold_day.core.modules.tecnicos.infrastructure.api.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import javax.crypto.SecretKey;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,8 +25,12 @@ import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoReposito
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
+import com.sena.cold_day.core.shared.infrastructure.security.JwtProperties;
 import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -28,7 +38,7 @@ import tools.jackson.databind.ObjectMapper;
  * {@code second-profile-acquisition}): both endpoints are bound to the
  * authenticated principal, the created role comes only from the profile type
  * (M5), a duplicate is rejected with 409, and the principal's token version is
- * bumped so the new capability is honored at the next login.
+ * bumped so the new capability is honored by the token the response hands back.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -39,6 +49,7 @@ class PerfilAcquisitionIT {
     @Autowired ClienteRepository clienteRepository;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
     @Autowired JwtTokenIssuer tokenIssuer;
+    @Autowired JwtProperties jwtProperties;
     @Autowired ObjectMapper objectMapper;
 
     @BeforeEach
@@ -120,6 +131,45 @@ class PerfilAcquisitionIT {
         assertThat(usuarioRepository.findByCorreo("dual-cli@example.com").orElseThrow().getTokenVersion()).isEqualTo(1);
     }
 
+    /**
+     * D2 (dual-role-cliente-ot): the acquisition bumps tokenVersion, so the
+     * caller's token dies mid-session. The response now carries the replacement —
+     * same issuer, capability set and display name as a login — so the client
+     * keeps working without a forced re-login.
+     */
+    @Test
+    void clienteProfileReturnsAFreshTokenThatKeepsTheSessionAlive() throws Exception {
+        long usuarioId = registrarTecnicoPublico("dual-token-cli@example.com");
+        String revocado = jwt(usuarioId, Rol.TECNICO, 0);
+
+        String body = mockMvc.perform(post("/api/clientes/perfil").header("Authorization", "Bearer " + revocado)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tipoCliente\":\"B2C\",\"calle\":\"Calle 1\",\"ciudad\":\"Bogota\"}"))
+                .andExpect(status().isCreated())
+                // The pre-existing payload is untouched: only "token" is additive.
+                .andExpect(jsonPath("$.usuarioId").value(usuarioId))
+                .andExpect(jsonPath("$.tipoCliente").value("B2C"))
+                .andExpect(jsonPath("$.direccion.calle").value("Calle 1"))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        String renovado = objectMapper.readTree(body).get("token").asString();
+        Claims claims = claims(renovado);
+        assertThat(claims.get("roles", List.class)).as("the freshly acquired capability travels in the token")
+                .contains(Rol.CLIENTE.name());
+        assertThat(claims.get("ver", Integer.class)).as("post-bump version, not the revoked one").isEqualTo(1);
+        assertThat(claims.get("nombre", String.class)).isEqualTo("Ana");
+
+        // The replacement authenticates a follow-up request as a CLIENTE...
+        mockMvc.perform(get("/api/clientes/me/ots").header("Authorization", "Bearer " + renovado))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+
+        // ...while the token that was in flight stays revoked (ver bump).
+        mockMvc.perform(get("/api/clientes/me/ots").header("Authorization", "Bearer " + revocado))
+                .andExpect(status().isUnauthorized());
+    }
+
     @Test
     void rejectsDuplicateClienteProfileWith409() throws Exception {
         long usuarioId = registrarTecnicoPublico("dual-cli-dup@example.com");
@@ -164,5 +214,10 @@ class PerfilAcquisitionIT {
 
     private String jwt(long usuarioId, Rol rol, int tokenVersion) {
         return tokenIssuer.emitir(new UsuarioId(usuarioId), rol, tokenVersion).valor();
+    }
+
+    private Claims claims(String jwt) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
     }
 }

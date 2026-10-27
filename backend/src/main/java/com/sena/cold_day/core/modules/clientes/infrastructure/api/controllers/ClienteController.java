@@ -24,6 +24,7 @@ import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.Actua
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
 import com.sena.cold_day.core.modules.ot.application.usecases.ListarOtUseCase;
 import com.sena.cold_day.core.modules.ot.infrastructure.api.responses.OtApiResponse;
+import com.sena.cold_day.core.modules.usuarios.application.usecases.EmitirTokenDeSesionUseCase;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 
 import jakarta.validation.Valid;
@@ -33,12 +34,14 @@ import jakarta.validation.Valid;
 public class ClienteController {
 
     private final RegistrarClienteUseCase registrar;
+    private final EmitirTokenDeSesionUseCase emitirToken;
     private final ActualizarUbicacionClienteUseCase actualizarUbicacion;
     private final ListarOtUseCase listarOts;
 
-    public ClienteController(RegistrarClienteUseCase registrar,
+    public ClienteController(RegistrarClienteUseCase registrar, EmitirTokenDeSesionUseCase emitirToken,
             ActualizarUbicacionClienteUseCase actualizarUbicacion, ListarOtUseCase listarOts) {
         this.registrar = registrar;
+        this.emitirToken = emitirToken;
         this.actualizarUbicacion = actualizarUbicacion;
         this.listarOts = listarOts;
     }
@@ -59,9 +62,11 @@ public class ClienteController {
      * Second-profile acquisition (WS2): an authenticated usuario adds a client
      * profile. The target usuario is the principal — never a path id or body
      * field — and the created role is CLIENTE by construction, never from the
-     * body (M5). On success the principal's tokenVersion is bumped, so the new
-     * capability is honored at the next login. A second attempt is rejected
-     * with 409.
+     * body (M5). On success the principal's tokenVersion is bumped, so the
+     * capability set only grows with a freshly issued token: the response carries
+     * that replacement in the additive {@code token} field, which keeps the
+     * caller signed in instead of forcing a re-login. A second attempt is
+     * rejected with 409.
      */
     @PostMapping("/perfil")
     @PreAuthorize("isAuthenticated()")
@@ -71,8 +76,11 @@ public class ClienteController {
                 new ClienteRequest(request.tipoCliente(), request.calle(), request.ciudad(), request.barrio(),
                         request.ubicacion()),
                 principal.usuarioId());
+        // The acquisition revoked the token in flight; hand back the replacement
+        // minted by the same issuer the login path uses.
+        String token = emitirToken.emitirPara(principal.usuarioId()).token();
         return ResponseEntity.created(URI.create("/api/clientes/" + created.id().valor()))
-                .body(ClienteApiResponse.from(created));
+                .body(ClienteApiResponse.conToken(created, token));
     }
 
     /**
