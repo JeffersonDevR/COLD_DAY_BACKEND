@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { interval, startWith, switchMap, Subscription } from 'rxjs';
+import { catchError, of, startWith, switchMap, Subscription } from 'rxjs';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { ClientesApi } from '../../core/service/clientes-api';
@@ -270,10 +270,19 @@ export class SeguimientoOtPage implements OnInit {
     }
     if (this.suscripcionSeguimiento) return;
 
-    this.suscripcionSeguimiento = interval(15000)
+    // El sondeo solo corre con la pestaña visible: en segundo plano el técnico
+    // no se está mirando y cada tick era una petición de GPS/HTTP desperdiciada.
+    this.suscripcionSeguimiento = pollVisibleTab(15000)
       .pipe(
         startWith(0),
-        switchMap(() => this.otApi.getTecnicoUbicacion(id)),
+        switchMap(() =>
+          this.otApi.getTecnicoUbicacion(id).pipe(
+            // Un fallo real (sesión vencida, 5xx, sin red) ya no se confunde con
+            // "sin posición" (ese 404 llega como `null`): se conserva la última
+            // conocida y el sondeo sigue vivo en vez de cortarse para siempre.
+            catchError(() => of(this.tecnicoUbicacion())),
+          ),
+        ),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((ubicacion) => {

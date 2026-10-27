@@ -1,8 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Subscription, throttleTime } from 'rxjs';
+import { EMPTY, Subscription, switchMap, throttleTime } from 'rxjs';
 import { GeolocationService } from './geolocation.service';
 import { Point } from '../models/common.models';
 import { TecnicosApi } from './tecnicos-api';
+import { visibleTabChanges } from './visible-tab-polling';
 
 /**
  * Publica la ubicación del técnico autenticado mientras el servicio está activo.
@@ -32,6 +33,13 @@ export class TecnicoTrackingService {
    */
   readonly motivo = signal<string | null>(null);
 
+  /**
+   * Empieza a publicar la posición. El watch SOLO está suscripto con la pestaña
+   * visible: en segundo plano no hay usuario mirando el mapa y mantener el GPS
+   * encendido gasta batería y datos sin que nadie vea el resultado. Al volver a
+   * la pestaña arranca un watch nuevo, así que la primera posición reportada es
+   * fresca y no la que quedó congelada al ocultarla.
+   */
   iniciar(intervaloMs = 15000): void {
     if (this.suscripcion) {
       return;
@@ -44,9 +52,16 @@ export class TecnicoTrackingService {
     // Nuevo intento limpio: descarta un motivo de fallo anterior.
     this.motivo.set(null);
     this.activo.set(true);
-    this.suscripcion = this.geo
-      .vigilarPosicion()
-      .pipe(throttleTime(intervaloMs, undefined, { leading: true, trailing: true }))
+    this.suscripcion = visibleTabChanges()
+      .pipe(
+        switchMap((visible) =>
+          visible
+            ? this.geo
+                .vigilarPosicion()
+                .pipe(throttleTime(intervaloMs, undefined, { leading: true, trailing: true }))
+            : EMPTY,
+        ),
+      )
       .subscribe({
         next: (punto) => this.emitir(punto),
         error: () => {

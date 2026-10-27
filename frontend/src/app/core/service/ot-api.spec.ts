@@ -104,12 +104,28 @@ describe('OtApi', () => {
     expect(await promise).toEqual({ latitud: 1, longitud: 2 });
   });
 
-  it('getTecnicoUbicacion devuelve null ante error', async () => {
+  it('getTecnicoUbicacion devuelve null ante 404 (todavía no hay posición)', async () => {
     const promise = firstValueFrom(api.getTecnicoUbicacion('ot1'));
     http
       .expectOne('/api/ot/ot1/tecnico-ubicacion')
       .flush('boom', { status: 404, statusText: 'Not Found' });
     expect(await promise).toBeNull();
+  });
+
+  it('getTecnicoUbicacion propaga un 500 en vez de disfrazarlo de "sin posición"', async () => {
+    const promise = firstValueFrom(api.getTecnicoUbicacion('ot1'));
+    http
+      .expectOne('/api/ot/ot1/tecnico-ubicacion')
+      .flush('boom', { status: 500, statusText: 'Server Error' });
+    await expect(promise).rejects.toMatchObject({ status: 500 });
+  });
+
+  it('getTecnicoUbicacion propaga un 403 (orden ajena o sin permiso)', async () => {
+    const promise = firstValueFrom(api.getTecnicoUbicacion('ot1'));
+    http
+      .expectOne('/api/ot/ot1/tecnico-ubicacion')
+      .flush('boom', { status: 403, statusText: 'Forbidden' });
+    await expect(promise).rejects.toMatchObject({ status: 403 });
   });
 
   it('getHistorial traduce la lista', async () => {

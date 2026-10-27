@@ -5,6 +5,19 @@ import { GeolocationService } from './geolocation.service';
 import { TecnicosApi } from './tecnicos-api';
 import { Point } from '../models/common.models';
 
+/**
+ * jsdom expone `document.visibilityState` como getter de solo lectura sobre el
+ * prototipo; el doble lo redefine como propiedad propia para poder alternar
+ * entre visible y oculta igual que lo haría el navegador.
+ */
+function simularVisibilidad(estado: 'visible' | 'hidden'): void {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    get: () => estado,
+  });
+  document.dispatchEvent(new Event('visibilitychange'));
+}
+
 describe('TecnicoTrackingService', () => {
   let posiciones: Subject<Point>;
   let disponible: boolean;
@@ -118,5 +131,38 @@ describe('TecnicoTrackingService', () => {
     service.iniciar();
     expect(() => posiciones.next({ latitud: 1, longitud: 2 })).not.toThrow();
     expect(service.ultimaPosicion()).toEqual({ latitud: 1, longitud: 2 });
+  });
+
+  describe('gate por visibilidad de la pestaña', () => {
+    afterEach(() => {
+      delete (document as { visibilityState?: string }).visibilityState;
+    });
+
+    it('no enciende el GPS con la pestaña oculta y lo reanuda al volver', () => {
+      simularVisibilidad('hidden');
+      const service = setup();
+      service.iniciar();
+
+      expect(vigilarPosicion).not.toHaveBeenCalled();
+
+      simularVisibilidad('visible');
+      expect(vigilarPosicion).toHaveBeenCalledTimes(1);
+
+      posiciones.next({ latitud: 3, longitud: 4 });
+      expect(actualizarUbicacion).toHaveBeenCalledWith({ latitud: 3, longitud: 4 });
+    });
+
+    it('corta el watch al ocultar la pestaña (no sigue reportando a ciegas)', () => {
+      simularVisibilidad('visible');
+      const service = setup();
+      service.iniciar();
+      expect(posiciones.observers.length).toBe(1);
+
+      simularVisibilidad('hidden');
+
+      expect(posiciones.observers.length).toBe(0);
+      expect(service.activo()).toBe(true);
+      expect(service.motivo()).toBeNull();
+    });
   });
 });

@@ -392,6 +392,30 @@ describe('SeguimientoOtPage', () => {
       http.expectNone('/api/maps/distancia');
     });
 
+    it('no sondea la ubicación con la pestaña oculta y reanuda al volver', () => {
+      const visibilidad = (estado: 'visible' | 'hidden'): void => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => estado });
+        document.dispatchEvent(new Event('visibilitychange'));
+      };
+      visibilidad('visible');
+      try {
+        const { otApi } = setup();
+        // Primer sondeo inmediato, como en el resto de la página.
+        expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(1);
+
+        visibilidad('hidden');
+        vi.advanceTimersByTime(15000 * 3);
+        // En segundo plano no se gasta GPS ni red: cero pedidos.
+        expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(1);
+
+        visibilidad('visible');
+        vi.advanceTimersByTime(15000);
+        expect(otApi.getTecnicoUbicacion).toHaveBeenCalledTimes(2);
+      } finally {
+        delete (document as { visibilityState?: string }).visibilityState;
+      }
+    });
+
     it('sin posición del técnico no muestra ningún número', () => {
       const { fixture, otApi } = setup();
       // El técnico todavía no reportó ubicación: el backend responde null.
