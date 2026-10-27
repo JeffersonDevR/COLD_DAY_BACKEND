@@ -23,9 +23,9 @@ function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionRespon
   };
 }
 
-function setup() {
+function setup(getTodasLiquidaciones?: ReturnType<typeof vi.fn>) {
   const liquidacionApi = {
-    getTodasLiquidaciones: vi.fn(() =>
+    getTodasLiquidaciones: getTodasLiquidaciones ?? vi.fn(() =>
       of([
         liquidacion({ id: 'L1', estado: 'EN_VERIFICACION' }),
         liquidacion({ id: 'L2', estado: 'APROBADA', comision: 5000 }),
@@ -71,6 +71,24 @@ describe('ConsignacionesAdminPage', () => {
     expect(texto).toContain('OT-2026-0004');
     expect(texto).not.toContain('L1');
     expect(texto).not.toContain('OT-1');
+  });
+
+  it('avisa si las liquidaciones no cargan y reintenta', () => {
+    const getTodasLiquidaciones = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('sin red')))
+      .mockReturnValueOnce(of([liquidacion({ id: 'L1' })]));
+    const { fixture } = setup(getTodasLiquidaciones);
+
+    expect(fixture.componentInstance.errorCarga()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('No pudimos cargar las liquidaciones.');
+
+    (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.liquidaciones().length).toBe(1);
   });
 
   it('aprueba una liquidación y avisa', () => {

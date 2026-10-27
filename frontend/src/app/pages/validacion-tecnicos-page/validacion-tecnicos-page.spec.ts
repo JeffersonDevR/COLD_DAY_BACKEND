@@ -24,13 +24,13 @@ const tecnico: TecnicoResponse = {
 const MENSAJE_409 =
   'El expediente del técnico no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.';
 
-function setup(validarError?: unknown) {
+function setup(validarError?: unknown, getTecnicos?: ReturnType<typeof vi.fn>) {
   const adminApi = {
     validarDocumentacionTecnico: vi.fn(() =>
       validarError ? throwError(() => validarError) : of(undefined)
     ),
   };
-  const tecnicosApi = { getTecnicos: vi.fn(() => of([tecnico])) };
+  const tecnicosApi = { getTecnicos: getTecnicos ?? vi.fn(() => of([tecnico])) };
   const toast = { success: vi.fn(), warning: vi.fn(), error: vi.fn() };
   TestBed.configureTestingModule({
     imports: [ValidacionTecnicosPage],
@@ -51,6 +51,24 @@ describe('ValidacionTecnicosPage', () => {
     const { fixture } = setup();
     expect(fixture.componentInstance.tecnicos().length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('Juan Pérez');
+  });
+
+  it('avisa si los expedientes no cargan y reintenta', () => {
+    const getTecnicos = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('sin red')))
+      .mockReturnValueOnce(of([tecnico]));
+    const { fixture } = setup(undefined, getTecnicos);
+
+    expect(fixture.componentInstance.errorCarga()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('No pudimos cargar los expedientes técnicos.');
+
+    (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(getTecnicos).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.tecnicos().length).toBe(1);
   });
 
   it('aprueba y habilita al técnico', () => {

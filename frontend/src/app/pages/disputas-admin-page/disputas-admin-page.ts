@@ -6,11 +6,12 @@ import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { DisputaResponse } from '../../core/models/common.models';
+import { CargaError } from '../../shared/carga-error/carga-error';
 
 @Component({
   selector: 'app-disputas-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, CargaError],
   templateUrl: './disputas-admin-page.html'
 })
 export class DisputasAdminPage {
@@ -22,14 +23,27 @@ export class DisputasAdminPage {
   readonly disputaSeleccionada = signal<DisputaResponse | null>(null);
   readonly resolucionCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10)] });
 
+  /** Carga silenciosa: si falla, la bandeja lo dice y ofrece reintentar. */
+  readonly cargando = signal<boolean>(false);
+  readonly errorCarga = signal<boolean>(false);
+
   constructor() {
     this.cargarDisputas();
   }
 
-  private cargarDisputas(): void {
+  cargarDisputas(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(false);
     this.adminApi.getTodasDisputas().subscribe({
-      next: (disputas) => this.disputas.set(disputas),
-      error: () => this.disputas.set([]),
+      next: (disputas) => {
+        this.disputas.set(disputas);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.disputas.set([]);
+        this.cargando.set(false);
+        this.errorCarga.set(true);
+      },
     });
   }
 

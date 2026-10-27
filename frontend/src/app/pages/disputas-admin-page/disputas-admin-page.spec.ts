@@ -18,9 +18,9 @@ const disputa: DisputaResponse = {
   tecnicoNombre: 'Juan',
 };
 
-function setup() {
+function setup(getTodasDisputas?: ReturnType<typeof vi.fn>) {
   const adminApi = {
-    getTodasDisputas: vi.fn(() => of([disputa])),
+    getTodasDisputas: getTodasDisputas ?? vi.fn(() => of([disputa])),
     resolverDisputa: vi.fn(() => of(undefined)),
   };
   const toast = { success: vi.fn(), error: vi.fn() };
@@ -43,6 +43,24 @@ describe('DisputasAdminPage', () => {
     const { fixture } = setup();
     expect(fixture.componentInstance.disputas().length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('cobro excesivo');
+  });
+
+  it('avisa si las disputas no cargan y reintenta', () => {
+    const getTodasDisputas = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('sin red')))
+      .mockReturnValueOnce(of([disputa]));
+    const { fixture } = setup(getTodasDisputas);
+
+    expect(fixture.componentInstance.errorCarga()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('No pudimos cargar las disputas.');
+
+    (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(getTodasDisputas).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.disputas().length).toBe(1);
   });
 
   it('abre el modal de resolución', () => {

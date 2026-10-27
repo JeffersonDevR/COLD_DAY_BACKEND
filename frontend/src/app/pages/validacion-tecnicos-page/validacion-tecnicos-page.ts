@@ -6,6 +6,7 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { TecnicoResponse } from '../../core/models/common.models';
+import { CargaError } from '../../shared/carga-error/carga-error';
 
 /**
  * Copy propia de esta pantalla: el 409 de este endpoint es
@@ -20,7 +21,7 @@ const MENSAJES_VALIDACION: Record<number, string> = {
 @Component({
   selector: 'app-validacion-tecnicos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, CargaError],
   templateUrl: './validacion-tecnicos-page.html'
 })
 export class ValidacionTecnicosPage {
@@ -32,14 +33,27 @@ export class ValidacionTecnicosPage {
   readonly tecnicoARechazar = signal<TecnicoResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
+  /** Carga silenciosa: si falla, la pantalla lo dice y ofrece reintentar. */
+  readonly cargando = signal<boolean>(false);
+  readonly errorCarga = signal<boolean>(false);
+
   constructor() {
     this.cargarTecnicos();
   }
 
-  private cargarTecnicos(): void {
+  cargarTecnicos(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(false);
     this.tecnicosApi.getTecnicos().subscribe({
-      next: (tecnicos) => this.tecnicos.set(tecnicos),
-      error: () => this.tecnicos.set([]),
+      next: (tecnicos) => {
+        this.tecnicos.set(tecnicos);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.tecnicos.set([]);
+        this.cargando.set(false);
+        this.errorCarga.set(true);
+      },
     });
   }
 

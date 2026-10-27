@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { DashboardAdminPage } from './dashboard-admin-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { MetricasAdminResponse } from '../../core/models/common.models';
@@ -20,12 +20,12 @@ const metricas: MetricasAdminResponse = {
   historicoSemanal: [{ dia: 'Lun', completadas: 8, canceladas: 1 }],
 };
 
-function setup() {
+function setup(getMetricas: ReturnType<typeof vi.fn> = vi.fn(() => of(metricas))) {
   TestBed.configureTestingModule({
     imports: [DashboardAdminPage],
     providers: [
       provideRouter([]),
-      { provide: AdminApi, useValue: { getMetricas: vi.fn(() => of(metricas)) } },
+      { provide: AdminApi, useValue: { getMetricas } },
     ],
   });
   const fixture = TestBed.createComponent(DashboardAdminPage);
@@ -50,5 +50,25 @@ describe('DashboardAdminPage', () => {
 
   it('suma el total de servicios', () => {
     expect(setup().componentInstance.totalServicios()).toBe(20);
+  });
+
+  it('avisa cuando las métricas no cargan y reintenta', () => {
+    const getMetricas = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('sin red')))
+      .mockReturnValueOnce(of(metricas));
+    const fixture = setup(getMetricas);
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(fixture.componentInstance.errorCarga()).toBe(true);
+    expect(texto).toContain('No pudimos cargar las métricas de la torre de control.');
+    expect(fixture.nativeElement.querySelector('[role="alert"] button')?.textContent?.trim()).toBe('Reintentar');
+
+    (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(getMetricas).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.metricas()?.serviciosEnEjecucion).toBe(4);
   });
 });

@@ -7,11 +7,12 @@ import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
+import { CargaError } from '../../shared/carga-error/carga-error';
 
 @Component({
   selector: 'app-consignaciones-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, CargaError],
   templateUrl: './consignaciones-admin-page.html'
 })
 export class ConsignacionesAdminPage {
@@ -40,17 +41,32 @@ export class ConsignacionesAdminPage {
   readonly liqARechazar = signal<LiquidacionResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
+  /** Carga silenciosa: si falla, la pantalla lo dice y ofrece reintentar. */
+  readonly cargando = signal<boolean>(false);
+  readonly errorCarga = signal<boolean>(false);
+
   constructor() {
     this.cargarDatos();
   }
 
-  private cargarDatos(): void {
+  cargarDatos(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(false);
     this.liquidacionApi.getTodasLiquidaciones().subscribe({
-      next: (liquidaciones) => this.liquidaciones.set(liquidaciones),
-      error: () => this.liquidaciones.set([]),
+      next: (liquidaciones) => {
+        this.liquidaciones.set(liquidaciones);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.liquidaciones.set([]);
+        this.cargando.set(false);
+        this.errorCarga.set(true);
+      },
     });
     this.tecnicosApi.getTecnicos().subscribe({
       next: (tecnicos) => this.tecnicos.set(tecnicos),
+      // Los técnicos solo alimentan el contador de bloqueados: su fallo no
+      // invalida la lista de liquidaciones ni duplica el aviso.
       error: () => this.tecnicos.set([]),
     });
   }

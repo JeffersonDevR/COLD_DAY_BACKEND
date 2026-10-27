@@ -5,6 +5,7 @@ import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { ProveedorResponse } from '../../core/models/common.models';
+import { CargaError } from '../../shared/carga-error/carga-error';
 
 /**
  * Copy propia de esta pantalla: el 409 de este endpoint significa que el
@@ -25,7 +26,7 @@ const MENSAJES_VALIDACION: Record<number, string> = {
 @Component({
   selector: 'app-proveedores-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CargaError],
   templateUrl: './proveedores-admin-page.html'
 })
 export class ProveedoresAdminPage {
@@ -37,14 +38,27 @@ export class ProveedoresAdminPage {
   readonly proveedorARechazar = signal<ProveedorResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 
+  /** Carga silenciosa: si falla, la pantalla lo dice y ofrece reintentar. */
+  readonly cargando = signal<boolean>(false);
+  readonly errorCarga = signal<boolean>(false);
+
   constructor() {
     this.cargar();
   }
 
-  private cargar(): void {
+  cargar(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(false);
     this.adminApi.getProveedores().subscribe({
-      next: (proveedores) => this.proveedores.set(proveedores),
-      error: () => this.proveedores.set([]),
+      next: (proveedores) => {
+        this.proveedores.set(proveedores);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.proveedores.set([]);
+        this.cargando.set(false);
+        this.errorCarga.set(true);
+      },
     });
   }
 

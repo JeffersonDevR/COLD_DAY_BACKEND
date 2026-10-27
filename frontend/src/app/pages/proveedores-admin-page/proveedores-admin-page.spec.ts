@@ -27,9 +27,9 @@ const proveedorAprobado: ProveedorResponse = {
 const MENSAJE_409 =
   'El expediente del proveedor no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.';
 
-function setup(opciones: { validarError?: unknown; proveedores?: ProveedorResponse[] } = {}) {
+function setup(opciones: { validarError?: unknown; proveedores?: ProveedorResponse[]; getProveedores?: ReturnType<typeof vi.fn> } = {}) {
   const adminApi = {
-    getProveedores: vi.fn(() => of(opciones.proveedores ?? [proveedor])),
+    getProveedores: opciones.getProveedores ?? vi.fn(() => of(opciones.proveedores ?? [proveedor])),
   };
   const proveedoresApi = {
     validarDocumentacion: vi.fn(() =>
@@ -69,6 +69,24 @@ describe('ProveedoresAdminPage', () => {
     expect(texto).toContain('Insumos del Norte SAS');
     expect(texto).toContain('NIT: 900123456-7');
     expect(texto).toContain('PENDIENTE');
+  });
+
+  it('avisa si los proveedores no cargan y reintenta', () => {
+    const getProveedores = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('sin red')))
+      .mockReturnValueOnce(of([proveedor]));
+    const { fixture } = setup({ getProveedores });
+
+    expect(fixture.componentInstance.errorCarga()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('No pudimos cargar los proveedores.');
+
+    (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(getProveedores).toHaveBeenCalledTimes(2);
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.componentInstance.proveedores().length).toBe(1);
   });
 
   it('aprueba al proveedor sin motivo y recarga el listado', () => {
