@@ -80,6 +80,8 @@ describe('ProveedoresAdminPage', () => {
 
     expect(fixture.componentInstance.errorCarga()).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('No pudimos cargar los proveedores.');
+    // Un fallo no es un listado vacío: el estado vacío solo aplica a una carga exitosa sin filas.
+    expect(fixture.nativeElement.textContent).not.toContain('Aún no hay proveedores registrados.');
 
     (fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -87,6 +89,13 @@ describe('ProveedoresAdminPage', () => {
     expect(getProveedores).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.errorCarga()).toBe(false);
     expect(fixture.componentInstance.proveedores().length).toBe(1);
+  });
+
+  it('muestra el estado vacío solo cuando la carga salió bien y no hay filas', () => {
+    const { fixture } = setup({ proveedores: [] });
+
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain('Aún no hay proveedores registrados.');
   });
 
   it('aprueba al proveedor sin motivo y recarga el listado', () => {

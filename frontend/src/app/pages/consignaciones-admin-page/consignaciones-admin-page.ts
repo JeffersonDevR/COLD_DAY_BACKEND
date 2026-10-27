@@ -26,6 +26,12 @@ export class ConsignacionesAdminPage {
   readonly liquidaciones = signal<LiquidacionResponse[]>([]);
   readonly tecnicos = signal<TecnicoResponse[]>([]);
 
+  /**
+   * `true` cuando no se pudo leer el listado de técnicos: el contador de
+   * bloqueados es desconocido, no cero, y la tarjeta lo dice así.
+   */
+  readonly tecnicosDesconocidos = signal<boolean>(false);
+
   readonly enVerificacion = computed(() =>
     this.liquidaciones().filter(l => l.estado === 'EN_VERIFICACION')
   );
@@ -64,10 +70,17 @@ export class ConsignacionesAdminPage {
       },
     });
     this.tecnicosApi.getTecnicos().subscribe({
-      next: (tecnicos) => this.tecnicos.set(tecnicos),
+      next: (tecnicos) => {
+        this.tecnicos.set(tecnicos);
+        this.tecnicosDesconocidos.set(false);
+      },
       // Los técnicos solo alimentan el contador de bloqueados: su fallo no
-      // invalida la lista de liquidaciones ni duplica el aviso.
-      error: () => this.tecnicos.set([]),
+      // invalida la lista de liquidaciones ni duplica el aviso, pero tampoco
+      // autoriza a reportar "0 bloqueados" como si fuera un hecho.
+      error: () => {
+        this.tecnicos.set([]);
+        this.tecnicosDesconocidos.set(true);
+      },
     });
   }
 

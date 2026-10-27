@@ -23,7 +23,7 @@ function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionRespon
   };
 }
 
-function setup(getTodasLiquidaciones?: ReturnType<typeof vi.fn>) {
+function setup(getTodasLiquidaciones?: ReturnType<typeof vi.fn>, tecnicosSinRed = false) {
   const liquidacionApi = {
     getTodasLiquidaciones: getTodasLiquidaciones ?? vi.fn(() =>
       of([
@@ -36,10 +36,12 @@ function setup(getTodasLiquidaciones?: ReturnType<typeof vi.fn>) {
   };
   const tecnicosApi = {
     getTecnicos: vi.fn(() =>
-      of<TecnicoResponse[]>([
-        { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'BLOQUEADO_POR_LIQUIDACION' },
-        { id: 'TEC-2', nombre: 'Ana', correo: 'a@x.co', estadoOperativo: 'DISPONIBLE' },
-      ]),
+      tecnicosSinRed
+        ? throwError(() => new Error('sin red'))
+        : of<TecnicoResponse[]>([
+            { id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'BLOQUEADO_POR_LIQUIDACION' },
+            { id: 'TEC-2', nombre: 'Ana', correo: 'a@x.co', estadoOperativo: 'DISPONIBLE' },
+          ]),
     ),
   };
   const toast = { success: vi.fn(), warning: vi.fn(), error: vi.fn() };
@@ -71,6 +73,17 @@ describe('ConsignacionesAdminPage', () => {
     expect(texto).toContain('OT-2026-0004');
     expect(texto).not.toContain('L1');
     expect(texto).not.toContain('OT-1');
+  });
+
+  it('no reporta 0 técnicos bloqueados cuando el listado de técnicos no carga', () => {
+    const { fixture } = setup(undefined, true);
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(fixture.componentInstance.tecnicosDesconocidos()).toBe(true);
+    expect(texto).toContain('No disponible: no pudimos cargar los técnicos');
+    expect(texto).not.toContain('Con servicios en mora');
+    // La cola de liquidaciones cargó bien: el fallo de técnicos no la tumba.
+    expect(fixture.componentInstance.errorCarga()).toBe(false);
   });
 
   it('avisa si las liquidaciones no cargan y reintenta', () => {
