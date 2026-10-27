@@ -88,13 +88,9 @@
                   <div class="flex justify-between p-3.5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                     <div class="space-y-0.5">
                       <span class="font-bold text-slate-800 dark:text-slate-200">Mano de Obra Certificada</span>
-                      <p class="text-[11px] text-slate-400">
-                        @if (orden.presupuesto; as presupuesto) {
-                          Tiempo estimado: {{ presupuesto.tiempoEstimadoHoras ?? 0 }} hora(s)
-                        } @else {
-                          El técnico todavía no cargó el presupuesto
-                        }
-                      </p>
+                      @if (!orden.presupuesto) {
+                        <p class="text-[11px] text-slate-400">El técnico todavía no cargó el presupuesto</p>
+                      }
                     </div>
                     <span class="font-bold text-slate-900 dark:text-slate-100">
                       @if (orden.presupuesto; as presupuesto) {

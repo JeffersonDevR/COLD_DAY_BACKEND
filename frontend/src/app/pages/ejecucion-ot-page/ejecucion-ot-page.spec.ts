@@ -151,7 +151,6 @@ describe('EjecucionOtPage', () => {
       diagnostico: 'Capacitor desvalorizado, requiere reemplazo.',
       manoDeObra: 120000,
       repuestos: 45000,
-      tiempoEstimadoHoras: 3,
     });
 
     fixture.componentInstance.enviarDiagnostico();
@@ -162,7 +161,6 @@ describe('EjecucionOtPage', () => {
         diagnostico: 'Capacitor desvalorizado, requiere reemplazo.',
         manoDeObra: 120000,
         repuestos: 45000,
-        tiempoEstimadoHoras: 3,
       }),
     );
     expect(toast.success).toHaveBeenCalled();
@@ -176,7 +174,6 @@ describe('EjecucionOtPage', () => {
       diagnostico: '',
       manoDeObra: null,
       repuestos: null,
-      tiempoEstimadoHoras: null,
     });
     expect(fixture.componentInstance.totalPresupuesto()).toBe(0);
 

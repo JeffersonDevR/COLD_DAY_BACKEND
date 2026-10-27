@@ -123,7 +123,7 @@ describe('DiagnosticoOtPage', () => {
     const { fixture } = setup({
       ...orden,
       diagnostico: { diagnostico: 'Fuga en la soldadura de baja presión.' },
-      presupuesto: { aprobado: false, total: 150000, manoObra: 90000, repuestos: 60000, tiempoEstimadoHoras: 3 },
+      presupuesto: { aprobado: false, total: 150000, manoObra: 90000, repuestos: 60000 },
     });
     fixture.detectChanges();
     const texto = fixture.nativeElement.textContent as string;
@@ -132,7 +132,8 @@ describe('DiagnosticoOtPage', () => {
     expect(texto).not.toContain('[object Object]');
     expect(texto).toContain('90.000');
     expect(texto).toContain('60.000');
-    expect(texto).toContain('Tiempo estimado: 3 hora(s)');
+    // El backend no expone un tiempo estimado: la vista no lo inventa.
+    expect(texto).not.toContain('Tiempo estimado');
   });
 
   it('abre el stream de cambios de estado de la OT cargada', () => {

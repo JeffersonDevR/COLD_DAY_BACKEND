@@ -342,7 +342,6 @@ export interface DiagnosticoRequest {
   /** Insumos que el técnico declara; viajan al despacho, no al JSON del diagnóstico (AD5). */
   insumos?: InsumoLinea[];
   tiempoEstimadoMinutos?: number;
-  tiempoEstimadoHoras?: number;
 }
 
 export interface HistorialOtItem {
@@ -394,7 +393,6 @@ export interface OtResponse {
     manoObra: number;
     manoDeObra?: number;
     repuestos: number;
-    tiempoEstimadoHoras?: number;
     /** Cargo fijo de diagnóstico (visita) notificado al aceptar el técnico. */
     cargoDiagnostico?: number;
     /** Cargo fijo de transporte/desplazamiento. */

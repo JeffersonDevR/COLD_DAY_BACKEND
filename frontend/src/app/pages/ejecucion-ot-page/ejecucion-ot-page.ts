@@ -146,9 +146,6 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     }),
     repuestos: new FormControl<number | null>(null, {
       validators: [Validators.required, Validators.min(0)]
-    }),
-    tiempoEstimadoHoras: new FormControl<number | null>(null, {
-      validators: [Validators.required, Validators.min(1)]
     })
   });
 
@@ -401,7 +398,6 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       // Los vacíos viajan como ausencia de dato, no como 0 inventado.
       manoDeObra: val.manoDeObra ?? undefined,
       repuestos: val.repuestos ?? undefined,
-      tiempoEstimadoHoras: val.tiempoEstimadoHoras ?? undefined,
       insumos,
     }).subscribe({
       next: () => {
