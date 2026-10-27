@@ -50,6 +50,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.ActualizarUbicacionTecnicoUseCase;
 import com.sena.cold_day.core.modules.geolocalizacion.application.usecases.BuscarTecnicosCercanosUseCase;
 import com.sena.cold_day.core.modules.geolocalizacion.infrastructure.api.requests.UbicacionApiRequest;
+import com.sena.cold_day.core.modules.usuarios.application.usecases.EmitirTokenDeSesionUseCase;
 import com.sena.cold_day.core.shared.domain.Point;
 import com.sena.cold_day.core.shared.infrastructure.security.AutorizacionPropietario;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
@@ -76,6 +77,7 @@ public class TecnicoController {
     private final ListarLiquidacionesTecnicoUseCase listarLiquidaciones;
     private final ListarDocumentosTecnicoUseCase listarDocumentos;
     private final AutorizacionPropietario autorizacion;
+    private final EmitirTokenDeSesionUseCase emitirToken;
 
     @SuppressWarnings("java:S107") // Superficie REST cohesiva de /api/tecnicos; dividir rompería la cohesión por recurso.
     public TecnicoController(RegistrarTecnicoUseCase registrar, ActualizarTecnicoUseCase actualizar,
@@ -88,7 +90,8 @@ public class TecnicoController {
             ListarLiquidacionesTecnicoUseCase listarLiquidaciones,
             ListarDocumentosTecnicoUseCase listarDocumentos,
             RegistrarPerfilTecnicoUseCase registrarPerfil,
-            AutorizacionPropietario autorizacion) {
+            AutorizacionPropietario autorizacion,
+            EmitirTokenDeSesionUseCase emitirToken) {
         this.registrar = registrar;
         this.actualizar = actualizar;
         this.actualizarMiPerfil = actualizarMiPerfil;
@@ -103,6 +106,7 @@ public class TecnicoController {
         this.listarDocumentos = listarDocumentos;
         this.registrarPerfil = registrarPerfil;
         this.autorizacion = autorizacion;
+        this.emitirToken = emitirToken;
     }
 
     @PostMapping
@@ -117,7 +121,9 @@ public class TecnicoController {
      * technician profile. The target usuario is the principal — never a path id
      * or body field — and the created role is TECNICO by construction, never
      * from the body (M5). On success the principal's tokenVersion is bumped, so
-     * the new capability is honored at the next login. A second attempt is
+     * the capability set only grows with a freshly issued token: the response
+     * carries that replacement in the additive {@code token} field, which keeps
+     * the caller signed in instead of forcing a re-login. A second attempt is
      * rejected with 409.
      */
     @PostMapping("/perfil")
@@ -127,8 +133,10 @@ public class TecnicoController {
         TecnicoResponse created = registrarPerfil.registrar(principal.usuarioId(),
                 new TecnicoPerfilRequest(request.numeroIdentificacion(), request.categoriasServicio(),
                         request.certificaciones()));
+        // Same revocation shape as the client profile: hand back the replacement.
+        String token = emitirToken.emitirPara(principal.usuarioId()).token();
         return ResponseEntity.created(URI.create("/api/tecnicos/" + created.id().valor()))
-                .body(TecnicoApiResponse.from(created));
+                .body(TecnicoApiResponse.conToken(created, token));
     }
 
     /** The full roster exposes every technician's contact data: administrators only. */

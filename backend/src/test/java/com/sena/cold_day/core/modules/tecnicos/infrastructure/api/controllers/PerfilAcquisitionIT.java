@@ -170,6 +170,41 @@ class PerfilAcquisitionIT {
                 .andExpect(status().isUnauthorized());
     }
 
+    /**
+     * D2b: acquiring the technician profile has the same revocation shape, so it
+     * returns the replacement token the same way.
+     */
+    @Test
+    void tecnicoProfileReturnsAFreshTokenThatKeepsTheSessionAlive() throws Exception {
+        long usuarioId = registrarClientePublico("dual-token-tec@example.com");
+        String revocado = jwt(usuarioId, Rol.CLIENTE, 0);
+
+        String body = mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + revocado)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"numeroIdentificacion\":\"T-9\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.usuarioId").value(usuarioId))
+                .andExpect(jsonPath("$.numeroIdentificacion").value("T-9"))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        String renovado = objectMapper.readTree(body).get("token").asString();
+        Claims claims = claims(renovado);
+        assertThat(claims.get("roles", List.class)).contains(Rol.TECNICO.name());
+        assertThat(claims.get("ver", Integer.class)).isEqualTo(1);
+        assertThat(claims.get("nombre", String.class)).isEqualTo("Ana");
+
+        mockMvc.perform(get("/api/tecnicos/me").header("Authorization", "Bearer " + renovado))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.usuarioId").value(usuarioId))
+                // A plain read never mints a session: the additive field stays
+                // scoped to the acquisition response instead of spreading as null.
+                .andExpect(jsonPath("$.token").doesNotExist());
+
+        mockMvc.perform(get("/api/tecnicos/me").header("Authorization", "Bearer " + revocado))
+                .andExpect(status().isUnauthorized());
+    }
+
     @Test
     void rejectsDuplicateClienteProfileWith409() throws Exception {
         long usuarioId = registrarTecnicoPublico("dual-cli-dup@example.com");
