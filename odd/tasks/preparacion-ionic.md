@@ -16,11 +16,11 @@ Dejar el código listo para la implementaciónIonic mientras se diseña la UI en
 - [ ] **T3 (B4, parcial)** — documentar (no code) la verificación de la key de Maps para origin nativo; lo ejecuta el usuario en Google Console.
 
 ### Slice frontend A — transporte + bugs (`feat/prep-ionic-frontend-a`)
-- [ ] **T4 (B2)** — `API_ORIGIN` inyectable en `api.config.ts` (default `''` = relativo), usado por servicios + SseService; build moderno por variable.
-- [ ] **T5 (B5)** — fix "técnico no puede pedir orden": al fallar `crearOt` con "No existe un perfil de cliente", guiar a `agregar-perfil-page` (flujo ya existente). Verificar ruta de registro dual-role mientras. Spec del flujo.
-- [ ] **T6 (B6)** — adoptar `mensajeErrorAccion` en los 12+ sitios crudos listados en pendientes §5.2 (incluye interceptor fallback desactivable).
-- [ ] **T7 (B7)** — `ot-carga.ts` con estado de error visible + reintentar (5 páginas de OT afectadas). Spec del fallo.
-- [ ] **T8 (B10)** — polls con visibilidad gate: ubicación 15 s y poll de OT deja de enmascarar 404 vs 401/5xx (`ot-api.ts:139`).
+- [x] **T4 (B2)** — `API_ORIGIN` inyectable en `api.config.ts` (default `''` = relativo), usado por servicios + SseService; build moderno por variable. — CERRADO en `3b8ad40` (`API_ORIGIN` como token + `generate-api-origin.mjs` ya en la capa de transporte; el commit blinda la composición origen + `/api` + path con y sin slash, incluidas las URL absolutas que exige `EventSource` para SSE).
+- [x] **T5 (B5)** — fix "técnico no puede pedir orden": al fallar `crearOt` con "No existe un perfil de cliente", guiar a `agregar-perfil-page` (flujo ya existente). Verificar ruta de registro dual-role mientras. Spec del flujo. — CERRADO en `585e4ba` (banner de guía a crear perfil de cliente cuando `crearOt` rebota por perfil faltante; spec del flujo dual-role).
+- [x] **T6 (B6)** — adoptar `mensajeErrorAccion` en los 12+ sitios crudos listados en pendientes §5.2 (incluye interceptor fallback desactivable). — CERRADO en `9845404` (sitios con `err.message` crudo pasan por `mensajeErrorAccion`; el fallback del interceptor dejó de exponer el mensaje HTTP crudo/URL).
+- [x] **T7 (B7)** — `ot-carga.ts` con estado de error visible + reintentar (5 páginas de OT afectadas). Spec del fallo. — CERRADO en `326bcd7` (`CargaOtEstado` con signal `error` + `reintentar()` reusando el último id; banner `role="alert"` con botón Reintentar en calificar, diagnóstico, ejecución, pago/acta y seguimiento; specs del helper y del banner).
+- [x] **T8 (B10)** — polls con visibilidad gate: ubicación 15 s y poll de OT deja de enmascarar 404 vs 401/5xx (`ot-api.ts:139`). — CERRADO en `a25bac0` (`getTecnicoUbicacion` devuelve `null` solo en 404 y propaga 401/403/5xx/red; `pollVisibleTab(15000)` en seguimiento y `visibleTabChanges()` para el `watchPosition` del tracking; specs de ambos gates).
 
 ### Slice frontend B — honestidad + admin web (`feat/prep-ionic-frontend-b`)
 - [ ] **T9 (B11)** — 401-msg single-toast: record pří interceptorto + pages ya notifican al mismo fallo.
