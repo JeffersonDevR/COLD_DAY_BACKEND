@@ -7,10 +7,10 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
-import { CategoriaServicio, Point } from '../../core/models/common.models';
+import { CategoriaServicio, Point, TipoCliente } from '../../core/models/common.models';
 import { MapsApi } from '../../core/service/maps-api';
 import { SugerenciaApiResponse } from '../../core/models/backend.dto';
-import { MapaConfigService } from '../../core/service/mapa-config.service';
+import { CIUDAD_OPERACION, MapaConfigService } from '../../core/service/mapa-config.service';
 import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
@@ -71,6 +71,24 @@ export class SolicitarServicioPage {
     longitud: new FormControl<number | null>(null),
     evidenciaUrl: new FormControl('')
   });
+
+  /**
+   * Alta rápida del perfil de cliente sin salir de la solicitud: la dirección
+   * ya tipeada y el punto del mapa son los datos que el backend necesita.
+   */
+  readonly perfilForm = new FormGroup({
+    tipoCliente: new FormControl<TipoCliente>('B2C', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    calle: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    ciudad: new FormControl(CIUDAD_OPERACION, { nonNullable: true, validators: [Validators.required] }),
+    barrio: new FormControl('', { nonNullable: true }),
+  });
+  readonly tiposCliente: TipoCliente[] = ['B2C', 'B2B'];
+  readonly creandoPerfil = signal<boolean>(false);
+  /** Error honesto del alta rápida; el borrador y el formulario quedan intactos. */
+  readonly errorCrearPerfil = signal<string | null>(null);
 
   get listoParaEnviar(): boolean {
     return this.solicitudForm.valid && this.coordenadas() !== null && !this.loading();
@@ -182,13 +200,78 @@ export class SolicitarServicioPage {
   onSubmit(): void {
     if (this.solicitudForm.invalid) return;
 
+    if (!this.coordenadas()) {
+      this.toast.error('Falta la ubicación', 'Fija tu domicilio en el mapa o con tu ubicación GPS.');
+      return;
+    }
+
+    this.guardarBorrador();
+    this.enviarSolicitud();
+  }
+
+  setTipoCliente(tipo: TipoCliente): void {
+    this.perfilForm.controls.tipoCliente.setValue(tipo);
+  }
+
+  /**
+   * Alta de perfil en un solo toque: crea el perfil de cliente con la dirección
+   * y el punto que ya están en la solicitud, adopta el token devuelto y
+   * reintenta la MISMA OT sin pedir un solo dato de nuevo. El tap es el
+   * consentimiento: nunca se crea el perfil en silencio.
+   */
+  crearPerfilYEnviar(): void {
+    if (this.creandoPerfil() || this.loading()) return;
+    if (this.perfilForm.invalid) {
+      this.perfilForm.markAllAsTouched();
+      return;
+    }
+
     const punto = this.coordenadas();
     if (!punto) {
       this.toast.error('Falta la ubicación', 'Fija tu domicilio en el mapa o con tu ubicación GPS.');
       return;
     }
 
-    this.guardarBorrador();
+    const valor = this.perfilForm.getRawValue();
+    this.creandoPerfil.set(true);
+    this.errorCrearPerfil.set(null);
+
+    this.clientesApi
+      .crearMiPerfil({
+        tipoCliente: valor.tipoCliente,
+        calle: valor.calle.trim(),
+        ciudad: valor.ciudad.trim(),
+        barrio: valor.barrio.trim() || undefined,
+        ubicacion: punto,
+      })
+      .subscribe({
+        next: (perfil) => {
+          this.creandoPerfil.set(false);
+          if (!perfil.token) {
+            // Backend legado: el JWT en vuelo quedó revocado. No se reintenta
+            // con una sesión muerta; el borrador sigue intacto para después.
+            this.errorCrearPerfil.set(
+              'Creamos tu perfil, pero la sesión necesita renovarse. Iniciá sesión de nuevo y volvé a enviar la solicitud.',
+            );
+            return;
+          }
+          this.authService.adoptarToken(perfil.token);
+          this.enviarSolicitud();
+        },
+        error: () => {
+          this.creandoPerfil.set(false);
+          this.errorCrearPerfil.set(
+            'No pudimos crear tu perfil de cliente. Tus datos siguen acá; probá de nuevo.',
+          );
+        },
+      });
+  }
+
+  /** Crea (o reintenta) la OT con el formulario y el punto actuales. */
+  private enviarSolicitud(): void {
+    const punto = this.coordenadas();
+    if (!punto || this.loading()) return;
+
     this.loading.set(true);
     this.faltoPerfilCliente.set(false);
     this.sugerencias.set([]);
@@ -224,14 +307,27 @@ export class SolicitarServicioPage {
         error: (err: Error) => {
           this.loading.set(false);
           if (esErrorPerfilClienteFaltante(err)) {
-            // Técnico dual-role sin perfil de cliente: no se puede pedir una
-            // orden. En vez de un toast que se pierde, guía al alta del perfil.
-            this.faltoPerfilCliente.set(true);
+            // Técnico dual-role sin perfil de cliente: en vez de un toast que se
+            // pierde, se ofrece el alta con los datos que ya están cargados.
+            this.mostrarAltaPerfil();
             return;
           }
           avisarErrorAccion(this.toast, 'No se pudo crear la solicitud', err);
         }
       });
+  }
+
+  /** Abre la tarjeta de alta rápida con la dirección y la ciudad ya resueltas. */
+  private mostrarAltaPerfil(): void {
+    const form = this.solicitudForm.getRawValue();
+    this.perfilForm.patchValue({
+      tipoCliente: 'B2C',
+      calle: form.direccion ?? '',
+      ciudad: CIUDAD_OPERACION,
+      barrio: '',
+    });
+    this.errorCrearPerfil.set(null);
+    this.faltoPerfilCliente.set(true);
   }
 
   /** Persiste el borrador con lo que el usuario ya cargó (form + mapa + categoría). */

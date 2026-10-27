@@ -16,23 +16,106 @@
 
       <!-- Guía dual-role: la OT se rechaza con 404 si el usuario no tiene perfil de cliente. -->
       @if (faltoPerfilCliente()) {
-        <div role="alert" data-test="aviso-perfil-cliente" class="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 p-5 space-y-3">
+        <div role="alert" data-test="aviso-perfil-cliente" class="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 p-5 space-y-4">
           <div class="flex items-start gap-3">
             <i class="pi pi-user-plus text-amber-600 dark:text-amber-400 text-xl"></i>
             <div class="space-y-1">
               <h3 class="font-bold text-amber-800 dark:text-amber-200">Tu cuenta todavía no tiene perfil de cliente</h3>
               <p class="text-sm text-amber-700 dark:text-amber-300">
-                Para pedir una orden primero necesitás crear tu perfil de cliente. Después de crearlo, volvé y enviá la solicitud de nuevo.
+                Podés crearlo ahora con la dirección y la ubicación que ya cargaste. Al confirmar, enviamos tu solicitud automáticamente.
               </p>
             </div>
           </div>
-          <a
-            routerLink="/perfil/agregar"
-            data-test="cta-crear-perfil-cliente"
-            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold transition-colors"
-          >
-            <i class="pi pi-plus-circle text-sm"></i> Crear mi perfil de cliente
-          </a>
+
+          <div [formGroup]="perfilForm" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span class="block text-xs font-semibold text-amber-800 dark:text-amber-200 mb-1">Tipo de cliente</span>
+              <div class="inline-flex rounded-xl border border-amber-300 dark:border-amber-700 overflow-hidden">
+                @for (tipo of tiposCliente; track tipo) {
+                  <button
+                    type="button"
+                    (click)="setTipoCliente(tipo)"
+                    [attr.aria-pressed]="perfilForm.controls.tipoCliente.value === tipo"
+                    class="px-3 py-2 text-xs font-bold transition-colors"
+                    [class.bg-amber-600]="perfilForm.controls.tipoCliente.value === tipo"
+                    [class.text-white]="perfilForm.controls.tipoCliente.value === tipo"
+                    [class.text-amber-800]="perfilForm.controls.tipoCliente.value !== tipo"
+                    [class.dark:text-amber-200]="perfilForm.controls.tipoCliente.value !== tipo"
+                  >
+                    {{ tipo === 'B2C' ? 'Persona (B2C)' : 'Empresa (B2B)' }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div>
+              <label for="perfil-barrio" class="block text-xs font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                Barrio (opcional)
+              </label>
+              <input
+                id="perfil-barrio"
+                type="text"
+                formControlName="barrio"
+                class="w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label for="perfil-calle" class="block text-xs font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                Dirección
+              </label>
+              <input
+                id="perfil-calle"
+                type="text"
+                formControlName="calle"
+                data-test="perfil-calle"
+                class="w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div>
+              <label for="perfil-ciudad" class="block text-xs font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                Ciudad
+              </label>
+              <input
+                id="perfil-ciudad"
+                type="text"
+                formControlName="ciudad"
+                data-test="perfil-ciudad"
+                class="w-full rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
+          @if (errorCrearPerfil()) {
+            <p role="alert" data-test="error-crear-perfil" class="text-xs font-semibold text-red-700 dark:text-red-300">
+              {{ errorCrearPerfil() }}
+            </p>
+          }
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              data-test="crear-perfil-y-enviar"
+              (click)="crearPerfilYEnviar()"
+              [disabled]="creandoPerfil() || loading()"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-sm font-bold transition-colors"
+            >
+              @if (creandoPerfil()) {
+                <i class="pi pi-sync animate-spin text-sm"></i> Creando perfil...
+              } @else {
+                <i class="pi pi-check-circle text-sm"></i> Crear perfil de cliente y enviar solicitud
+              }
+            </button>
+            <a
+              routerLink="/perfil/agregar"
+              [queryParams]="{ returnUrl: '/cliente/solicitar' }"
+              data-test="completar-perfil-separado"
+              class="text-xs font-semibold text-amber-800 dark:text-amber-200 hover:underline"
+            >
+              Prefiero completar mi perfil por separado
+            </a>
+          </div>
         </div>
       }
 
