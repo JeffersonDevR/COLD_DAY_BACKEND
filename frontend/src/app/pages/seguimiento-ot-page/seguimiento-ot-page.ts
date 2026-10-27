@@ -8,7 +8,7 @@ import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
-import { cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
+import { cargarOtDesdeRuta, otDesdeFuente, CargaOtEstado } from '../../core/service/ot-carga';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { rutaLocal } from '../../core/service/distancia-local';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
@@ -66,6 +66,9 @@ export class SeguimientoOtPage implements OnInit {
   readonly otId = signal<string>('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
 
+  /** Estado de la carga: el fallo SIEMPRE se ve (con reintentar), nunca en blanco. */
+  private cargaOtEstado: CargaOtEstado | null = null;
+
   /** En mock lee del MockDb (reactivo); contra el backend usa la OT cargada por API. */
   readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
@@ -122,7 +125,7 @@ export class SeguimientoOtPage implements OnInit {
   });
 
   ngOnInit(): void {
-    cargarOtDesdeRuta(
+    this.cargaOtEstado = cargarOtDesdeRuta(
       this.route,
       this.otApi,
       (id) => {
@@ -138,6 +141,15 @@ export class SeguimientoOtPage implements OnInit {
         this.cargarTecnicosCercanos();
       },
     );
+  }
+
+  /** Copy del fallo de la carga de la OT (para el aviso con reintentar). */
+  otErrorCarga(): string | null {
+    return this.cargaOtEstado?.error() ?? null;
+  }
+
+  reintentarCargaOt(): void {
+    this.cargaOtEstado?.reintentar();
   }
 
   private recargarOt(): void {

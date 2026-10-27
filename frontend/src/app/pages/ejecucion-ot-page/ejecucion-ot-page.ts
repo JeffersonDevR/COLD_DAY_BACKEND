@@ -10,7 +10,7 @@ import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.serv
 import { OtApi } from '../../core/service/ot-api';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
-import { cargarOtDesdeRuta, otDesdeFuente } from '../../core/service/ot-carga';
+import { cargarOtDesdeRuta, otDesdeFuente, CargaOtEstado } from '../../core/service/ot-carga';
 import { rutaLocal } from '../../core/service/distancia-local';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
@@ -70,6 +70,9 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly otId = signal<string>('');
+
+  /** Estado de la carga: el fallo SIEMPRE se ve (con reintentar), nunca en blanco. */
+  private cargaOtEstado: CargaOtEstado | null = null;
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
 
   /** Suscripción al stream de cambios de estado; se corta al destruir la página. */
@@ -296,7 +299,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    cargarOtDesdeRuta(
+    this.cargaOtEstado = cargarOtDesdeRuta(
       this.route,
       this.otApi,
       (id) => {
@@ -310,6 +313,15 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     );
     // Empuja la ubicación del técnico mientras ejecuta el servicio.
     this.tracking.iniciar();
+  }
+
+  /** Copy del fallo de la carga de la OT (para el aviso con reintentar). */
+  otErrorCarga(): string | null {
+    return this.cargaOtEstado?.error() ?? null;
+  }
+
+  reintentarCargaOt(): void {
+    this.cargaOtEstado?.reintentar();
   }
 
   ngOnDestroy(): void {

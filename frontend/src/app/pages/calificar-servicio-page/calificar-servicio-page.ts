@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { OtApi } from '../../core/service/ot-api';
-import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
+import { cargarOtDesdeRuta, CargaOtEstado } from '../../core/service/ot-carga';
 import { ToastService } from '../../core/alertas/toast.service';
 import { mensajeErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtResponse } from '../../core/models/common.models';
@@ -33,6 +33,9 @@ export class CalificarServicioPage implements OnInit {
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
   readonly ot = computed<OtResponse | undefined>(() => this._otRemoto());
 
+  /** Estado de la carga: el fallo SIEMPRE se ve (con reintentar), nunca en blanco. */
+  private cargaOtEstado: CargaOtEstado | null = null;
+
   readonly estrellas = signal<number>(5);
   readonly tagsSeleccionados = signal<string[]>(['Puntualidad en llegada', 'Limpieza del área']);
   readonly comentarioCtrl = new FormControl('Excelente trabajo, dejó el aire enfriando a 16°C y limpió el desagüe.');
@@ -47,7 +50,21 @@ export class CalificarServicioPage implements OnInit {
   ];
 
   ngOnInit(): void {
-    cargarOtDesdeRuta(this.route, this.otApi, (id) => this.otId.set(id), (orden) => this._otRemoto.set(orden));
+    this.cargaOtEstado = cargarOtDesdeRuta(
+      this.route,
+      this.otApi,
+      (id) => this.otId.set(id),
+      (orden) => this._otRemoto.set(orden),
+    );
+  }
+
+  /** Copy del fallo de la carga de la OT (para el aviso con reintentar). */
+  otErrorCarga(): string | null {
+    return this.cargaOtEstado?.error() ?? null;
+  }
+
+  reintentarCargaOt(): void {
+    this.cargaOtEstado?.reintentar();
   }
 
   toggleTag(tag: string): void {

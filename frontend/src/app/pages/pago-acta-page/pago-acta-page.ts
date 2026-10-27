@@ -5,7 +5,7 @@ import { Subscription } from 'rxjs';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
-import { cargarOtDesdeRuta } from '../../core/service/ot-carga';
+import { cargarOtDesdeRuta, CargaOtEstado } from '../../core/service/ot-carga';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ActaGarantia, OtResponse, MedioPago, Point, TarifaEstimadaResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
@@ -41,6 +41,9 @@ export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
 
   readonly otId = signal<string>('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
+
+  /** Estado de la carga: el fallo SIEMPRE se ve (con reintentar), nunca en blanco. */
+  private cargaOtEstado: CargaOtEstado | null = null;
   readonly ot = computed<OtResponse | undefined>(() => this._otRemoto());
 
   /** Suscripción al stream de cambios de estado; se corta al destruir la página. */
@@ -86,7 +89,7 @@ export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    cargarOtDesdeRuta(
+    this.cargaOtEstado = cargarOtDesdeRuta(
       this.route,
       this.otApi,
       (id) => {
@@ -95,6 +98,15 @@ export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
       },
       (orden) => this.aplicarOt(orden),
     );
+  }
+
+  /** Copy del fallo de la carga de la OT (para el aviso con reintentar). */
+  otErrorCarga(): string | null {
+    return this.cargaOtEstado?.error() ?? null;
+  }
+
+  reintentarCargaOt(): void {
+    this.cargaOtEstado?.reintentar();
   }
 
   ngOnDestroy(): void {

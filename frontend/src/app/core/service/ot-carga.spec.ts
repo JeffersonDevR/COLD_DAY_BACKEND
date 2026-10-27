@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { cargarOtDesdeRuta, otDesdeFuente } from './ot-carga';
+import { ApiHttpError } from '../interceptos/error.interceptor';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
 import { OtApi } from './ot-api';
@@ -47,5 +48,36 @@ describe('ot-carga', () => {
 
     expect(llamado).toBe(false);
     expect(otApi.getOtById).not.toHaveBeenCalled();
+  });
+
+  it('cargarOtDesdeRuta expone el fallo de la carga con copy humana', () => {
+    const route = { paramMap: of(convertToParamMap({ id: 'ot1' })) } as unknown as ActivatedRoute;
+    const otApi = {
+      getOtById: vi.fn(() => throwError(() => new ApiHttpError('boom', 500))),
+    } as unknown as OtApi;
+
+    const estado = cargarOtDesdeRuta(route, otApi, () => undefined, () => undefined);
+
+    expect(estado.error()).toBe('Ocurrió un error en el servidor. Inténtalo de nuevo en unos minutos.');
+  });
+
+  it('cargarOtDesdeRuta reintenta el último id y limpia el error', () => {
+    const route = { paramMap: of(convertToParamMap({ id: 'ot1' })) } as unknown as ActivatedRoute;
+    const getOtById = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new ApiHttpError('boom', 500)))
+      .mockReturnValueOnce(of(ot));
+    const otApi = { getOtById } as unknown as OtApi;
+    let recibida: OtResponse | undefined;
+
+    const estado = cargarOtDesdeRuta(route, otApi, () => undefined, (o) => (recibida = o));
+
+    expect(estado.error()).not.toBeNull();
+    estado.reintentar();
+
+    expect(estado.error()).toBeNull();
+    expect(recibida).toBe(ot);
+    expect(getOtById).toHaveBeenCalledTimes(2);
+    expect(getOtById).toHaveBeenLastCalledWith('ot1');
   });
 });
