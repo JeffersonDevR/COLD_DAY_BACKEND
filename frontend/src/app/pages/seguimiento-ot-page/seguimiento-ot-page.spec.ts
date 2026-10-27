@@ -160,6 +160,23 @@ describe('SeguimientoOtPage', () => {
     expect(setup({ ...orden, estado: 'EN_CAMINO' }).fixture.componentInstance.puedePagarVisita()).toBe(false);
   });
 
+  it('no inventa un monto cuando la OT todavía no tiene presupuesto', () => {
+    const { fixture } = setup({
+      ...orden,
+      estado: 'EN_DIAGNOSTICO',
+      diagnostico: { fallaDetectada: 'compresor ruidoso' },
+    });
+    const texto = fixture.nativeElement.textContent as string;
+    const enlace = Array.from(
+      fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>,
+    ).find((a) => a.textContent?.includes('Revisar Presupuesto'));
+
+    expect(texto).toMatch(/Revisar Presupuesto\s+\(sin presupuesto\)/);
+    // Sin presupuesto no hay cifra que mostrar: nada de "$ 0".
+    expect(enlace?.textContent).not.toContain('$');
+    expect(texto).not.toContain('Revisar Presupuesto ($');
+  });
+
   it('muestra el pago de la visita con el presupuesto rechazado (CANCELADA real)', () => {
     expect(setup({ ...orden, estado: 'CANCELADA' }).fixture.componentInstance.puedePagarVisita()).toBe(true);
   });

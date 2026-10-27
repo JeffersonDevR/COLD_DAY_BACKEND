@@ -73,6 +73,15 @@ describe('MonitoreoOtPage', () => {
     expect(fixture.componentInstance.otsFiltradas()).toEqual([]);
   });
 
+  it('no muestra un monto inventado cuando la OT no tiene presupuesto', () => {
+    const fixture = setup(vi.fn(() => of([ot({ id: 'OT-3', codigo: 'OT-2026-0003' })])));
+    fixture.detectChanges();
+    const texto = fixture.nativeElement.textContent as string;
+
+    expect(texto).toContain('Sin presupuesto');
+    expect(texto).not.toContain('$');
+  });
+
   it('avisa cuando la carga falla y reintenta con el botón', () => {
     const getTodasOts = vi
       .fn()

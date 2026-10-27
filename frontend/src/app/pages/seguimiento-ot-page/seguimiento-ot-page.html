@@ -41,7 +41,12 @@
                 class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md inline-flex items-center gap-1.5 transition-colors animate-bounce"
               >
                 <i class="pi pi-comment text-sm"></i>
-                Revisar Presupuesto ($ {{ (orden.presupuesto?.total || 0).toLocaleString('es-CO') }})
+                Revisar Presupuesto
+                @if (orden.presupuesto) {
+                  ($ {{ orden.presupuesto.total.toLocaleString('es-CO') }})
+                } @else {
+                  (sin presupuesto)
+                }
               </a>
             }
 

@@ -51,6 +51,12 @@ export class ConsignacionesAdminPage {
   readonly cargando = signal<boolean>(false);
   readonly errorCarga = signal<boolean>(false);
 
+  /**
+   * `true` mientras no conocemos las liquidaciones (cargando o carga fallida):
+   * los totales del resumen son desconocidos, no cero, y las tarjetas lo dicen así.
+   */
+  readonly resumenDesconocido = computed(() => this.cargando() || this.errorCarga());
+
   constructor() {
     this.cargarDatos();
   }

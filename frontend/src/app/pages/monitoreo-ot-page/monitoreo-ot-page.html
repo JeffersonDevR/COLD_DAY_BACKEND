@@ -98,7 +98,11 @@
                     <app-estado-badge [estado]="ot.estado" />
                   </td>
                   <td class="p-3 font-bold">
-                    $ {{ (ot.presupuesto?.total || 0).toLocaleString('es-CO') }}
+                    @if (ot.presupuesto) {
+                      $ {{ ot.presupuesto.total.toLocaleString('es-CO') }}
+                    } @else {
+                      <span class="font-normal italic text-slate-400">Sin presupuesto</span>
+                    }
                   </td>
                   <td class="p-3 text-right">
                     <a
