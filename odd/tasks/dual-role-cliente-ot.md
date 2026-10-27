@@ -13,17 +13,24 @@ Un usuario TÉCNICO (o PROVEEDOR) que pide un servicio como cliente debe poder: 
 ## Checklist
 
 ### Slice backend
-- [ ] **D1** — `AutorizacionPropietario`: el dueño del perfil cliente accede a su OT siempre, sin importar otros roles. Tests: dual-role dueño → permitido; TECNICO no-dueño → 403; CLIENTE dueño → permitido; ADMIN → permitido.
-- [ ] **D2** — `POST /api/clientes/perfil` devuelve un JWT nuevo (campo aditivo `token`) con roles y `ver` actualizados, emitido por el mismo issuer del login. Tests: el token nuevo autoriza, incluye CLIENTE en `roles`, y el token previo sigue rechazado.
-- [ ] **D2b** — Si `POST` de perfil técnico tiene la misma revocación, aplicar el mismo patrón (simetría mínima).
+- [x] **D1** — `AutorizacionPropietario`: el dueño del perfil cliente accede a su OT siempre, sin importar otros roles. Tests: dual-role dueño → permitido; TECNICO no-dueño → 403; CLIENTE dueño → permitido; ADMIN → permitido. — commit `5dffc1d`.
+- [x] **D2** — `POST /api/clientes/perfil` devuelve un JWT nuevo (campo aditivo `token`) con roles y `ver` actualizados, emitido por el mismo issuer del login. Tests: el token nuevo autoriza, incluye CLIENTE en `roles`, y el token previo sigue rechazado. — commit `70da717`.
+- [x] **D2b** — Si `POST` de perfil técnico tiene la misma revocación, aplicar el mismo patrón (simetría mínima). — commit `5af2c89`.
 
 ### Slice frontend
-- [ ] **D3** — `AuthService`: adoptar un token refrescado sin logout (reusar `establecerSesionDesdeToken`).
-- [ ] **D4** — `agregar-perfil-page`: al éxito adopta la sesión nueva, vuelve al `returnUrl` (o al panel correspondiente) y NO hace logout. Fallback: si no viene token, comportamiento actual.
-- [ ] **D5** — Draft de la solicitud en `sessionStorage` (precedente `proveedor-registro.service.ts`), restaurado al volver y limpiado al crear la OT.
-- [ ] **D6** — Tarjeta de un-tap en `solicitar-servicio-page`: al detectar perfil faltante muestra la dirección ya tipeada (editable) + `tipoCliente` B2C + ciudad de operación como default editable; un botón "Crear perfil de cliente y enviar solicitud" crea el perfil y reintenta `crearOt` automáticamente. Sin relleno manual, sin auto-creación silenciosa (el tap es el consentimiento).
-- [ ] **D7** — `cliente/panel` admite TECNICO (coherente con el menú); si el usuario no tiene perfil cliente, estado honesto con CTA (no error crudo). Mismo tratamiento en `historial-equipos` si aplica.
-- [ ] **D8** — Specs: draft (persistencia/restore/limpieza), un-tap (crear+reintentar+éxito), sesión sin logout, panel sin perfil.
+- [x] **D3** — `AuthService`: adoptar un token refrescado sin logout (reusar `establecerSesionDesdeToken`). — commit `b8fff2f`.
+- [x] **D4** — `agregar-perfil-page`: al éxito adopta la sesión nueva, vuelve al `returnUrl` (o al panel correspondiente) y NO hace logout. Fallback: si no viene token, comportamiento actual. — commit `4a48a22`.
+- [x] **D5** — Draft de la solicitud en `sessionStorage` (precedente `proveedor-registro.service.ts`), restaurado al volver y limpiado al crear la OT. — commit `048f3c0`.
+- [x] **D6** — Tarjeta de un-tap en `solicitar-servicio-page`: al detectar perfil faltante muestra la dirección ya tipeada (editable) + `tipoCliente` B2C + ciudad de operación como default editable; un botón "Crear perfil de cliente y enviar solicitud" crea el perfil y reintenta `crearOt` automáticamente. Sin relleno manual, sin auto-creación silenciosa (el tap es el consentimiento). — commit `75360a2`.
+- [x] **D7** — `cliente/panel` admite TECNICO (coherente con el menú); si el usuario no tiene perfil cliente, estado honesto con CTA (no error crudo). Mismo tratamiento en `historial-equipos` si aplica. — commit `a771af0`.
+- [x] **D8** — Specs: draft (persistencia/restore/limpieza), un-tap (crear+reintentar+éxito), sesión sin logout, panel sin perfil. — verificación en este commit (`docs(odd): record dual-role cliente closure evidence`).
+
+## Evidencia de cierre (2026-10-27)
+- Frontend: `npm test -- --watch=false` → **77 archivos / 768 tests / 0 fallos** (baseline 76/749/0; +1 spec, +19 tests).
+- `npx tsc --noEmit -p tsconfig.app.json` → 0 errores.
+- `npx tsc --noEmit -p tsconfig.spec.json` → 0 errores.
+- `npm run lint` → solo los 8 errores pre-existentes (2 `no-explicit-any` en `maps-geocoder-cliente.spec.ts`, 6 `label-has-associated-control` en `agregar-perfil-page.html`).
+- Revisión de la API del backend verificada contra `ClienteApiResponse.conToken` / `TecnicoApiResponse` de `70da717` y `5af2c89`: la clave `token` es aditiva y se omite cuando es nula.
 
 ## Fuera de alcance
 - Auto-provisión del perfil cliente en `POST /api/ot` (Opción 2, decisión de negocio aparte).
