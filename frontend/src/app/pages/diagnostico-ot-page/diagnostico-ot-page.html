@@ -172,56 +172,21 @@
             }
           </div>
 
-          <!-- Chat Directo con el Técnico -->
-          <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[500px]">
+          <!-- Chat con el técnico: todavía no existe. Banner honesto, sin
+               formulario falso ni mensajes inventados. -->
+          <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 h-fit">
             <div class="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div class="w-9 h-9 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-300 flex items-center justify-center font-bold text-sm">
-                {{ orden.tecnicoNombre?.charAt(0) || 'T' }}
+              <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-sm">
+                <i class="pi pi-comments"></i>
               </div>
               <div class="min-w-0">
-                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{{ orden.tecnicoNombre || 'Buscando técnico…' }}</h4>
-                <span class="text-[11px] text-emerald-600 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> En Línea
-                </span>
+                <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">Chat con {{ orden.tecnicoNombre || 'el técnico por asignar' }}</h4>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">Próximamente</span>
               </div>
             </div>
-
-            <!-- Lista de Mensajes -->
-            <div class="flex-1 overflow-y-auto py-3 space-y-3 text-xs pr-1">
-              @for (msg of chatMensajes(); track $index) {
-                <div [class.text-right]="msg.emisor === 'CLIENTE'" [class.text-left]="msg.emisor === 'TECNICO'">
-                  <div
-                    class="inline-block p-3 rounded-2xl max-w-[85%] text-left"
-                    [class.bg-sky-600]="msg.emisor === 'CLIENTE'"
-                    [class.text-white]="msg.emisor === 'CLIENTE'"
-                    [class.bg-slate-100]="msg.emisor === 'TECNICO'"
-                    [class.dark:bg-slate-800]="msg.emisor === 'TECNICO'"
-                    [class.text-slate-800]="msg.emisor === 'TECNICO'"
-                    [class.dark:text-slate-200]="msg.emisor === 'TECNICO'"
-                  >
-                    <p class="leading-relaxed">{{ msg.texto }}</p>
-                    <span class="text-[10px] opacity-70 block mt-1 text-right">{{ msg.hora }}</span>
-                  </div>
-                </div>
-              }
-            </div>
-
-            <!-- Envío de Mensaje -->
-            <form (ngSubmit)="enviarMensaje()" class="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-2">
-              <input
-                type="text"
-                [formControl]="nuevoMensajeCtrl"
-                placeholder="Escribe al técnico..."
-                class="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs outline-none focus:ring-2 focus:ring-sky-500"
-              />
-              <button
-                type="submit"
-                [disabled]="nuevoMensajeCtrl.invalid"
-                class="w-9 h-9 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white flex items-center justify-center shrink-0"
-              >
-                <i class="pi pi-send text-sm"></i>
-              </button>
-            </form>
+            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Todavía no podés escribirle desde acá. Mientras tanto, coordiná los detalles del servicio por teléfono con quien te atienda.
+            </p>
           </div>
         </div>
       </div>

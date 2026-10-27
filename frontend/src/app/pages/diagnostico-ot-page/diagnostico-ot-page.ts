@@ -13,12 +13,6 @@ import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtResponse, Point, TarifaEstimadaResponse } from '../../core/models/common.models';
 
-interface ChatMensaje {
-  emisor: 'CLIENTE' | 'TECNICO';
-  texto: string;
-  hora: string;
-}
-
 @Component({
   selector: 'app-diagnostico-ot-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,7 +46,6 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
 
   readonly mostrarRechazo = signal<boolean>(false);
   readonly motivoRechazoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
-  readonly nuevoMensajeCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required] });
 
   /** Estimación de la tarifa de visita por distancia (solo lectura). */
   readonly estimacion = signal<TarifaEstimadaResponse | null>(null);
@@ -61,12 +54,6 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
   readonly totalServicio = computed<number>(
     () => (this.ot()?.presupuesto?.total || 0) + (this.estimacion()?.tarifa ?? 0)
   );
-
-  readonly chatMensajes = signal<ChatMensaje[]>([
-    { emisor: 'TECNICO', texto: 'Hola, ya realicé la revisión con manómetro. El capacitor está en 15uF cuando debe ser de 45uF. Adjunté el presupuesto formal.', hora: '10:14 AM' },
-    { emisor: 'CLIENTE', texto: 'Perfecto Juan, ¿el valor incluye la garantía de 90 días?', hora: '10:15 AM' },
-    { emisor: 'TECNICO', texto: 'Sí señor, incluye acta formal firmada y repuesto nuevo sellado.', hora: '10:16 AM' }
-  ]);
 
   ngOnInit(): void {
     this.cargaOtEstado = cargarOtDesdeRuta(
@@ -176,24 +163,5 @@ export class DiagnosticoOtPage implements OnInit, OnDestroy {
         avisarErrorAccion(this.toast, 'No se pudo rechazar el presupuesto', err);
       },
     });
-  }
-
-  enviarMensaje(): void {
-    if (this.nuevoMensajeCtrl.invalid) return;
-
-    const texto = this.nuevoMensajeCtrl.value;
-    const now = new Date();
-    const hora = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    this.chatMensajes.update(list => [...list, { emisor: 'CLIENTE', texto, hora }]);
-    this.nuevoMensajeCtrl.reset();
-
-    // Auto-respuesta simulada del técnico
-    setTimeout(() => {
-      this.chatMensajes.update(list => [
-        ...list,
-        { emisor: 'TECNICO', texto: 'Entendido, quedo atento a cualquier duda sobre el equipo.', hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-      ]);
-    }, 1200);
   }
 }

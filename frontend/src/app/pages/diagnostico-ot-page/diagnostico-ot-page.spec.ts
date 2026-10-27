@@ -91,23 +91,19 @@ describe('DiagnosticoOtPage', () => {
     expect(clientesApi.rechazarDiagnostico).not.toHaveBeenCalled();
   });
 
-  it('envía un mensaje al chat', () => {
+  it('reemplaza el chat falso por un banner no interactivo de "Próximamente"', () => {
     const { fixture } = setup();
-    const antes = fixture.componentInstance.chatMensajes().length;
-    fixture.componentInstance.nuevoMensajeCtrl.setValue('¿Cuánto tarda?');
+    fixture.detectChanges();
+    const html = fixture.nativeElement as HTMLElement;
 
-    fixture.componentInstance.enviarMensaje();
-
-    const mensajes = fixture.componentInstance.chatMensajes();
-    expect(mensajes.length).toBe(antes + 1);
-    expect(mensajes.at(-1)).toMatchObject({ emisor: 'CLIENTE', texto: '¿Cuánto tarda?' });
-  });
-
-  it('no envía mensajes vacíos', () => {
-    const { fixture } = setup();
-    const antes = fixture.componentInstance.chatMensajes().length;
-    fixture.componentInstance.enviarMensaje();
-    expect(fixture.componentInstance.chatMensajes().length).toBe(antes);
+    expect(html.textContent).toContain('Chat con Juan');
+    expect(html.textContent).toContain('Próximamente');
+    expect(html.textContent).toContain('Todavía no podés escribirle desde acá');
+    // Sin formulario, sin input y sin burbujas de conversación inventadas.
+    expect(html.querySelector('form')).toBeNull();
+    expect(html.querySelector('input[type="text"]')).toBeNull();
+    expect(html.textContent).not.toContain('En Línea');
+    expect(html.textContent).not.toContain('garantía de 90 días');
   });
 
   it('abre el stream de cambios de estado de la OT cargada', () => {
@@ -189,7 +185,7 @@ describe('DiagnosticoOtPage', () => {
       fixture.detectChanges();
       const texto = fixture.nativeElement.textContent as string;
       expect(texto).toContain('Revisión en sitio por un técnico por asignar');
-      expect(texto).toContain('Buscando técnico…');
+      expect(texto).toContain('Chat con el técnico por asignar');
       expect(texto).not.toContain('el técnico asignado');
     });
   });
