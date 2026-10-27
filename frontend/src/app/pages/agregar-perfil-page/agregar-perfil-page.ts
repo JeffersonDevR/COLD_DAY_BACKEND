@@ -8,6 +8,8 @@ import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { CategoriaServicio, TipoCliente } from '../../core/models/common.models';
 import { CertificacionApi } from '../../core/models/backend.dto';
+import { CIUDAD_OPERACION } from '../../core/service/mapa-config.service';
+import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 
 /** Perfiles que un usuario ya autenticado puede adquirir como segundo rol. */
 export type TipoPerfilAdquirible = 'TECNICO' | 'CLIENTE';
@@ -46,6 +48,7 @@ export class AgregarPerfilPage {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly draftService = inject(SolicitudDraftService);
 
   /** Pantalla que pidió el alta del perfil; `null` cae al panel del perfil creado. */
   private readonly returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
@@ -81,9 +84,17 @@ export class AgregarPerfilPage {
       validators: [Validators.required],
     }),
     calle: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    ciudad: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    ciudad: new FormControl(CIUDAD_OPERACION, { nonNullable: true, validators: [Validators.required] }),
     barrio: new FormControl('', { nonNullable: true }),
   });
+
+  constructor() {
+    // Si el alta nace de una solicitud en curso, la dirección ya está tipeada.
+    const draft = this.draftService.leer();
+    if (draft?.direccion) {
+      this.formCliente.patchValue({ calle: draft.direccion });
+    }
+  }
 
   elegir(tipo: TipoPerfilAdquirible): void {
     this.seleccion.set(tipo);
@@ -127,6 +138,7 @@ export class AgregarPerfilPage {
       return;
     }
     const valor = this.formCliente.getRawValue();
+    const ubicacion = this.draftService.leer()?.coordenadas ?? undefined;
     this.cargando.set(true);
     this.clientesApi
       .crearMiPerfil({
@@ -134,6 +146,7 @@ export class AgregarPerfilPage {
         calle: valor.calle.trim(),
         ciudad: valor.ciudad.trim(),
         barrio: valor.barrio.trim() || undefined,
+        ...(ubicacion ? { ubicacion } : {}),
       })
       .subscribe({
         next: (perfil) => this.completarAdquisicion('CLIENTE', perfil.token),

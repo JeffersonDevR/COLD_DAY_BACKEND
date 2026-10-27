@@ -11,6 +11,7 @@ import { CategoriaServicio, Point } from '../../core/models/common.models';
 import { MapsApi } from '../../core/service/maps-api';
 import { SugerenciaApiResponse } from '../../core/models/backend.dto';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
+import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 
@@ -42,6 +43,7 @@ export class SolicitarServicioPage {
   private readonly mapsApi = inject(MapsApi);
   private readonly destroyRef = inject(DestroyRef);
   private readonly mapaConfig = inject(MapaConfigService);
+  private readonly draftService = inject(SolicitudDraftService);
 
   readonly categoriaActual = signal<CategoriaServicio>('AIRE_ACONDICIONADO');
   readonly loading = signal<boolean>(false);
@@ -75,6 +77,12 @@ export class SolicitarServicioPage {
   }
 
   constructor() {
+    // Volver desde el alta del perfil (o un F5) no puede costar re-tipear todo.
+    this.restaurarBorrador();
+    this.solicitudForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.guardarBorrador());
+
     // El autocompletado solo se dispara con lo que ESCRIBE el usuario. Los
     // cambios programáticos de `direccion` (geocodificación directa/inversa) se
     // aplican con `emitEvent: false` para no reabrir el menú de sugerencias.
@@ -110,6 +118,7 @@ export class SolicitarServicioPage {
 
   setCategoria(cat: CategoriaServicio): void {
     this.categoriaActual.set(cat);
+    this.guardarBorrador();
   }
 
   /**
@@ -126,6 +135,7 @@ export class SolicitarServicioPage {
       next: (d) => {
         this.buscandoDireccion.set(false);
         this.solicitudForm.patchValue({ direccion: d.direccionFormateada }, { emitEvent: false });
+        this.guardarBorrador();
       },
       error: () => {
         this.buscandoDireccion.set(false);
@@ -145,6 +155,7 @@ export class SolicitarServicioPage {
           { direccion: direccion.direccionFormateada, latitud: direccion.latitud, longitud: direccion.longitud },
           { emitEvent: false },
         );
+        this.guardarBorrador();
       },
       error: () => {
         this.buscandoDireccion.set(false);
@@ -177,6 +188,7 @@ export class SolicitarServicioPage {
       return;
     }
 
+    this.guardarBorrador();
     this.loading.set(true);
     this.faltoPerfilCliente.set(false);
     this.sugerencias.set([]);
@@ -199,6 +211,8 @@ export class SolicitarServicioPage {
       .subscribe({
         next: (nuevaOt) => {
           this.loading.set(false);
+          // La solicitud ya existe: el borrador cumplió su función.
+          this.draftService.limpiar();
           this.toast.success('Solicitud Creada', `OT ${nuevaOt.codigo || 'Sin código'} transmitida por broadcast (${this.mapaConfig.radioInicialKm()} km)`);
           const roles = this.authService.userRoles();
           if (roles.has('TECNICO') && !roles.has('CLIENTE')) {
@@ -218,5 +232,39 @@ export class SolicitarServicioPage {
           avisarErrorAccion(this.toast, 'No se pudo crear la solicitud', err);
         }
       });
+  }
+
+  /** Persiste el borrador con lo que el usuario ya cargó (form + mapa + categoría). */
+  private guardarBorrador(): void {
+    const form = this.solicitudForm.getRawValue();
+    this.draftService.guardar({
+      categoria: this.categoriaActual(),
+      descripcion: form.descripcionFalla ?? '',
+      direccion: form.direccion ?? '',
+      coordenadas: this.coordenadas(),
+      evidenciaUrl: form.evidenciaUrl ?? '',
+      actualizadoEn: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Restaura el borrador sin reabrir el autocompletado (`emitEvent: false`):
+   * el usuario retoma exactamente el formulario que dejó.
+   */
+  private restaurarBorrador(): void {
+    const draft = this.draftService.leer();
+    if (!draft) return;
+    this.categoriaActual.set(draft.categoria);
+    this.coordenadas.set(draft.coordenadas);
+    this.solicitudForm.patchValue(
+      {
+        descripcionFalla: draft.descripcion,
+        direccion: draft.direccion,
+        latitud: draft.coordenadas?.latitud ?? null,
+        longitud: draft.coordenadas?.longitud ?? null,
+        evidenciaUrl: draft.evidenciaUrl,
+      },
+      { emitEvent: false },
+    );
   }
 }

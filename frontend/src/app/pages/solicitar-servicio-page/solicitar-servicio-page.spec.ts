@@ -7,6 +7,7 @@ import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { MapsApi } from '../../core/service/maps-api';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
+import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse } from '../../core/models/common.models';
 
@@ -65,6 +66,11 @@ function prepararFormularioListo(fixture: { componentInstance: SolicitarServicio
 }
 
 describe('SolicitarServicioPage', () => {
+  beforeEach(() => {
+    // El borrador es por pestaña: cada spec arranca sin residuos del anterior.
+    window.sessionStorage.clear();
+  });
+
   it('arranca sin dirección ni coordenadas preseleccionadas', () => {
     const { fixture } = setup();
     const raw = fixture.componentInstance.solicitudForm.getRawValue();
@@ -117,6 +123,53 @@ describe('SolicitarServicioPage', () => {
     fixture.componentInstance.usarFotoDemo();
     expect(fixture.componentInstance.solicitudForm.controls.evidenciaUrl.value).toContain('http');
     expect(toast.info).toHaveBeenCalled();
+  });
+
+  it('guarda el borrador y lo restaura al volver al formulario', () => {
+    const { fixture } = setup();
+    fixture.componentInstance.alFijarEnMapa({ latitud: 7.9, longitud: -72.49 });
+    fixture.componentInstance.setCategoria('ELECTRICIDAD');
+    fixture.componentInstance.solicitudForm.controls.descripcionFalla.setValue('El tablero hace chispas al encender.');
+    fixture.componentInstance.solicitudForm.controls.evidenciaUrl.setValue('https://ejemplo.com/foto.jpg');
+
+    expect(TestBed.inject(SolicitudDraftService).leer()).toMatchObject({
+      categoria: 'ELECTRICIDAD',
+      descripcion: 'El tablero hace chispas al encender.',
+      direccion: 'Mi ubicación GPS',
+      coordenadas: { latitud: 7.9, longitud: -72.49 },
+      evidenciaUrl: 'https://ejemplo.com/foto.jpg',
+    });
+
+    fixture.destroy();
+    const reabierto = TestBed.createComponent(SolicitarServicioPage);
+    reabierto.detectChanges();
+    const page = reabierto.componentInstance;
+
+    expect(page.categoriaActual()).toBe('ELECTRICIDAD');
+    expect(page.coordenadas()).toEqual({ latitud: 7.9, longitud: -72.49 });
+    expect(page.solicitudForm.controls.direccion.value).toBe('Mi ubicación GPS');
+    expect(page.solicitudForm.controls.descripcionFalla.value).toBe('El tablero hace chispas al encender.');
+    expect(page.solicitudForm.controls.evidenciaUrl.value).toBe('https://ejemplo.com/foto.jpg');
+  });
+
+  it('conserva el borrador si la creación de la OT falla', () => {
+    const { fixture, clientesApi } = setup();
+    clientesApi.crearOt.mockReturnValue(throwError(() => new ApiHttpError('500', 500)));
+    prepararFormularioListo(fixture);
+
+    fixture.componentInstance.onSubmit();
+
+    expect(TestBed.inject(SolicitudDraftService).leer()).not.toBeNull();
+  });
+
+  it('limpia el borrador recién cuando la OT se crea', () => {
+    const { fixture } = setup();
+    prepararFormularioListo(fixture);
+    expect(TestBed.inject(SolicitudDraftService).leer()).not.toBeNull();
+
+    fixture.componentInstance.onSubmit();
+
+    expect(TestBed.inject(SolicitudDraftService).leer()).toBeNull();
   });
 
   it('crea la OT con la ubicación fijada y navega al seguimiento', () => {

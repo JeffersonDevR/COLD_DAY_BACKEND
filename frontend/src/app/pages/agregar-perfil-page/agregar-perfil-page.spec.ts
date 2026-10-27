@@ -7,7 +7,8 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ClientesApi } from '../../core/service/clientes-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { Rol } from '../../core/models/common.models';
+import { Point, Rol } from '../../core/models/common.models';
+import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 
 interface Mocks {
   auth: {
@@ -21,9 +22,15 @@ interface Mocks {
   toast: { success: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> };
 }
 
+interface DraftStub {
+  direccion: string;
+  coordenadas: Point | null;
+}
+
 function setup(
   roles: Rol[],
   returnUrl?: string,
+  draft: DraftStub | null = null,
 ): { fixture: ComponentFixture<AgregarPerfilPage>; mocks: Mocks; navigateByUrl: ReturnType<typeof vi.fn> } {
   const mocks: Mocks = {
     auth: {
@@ -53,6 +60,7 @@ function setup(
       { provide: TecnicosApi, useValue: mocks.tecnicosApi },
       { provide: ClientesApi, useValue: mocks.clientesApi },
       { provide: ToastService, useValue: mocks.toast },
+      { provide: SolicitudDraftService, useValue: { leer: vi.fn(() => draft) } },
     ],
   });
   const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
@@ -116,6 +124,41 @@ describe('AgregarPerfilPage', () => {
     expect(page.sesionActualizada()).toBe(true);
     fixture.detectChanges();
     expect(texto(fixture)).toContain('Volvé a iniciar sesión');
+  });
+
+  it('prellena la dirección y la ciudad con el borrador de la solicitud en curso', () => {
+    const { fixture } = setup(['TECNICO'], undefined, {
+      direccion: 'Calle 15 # 3E-28, Caobos',
+      coordenadas: { latitud: 7.9, longitud: -72.49 },
+    });
+
+    expect(fixture.componentInstance.formCliente.controls.calle.value).toBe('Calle 15 # 3E-28, Caobos');
+    expect(fixture.componentInstance.formCliente.controls.ciudad.value).toBe('Cúcuta');
+  });
+
+  it('envía la ubicación del borrador cuando existe', () => {
+    const { fixture, mocks } = setup(['TECNICO'], undefined, {
+      direccion: 'Calle 15 # 3E-28, Caobos',
+      coordenadas: { latitud: 7.9, longitud: -72.49 },
+    });
+    const page = fixture.componentInstance;
+    page.elegir('CLIENTE');
+    page.formCliente.setValue({
+      tipoCliente: 'B2C',
+      calle: 'Calle 15 # 3E-28, Caobos',
+      ciudad: 'Cúcuta',
+      barrio: '',
+    });
+
+    page.enviarCliente();
+
+    expect(mocks.clientesApi.crearMiPerfil).toHaveBeenCalledWith(
+      expect.objectContaining({
+        calle: 'Calle 15 # 3E-28, Caobos',
+        ciudad: 'Cúcuta',
+        ubicacion: { latitud: 7.9, longitud: -72.49 },
+      }),
+    );
   });
 
   it('no envía el perfil de técnico sin identificación ni especialidades', () => {
