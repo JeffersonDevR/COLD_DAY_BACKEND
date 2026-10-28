@@ -16,6 +16,7 @@ import {authInterceptor} from './core/interceptos/auth.interceptor';
 import {errorInterceptor} from './core/interceptos/error.interceptor';
 import {initializeAppearance} from './core/service/appearance';
 import {MapaConfigService} from './core/service/mapa-config.service';
+import {provideColombianLocale} from './core/i18n/locale';
 
 /**
  * Preset Aura con la paleta corporativa de COLD DAY (royal-blue, sky-600 como
@@ -42,6 +43,8 @@ const ColdDayPreset = definePreset(Aura, {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Built-in pipes (date, number) format in Colombian Spanish.
+    ...provideColombianLocale(),
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     // Limpieza de una sola vez: descarta la preferencia que dejó el
