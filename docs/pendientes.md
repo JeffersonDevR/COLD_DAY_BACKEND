@@ -92,7 +92,7 @@ Cerrado en main (merges 4ae81d5 PR #62 backend + a8e5a04 PR #63 frontend, apilad
 - [ ] **B6** (`S/M`) mensajes crudos del backend en 12+ sitios: adoptar `mensajeErrorAccion` (baseline del fix de `errores-silenciosos-acciones`). Sitios: `seguimiento:347,367`, `panel-tecnico:155`, `pago-acta:252`, `calificar:65`, `solicitar:193`, `login:55`, `registro:196`, `mi-perfil:126`, `agregar-perfil:144`, `selector-ubicacion:128`, `solicitudes-proveedor:143`.
 - [ ] **B7** (`S`) carga de OT en silencio: `ot-carga.ts:41` sin error → 5 páginas en blanco. Estado de error con reintento (mismo patrón de la sección Repuestos).
 - [ ] **B8** (`S`, web only) cargas admin silenciosas ×6 (dashboard, monitoreo, consignaciones, validación, disputas, proveedores): pasa por `next:` sin error.
-- [ ] **B9** (`S`, decisión del usuario) `LOCALE_ID` es-CO: afecta todas las fechas de la app.
+- [x] **B9** (`S`) `LOCALE_ID` es-CO: adoptado (`1908b5f`). Fechas y números usan CLDR es-CO (`28/10/26`, `2:05 p.m.`, `3,5 km`); el dinero ya formateaba con `toLocaleString('es-CO')`. Nota: es-CO no es 24 h ni año de 4 dígitos; eso requiere formato explícito.
 - [ ] **B10** (`S`) polls sin visibilidad gate: ubicación 15 s (`seguimiento`) y poll de OT (`ot-api.ts:139` enmascara 404 **y 401/5xx**): batería en móvil.
 - [ ] **B11** (`S`) 401 doble aviso (interceptor to + tira la página). Dejar un solo toast.
 - [ ] **B12** (`M`) **"Mis equipos" renovación funcional**: hoy `historial-equipos-page` es **hardcoded con datos imaginarios en ambos modos**. Fuente real existe: `ClientesApi.getOtsPorCliente` → derivar equipo por categoría + descripción de falla + última OT (fecha, técnico, estado, garantía/acta) + link al seguimiento. Sin backend nuevo.
