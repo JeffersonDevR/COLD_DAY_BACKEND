@@ -88,6 +88,15 @@ public class SecurityConfig {
                                 "/api/tecnicos", "/api/clientes", "/api/proveedores").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/tecnicos/*/validacion")
                         .hasRole("ADMINISTRADOR")
+                        // Admin activity stream: same ticket-based contract as
+                        // the other EventSource channels. The ticket proves
+                        // identity AND carries the roles, so the ADMINISTRADOR
+                        // check lives in the controller (the JWT filter cannot
+                        // see a ticket). This rule MUST stay before
+                        // /api/admin/** so the broad admin rule does not reject
+                        // the stream; every other /api/admin path stays
+                        // admin-only.
+                        .requestMatchers(HttpMethod.GET, "/api/admin/stream").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                         // SSE stream: EventSource cannot send the Authorization
                         // header, so this single path is opened and authenticated
