@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PanelRedirectComponent } from './panel-redirect';
+import { CLAVE_PANEL_PREFERIDO } from './panel-resolver';
 import { AuthService } from '../service/auth.service';
 import { Rol, UsuarioResponse } from '../models/common.models';
 
@@ -23,6 +24,8 @@ function setup(user: UsuarioResponse | null, roles?: Rol[]) {
 }
 
 describe('PanelRedirectComponent', () => {
+  beforeEach(() => window.localStorage.clear());
+
   it('redirige al login sin usuario', () => {
     expect(setup(null).navigate).toHaveBeenCalledWith(['/login']);
   });
@@ -45,6 +48,18 @@ describe('PanelRedirectComponent', () => {
 
   it('con doble rol usa el panel del rol primario', () => {
     expect(setup(usuario('CLIENTE'), ['CLIENTE', 'TECNICO']).navigate).toHaveBeenCalledWith(['/cliente/panel']);
+  });
+
+  it('con doble rol respeta el último panel visitado por encima del rol primario', () => {
+    window.localStorage.setItem(CLAVE_PANEL_PREFERIDO, '/tecnico/panel');
+
+    expect(setup(usuario('CLIENTE'), ['CLIENTE', 'TECNICO']).navigate).toHaveBeenCalledWith(['/tecnico/panel']);
+  });
+
+  it('ignora la preferencia si los roles actuales ya no la permiten', () => {
+    window.localStorage.setItem(CLAVE_PANEL_PREFERIDO, '/admin/dashboard');
+
+    expect(setup(usuario('CLIENTE'), ['CLIENTE']).navigate).toHaveBeenCalledWith(['/cliente/panel']);
   });
 
   it('con rol primario no enrutable cae al primer rol enrutable del conjunto', () => {

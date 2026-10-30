@@ -7,6 +7,7 @@ import { Menu } from 'primeng/menu';
 import { LayoutService } from '../../core/service/layout.service';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
+import { resolverPanel } from '../../core/navihationError/panel-resolver';
 
 @Component({
   selector: 'app-topbar',
@@ -47,7 +48,7 @@ export class AppTopbar {
     // claims, y esta fila tampoco puede quedar en blanco.
     { label: this.usuario()?.correo || this.usuario()?.nombre || 'Usuario', disabled: true },
     { separator: true },
-    { label: 'Ir a Mi Panel', icon: 'pi pi-home', command: () => this.router.navigate([this.auth.userRoles().has('TECNICO') ? '/tecnico/panel' : '/panel']) },
+    { label: 'Ir a Mi Panel', icon: 'pi pi-home', command: () => this.router.navigate([this.rutaMiPanel()]) },
     { label: 'Cerrar Sesión', icon: 'pi pi-sign-out', command: () => this.cerrarSesion() },
   ]);
 
@@ -55,5 +56,14 @@ export class AppTopbar {
     this.auth.logout();
     this.toast.success('Sesión Finalizada', 'Has cerrado sesión en COLD DAY S.A.S.');
     this.router.navigate(['/login']);
+  }
+
+  /**
+   * Destino de "Mi Panel": el mismo resolutor que `/panel`. Un usuario
+   * dual-role vuelve al último panel que usó, no al de su rol primario.
+   */
+  private rutaMiPanel(): string {
+    const usuario = this.usuario();
+    return usuario ? resolverPanel(usuario.rol, this.auth.userRoles()) : '/';
   }
 }

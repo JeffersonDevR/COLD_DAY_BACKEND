@@ -12,6 +12,7 @@ import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
+import { CLAVE_PANEL_PREFERIDO } from '../../core/navihationError/panel-resolver';
 
 /** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
 function cambiarPestana(estado: 'visible' | 'hidden'): void {
@@ -123,6 +124,14 @@ function botonRadar(fixture: { nativeElement: HTMLElement }, etiqueta: string): 
 describe('PanelTecnicoPage', () => {
   beforeEach(() => instalarEventSource());
   afterEach(() => quitarEventSource());
+
+  it('recuerda el panel del técnico como último panel visitado', () => {
+    window.localStorage.clear();
+
+    setup();
+
+    expect(window.localStorage.getItem(CLAVE_PANEL_PREFERIDO)).toBe('/tecnico/panel');
+  });
 
   it('carga el técnico y filtra las OTs en curso', () => {
     const { fixture, tecnicosApi } = setup();

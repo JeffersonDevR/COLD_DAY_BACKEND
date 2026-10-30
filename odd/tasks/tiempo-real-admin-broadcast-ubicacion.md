@@ -28,7 +28,7 @@ Cerrar los 4 pendientes operativos elegidos el 2026-10-30: (1) panel admin en ti
 
 ### B. Broadcast y navegacion dual-role
 - [x] **B1** — copy del radar/panel tecnico explicando broadcast ("tu oferta se envia a los tecnicos cercanos; el primero que acepta la toma"). Documentar "solicitud directa" como fuera de alcance en `docs/pendientes.md`. Sin cambio funcional de asignacion.
-- [ ] **B2** — resolver unico de panel (`PanelResolver`): preferencia persistida (`coldday.panel.preferido`) escrita al visitar un panel, usada por `panel-redirect` y por "Mi Panel" del topbar; fallback rol primario → primer rol con panel. Specs de los 3 casos (preferencia valida, invalida, sin preferencia).
+- [x] **B2** — resolver unico de panel (`PanelResolver`): preferencia persistida (`coldday.panel.preferido`) escrita al visitar un panel, usada por `panel-redirect` y por "Mi Panel" del topbar; fallback rol primario → primer rol con panel. Specs de los 3 casos (preferencia valida, invalida, sin preferencia).
 
 ### C. Ruta real por calles (costo medible)
 - [ ] **C1 (backend)** — `POST /api/maps/ruta` {origen, destino} → {distanciaKm, duracionMin, polyline}: `MapsPort`+adapter sobre Directions API, cache en memoria (TTL 60 s, max 200 entradas, clave por coords redondeadas), sin llamada si Maps no esta disponible (fallback nulo, como `distanciaOpcional`). Tests de parseo, cache hit y caida.

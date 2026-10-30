@@ -13,6 +13,7 @@ import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { EstadoOperativo, OtResponse, TecnicoResponse } from '../../core/models/common.models';
+import { recordarPanel } from '../../core/navihationError/panel-resolver';
 import { environment } from '../../core/environment/environment';
 
 /**
@@ -80,6 +81,9 @@ export class PanelTecnicoPage {
   );
 
   constructor() {
+    // Último panel visitado: `/panel` y "Mi Panel" lo prefieren mientras los
+    // roles del usuario sigan habilitándolo.
+    recordarPanel('/tecnico/panel');
     // Perfil y OTs se cargan por separado: si falla el perfil, las OTs igual
     // se piden y la tarjeta puede reflejar el error en vez de quedar muda.
     cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));

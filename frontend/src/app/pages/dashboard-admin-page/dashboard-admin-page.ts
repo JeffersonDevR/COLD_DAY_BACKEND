@@ -4,6 +4,7 @@ import { catchError, finalize, Observable, of, tap } from 'rxjs';
 import { AdminApi } from '../../core/service/admin-api';
 import { refrescarConActividadAdmin } from '../../core/service/admin-actividad-refresco';
 import { SseService } from '../../core/service/sse.service';
+import { recordarPanel } from '../../core/navihationError/panel-resolver';
 import { CategoriaServicio, MetricasAdminResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
 import { CargaError } from '../../shared/carga-error/carga-error';
@@ -64,6 +65,8 @@ export class DashboardAdminPage implements OnInit {
   );
 
   ngOnInit(): void {
+    // Último panel visitado: CONTABLE y ADMINISTRADOR comparten esta torre.
+    recordarPanel('/admin/dashboard');
     this.cargarMetricas();
     // Cualquier actividad administrativa cambia algún número de la torre.
     refrescarConActividadAdmin({
