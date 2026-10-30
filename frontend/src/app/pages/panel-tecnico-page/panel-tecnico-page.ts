@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
-import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
+import { TecnicoPresenciaService } from '../../core/service/tecnico-presencia.service';
 import { SseService } from '../../core/service/sse.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { cargarTecnicoAutenticado } from '../../core/service/tecnico-sesion';
@@ -34,7 +34,7 @@ export class PanelTecnicoPage {
   private readonly router = inject(Router);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
-  private readonly tracking = inject(TecnicoTrackingService);
+  private readonly presencia = inject(TecnicoPresenciaService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sse = inject(SseService, { optional: true });
   private readonly apiConfig = inject(ApiConfig, { optional: true });
@@ -60,21 +60,20 @@ export class PanelTecnicoPage {
   /** El radar solo lista técnicos DISPONIBLE; OCUPADO también queda excluido. */
   readonly disponibilidadAprobada = computed(() => this.tecnico()?.estadoOperativo === 'DISPONIBLE');
   /**
-   * Estado LOCAL del tracking: activo y sin un motivo de fallo. Es lo único que
-   * decide si en este momento está saliendo posición; la posición guardada en el
-   * servidor (`ubicacionGuardada`) es un hecho distinto y no implica reporte.
+   * Estado de presencia tal como lo decidió `TecnicoPresenciaService`: la
+   * tarjeta describe la política, no la recalcula.
    */
-  readonly ubicacionReportando = computed(() => this.tracking.activo() && !this.tracking.motivo());
-  readonly ubicacionMotivo = computed(() => this.tracking.motivo());
+  readonly modoUbicacion = computed(() => this.presencia.modo());
+  readonly compartirUbicacion = computed(() => this.presencia.compartirUbicacion());
+  /** Con una OT en movimiento el reporte se enciende solo y el switch no se toca. */
+  readonly switchBloqueado = computed(() => this.presencia.switchBloqueado());
+  /** El reporte está saliendo ahora (política encendida + GPS sin fallo). */
+  readonly ubicacionReportando = computed(() => this.presencia.reportando());
+  readonly ubicacionMotivo = computed(() => this.presencia.motivo());
   /** Última posición que el servidor tiene guardada del técnico. */
   readonly ubicacionGuardada = computed(() => this.tecnico()?.ubicacionActual ?? null);
   /** Instante de esa última posición, tal como lo emite el backend. */
   readonly ultimaUbicacionEn = computed(() => this.tecnico()?.ubicacionActualizadaEn ?? null);
-  /**
-   * Mientras el reporte ya está vivo no se ofrece volver a activarlo; la tarjeta
-   * muestra en su lugar la acción de detenerlo.
-   */
-  readonly puedeActivarUbicacion = computed(() => !this.ubicacionReportando());
   /** Los tres requisitos locales se cumplen. */
   readonly radarVisible = computed(
     () => this.validacionAprobada() && this.disponibilidadAprobada() && this.ubicacionReportando(),
@@ -84,6 +83,9 @@ export class PanelTecnicoPage {
     // Último panel visitado: `/panel` y "Mi Panel" lo prefieren mientras los
     // roles del usuario sigan habilitándolo.
     recordarPanel('/tecnico/panel');
+    // Restaura la preferencia persistida antes de saber si hay una OT en curso:
+    // si el técnico dejó el switch encendido, el reporte arranca al abrir el panel.
+    this.presencia.sincronizarOts([]);
     // Perfil y OTs se cargan por separado: si falla el perfil, las OTs igual
     // se piden y la tarjeta puede reflejar el error en vez de quedar muda.
     cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => this.tecnico.set(tecnico));
@@ -138,11 +140,16 @@ export class PanelTecnicoPage {
         this.misOtsEnCurso.set(
           ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado))
         );
+        // La política decide con esta lista si el reporte va encendido solo:
+        // una OT en movimiento manda sobre el switch.
+        this.presencia.sincronizarOts(ots);
       },
       error: () => {
         if (!inicial) return;
         this.misOtsEnCurso.set([]);
         this.otsError.set(true);
+        // Sin datos no se inventa una OT activa: el switch restaurado gobierna.
+        this.presencia.sincronizarOts([]);
       },
     });
   }
@@ -176,34 +183,39 @@ export class PanelTecnicoPage {
   }
 
   /**
-   * Arranca el reporte de ubicación desde el panel. El servicio es un singleton
-   * de root y NO se detiene al navegar: el técnico quiere seguir visible en el
-   * radar mientras mira ofertas o ejecuta un servicio.
+   * Switch único de visibilidad para el técnico DISPONIBLE. No toca el GPS por
+   * su cuenta: la política decide y el watch sigue con su gate de pestaña.
    *
-   * `motivo()` solo se setea de forma sincrónica cuando el navegador no soporta
+   * `motivo` puede aparecer de forma sincrónica si el navegador no soporta
    * geolocalización; la denegación del permiso llega por el watch de forma
    * asíncrona y ya la explica la tarjeta, así que no se toast-ea aquí.
    */
-  activarUbicacion(): void {
-    this.tracking.iniciar();
-    const motivo = this.tracking.motivo();
-    if (motivo) {
-      this.toast.error('No se pudo activar la ubicación', motivo);
+  cambiarCompartirUbicacion(event: Event): void {
+    if (this.switchBloqueado()) return;
+    const encender = (event.target as HTMLInputElement).checked;
+    if (encender) {
+      this.presencia.activar();
+      const motivo = this.presencia.motivo();
+      if (motivo) {
+        this.toast.error('No se pudo activar la ubicación', motivo);
+        return;
+      }
+      this.toast.info(
+        'Ubicación activada',
+        'Los clientes pueden verte en el radar mientras reportes tu posición.',
+      );
       return;
     }
-    this.toast.info(
-      'Ubicación activada',
-      'Los clientes pueden verte en el radar mientras reportes tu posición.',
-    );
-  }
-
-  /** Parada explícita pedida por el técnico desde el panel. */
-  detenerUbicacion(): void {
-    this.tracking.detener();
+    this.presencia.desactivar();
     this.toast.info(
       'Ubicación desactivada',
       'Ya no aparecerás en el radar de clientes hasta que la vuelvas a activar.',
     );
+  }
+
+  /** Reintento explícito tras un fallo del GPS (permiso denegado, timeout). */
+  reintentarUbicacion(): void {
+    this.presencia.reintentar();
   }
 
   /** Fecha legible de la última posición conocida; vacío si nunca reportó. */

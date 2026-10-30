@@ -13,6 +13,7 @@ import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { OtResponse, TecnicoResponse } from '../../core/models/common.models';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { CLAVE_PANEL_PREFERIDO } from '../../core/navihationError/panel-resolver';
+import { CLAVE_COMPARTIR_UBICACION } from '../../core/service/tecnico-presencia.service';
 
 /** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
 function cambiarPestana(estado: 'visible' | 'hidden'): void {
@@ -121,9 +122,26 @@ function botonRadar(fixture: { nativeElement: HTMLElement }, etiqueta: string): 
   return botones.find((b) => b.textContent?.trim() === etiqueta);
 }
 
+/** Switch único de visibilidad de la tarjeta de radar. */
+function switchUbicacion(fixture: { nativeElement: HTMLElement }): HTMLInputElement {
+  return fixture.nativeElement.querySelector<HTMLInputElement>('input[role="switch"]') as HTMLInputElement;
+}
+
+/** Simula el gesto del técnico sobre el switch (cambia el check y avisa). */
+function alternarSwitch(switchInput: HTMLInputElement, encender: boolean): void {
+  switchInput.checked = encender;
+  switchInput.dispatchEvent(new Event('change'));
+}
+
 describe('PanelTecnicoPage', () => {
-  beforeEach(() => instalarEventSource());
-  afterEach(() => quitarEventSource());
+  beforeEach(() => {
+    instalarEventSource();
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    quitarEventSource();
+    window.localStorage.clear();
+  });
 
   it('recuerda el panel del técnico como último panel visitado', () => {
     window.localStorage.clear();
@@ -266,6 +284,7 @@ describe('PanelTecnicoPage', () => {
   });
 
   it('la tarjeta reporta la ubicación no reportada y su motivo', () => {
+    window.localStorage.setItem(CLAVE_COMPARTIR_UBICACION, 'true');
     const { fixture } = setup({
       tecnico: tecnicoCon({ estadoValidacion: 'APROBADO' }),
       trackingActivo: false,
@@ -276,6 +295,7 @@ describe('PanelTecnicoPage', () => {
   });
 
   it('la tarjeta muestra el estado positivo cuando todo está en orden', () => {
+    window.localStorage.setItem(CLAVE_COMPARTIR_UBICACION, 'true');
     const { fixture } = setup({
       tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
       trackingActivo: true,
@@ -285,59 +305,127 @@ describe('PanelTecnicoPage', () => {
     expect(texto).toContain('Los clientes envían su solicitud a los técnicos cercanos; el primero que acepta se la lleva');
   });
 
-  it('activa el reporte de ubicación en vivo', () => {
-    const { fixture, tracking, toast } = setup({
-      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
-    });
-    const boton = botonRadar(fixture, 'Activar ubicación');
-    expect(boton).toBeDefined();
+  describe('switch de ubicación', () => {
+    it('arranca apagado y lo dice sin ambigüedad', () => {
+      const { fixture, tracking } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+        ots: [],
+      });
 
-    boton?.click();
-
-    expect(tracking.iniciar).toHaveBeenCalled();
-    expect(toast.info).toHaveBeenCalledWith(
-      'Ubicación activada',
-      'Los clientes pueden verte en el radar mientras reportes tu posición.',
-    );
-  });
-
-  it('detiene el reporte de ubicación en vivo', () => {
-    const { fixture, tracking, toast } = setup({
-      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
-      trackingActivo: true,
+      expect(switchUbicacion(fixture).checked).toBe(false);
+      expect(fixture.nativeElement.textContent).toContain('Ubicación apagada: no aparecerás en las ofertas');
+      expect(tracking.iniciar).not.toHaveBeenCalled();
     });
 
-    botonRadar(fixture, 'Detener')?.click();
+    it('enciende el reporte desde el switch y persiste la preferencia', () => {
+      const { fixture, tracking, toast } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+        ots: [],
+      });
 
-    expect(tracking.detener).toHaveBeenCalled();
-    expect(toast.info).toHaveBeenCalledWith(
-      'Ubicación desactivada',
-      'Ya no aparecerás en el radar de clientes hasta que la vuelvas a activar.',
-    );
-  });
+      alternarSwitch(switchUbicacion(fixture), true);
 
-  it('ofrece reintentar cuando el permiso fue denegado', () => {
-    const { fixture, tracking } = setup({
-      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO' }),
-      trackingMotivo: 'Permiso de ubicación denegado. Habilítalo en el navegador para continuar.',
+      expect(tracking.iniciar).toHaveBeenCalled();
+      expect(toast.info).toHaveBeenCalledWith(
+        'Ubicación activada',
+        'Los clientes pueden verte en el radar mientras reportes tu posición.',
+      );
+      expect(window.localStorage.getItem(CLAVE_COMPARTIR_UBICACION)).toBe('true');
     });
-    const texto = fixture.nativeElement.textContent as string;
-    expect(texto).toContain('Permiso de ubicación denegado');
 
-    botonRadar(fixture, 'Reintentar')?.click();
+    it('apaga el reporte al destildar el switch', () => {
+      window.localStorage.setItem(CLAVE_COMPARTIR_UBICACION, 'true');
+      const { fixture, tracking, toast } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+        ots: [],
+        trackingActivo: true,
+      });
 
-    expect(tracking.iniciar).toHaveBeenCalled();
-  });
+      alternarSwitch(switchUbicacion(fixture), false);
 
-  it('no ofrece activar cuando ya está reportando', () => {
-    const { fixture, tracking } = setup({
-      tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
-      trackingActivo: true,
+      expect(tracking.detener).toHaveBeenCalled();
+      expect(toast.info).toHaveBeenCalledWith(
+        'Ubicación desactivada',
+        'Ya no aparecerás en el radar de clientes hasta que la vuelvas a activar.',
+      );
+      expect(window.localStorage.getItem(CLAVE_COMPARTIR_UBICACION)).toBe('false');
     });
-    expect(botonRadar(fixture, 'Activar ubicación')).toBeUndefined();
-    expect(botonRadar(fixture, 'Reintentar')).toBeUndefined();
-    expect(fixture.componentInstance.puedeActivarUbicacion()).toBe(false);
-    expect(tracking.iniciar).not.toHaveBeenCalled();
+
+    it('restaura la preferencia guardada al abrir el panel', () => {
+      window.localStorage.setItem(CLAVE_COMPARTIR_UBICACION, 'true');
+      const { fixture, tracking } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+        ots: [],
+        trackingActivo: true,
+      });
+
+      expect(switchUbicacion(fixture).checked).toBe(true);
+      expect(tracking.iniciar).toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toContain(
+        'Compartiendo ubicación · visible en el radar',
+      );
+    });
+
+    it('se enciende solo y queda bloqueado mientras hay una OT en curso', () => {
+      const { fixture, tracking } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'OCUPADO' }),
+        ots: [ot('a', 'EN_CAMINO')],
+      });
+
+      const control = switchUbicacion(fixture);
+
+      expect(control.checked).toBe(true);
+      expect(control.disabled).toBe(true);
+      expect(tracking.iniciar).toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toContain('Reportando por la OT en curso');
+      expect(fixture.nativeElement.textContent).toContain('Estás ejecutando una orden');
+    });
+
+    it('no apaga el reporte si el switch se dispone a la fuerza durante una OT', () => {
+      const { fixture, tracking } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'OCUPADO' }),
+        ots: [ot('a', 'EN_REPARACION')],
+        trackingActivo: true,
+      });
+      tracking.iniciar.mockClear();
+      tracking.detener.mockClear();
+
+      alternarSwitch(switchUbicacion(fixture), false);
+
+      expect(tracking.detener).not.toHaveBeenCalled();
+      expect(tracking.iniciar).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.modoUbicacion()).toBe('ejecutando');
+    });
+
+    it('vuelve a apagarse cuando la OT llega a un estado terminal', () => {
+      const { fixture, tracking, tecnicosApi } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO', estadoOperativo: 'DISPONIBLE' }),
+        ots: [ot('a', 'EN_CAMINO')],
+      });
+      expect(tracking.iniciar).toHaveBeenCalledTimes(1);
+
+      tecnicosApi.getMisOts.mockReturnValue(of([ot('a', 'FINALIZADA')]));
+      fixture.componentInstance.reintentarOts();
+
+      expect(tracking.detener).toHaveBeenCalled();
+      expect(fixture.componentInstance.modoUbicacion()).toBe('apagada');
+    });
+
+    it('ofrece reintentar cuando el permiso fue denegado', () => {
+      window.localStorage.setItem(CLAVE_COMPARTIR_UBICACION, 'true');
+      const { fixture, tracking } = setup({
+        tecnico: tecnicoCon({ estadoValidacion: 'APROBADO' }),
+        ots: [],
+        trackingMotivo: 'Permiso de ubicación denegado. Habilítalo en el navegador para continuar.',
+      });
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Permiso de ubicación denegado');
+
+      tracking.iniciar.mockClear();
+      botonRadar(fixture, 'Reintentar')?.click();
+
+      expect(tracking.iniciar).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('informa la última posición guardada cuando no se reporta en vivo', () => {
@@ -347,6 +435,7 @@ describe('PanelTecnicoPage', () => {
         ubicacionActual: { latitud: 7.8939, longitud: -72.5078 },
         ubicacionActualizadaEn: '2026-09-15T09:00:00Z',
       }),
+      ots: [],
     });
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Tenés una ubicación guardada');

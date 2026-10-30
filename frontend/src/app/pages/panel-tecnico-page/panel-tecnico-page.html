@@ -179,76 +179,74 @@
             }
           </div>
 
-          <!-- Requisito: ubicación en vivo -->
-          <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
-            <div class="flex items-center gap-2">
-              <i
-                class="pi pi-map-marker text-sm"
-                [class.text-emerald-600]="ubicacionReportando()"
-                [class.text-amber-500]="!ubicacionReportando()"
-              ></i>
-              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Ubicación en vivo</span>
-            </div>
+          <!-- Requisito: ubicación — un switch, ni un botón por estado -->
+          <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="flex items-start gap-2">
+                <i
+                  class="pi pi-map-marker text-sm mt-0.5"
+                  [class.text-emerald-600]="ubicacionReportando()"
+                  [class.text-amber-500]="!ubicacionReportando()"
+                ></i>
+                <div>
+                  <span class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Compartir mi ubicación para recibir ofertas
+                  </span>
 
-            @if (ubicacionReportando()) {
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-emerald-600">Se está reportando ahora</span>
-                <button
-                  type="button"
-                  (click)="detenerUbicacion()"
-                  aria-label="Detener el reporte de ubicación en vivo"
-                  class="px-3 py-1 rounded-xl bg-slate-600 hover:bg-slate-700 text-white font-bold text-[11px] transition-colors"
-                >
-                  Detener
-                </button>
-              </div>
-            } @else if (ubicacionMotivo()) {
-              <div class="flex flex-col items-end gap-1.5">
-                <span class="text-xs font-bold text-rose-600 text-right">{{ ubicacionMotivo() }}</span>
-                <button
-                  type="button"
-                  (click)="activarUbicacion()"
-                  [disabled]="puedeActivarUbicacion() === false"
-                  aria-label="Reintentar la activación de la ubicación en vivo"
-                  class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Reintentar
-                </button>
-              </div>
-            } @else if (ubicacionGuardada()) {
-              <div class="flex flex-col items-end gap-1.5">
-                <span class="text-xs font-bold text-amber-600 text-right">
-                  Tenés una ubicación guardada, pero no estás enviando actualizaciones en vivo.
-                  @if (formatearUltimaUbicacion(ultimaUbicacionEn()); as ultima) {
-                    <span class="block font-semibold text-slate-500">Última actualización: {{ ultima }}</span>
+                  @if (modoUbicacion() === 'apagada') {
+                    <p class="text-xs font-bold text-amber-600 leading-relaxed">
+                      Ubicación apagada: no aparecerás en las ofertas
+                    </p>
+                  } @else if (ubicacionMotivo()) {
+                    <p class="text-xs font-bold text-rose-600 leading-relaxed">{{ ubicacionMotivo() }}</p>
+                  } @else if (modoUbicacion() === 'ejecutando') {
+                    <p class="text-xs font-bold text-emerald-600 leading-relaxed">Reportando por la OT en curso</p>
+                  } @else {
+                    <p class="text-xs font-bold text-emerald-600 leading-relaxed">
+                      Compartiendo ubicación · visible en el radar
+                    </p>
                   }
-                </span>
-                <button
-                  type="button"
-                  (click)="activarUbicacion()"
-                  [disabled]="puedeActivarUbicacion() === false"
-                  aria-label="Activar el reporte de ubicación en vivo"
-                  class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Activar ubicación
-                </button>
+
+                  @if (switchBloqueado()) {
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                      Estás ejecutando una orden: la ubicación se comparte sola hasta que la termines o la canceles.
+                    </p>
+                  } @else if (modoUbicacion() === 'apagada' && ubicacionGuardada()) {
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                      Tenés una ubicación guardada, pero no estás enviando actualizaciones en vivo.
+                      @if (formatearUltimaUbicacion(ultimaUbicacionEn()); as ultima) {
+                        <span class="block font-semibold">Última actualización: {{ ultima }}</span>
+                      }
+                    </p>
+                  }
+                </div>
               </div>
-            } @else {
-              <div class="flex flex-col items-end gap-1.5">
-                <span class="text-xs font-bold text-amber-600 text-right">
-                  Todavía no compartís tu ubicación. El navegador te pedirá el permiso para activarla.
-                </span>
-                <button
-                  type="button"
-                  (click)="activarUbicacion()"
-                  [disabled]="puedeActivarUbicacion() === false"
-                  aria-label="Activar el reporte de ubicación en vivo"
-                  class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Activar ubicación
-                </button>
+
+              <div class="flex items-center gap-2">
+                @if (ubicacionMotivo() && modoUbicacion() !== 'apagada') {
+                  <button
+                    type="button"
+                    (click)="reintentarUbicacion()"
+                    aria-label="Reintentar la activación de la ubicación en vivo"
+                    class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors"
+                  >
+                    Reintentar
+                  </button>
+                }
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    class="h-5 w-5 accent-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    [checked]="compartirUbicacion() || switchBloqueado()"
+                    [disabled]="switchBloqueado()"
+                    (change)="cambiarCompartirUbicacion($event)"
+                    aria-label="Compartir mi ubicación para recibir ofertas"
+                  />
+                  <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Compartir</span>
+                </label>
               </div>
-            }
+            </div>
           </div>
         </div>
       </div>

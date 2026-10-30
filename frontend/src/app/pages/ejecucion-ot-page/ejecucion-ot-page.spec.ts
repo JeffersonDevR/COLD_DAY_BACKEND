@@ -15,6 +15,7 @@ import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
+import { CLAVE_COMPARTIR_UBICACION } from '../../core/service/tecnico-presencia.service';
 import { OtResponse, Point, SolicitudInsumoResponse } from '../../core/models/common.models';
 
 function orden(overrides: Partial<OtResponse> = {}): OtResponse {
@@ -58,7 +59,13 @@ function setup(
     solicitarInsumos: vi.fn(() => of(requerimiento({ id: 'REQ-NUEVO' }))),
   };
   const posicion = signal<Point | null>(null);
-  const tracking = { ultimaPosicion: posicion.asReadonly(), iniciar: vi.fn(), detener: vi.fn() };
+  const tracking = {
+    ultimaPosicion: posicion.asReadonly(),
+    activo: signal(false),
+    motivo: signal<string | null>(null),
+    iniciar: vi.fn(),
+    detener: vi.fn(),
+  };
   const otApi = { getOtById: vi.fn(() => of(opts.ot ?? orden())) };
   const liquidacionApi = { registrarPago: vi.fn(() => of(undefined)) };
   const toast = { info: vi.fn(), success: vi.fn(), error: vi.fn() };
@@ -92,10 +99,19 @@ function setup(
 }
 
 describe('EjecucionOtPage', () => {
+  beforeEach(() => window.localStorage.clear());
+  afterEach(() => window.localStorage.clear());
+
   it('carga la OT e inicia el tracking', () => {
     const { fixture, tracking } = setup();
     expect(fixture.componentInstance.ot()?.id).toBe('ot1');
     expect(tracking.iniciar).toHaveBeenCalled();
+  });
+
+  it('no reporta ubicación si la orden ya está en un estado terminal', () => {
+    const { tracking } = setup({ ot: orden({ estado: 'FINALIZADA' }) });
+
+    expect(tracking.iniciar).not.toHaveBeenCalled();
   });
 
   it('inicia el desplazamiento', () => {
@@ -209,6 +225,28 @@ describe('EjecucionOtPage', () => {
   it('detiene el tracking al destruir', () => {
     const { fixture, tracking } = setup();
     fixture.destroy();
+    expect(tracking.detener).toHaveBeenCalled();
+  });
+
+  it('no apaga el reporte al salir si el técnico lo compartía desde el panel', () => {
+    // Salir de la ejecución suelta el contexto de la OT, no la preferencia: el
+    // técnico que encendió "compartir ubicación" sigue en el radar.
+    window.localStorage.setItem(CLAVE_COMPARTIR_UBICACION, 'true');
+    const { fixture, tracking } = setup();
+    tracking.detener.mockClear();
+
+    fixture.destroy();
+
+    expect(tracking.detener).not.toHaveBeenCalled();
+  });
+
+  it('corta el reporte cuando la OT cambia a un estado terminal por SSE', () => {
+    const { fixture, tracking, otApi, sseEventos } = setup();
+    otApi.getOtById.mockReturnValue(of(orden({ estado: 'CANCELADA' })));
+
+    sseEventos.next({ otId: 'ot1', origen: 'EN_REPARACION', destino: 'CANCELADA' });
+    fixture.detectChanges();
+
     expect(tracking.detener).toHaveBeenCalled();
   });
 

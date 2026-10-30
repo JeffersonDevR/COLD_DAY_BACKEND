@@ -35,9 +35,9 @@ Cerrar los 4 pendientes operativos elegidos el 2026-10-30: (1) panel admin en ti
 - [x] **C2 (frontend)** — `mapa-seguimiento` dibuja el polyline decodificado cuando hay ruta; fallback a linea recta si falla. Guard de costo en `RutaSeguimientoService` (page-scoped): pedir solo con pestaña visible, solo con tecnico en movimiento, como maximo 1 request cada 60 s o cuando el tecnico se movio >200 m. `MapsApi.ruta` colapsa 404/502/503 a `null` (el mapa nunca depende de Google). Specs de decodificacion, fallback, guard y contrato HTTP.
 
 ### D. Ubicacion ligada al ciclo de vida
-- [ ] **D1 (frontend)** — reporte automatico mientras hay OT en movimiento (panel tecnico al cargar con OT activa + ejecucion ya existente), sin boton; el toggle del panel queda solo para `DISPONIBLE` ("compartir ubicacion para recibir ofertas"), persistido en `localStorage` y restaurado al abrir la app. Se detiene al terminar/cancelar.
+- [x] **D1 (frontend)** — reporte automatico mientras hay OT en movimiento (panel tecnico al cargar con OT activa + ejecucion ya existente), sin boton; el toggle del panel queda solo para `DISPONIBLE` ("compartir ubicacion para recibir ofertas"), persistido en `localStorage` y restaurado al abrir la app. Se detiene al terminar/cancelar. (politica unica `TecnicoPresenciaService`, commit `3d25779`; sin endpoints nuevos)
 - [ ] **D2 (backend)** — el radar respeta `tracking_activo` y vigencia de ubicacion (2 min) en `PostgisTecnicoDisponibilidadAdapter`; test de tecnico con tracking detenido o ubicacion vieja que NO aparece.
-- [ ] **D3** — specs de ciclo (inicio automatico, stop al finalizar, toggle persistido) + verificacion completa.
+- [x] **D3** — specs de ciclo (inicio automatico, stop al finalizar, toggle persistido) + verificacion completa. (frontend 81 archivos / 870 tests / 0, tsc app+spec exit 0, lint solo los 8 pre-existentes)
 
 ## Criterios de aceptación
 1. Un admin ve disputas/liquidaciones/validaciones aparecer sin recargar ni pollear.
