@@ -11,6 +11,9 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { ApiConfig } from '../../core/service/api.config';
 import { MockDbService } from '../../core/service/mock-db.service';
 import { SseService, OtEstadoCambiado } from '../../core/service/sse.service';
+import { MapsApi } from '../../core/service/maps-api';
+import { RutaSeguimientoService } from '../../core/service/ruta-seguimiento.service';
+import { RutaApi } from '../../core/models/backend.dto';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
@@ -32,7 +35,10 @@ const orden: OtResponse = {
   radioBusquedaKm: 10,
 };
 
-function setup(ot: OtResponse = orden) {
+/** Geometría sembrada que devuelve el backend en las pruebas. */
+const RUTA_MAPA: RutaApi = { distanciaKm: 2.5, duracionMin: 6, polyline: 'abc_polyline' };
+
+function setup(ot: OtResponse = orden, ruta$: () => Observable<RutaApi | null> = () => of(RUTA_MAPA)) {
   const clientesApi = {
     cancelarOt: vi.fn(() => of(undefined)),
     abrirDisputa: vi.fn(() => of({ id: 'd1' })),
@@ -53,6 +59,8 @@ function setup(ot: OtResponse = orden) {
   const toast = { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() };
   const sseEventos = new Subject<OtEstadoCambiado>();
   const sse = { abrirOtStream: vi.fn(() => sseEventos.asObservable()) };
+  // Ruta real por calles: el backend responde con una geometría sembrada.
+  const mapsApi = { ruta: vi.fn(ruta$) };
   TestBed.configureTestingModule({
     imports: [SeguimientoOtPage],
     providers: [
@@ -69,6 +77,7 @@ function setup(ot: OtResponse = orden) {
       { provide: ApiConfig, useValue: { useMocks: () => false, url: (path: string) => `/api${path}` } },
       { provide: MockDbService, useValue: { ordenesTrabajo: () => [] } },
       { provide: SseService, useValue: sse },
+      { provide: MapsApi, useValue: mapsApi },
       { provide: ToastService, useValue: toast },
       // El mapa es aditivo: en las pruebas no se carga el script de Google.
       { provide: GoogleMapsLoaderService, useValue: { isLoaded: () => false, isLoading: () => false, loadError: () => null, init: vi.fn() } },
@@ -79,7 +88,7 @@ function setup(ot: OtResponse = orden) {
   const http = TestBed.inject(HttpTestingController);
   const fixture = TestBed.createComponent(SeguimientoOtPage);
   fixture.detectChanges();
-  return { fixture, clientesApi, otApi, toast, navigate, sse, sseEventos, http };
+  return { fixture, clientesApi, otApi, toast, navigate, sse, sseEventos, http, mapsApi };
 }
 
 describe('SeguimientoOtPage', () => {
@@ -507,6 +516,47 @@ describe('SeguimientoOtPage', () => {
       } finally {
         vi.useRealTimers();
       }
+    });
+
+    it('pasa la ruta real al mapa y no la pide en cada tick de 15 s', () => {
+      vi.useFakeTimers();
+      try {
+        const { fixture, mapsApi } = setup();
+        fixture.detectChanges();
+        const mapa = fixture.debugElement.query(By.directive(MapaSeguimiento)).componentInstance as MapaSeguimiento;
+
+        // Primer tick: una petición y el mapa recibe la geometría.
+        expect(mapsApi.ruta).toHaveBeenCalledTimes(1);
+        expect(mapa.rutaCodificada()).toBe('abc_polyline');
+
+        // Tres ticks más (45 s): siguen siendo una sola petición pagada.
+        vi.advanceTimersByTime(15000 * 3);
+        fixture.detectChanges();
+        expect(mapsApi.ruta).toHaveBeenCalledTimes(1);
+
+        // Cumplidos los 60 s, el guard deja pasar el siguiente tick.
+        vi.advanceTimersByTime(15000);
+        fixture.detectChanges();
+        expect(mapsApi.ruta).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('al destruir la página no queda pedido de ruta vivo', () => {
+      const pendiente = new Subject<RutaApi | null>();
+      const { fixture } = setup(orden, () => pendiente.asObservable());
+      const servicio = fixture.debugElement.injector.get(RutaSeguimientoService);
+      const detener = vi.spyOn(servicio, 'detener');
+
+      fixture.destroy();
+
+      expect(detener).toHaveBeenCalled();
+      // La respuesta que llegue tarde ya no toca la pantalla.
+      expect(() => {
+        pendiente.next(RUTA_MAPA);
+        pendiente.complete();
+      }).not.toThrow();
     });
   });
 

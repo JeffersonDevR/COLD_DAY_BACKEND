@@ -7,20 +7,32 @@ import { MapsGeocoderCliente } from './maps-geocoder-cliente';
 import {
   DireccionApiResponse,
   EstadoMapsApiResponse,
+  RutaApi,
   SugerenciaApiResponse,
 } from '../models/backend.dto';
 import { Point } from '../models/common.models';
+import { rutaLocal } from './distancia-local';
 
 /**
  * Fachada del proxy seguro /api/maps del backend (Google Maps Platform).
  *
- * El backend guarda la server key; el frontend solo pide geocodificación y
- * autocompletado. En modo mock devuelve datos sembrados de Cúcuta para que la
- * UI funcione sin backend ni cuota de Google.
+ * El backend guarda la server key; el frontend solo pide geocodificación,
+ * autocompletado y la ruta real por calles. En modo mock devuelve datos
+ * sembrados de Cúcuta para que la UI funcione sin backend ni cuota de Google.
  *
- * NO expone distancias: el cálculo de ruta se hace en el navegador
- * (core/service/distancia-local) para no gastar cuota de Google en cada tick.
+ * La ruta (`ruta`) SÍ gasta cuota de Google en el backend, por eso la pide
+ * `RutaSeguimientoService` con su guard de costo: nunca en cada tick del
+ * sondeo. La distancia y la ETA que se muestran en texto siguen calculándose
+ * en el navegador (core/service/distancia-local).
  */
+/**
+ * Encoded street route from the mock technician position (7.9, -72.5) to the
+ * mock service point (7.88, -72.49) in Cúcuta. It is a valid Google polyline,
+ * so `google.maps.geometry.encoding.decodePath` renders it like a real route.
+ */
+const POLYLINE_MOCK_CUCUTA =
+  '_~eo@~coyLnF{EbG_DvGsDjH_DjHsDrIcBfJsDrIkCrI_D~HgE~H_DjH_DjH?';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -78,6 +90,43 @@ export class MapsApi {
     return this.http
       .get<SugerenciaApiResponse[]>(this.apiConfig.url('/maps/autocompletar'), { params })
       .pipe(switchMap((lista) => (lista.length ? of(lista) : this.geocoder.autocompletar(input, sesgo))));
+  }
+
+  /**
+   * POST /api/maps/ruta { origen:{lat,lng}, destino:{lat,lng} } → real route.
+   *
+   * Never throws: the map is decoration over the tracking screen, so a 404
+   * (Google found no drivable route), a 503 (Maps disabled on the backend) or a
+   * 502 (Google answered an error) all collapse to `null` and the map keeps the
+   * straight line. Collapsing here (instead of in the page) keeps every caller
+   * free of error branches.
+   */
+  ruta(origen: Point, destino: Point): Observable<RutaApi | null> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.rutaMock(origen, destino)).pipe(delay(200));
+    }
+    return this.http
+      .post<RutaApi>(this.apiConfig.url('/maps/ruta'), {
+        origen: { lat: origen.latitud, lng: origen.longitud },
+        destino: { lat: destino.latitud, lng: destino.longitud },
+      })
+      .pipe(catchError(() => of(null)));
+  }
+
+  /**
+   * Seeded street route between the usual mock technician position and the
+   * mock service point (both in Cúcuta). The geometry is a real encoded
+   * polyline, so decoding it in the map exercises the same path as production
+   * without asking Google. Distances come from the local haversine estimate so
+   * the text stays consistent with the seeded coordinates.
+   */
+  private rutaMock(origen: Point, destino: Point): RutaApi {
+    const local = rutaLocal(origen, destino);
+    return {
+      distanciaKm: local.distanciaKm,
+      duracionMin: local.duracionMin,
+      polyline: POLYLINE_MOCK_CUCUTA,
+    };
   }
 
   private direccionMock(direccion: string, lat = 7.8872, lng = -72.4951): DireccionApiResponse {

@@ -24,6 +24,24 @@ function mapaConfigStub(centro = { lat: 7.8939, lng: -72.5078 }) {
 const TECNICO: Point = { latitud: 7.9, longitud: -72.5 };
 const DESTINO: Point = { latitud: 7.88, longitud: -72.49 };
 
+/** Stubs the Google geometry library the way the real script exposes it. */
+function googleFake(): {
+  google?: { maps?: { geometry?: { encoding?: { decodePath?: unknown } } } };
+} {
+  return globalThis as unknown as {
+    google?: { maps?: { geometry?: { encoding?: { decodePath?: unknown } } } };
+  };
+}
+
+function stubGoogle(decodePath: (encoded: string) => unknown): void {
+  googleFake().google = { maps: { geometry: { encoding: { decodePath } } } };
+}
+
+/** Google returns `LatLng` objects with `lat()`/`lng()`, not literals. */
+function latLng(lat: number, lng: number) {
+  return { lat: () => lat, lng: () => lng };
+}
+
 function setup() {
   const mapsLoader = { isLoaded: () => false, isLoading: () => false, loadError: () => null, init: vi.fn() };
   TestBed.configureTestingModule({
@@ -38,6 +56,10 @@ function setup() {
 }
 
 describe('MapaSeguimiento', () => {
+  afterEach(() => {
+    delete googleFake().google;
+  });
+
   it('el marcador del técnico sigue la posición que llega del sondeo', () => {
     const { fixture, component } = setup();
 
@@ -82,6 +104,67 @@ describe('MapaSeguimiento', () => {
     expect(component.ruta().length).toBe(2);
     expect(component.ruta()[0]).toEqual({ lat: 7.9, lng: -72.5 });
     expect(component.ruta()[1]).toEqual({ lat: 7.88, lng: -72.49 });
+  });
+
+  it('dibuja la ruta real por calles cuando llega la geometría', () => {
+    const { fixture, component } = setup();
+    const decodePath = vi.fn(() => [latLng(7.9, -72.5), latLng(7.891, -72.494), latLng(7.88, -72.49)]);
+    stubGoogle(decodePath);
+    fixture.componentRef.setInput('posicionTecnico', TECNICO);
+    fixture.componentRef.setInput('destino', DESTINO);
+
+    fixture.componentRef.setInput('rutaCodificada', 'abc_polyline');
+
+    expect(component.ruta()).toEqual([
+      { lat: 7.9, lng: -72.5 },
+      { lat: 7.891, lng: -72.494 },
+      { lat: 7.88, lng: -72.49 },
+    ]);
+    expect(decodePath).toHaveBeenCalledWith('abc_polyline');
+  });
+
+  it('con la ruta vacía vuelve a la línea recta de 2 puntos', () => {
+    const { fixture, component } = setup();
+    const decodePath = vi.fn(() => [latLng(7.9, -72.5), latLng(7.88, -72.49)]);
+    stubGoogle(decodePath);
+    fixture.componentRef.setInput('posicionTecnico', TECNICO);
+    fixture.componentRef.setInput('destino', DESTINO);
+
+    fixture.componentRef.setInput('rutaCodificada', '');
+
+    // `""` es "Google no dio geometría": no se llama al decodificador.
+    expect(decodePath).not.toHaveBeenCalled();
+    expect(component.ruta()).toEqual([
+      { lat: 7.9, lng: -72.5 },
+      { lat: 7.88, lng: -72.49 },
+    ]);
+  });
+
+  it('con una geometría malformada no rompe el mapa: vuelve a la recta', () => {
+    const { fixture, component } = setup();
+    stubGoogle(() => {
+      throw new Error('Invalid character');
+    });
+    fixture.componentRef.setInput('posicionTecnico', TECNICO);
+    fixture.componentRef.setInput('destino', DESTINO);
+
+    expect(() => fixture.componentRef.setInput('rutaCodificada', 'no-es-un-polyline')).not.toThrow();
+    expect(component.ruta()).toEqual([
+      { lat: 7.9, lng: -72.5 },
+      { lat: 7.88, lng: -72.49 },
+    ]);
+  });
+
+  it('sin la librería de geometría cargada vuelve a la recta', () => {
+    const { fixture, component } = setup();
+    fixture.componentRef.setInput('posicionTecnico', TECNICO);
+    fixture.componentRef.setInput('destino', DESTINO);
+    fixture.componentRef.setInput('rutaCodificada', 'abc_polyline');
+
+    expect(component.ruta()).toEqual([
+      { lat: 7.9, lng: -72.5 },
+      { lat: 7.88, lng: -72.49 },
+    ]);
   });
 
   it('calcula la distancia en el navegador, sin llamar a Google', () => {
