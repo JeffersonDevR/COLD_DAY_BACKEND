@@ -130,4 +130,13 @@ describe('MapaRadar', () => {
 
     expect(component.centroUbicacion()).toEqual({ lat: 5, lng: -75 });
   });
+
+  it('explica que la solicitud se emite a los técnicos cercanos (broadcast, no pedido directo)', () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Tu solicitud se envía a los técnicos cercanos');
+    expect(texto).toContain('el primero que acepta la toma');
+  });
 });

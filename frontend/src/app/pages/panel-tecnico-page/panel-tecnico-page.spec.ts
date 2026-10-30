@@ -273,7 +273,7 @@ describe('PanelTecnicoPage', () => {
       trackingMotivo: null,
     });
     const texto = fixture.nativeElement.textContent as string;
-    expect(texto).toContain('Los clientes pueden encontrarte en el radar de cercanos');
+    expect(texto).toContain('Los clientes envían su solicitud a los técnicos cercanos; el primero que acepta se la lleva');
   });
 
   it('activa el reporte de ubicación en vivo', () => {

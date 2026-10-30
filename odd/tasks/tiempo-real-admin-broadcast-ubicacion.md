@@ -27,7 +27,7 @@ Cerrar los 4 pendientes operativos elegidos el 2026-10-30: (1) panel admin en ti
 - [ ] **A2 (frontend)** — `SseService`: extraer helper generico (backoff/ticket/parseo) y exponer `abrirAdminStream()`; API publica existente sin cambios. Páginas admin (dashboard, disputas, consignaciones, validación) recargan con debounce al recibir evento relevante; sin doble carga ni tormenta. Specs por página + servicio.
 
 ### B. Broadcast y navegacion dual-role
-- [ ] **B1** — copy del radar/panel tecnico explicando broadcast ("tu oferta se envia a los tecnicos cercanos; el primero que acepta la toma"). Documentar "solicitud directa" como fuera de alcance en `docs/pendientes.md`. Sin cambio funcional de asignacion.
+- [x] **B1** — copy del radar/panel tecnico explicando broadcast ("tu oferta se envia a los tecnicos cercanos; el primero que acepta la toma"). Documentar "solicitud directa" como fuera de alcance en `docs/pendientes.md`. Sin cambio funcional de asignacion.
 - [ ] **B2** — resolver unico de panel (`PanelResolver`): preferencia persistida (`coldday.panel.preferido`) escrita al visitar un panel, usada por `panel-redirect` y por "Mi Panel" del topbar; fallback rol primario → primer rol con panel. Specs de los 3 casos (preferencia valida, invalida, sin preferencia).
 
 ### C. Ruta real por calles (costo medible)

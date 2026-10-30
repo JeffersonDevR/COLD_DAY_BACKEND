@@ -156,6 +156,14 @@ describe('OfertasPage', () => {
     );
   });
 
+  it('explica que la oferta es broadcast y no un pedido directo a un técnico', () => {
+    const { fixture } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
+
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('se envía a todos los técnicos cercanos');
+    expect(texto).toContain('el primero que acepta se la lleva');
+  });
+
   it('ante un 409 sí afirma que otro técnico tomó la orden', () => {
     const { fixture, tecnicosApi, toast } = setup({ id: 'TEC-1', nombre: 'Juan', correo: 'j@x.co', estadoOperativo: 'DISPONIBLE' });
     tecnicosApi.aceptarOferta.mockReturnValue(throwError(() => new ApiHttpError('La oferta ya fue aceptada', 409)));

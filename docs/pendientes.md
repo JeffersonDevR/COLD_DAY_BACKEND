@@ -100,8 +100,8 @@ Cerrado en main (merges 4ae81d5 PR #62 backend + a8e5a04 PR #63 frontend, apilad
 - [ ] **B14** (`S`) defaults falsos pre-pobla-dos: diagnóstico (`ejecucion:108-116`), comprobante (`liquidaciones:66-67`), 5 estrellas default (`calificar:28-29`).
 
 ### 5.3 UX dual-role: buscar ofertas vs pedir una orden
-- [ ] **B15** (`M`) el mismo usuario puede ser cliente y técnico, y el UI no distingue el contexto. Propuesta: **selector de rol activo** (chip de "Modo cliente / Modo técnico" en app móvil) + reglas de navegación: "Solicitar servicio" solo visible en modo cliente, "Ofertas/Radar" solo en modo técnico, y el panel redirige según el modo elegido, no solo por rol primario. Además copy del radar: explicar que la oferta es broadcast al primer técnico que acepta (no pedido directo). Evita la confusión que originó B5 y que cualquiera se equivoque de contextos.
-- [ ] (Designer) Necesito confirmación del flujo: ¿existe "solicitud directa a un técnico concreto" hoy (técnicos cercanos) o todo es broadcast? Si la directa no existe, documentarla como fuera de alcance.
+- [x] **B15** (`M`) **cerrado 2026-10-30 — asignación = broadcast puro.** Decisión del usuario: **no existe ni se implementa "solicitud directa a un técnico"**. Toda solicitud se emite a los técnicos cercanos y el primero que acepta se la lleva. El copy del radar y del panel técnico lo dice explícito (`mapa-radar`, `panel-tecnico-page`, `ofertas-page`, `solicitar-servicio-page`, `panel-cliente-page`). El **selector de rol activo** ("Modo cliente / Modo técnico") **no se hace en el shell web actual**: se mueve al **shell móvil Ionic** (futuro, §5.1/§5.4). La navegación dual-role de hoy la resuelve un único `panel-resolver` (último panel visitado en `coldday.panel.preferido`, con fallback al rol primario).
+- [x] (Designer) **Resuelto 2026-10-30:** ¿existe "solicitud directa a un técnico concreto"? **No existe; broadcast puro, fuera de alcance.** Ninguna pantalla debe sugerir lo contrario.
 
 ### 5.4 Revamp UI mobile con Google Stitch
 Screens a rediseñar (inventario del audit 2026-10-26):
