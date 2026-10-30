@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { SseService, OtEstadoCambiado } from './sse.service';
+import { SseService, OtEstadoCambiado, AdminActividad, OfertaCreada } from './sse.service';
 import { ApiConfig } from './api.config';
 
 type Listener = (evento: MessageEvent) => void;
@@ -241,5 +241,120 @@ describe('SseService', () => {
 
     expect(completo).toBe(true);
     http.expectNone('/api/sse/ticket');
+  });
+
+  /**
+   * El canal de ofertas no tenía specs propias: ahora comparte el helper
+   * genérico con los otros dos, así que se verifica el mismo transporte.
+   */
+  describe('canal de ofertas (helper compartido)', () => {
+    it('abre /api/tecnicos/me/ofertas/stream y escucha oferta-creada', () => {
+      const recibidas: OfertaCreada[] = [];
+      api.abrirOfertasTecnico().subscribe((payload) => recibidas.push(payload));
+      http.expectOne('/api/sse/ticket').flush({ codigo: 't1', expiraEnSegundos: 30 });
+
+      expect(FakeEventSource.ultima.url).toBe('/api/tecnicos/me/ofertas/stream?ticket=t1');
+
+      FakeEventSource.ultima.simularChunk('event: oferta-creada\ndata: {"otId":"ot9"}\n\n');
+
+      expect(recibidas).toEqual([{ otId: 'ot9' }]);
+    });
+
+    it('ante un error pide un ticket NUEVO antes de reabrir', () => {
+      vi.useFakeTimers();
+      api.abrirOfertasTecnico().subscribe();
+      http.expectOne('/api/sse/ticket').flush({ codigo: 't1', expiraEnSegundos: 30 });
+      const primera = FakeEventSource.ultima;
+
+      primera.fallar();
+      expect(primera.cerrado).toBe(true);
+      http.expectNone('/api/sse/ticket');
+
+      vi.advanceTimersByTime(1000);
+      http.expectOne('/api/sse/ticket').flush({ codigo: 't2', expiraEnSegundos: 30 });
+
+      expect(FakeEventSource.ultima.url).toBe('/api/tecnicos/me/ofertas/stream?ticket=t2');
+    });
+  });
+
+  describe('canal de administración', () => {
+    it('abre /api/admin/stream y escucha admin-actividad', () => {
+      const recibidas: AdminActividad[] = [];
+      api.abrirAdminStream().subscribe((payload) => recibidas.push(payload));
+
+      const ticket = http.expectOne('/api/sse/ticket');
+      expect(ticket.request.method).toBe('POST');
+      ticket.flush({ codigo: 't1', expiraEnSegundos: 30 });
+
+      expect(FakeEventSource.instancias.length).toBe(1);
+      expect(FakeEventSource.ultima.url).toBe('/api/admin/stream?ticket=t1');
+
+      FakeEventSource.ultima.simularChunk(
+        'event: admin-actividad\ndata: {"tipo":"LIQUIDACION_APROBADA","id":"liq-1","ocurridaEn":"2026-10-30T10:00:00Z"}\n\n',
+      );
+
+      expect(recibidas).toEqual([
+        { tipo: 'LIQUIDACION_APROBADA', id: 'liq-1', ocurridaEn: '2026-10-30T10:00:00Z' },
+      ]);
+    });
+
+    it('descarta un tipo desconocido sin cerrar el stream', () => {
+      const recibidas: AdminActividad[] = [];
+      const sub = api.abrirAdminStream().subscribe((payload) => recibidas.push(payload));
+      http.expectOne('/api/sse/ticket').flush({ codigo: 't1', expiraEnSegundos: 30 });
+      const fuente = FakeEventSource.ultima;
+
+      fuente.simularChunk(
+        'event: admin-actividad\ndata: {"tipo":"PROVEEDOR_VALIDADO","id":"p1","ocurridaEn":"2026-10-30T10:00:00Z"}\n\n',
+      );
+
+      expect(recibidas).toEqual([]);
+      expect(sub.closed).toBe(false);
+      expect(fuente.cerrado).toBe(false);
+    });
+
+    it('ante un error pide un ticket NUEVO antes de reabrir el canal admin', () => {
+      vi.useFakeTimers();
+      api.abrirAdminStream().subscribe();
+      http.expectOne('/api/sse/ticket').flush({ codigo: 't1', expiraEnSegundos: 30 });
+      const primera = FakeEventSource.ultima;
+
+      primera.fallar();
+
+      expect(primera.cerrado).toBe(true);
+      http.expectNone('/api/sse/ticket');
+
+      vi.advanceTimersByTime(1000);
+      http.expectOne('/api/sse/ticket').flush({ codigo: 't2', expiraEnSegundos: 30 });
+
+      expect(FakeEventSource.instancias.length).toBe(2);
+      expect(FakeEventSource.ultima.url).toBe('/api/admin/stream?ticket=t2');
+    });
+
+    it('al desuscribirse cierra la fuente y cancela el reintento pendiente', () => {
+      vi.useFakeTimers();
+      const sub = api.abrirAdminStream().subscribe();
+      http.expectOne('/api/sse/ticket').flush({ codigo: 't1', expiraEnSegundos: 30 });
+      const fuente = FakeEventSource.ultima;
+
+      fuente.fallar();
+      sub.unsubscribe();
+
+      expect(fuente.cerrado).toBe(true);
+
+      vi.advanceTimersByTime(60000);
+      http.expectNone('/api/sse/ticket');
+      expect(FakeEventSource.instancias.length).toBe(1);
+    });
+
+    it('en modo mock no abre EventSource ni pide ticket', () => {
+      config.setUseMocks(true);
+      let completo = false;
+      api.abrirAdminStream().subscribe({ complete: () => (completo = true) });
+
+      expect(completo).toBe(true);
+      http.expectNone('/api/sse/ticket');
+      expect(FakeEventSource.instancias.length).toBe(0);
+    });
   });
 });

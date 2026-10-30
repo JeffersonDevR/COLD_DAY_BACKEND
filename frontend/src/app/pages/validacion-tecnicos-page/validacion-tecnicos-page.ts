@@ -1,12 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { catchError, finalize, Observable, of, tap } from 'rxjs';
 import { AdminApi } from '../../core/service/admin-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { refrescarConActividadAdmin } from '../../core/service/admin-actividad-refresco';
+import { SseService, TipoActividadAdmin } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { TecnicoResponse } from '../../core/models/common.models';
 import { CargaError } from '../../shared/carga-error/carga-error';
+
+/** Actividad administrativa que cambia esta bandeja. */
+const TIPOS_VALIDACION: readonly TipoActividadAdmin[] = ['TECNICO_VALIDADO', 'TECNICO_VALIDACION_RECHAZADA'];
 
 /**
  * Copy propia de esta pantalla: el 409 de este endpoint es
@@ -28,6 +34,9 @@ export class ValidacionTecnicosPage {
   private readonly adminApi = inject(AdminApi);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
+  /** Canal admin; `null` sin backend SSE (mock/SSR/specs): la bandeja sigue igual. */
+  private readonly sse = inject(SseService, { optional: true });
+  private readonly destruir = inject(DestroyRef);
 
   readonly tecnicos = signal<TecnicoResponse[]>([]);
   readonly tecnicoARechazar = signal<TecnicoResponse | null>(null);
@@ -39,22 +48,32 @@ export class ValidacionTecnicosPage {
 
   constructor() {
     this.cargarTecnicos();
+    // Solo las validaciones de técnicos mueven esta bandeja.
+    refrescarConActividadAdmin({
+      sse: this.sse,
+      destruir: this.destruir,
+      tipos: TIPOS_VALIDACION,
+      recargar: () => this.recargarTecnicos(),
+    });
   }
 
   cargarTecnicos(): void {
+    this.recargarTecnicos().subscribe();
+  }
+
+  /** Carga los expedientes y expone su final para no solapar dos recargas. */
+  private recargarTecnicos(): Observable<unknown> {
     this.cargando.set(true);
     this.errorCarga.set(false);
-    this.tecnicosApi.getTecnicos().subscribe({
-      next: (tecnicos) => {
-        this.tecnicos.set(tecnicos);
-        this.cargando.set(false);
-      },
-      error: () => {
+    return this.tecnicosApi.getTecnicos().pipe(
+      tap((tecnicos) => this.tecnicos.set(tecnicos)),
+      catchError(() => {
         this.tecnicos.set([]);
-        this.cargando.set(false);
         this.errorCarga.set(true);
-      },
-    });
+        return of(null);
+      }),
+      finalize(() => this.cargando.set(false)),
+    );
   }
 
   aprobar(tec: TecnicoResponse): void {

@@ -1,13 +1,24 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { catchError, finalize, forkJoin, Observable, of, tap } from 'rxjs';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { refrescarConActividadAdmin } from '../../core/service/admin-actividad-refresco';
+import { SseService, TipoActividadAdmin } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
 import { CargaError } from '../../shared/carga-error/carga-error';
+
+/** Actividad administrativa que cambia esta pantalla. */
+const TIPOS_CONSIGNACION: readonly TipoActividadAdmin[] = [
+  'COMPROBANTE_CARGADO',
+  'LIQUIDACION_REGISTRADA',
+  'LIQUIDACION_APROBADA',
+  'LIQUIDACION_RECHAZADA',
+];
 
 @Component({
   selector: 'app-consignaciones-admin-page',
@@ -19,6 +30,9 @@ export class ConsignacionesAdminPage {
   private readonly liquidacionApi = inject(LiquidacionApi);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
+  /** Canal admin; `null` sin backend SSE (mock/SSR/specs): la pantalla sigue igual. */
+  private readonly sse = inject(SseService, { optional: true });
+  private readonly destruir = inject(DestroyRef);
 
   /** Comisión de la plataforma (15%), alineada al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
@@ -59,35 +73,48 @@ export class ConsignacionesAdminPage {
 
   constructor() {
     this.cargarDatos();
+    // Comprobantes y liquidaciones son esta pantalla; una validación de técnico
+    // o una disputa no la cambian.
+    refrescarConActividadAdmin({
+      sse: this.sse,
+      destruir: this.destruir,
+      tipos: TIPOS_CONSIGNACION,
+      recargar: () => this.recargarDatos(),
+    });
   }
 
   cargarDatos(): void {
+    this.recargarDatos().subscribe();
+  }
+
+  /** Carga liquidaciones y técnicos, y expone el final de ambas. */
+  private recargarDatos(): Observable<unknown> {
     this.cargando.set(true);
     this.errorCarga.set(false);
-    this.liquidacionApi.getTodasLiquidaciones().subscribe({
-      next: (liquidaciones) => {
-        this.liquidaciones.set(liquidaciones);
-        this.cargando.set(false);
-      },
-      error: () => {
+    const liquidaciones$ = this.liquidacionApi.getTodasLiquidaciones().pipe(
+      tap((liquidaciones) => this.liquidaciones.set(liquidaciones)),
+      catchError(() => {
         this.liquidaciones.set([]);
-        this.cargando.set(false);
         this.errorCarga.set(true);
-      },
-    });
-    this.tecnicosApi.getTecnicos().subscribe({
-      next: (tecnicos) => {
+        return of(null);
+      }),
+      finalize(() => this.cargando.set(false)),
+    );
+    const tecnicos$ = this.tecnicosApi.getTecnicos().pipe(
+      tap((tecnicos) => {
         this.tecnicos.set(tecnicos);
         this.tecnicosDesconocidos.set(false);
-      },
+      }),
       // Los técnicos solo alimentan el contador de bloqueados: su fallo no
       // invalida la lista de liquidaciones ni duplica el aviso, pero tampoco
       // autoriza a reportar "0 bloqueados" como si fuera un hecho.
-      error: () => {
+      catchError(() => {
         this.tecnicos.set([]);
         this.tecnicosDesconocidos.set(true);
-      },
-    });
+        return of(null);
+      }),
+    );
+    return forkJoin([liquidaciones$, tecnicos$]);
   }
 
   aprobar(liq: LiquidacionResponse): void {

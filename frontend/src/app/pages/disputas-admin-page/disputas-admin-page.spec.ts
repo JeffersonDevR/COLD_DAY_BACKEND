@@ -1,12 +1,28 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { DisputasAdminPage } from './disputas-admin-page';
 import { AdminApi } from '../../core/service/admin-api';
+import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refresco';
+import { AdminActividad, SseService } from '../../core/service/sse.service';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { DisputaResponse } from '../../core/models/common.models';
+
+interface CanalAdmin {
+  abrirAdminStream: ReturnType<typeof vi.fn>;
+}
+
+function actividad(tipo: AdminActividad['tipo']): AdminActividad {
+  return { tipo, id: 'x-1', ocurridaEn: '2026-10-30T10:00:00Z' };
+}
+
+/** Canal admin falso: permite empujar actividad sin abrir un EventSource. */
+function canalAdmin() {
+  const eventos = new Subject<AdminActividad>();
+  return { eventos, sse: { abrirAdminStream: vi.fn(() => eventos.asObservable()) } };
+}
 
 const disputa: DisputaResponse = {
   id: 'DISP-1',
@@ -18,7 +34,7 @@ const disputa: DisputaResponse = {
   tecnicoNombre: 'Juan',
 };
 
-function setup(getTodasDisputas?: ReturnType<typeof vi.fn>) {
+function setup(getTodasDisputas?: ReturnType<typeof vi.fn>, sse?: CanalAdmin) {
   const adminApi = {
     getTodasDisputas: getTodasDisputas ?? vi.fn(() => of([disputa])),
     resolverDisputa: vi.fn(() => of(undefined)),
@@ -31,6 +47,7 @@ function setup(getTodasDisputas?: ReturnType<typeof vi.fn>) {
       { provide: AdminApi, useValue: adminApi },
       { provide: AuthService, useValue: { currentUser: () => ({ nombre: 'Admin Uno' }) } },
       { provide: ToastService, useValue: toast },
+      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
     ],
   });
   const fixture = TestBed.createComponent(DisputasAdminPage);
@@ -136,5 +153,90 @@ describe('DisputasAdminPage', () => {
     expect(fixture.componentInstance.disputaSeleccionada()).not.toBeNull();
     expect(fixture.componentInstance.resolucionCtrl.value).toBe('Se acuerda un descuento del 10%');
     expect(adminApi.getTodasDisputas).toHaveBeenCalledTimes(1);
+  });
+
+  describe('actividad administrativa en tiempo real', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('recarga con un evento de disputa, después de la ventana de calma', () => {
+      const getTodasDisputas = vi.fn(() => of([disputa]));
+      const { eventos, sse } = canalAdmin();
+      setup(getTodasDisputas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      expect(getTodasDisputas).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getTodasDisputas).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignora actividad que no es de disputas', () => {
+      const getTodasDisputas = vi.fn(() => of([disputa]));
+      const { eventos, sse } = canalAdmin();
+      setup(getTodasDisputas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('LIQUIDACION_APROBADA'));
+      eventos.next(actividad('TECNICO_VALIDADO'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(getTodasDisputas).toHaveBeenCalledTimes(1);
+    });
+
+    it('una ráfaga de disputas produce UNA sola recarga', () => {
+      const getTodasDisputas = vi.fn(() => of([disputa]));
+      const { eventos, sse } = canalAdmin();
+      setup(getTodasDisputas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      eventos.next(actividad('DISPUTA_RESUELTA'));
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getTodasDisputas).toHaveBeenCalledTimes(2);
+    });
+
+    it('no solapa recargas: con una en vuelo deja UNA pendiente', () => {
+      const enVuelo = new Subject<DisputaResponse[]>();
+      const getTodasDisputas = vi
+        .fn()
+        .mockReturnValueOnce(of([disputa]))
+        .mockReturnValueOnce(enVuelo.asObservable())
+        .mockReturnValue(of([disputa]));
+      const { eventos, sse } = canalAdmin();
+      setup(getTodasDisputas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getTodasDisputas).toHaveBeenCalledTimes(2);
+
+      // Llega más actividad mientras la recarga sigue en vuelo.
+      eventos.next(actividad('DISPUTA_RESUELTA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getTodasDisputas).toHaveBeenCalledTimes(2);
+
+      // Al terminar, recién ahí corre la pendiente (una sola).
+      enVuelo.next([disputa]);
+      enVuelo.complete();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(getTodasDisputas).toHaveBeenCalledTimes(3);
+    });
+
+    it('al destruir la pantalla no queda un refresco pendiente', () => {
+      const getTodasDisputas = vi.fn(() => of([disputa]));
+      const { eventos, sse } = canalAdmin();
+      const { fixture } = setup(getTodasDisputas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      fixture.destroy();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(getTodasDisputas).toHaveBeenCalledTimes(1);
+    });
   });
 });

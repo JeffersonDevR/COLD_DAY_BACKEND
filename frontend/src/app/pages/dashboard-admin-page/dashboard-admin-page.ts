@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { catchError, finalize, Observable, of, tap } from 'rxjs';
 import { AdminApi } from '../../core/service/admin-api';
+import { refrescarConActividadAdmin } from '../../core/service/admin-actividad-refresco';
+import { SseService } from '../../core/service/sse.service';
 import { CategoriaServicio, MetricasAdminResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
 import { CargaError } from '../../shared/carga-error/carga-error';
@@ -13,6 +16,9 @@ import { CargaError } from '../../shared/carga-error/carga-error';
 })
 export class DashboardAdminPage implements OnInit {
   private readonly adminApi = inject(AdminApi);
+  /** Canal admin; `null` sin backend SSE (mock/SSR/specs): la torre sigue igual. */
+  private readonly sse = inject(SseService, { optional: true });
+  private readonly destruir = inject(DestroyRef);
 
   /** Comisión de la plataforma (15%), alineada al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);
@@ -59,21 +65,31 @@ export class DashboardAdminPage implements OnInit {
 
   ngOnInit(): void {
     this.cargarMetricas();
+    // Cualquier actividad administrativa cambia algún número de la torre.
+    refrescarConActividadAdmin({
+      sse: this.sse,
+      destruir: this.destruir,
+      tipos: 'todos',
+      recargar: () => this.recargarMetricas(),
+    });
   }
 
   cargarMetricas(): void {
+    this.recargarMetricas().subscribe();
+  }
+
+  /** Carga las métricas y expone su final para no solapar dos recargas. */
+  private recargarMetricas(): Observable<unknown> {
     this.cargando.set(true);
     this.errorCarga.set(false);
-    this.adminApi.getMetricas().subscribe({
-      next: (data) => {
-        this.metricas.set(data);
-        this.cargando.set(false);
-      },
-      error: () => {
+    return this.adminApi.getMetricas().pipe(
+      tap((data) => this.metricas.set(data)),
+      catchError(() => {
         this.metricas.set(null);
-        this.cargando.set(false);
         this.errorCarga.set(true);
-      },
-    });
+        return of(null);
+      }),
+      finalize(() => this.cargando.set(false)),
+    );
   }
 }
