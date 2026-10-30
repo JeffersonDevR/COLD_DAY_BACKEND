@@ -37,6 +37,7 @@ import com.sena.cold_day.core.modules.ot.domain.services.NotificacionPushPort;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaEstado;
+import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
@@ -97,7 +98,7 @@ class IniciarBusquedaTecnicoUseCaseTest {
         });
 
         verify(disponibilidadRepository).buscarDisponiblesEnRadio(BOGOTA, 10.0,
-                Set.of(CategoriaServicio.REFRIGERACION));
+                Set.of(CategoriaServicio.REFRIGERACION), Tecnico.desdeVigenciaUbicacion(AHORA));
         verify(notificacionPush, times(2)).notificarOferta(any(TecnicoId.class), any(OfertaOt.class), eq(resultado));
         verify(otRepository).save(ot);
     }
@@ -169,7 +170,7 @@ class IniciarBusquedaTecnicoUseCaseTest {
     }
 
     private void cuandoHayDisponibles(TecnicoCercano... cercanos) {
-        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), anySet()))
+        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), anySet(), any()))
                 .thenReturn(List.of(cercanos));
     }
 

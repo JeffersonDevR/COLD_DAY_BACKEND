@@ -3,8 +3,12 @@ package com.sena.cold_day.core.modules.geolocalizacion.application.usecases;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,17 +44,35 @@ class BuscarTecnicosCercanosUseCaseTest {
     @Mock TecnicoRepository tecnicoRepository;
     @Mock UsuarioRepository usuarioRepository;
 
+    private static final Instant AHORA = Instant.parse("2026-01-01T10:00:00Z");
+
     private BuscarTecnicosCercanosUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new BuscarTecnicosCercanosUseCase(disponibilidadRepository, tecnicoRepository, usuarioRepository);
+        useCase = new BuscarTecnicosCercanosUseCase(disponibilidadRepository, tecnicoRepository,
+                usuarioRepository, Clock.fixed(AHORA, ZoneOffset.UTC));
+    }
+
+    /**
+     * The radar delegates freshness to the port: it must ask for positions
+     * stored since {@code ahora - UBICACION_VIGENCIA}, never for any position.
+     */
+    @Test
+    void buscaConLaMarcaDeVigenciaDelDominio() {
+        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any(), any()))
+                .thenReturn(List.of());
+
+        useCase.buscar(new Point(7.8, -72.5), 5.0, Set.of(CategoriaServicio.REFRIGERACION));
+
+        verify(disponibilidadRepository).buscarDisponiblesEnRadio(new Point(7.8, -72.5), 5.0,
+                Set.of(CategoriaServicio.REFRIGERACION), Tecnico.desdeVigenciaUbicacion(AHORA));
     }
 
     @Test
     void buscarEnrichesAvailableTechniciansWithContactData() {
         TecnicoId tecnicoId = TecnicoId.nueva();
-        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any()))
+        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any(), any()))
                 .thenReturn(List.of(new TecnicoCercano(tecnicoId, 2.5)));
         when(tecnicoRepository.findByIdAndActivoTrue(tecnicoId))
                 .thenReturn(Optional.of(tecnico(tecnicoId, 7L)));
@@ -68,7 +90,7 @@ class BuscarTecnicosCercanosUseCaseTest {
     @Test
     void buscarFallsBackToAPlaceholderNameWhenTheUsuarioIsMissing() {
         TecnicoId tecnicoId = TecnicoId.nueva();
-        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any()))
+        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any(), any()))
                 .thenReturn(List.of(new TecnicoCercano(tecnicoId, 1.0)));
         when(tecnicoRepository.findByIdAndActivoTrue(tecnicoId))
                 .thenReturn(Optional.of(tecnico(tecnicoId, 7L)));
@@ -84,7 +106,7 @@ class BuscarTecnicosCercanosUseCaseTest {
     @Test
     void buscarSkipsProjectionsWithoutAnActiveTechnician() {
         TecnicoId tecnicoId = TecnicoId.nueva();
-        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any()))
+        when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any(), any()))
                 .thenReturn(List.of(new TecnicoCercano(tecnicoId, 1.0)));
         when(tecnicoRepository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.empty());
 

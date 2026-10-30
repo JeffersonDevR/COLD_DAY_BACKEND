@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.geolocalizacion.infrastructure.spatial;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,11 @@ import jakarta.persistence.EntityManager;
  * {@code ST_DWithin}/{@code ST_Distance} over geography, backed by the partial
  * GiST index {@code idx_tecnico_disponible_ubicacion_geo} (see
  * {@code db/migration/V1__baseline_esquema_actual.sql}), scoped to the same {@code activo}/
- * {@code estado_validacion}/{@code estado_operativo} predicate used below.
+ * {@code estado_validacion}/{@code estado_operativo}/{@code tracking_activo} predicate used below.
+ * Only technicians actually reporting a fresh position are eligible: the radar
+ * must not offer work to someone who stopped sharing location or whose last
+ * report fell outside {@code Tecnico.UBICACION_VIGENCIA} (that boundary arrives
+ * as {@code desde}).
  * Plain lat/long columns are kept, so no PostGIS-mapped type crosses the port
  * boundary.
  */
@@ -43,8 +48,11 @@ public class PostgisTecnicoDisponibilidadAdapter implements TecnicoDisponibilida
             WHERE t.activo = true
               AND t.estado_validacion = 'APROBADO'
               AND t.estado_operativo = 'DISPONIBLE'
+              AND t.tracking_activo = true
               AND t.latitud IS NOT NULL
               AND t.longitud IS NOT NULL
+              AND t.ubicacion_actualizada_en IS NOT NULL
+              AND t.ubicacion_actualizada_en >= :desde
               AND ST_DWithin(
                 ST_MakePoint(t.longitud, t.latitud)::geography,
                 ST_MakePoint(:lon, :lat)::geography,
@@ -65,17 +73,21 @@ public class PostgisTecnicoDisponibilidadAdapter implements TecnicoDisponibilida
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public List<TecnicoCercano> buscarDisponiblesEnRadio(Point centro, double radioKm,
-            Set<CategoriaServicio> categorias) {
+            Set<CategoriaServicio> categorias, Instant desde) {
         if (centro == null) {
             throw new IllegalArgumentException("El centro de busqueda es requerido");
         }
         if (radioKm <= 0) {
             throw new IllegalArgumentException("El radio debe ser positivo");
         }
+        if (desde == null) {
+            throw new IllegalArgumentException("La marca de vigencia de ubicacion es requerida");
+        }
         List<Object[]> filas = entityManager.createNativeQuery(BUSQUEDA_ESPACIAL)
                 .setParameter("lat", centro.latitud())
                 .setParameter("lon", centro.longitud())
                 .setParameter("radioMetros", radioKm * METROS_POR_KM)
+                .setParameter("desde", desde)
                 .getResultList();
         if (filas.isEmpty()) {
             return List.of();
