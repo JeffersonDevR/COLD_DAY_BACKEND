@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { MapaSeguimiento } from './mapa-seguimiento';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
+import { provideColombianLocale } from '../../core/i18n/locale';
 import { Point } from '../../core/models/common.models';
 
 /**
@@ -27,6 +28,7 @@ function setup() {
   const mapsLoader = { isLoaded: () => false, isLoading: () => false, loadError: () => null, init: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
+      ...provideColombianLocale(),
       { provide: GoogleMapsLoaderService, useValue: mapsLoader },
       { provide: MapaConfigService, useValue: mapaConfigStub() },
     ],
@@ -128,7 +130,8 @@ describe('MapaSeguimiento', () => {
 
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Mapa no disponible');
-    expect(texto).toContain('2.5 km');
+    // es-CO: coma decimal en el pipe number.
+    expect(texto).toContain('2,5 km');
   });
 
   it('con la llegada registrada el mapa dice que ya llegó, no que sigue en camino', () => {
