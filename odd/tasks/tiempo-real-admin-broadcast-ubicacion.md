@@ -31,7 +31,7 @@ Cerrar los 4 pendientes operativos elegidos el 2026-10-30: (1) panel admin en ti
 - [x] **B2** — resolver unico de panel (`PanelResolver`): preferencia persistida (`coldday.panel.preferido`) escrita al visitar un panel, usada por `panel-redirect` y por "Mi Panel" del topbar; fallback rol primario → primer rol con panel. Specs de los 3 casos (preferencia valida, invalida, sin preferencia).
 
 ### C. Ruta real por calles (costo medible)
-- [ ] **C1 (backend)** — `POST /api/maps/ruta` {origen, destino} → {distanciaKm, duracionMin, polyline}: `MapsPort`+adapter sobre Directions API, cache en memoria (TTL 60 s, max 200 entradas, clave por coords redondeadas), sin llamada si Maps no esta disponible (fallback nulo, como `distanciaOpcional`). Tests de parseo, cache hit y caida.
+- [x] **C1 (backend)** — `POST /api/maps/ruta` {origen, destino} → {distanciaKm, duracionMin, polyline}: `MapsPort`+adapter sobre Directions API, cache en memoria (TTL 60 s, max 200 entradas, clave por coords redondeadas), sin llamada si Maps no esta disponible (fallback nulo, como `distanciaOpcional`). Tests de parseo, cache hit y caida. Sin ruta (`ZERO_RESULTS`/`NOT_FOUND`) = resultado vacio: el endpoint responde 404 (mismo criterio que `/distancia`) y `rutaOpcional` colapsa a vacio.
 - [ ] **C2 (frontend)** — `mapa-seguimiento` dibuja el polyline decodificado cuando hay ruta; fallback a linea recta si falla. Guard de costo: pedir solo con pestaña visible, solo con tecnico en movimiento, como maximo 1 request cada 60 s o cuando el tecnico se movio >200 m. Specs de decodificacion, fallback y guard.
 
 ### D. Ubicacion ligada al ciclo de vida

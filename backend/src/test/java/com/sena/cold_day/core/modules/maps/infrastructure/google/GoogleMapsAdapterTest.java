@@ -22,7 +22,7 @@ import com.sena.cold_day.core.modules.maps.infrastructure.config.MapsProperties;
  */
 class GoogleMapsAdapterTest {
 
-    private static final MapsProperties PROPS = new MapsProperties("server-key", true, "es", "CO", 4000);
+    private static final MapsProperties PROPS = new MapsProperties("server-key", true, "es", "CO", 4000, 60, 200);
 
     private MockRestServiceServer server;
     private GoogleMapsAdapter adapter;
@@ -153,8 +153,72 @@ class GoogleMapsAdapterTest {
     }
 
     @Test
-    void anEmptyBodyIsRejectedDefensively() {
-        server.expect(requestTo(Matchers.containsString("/geocode/json")))
+    void rutaParsesDistanceDurationAndPolyline() {
+        server.expect(requestTo(Matchers.allOf(
+                Matchers.containsString("/directions/json"),
+                Matchers.containsString("mode=driving"))))
+                .andRespond(withSuccess("""
+                        {"status":"OK","routes":[{"overview_polyline":{"points":"abc_polyline"},
+                        "legs":[{"distance":{"value":1500,"text":"1.5 km"},
+                        "duration":{"value":300,"text":"5 min"}}]}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        var ruta = adapter.ruta(7.8, -72.5, 7.9, -72.6);
+
+        assertThat(ruta).isPresent();
+        assertThat(ruta.get().distanciaKm()).isEqualTo(1.5);
+        assertThat(ruta.get().duracionMin()).isEqualTo(5.0);
+        assertThat(ruta.get().polyline()).isEqualTo("abc_polyline");
+        server.verify();
+    }
+
+    @Test
+    void rutaReturnsEmptyOnZeroResults() {
+        server.expect(requestTo(Matchers.containsString("/directions/json")))
+                .andRespond(withSuccess("{\"status\":\"ZERO_RESULTS\",\"routes\":[]}", MediaType.APPLICATION_JSON));
+
+        assertThat(adapter.ruta(7.8, -72.5, 7.9, -72.6)).isEmpty();
+    }
+
+    @Test
+    void rutaReturnsEmptyOnNotFound() {
+        server.expect(requestTo(Matchers.containsString("/directions/json")))
+                .andRespond(withSuccess("{\"status\":\"NOT_FOUND\"}", MediaType.APPLICATION_JSON));
+
+        assertThat(adapter.ruta(7.8, -72.5, 7.9, -72.6)).isEmpty();
+    }
+
+    @Test
+    void rutaReturnsEmptyWhenGoogleSaysOkWithoutRoutes() {
+        server.expect(requestTo(Matchers.containsString("/directions/json")))
+                .andRespond(withSuccess("{\"status\":\"OK\",\"routes\":[]}", MediaType.APPLICATION_JSON));
+
+        assertThat(adapter.ruta(7.8, -72.5, 7.9, -72.6)).isEmpty();
+    }
+
+    @Test
+    void rutaFailsOnRequestDenied() {
+        server.expect(requestTo(Matchers.containsString("/directions/json")))
+                .andRespond(withSuccess("{\"status\":\"REQUEST_DENIED\",\"error_message\":\"API off\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> adapter.ruta(7.8, -72.5, 7.9, -72.6))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("API off");
+    }
+
+    @Test
+    void rutaFailsOnOverQueryLimit() {
+        server.expect(requestTo(Matchers.containsString("/directions/json")))
+                .andRespond(withSuccess("{\"status\":\"OVER_QUERY_LIMIT\"}", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> adapter.ruta(7.8, -72.5, 7.9, -72.6))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cuota");
+    }
+
+    @Test
+    void anEmptyBodyIsRejectedDefensively() {        server.expect(requestTo(Matchers.containsString("/geocode/json")))
                 .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
         assertThatThrownBy(() -> adapter.geocodificar("Calle 1"))

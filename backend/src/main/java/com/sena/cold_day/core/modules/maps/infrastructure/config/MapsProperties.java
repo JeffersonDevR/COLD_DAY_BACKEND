@@ -9,9 +9,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * is allowed for quota-free development: the use cases raise
  * {@code MapsNoDisponibleException} and the controller answers 503 with an
  * actionable message.
+ *
+ * <p>{@code cacheTtlSegundos} and {@code cacheMaxEntradas} bound the in-memory
+ * route cache ({@code RutaCache}), the only guard between the live map and the
+ * billed Directions API.
  */
 @ConfigurationProperties(prefix = "app.maps")
-public record MapsProperties(String apiKey, boolean enabled, String language, String region, int timeoutMs) {
+public record MapsProperties(String apiKey, boolean enabled, String language, String region, int timeoutMs,
+        int cacheTtlSegundos, int cacheMaxEntradas) {
 
     public MapsProperties {
         if (language == null || language.isBlank()) {
@@ -22,6 +27,12 @@ public record MapsProperties(String apiKey, boolean enabled, String language, St
         }
         if (timeoutMs <= 0) {
             timeoutMs = 4000;
+        }
+        if (cacheTtlSegundos <= 0) {
+            cacheTtlSegundos = 60;
+        }
+        if (cacheMaxEntradas <= 0) {
+            cacheMaxEntradas = 200;
         }
     }
 
