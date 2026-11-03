@@ -1,0 +1,107 @@
+/*
+ * COLD DAY mobile theme.
+ * Tokens come from the Stitch "COLD DAY Dark ops app" design (project
+ * 1546876662301161963). Scoped to the Ionic mobile project: the web app keeps
+ * its own Tailwind/PrimeNG theme untouched.
+ *
+ * The Ionic base/CSS is loaded from angular.json (styles) before this file, so
+ * these declarations win the cascade.
+ */
+
+:root {
+  /* Typography */
+  --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --cd-font-headline: 'Space Grotesk', 'Inter', sans-serif;
+
+  /* Surfaces */
+  --ion-background-color: #0b1220;
+  --ion-background-color-rgb: 11, 18, 32;
+  --ion-text-color: #e2e8f0;
+  --ion-text-color-rgb: 226, 232, 240;
+  --cd-surface: #111c2e;
+  --cd-surface-border: rgba(226, 232, 240, 0.08);
+  --cd-muted: #94a3b8;
+
+  /* Brand */
+  --ion-color-primary: #22d3ee;
+  --ion-color-primary-rgb: 34, 211, 238;
+  --ion-color-primary-contrast: #04121a;
+  --ion-color-primary-contrast-rgb: 4, 18, 26;
+  --ion-color-primary-shade: #1ebad1;
+  --ion-color-primary-tint: #38d7f0;
+
+  --ion-color-secondary: #f59e0b;
+  --ion-color-secondary-rgb: 245, 158, 11;
+  --ion-color-secondary-contrast: #1a1204;
+  --ion-color-secondary-contrast-rgb: 26, 18, 4;
+  --ion-color-secondary-shade: #d88b0a;
+  --ion-color-secondary-tint: #f6a823;
+
+  --ion-color-tertiary: #a78bfa;
+  --ion-color-tertiary-rgb: 167, 139, 250;
+  --ion-color-tertiary-contrast: #0e0a1a;
+  --ion-color-tertiary-contrast-rgb: 14, 10, 26;
+  --ion-color-tertiary-shade: #937adc;
+  --ion-color-tertiary-tint: #b097fb;
+
+  /* Roundness (Stitch ROUND_EIGHT) */
+  --cd-radius: 8px;
+
+  /* Ionic component mapping */
+  --ion-toolbar-background: var(--cd-surface);
+  --ion-toolbar-color: var(--ion-text-color);
+  --ion-item-background: var(--cd-surface);
+  --ion-card-background: var(--cd-surface);
+  --ion-tab-bar-background: var(--cd-surface);
+  --ion-tab-bar-background-focused: #16243a;
+  --ion-tab-bar-color: var(--cd-muted);
+  --ion-tab-bar-color-selected: var(--ion-color-primary);
+}
+
+html,
+body {
+  background: var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+
+ion-card,
+ion-button {
+  --border-radius: var(--cd-radius);
+}
+
+ion-card {
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+  box-shadow: none;
+}
+
+ion-tab-bar {
+  border-top: 1px solid var(--cd-surface-border);
+}
+
+/* Shared primitives for the P0 placeholder screens. */
+.cd-headline {
+  font-family: var(--cd-font-headline);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.cd-eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+}
+
+.cd-card {
+  padding: 1.25rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-muted {
+  color: var(--cd-muted);
+}
