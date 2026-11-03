@@ -355,3 +355,316 @@ ion-tab-bar {
   color: var(--cd-muted);
 }
 
+/* A4/A5 — encabezado de pantalla: título y acción principal sobre el surface. */
+.cd-header ion-toolbar {
+  --min-height: 0;
+  --padding-top: calc(0.5rem + env(safe-area-inset-top));
+  --padding-bottom: 0.85rem;
+  padding: 0 1rem;
+}
+
+/* A4 — Panel del cliente: saludo, métricas y lista de OTs. */
+.cd-hero {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cd-hero h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.cd-hero__nota {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-hero__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+.cd-cargando {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 0;
+  font-size: 0.85rem;
+}
+
+.cd-metricas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.cd-metrica {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.6rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+  text-align: center;
+}
+
+.cd-metrica__valor {
+  font-family: var(--cd-font-headline);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+}
+
+.cd-metrica__rotulo {
+  font-size: 0.65rem;
+  line-height: 1.25;
+  color: var(--cd-muted);
+}
+
+.cd-filtros {
+  --background: #0e1828;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-panel__sub {
+  margin: 0.5rem 0 1rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.cd-ot {
+  margin: 0 0 0.75rem;
+}
+
+.cd-ot__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-ot__codigo {
+  font-family: ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--cd-muted);
+}
+
+.cd-ot__categoria {
+  margin: 0.35rem 0 0.2rem;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.cd-ot__descripcion {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--cd-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.cd-ot__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--cd-surface-border);
+  font-size: 0.72rem;
+}
+
+.cd-ot__direccion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cd-muted);
+}
+
+/* Chips: el estado de la OT se lee de un color, no de un icono. */
+.cd-chip--ok {
+  color: #6ee7b7;
+  border-color: rgba(110, 231, 183, 0.5);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.cd-chip--curso {
+  color: var(--ion-color-primary);
+  border-color: rgba(34, 211, 238, 0.5);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.cd-chip--espera {
+  color: #fcd34d;
+  border-color: rgba(252, 211, 77, 0.5);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.cd-chip--cerrada {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.45);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.cd-vacio {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 2rem 1rem;
+  background: rgba(17, 28, 46, 0.6);
+  border: 1px dashed var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+  text-align: center;
+}
+
+.cd-vacio ion-icon {
+  font-size: 1.8rem;
+  color: var(--cd-muted);
+}
+
+.cd-vacio__titulo {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cd-vacio__texto {
+  margin: 0 0 0.5rem;
+  max-width: 22rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+/* Aviso honesto: el fallo se explica en la pantalla, no con un toast genérico. */
+.cd-alerta {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-alerta--error {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.cd-alerta--aviso {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.cd-alerta__titulo {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cd-alerta__texto {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+/* A5 — Solicitar servicio: bloques del formulario y alta rápida del perfil. */
+.cd-solicitud__intro {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.cd-solicitud__intro h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.cd-solicitud__intro p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.cd-bloque {
+  margin: 0 0 1rem;
+  padding: 0.85rem 0.9rem 1rem;
+  background: rgba(17, 28, 46, 0.6);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-bloque__titulo {
+  padding: 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-categorias {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+}
+
+.cd-categoria {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem;
+  background: #0e1828;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+  color: var(--cd-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.cd-categoria--activa {
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.1);
+  border-color: var(--ion-color-primary);
+}
+
+.cd-categoria ion-icon {
+  font-size: 1rem;
+}
+
+.cd-ubicacion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.cd-coordenadas {
+  margin: 0.25rem 0 0;
+  font-family: ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 0.72rem;
+  color: var(--cd-muted);
+}
+
+.cd-perfil-rapido {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+

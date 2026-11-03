@@ -14,18 +14,10 @@ import { SugerenciaApiResponse } from '../../core/models/backend.dto';
 import { CIUDAD_OPERACION, MapaConfigService } from '../../core/service/mapa-config.service';
 import { SolicitudDraftService } from '../../core/service/solicitud-draft.service';
 import { SelectorUbicacionMapa } from '../../shared/selector-ubicacion-mapa/selector-ubicacion-mapa';
-import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-cliente';
+import { esErrorPerfilClienteFaltante, MENSAJE_PERFIL_CLIENTE_YA_EXISTE } from '../../core/errorStatus/perfil-cliente';
 
 // Se reexporta para conservar la API pública previa de la página.
 export { esErrorPerfilClienteFaltante };
-
-/**
- * Copy del 409 al adquirir el perfil: el alta ya se commiteó antes (el token de
- * reemplazo no llegó), así que reintentar no ayuda. Hay que reautenticarse y el
- * borrador sigue guardado.
- */
-const MENSAJE_PERFIL_CLIENTE_YA_EXISTE =
-  'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.';
 
 @Component({
   selector: 'app-solicitar-servicio-page',

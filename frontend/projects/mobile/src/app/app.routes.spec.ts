@@ -45,12 +45,36 @@ describe('mobile routes', () => {
         (tab) => tab.id,
       );
 
-      expect(children.map((child) => child.path)).toEqual(['', ...expected]);
+      // Los tabs van primero y en su orden; después pueden venir rutas extra
+      // del modo (p. ej. `/cliente/solicitar`, que no es un tab).
+      expect(children.slice(0, expected.length + 1).map((child) => child.path)).toEqual([
+        '',
+        ...expected,
+      ]);
       expect(children[0].redirectTo).toBe(expected[0]);
-      for (const child of children.slice(1)) {
+      for (const child of children.slice(1, expected.length + 1)) {
         expect(child.loadComponent).toBeTypeOf('function');
       }
     }
+  });
+
+  it('abre la solicitud de servicio bajo el modo cliente, sin tab propio', () => {
+    const cliente = routes.find((item) => item.path === 'cliente');
+    const solicitar = cliente?.children?.find((child) => child.path === 'solicitar');
+
+    expect(solicitar?.loadComponent).toBeTypeOf('function');
+    expect(MODOS.CLIENTE.tabs.map((tab) => tab.id)).not.toContain('solicitar');
+  });
+
+  it('el panel del cliente tiene pantalla propia, no el placeholder compartido', () => {
+    const cliente = routes.find((item) => item.path === 'cliente');
+    const panel = cliente?.children?.find((child) => child.path === 'panel');
+    // Equipos todavía es placeholder: comparten el mismo cargador. El panel no.
+    const equipos = cliente?.children?.find((child) => child.path === 'equipos');
+
+    expect(panel?.loadComponent).toBeTypeOf('function');
+    expect(equipos?.loadComponent).toBeTypeOf('function');
+    expect(panel?.loadComponent).not.toBe(equipos?.loadComponent);
   });
 
   it('leaves the mode home one segment below the mode prefix', () => {

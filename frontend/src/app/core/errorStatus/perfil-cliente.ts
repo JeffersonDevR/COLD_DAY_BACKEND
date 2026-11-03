@@ -16,3 +16,11 @@ export function esErrorPerfilClienteFaltante(err: unknown): boolean {
   if (err.status !== 404 && err.status !== 409) return false;
   return PATRON_PERFIL_CLIENTE_FALTANTE.test(err.message);
 }
+
+/**
+ * Copy del 409 al adquirir el perfil (web y móvil comparten el mismo flujo de
+ * un toque): el alta ya se commiteó antes (el token de reemplazo no llegó), así
+ * que reintentar no ayuda. Hay que reautenticarse y el borrador sigue guardado.
+ */
+export const MENSAJE_PERFIL_CLIENTE_YA_EXISTE =
+  'Tu perfil de cliente ya existe. Iniciá sesión para continuar; tu solicitud quedó guardada.';

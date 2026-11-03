@@ -4,7 +4,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../out-tsc/mobile/spec",
-    "types": ["vitest/globals"]
+    // `google.maps` es necesario desde que A5 importa `MapsApi` (y con él el
+    // geocoder del navegador): sin los tipos, el namespace `google` no existe
+    // en el programa de specs.
+    "types": ["vitest/globals", "google.maps"]
   },
   "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
 }

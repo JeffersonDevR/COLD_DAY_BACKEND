@@ -125,6 +125,47 @@ describe('mobileErrorInterceptor', () => {
     }
   });
 
+  it('las acciones de A4/A5 con copy propio no reciben un toast genérico', async () => {
+    const urls = [
+      'http://api.test/api/clientes/me/ots',
+      'http://api.test/api/ot',
+      'http://api.test/api/clientes/perfil',
+      'http://api.test/api/clientes/me/ubicacion',
+      'http://api.test/api/config/maps',
+      'http://api.test/api/maps/geocode',
+    ];
+
+    for (const url of urls) {
+      TestBed.resetTestingModule();
+      const { caught, toast } = await run(url, new HttpErrorResponse({ status: 500 }));
+
+      expect(caught).toBeInstanceOf(ApiHttpError);
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(toast.warning).not.toHaveBeenCalled();
+    }
+  });
+
+  it('el listado del panel no silencia la sesión vencida: un 401 avisa y cierra sesión', async () => {
+    const { caught, toast, authService } = await run(
+      'http://api.test/api/clientes/me/ots',
+      new HttpErrorResponse({ status: 401 }),
+    );
+
+    expect((caught as ApiHttpError).sesionNotificada).toBe(true);
+    expect(toast.warning).toHaveBeenCalledTimes(1);
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(authService.logout).toHaveBeenCalledTimes(1);
+  });
+
+  it('las subrutas hermanas de la OT sí avisan: el silencio no se propaga', async () => {
+    const { toast } = await run(
+      'http://api.test/api/ot/OT-1/cancelar',
+      new HttpErrorResponse({ status: 409 }),
+    );
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
+  });
+
   it('no convierte en toast un error que no es HTTP', async () => {
     const { caught, toast } = await run('/api/ots', new Error('boom'));
 
