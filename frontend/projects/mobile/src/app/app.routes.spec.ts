@@ -19,6 +19,14 @@ describe('mobile routes', () => {
     expect(routes.find((route) => route.path === 'solo-web')?.canActivate).toBeDefined();
   });
 
+  it('keeps registration public, next to login', () => {
+    const registro = routes.find((route) => route.path === 'registro');
+
+    expect(registro?.loadComponent).toBeTypeOf('function');
+    expect(registro?.canActivate).toBeUndefined();
+    expect(paths.indexOf('registro')).toBe(paths.indexOf('login') + 1);
+  });
+
   it('exposes one tab shell per mobile mode', () => {
     for (const modo of ['cliente', 'tecnico', 'proveedor'] as const) {
       const route = routes.find((item) => item.path === modo);

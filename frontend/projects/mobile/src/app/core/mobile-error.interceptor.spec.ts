@@ -113,6 +113,18 @@ describe('mobileErrorInterceptor', () => {
     expect(authService.logout).not.toHaveBeenCalled();
   });
 
+  it('las altas de A2 explican su propio 409: el interceptor no avisa', async () => {
+    for (const url of ['/api/clientes', '/api/tecnicos', '/api/proveedores']) {
+      TestBed.resetTestingModule();
+      const { caught, toast } = await run(url, new HttpErrorResponse({ status: 409 }));
+
+      expect(caught).toBeInstanceOf(ApiHttpError);
+      expect((caught as ApiHttpError).status).toBe(409);
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(toast.warning).not.toHaveBeenCalled();
+    }
+  });
+
   it('no convierte en toast un error que no es HTTP', async () => {
     const { caught, toast } = await run('/api/ots', new Error('boom'));
 

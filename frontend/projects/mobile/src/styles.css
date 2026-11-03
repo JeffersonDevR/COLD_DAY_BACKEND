@@ -196,6 +196,109 @@ ion-tab-bar {
   text-decoration: none;
 }
 
+.cd-field-error {
+  margin: 0.15rem 0 0.1rem;
+  font-size: 0.78rem;
+  color: #fca5a5;
+}
+
+/* A2 — selector de rol: tres opciones con su explicación, estilo segmento. */
+.cd-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  padding: 0.25rem;
+  background: #0e1828;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-segment__opcion {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 0.3rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--cd-radius) - 2px);
+  color: var(--cd-muted);
+  font: inherit;
+  text-align: center;
+}
+
+.cd-segment__opcion--activa {
+  color: var(--ion-text-color);
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.45);
+}
+
+.cd-segment__titulo {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cd-segment__nota {
+  font-size: 0.62rem;
+  line-height: 1.2;
+}
+
+/* A2 — bloque por rol (datos de cliente, perfil técnico, datos comerciales). */
+.cd-section {
+  margin: 0.25rem 0 0;
+  padding: 0.75rem 0.9rem 0.9rem;
+  background: rgba(17, 28, 46, 0.6);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-section__titulo {
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+}
+
+.cd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.cd-chip {
+  padding: 0.45rem 0.7rem;
+  background: transparent;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: 999px;
+  color: var(--cd-muted);
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.cd-chip--activo {
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.1);
+  border-color: var(--ion-color-primary);
+}
+
+.cd-ayuda {
+  margin: 0.35rem 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-legal {
+  --checkbox-background: transparent;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.cd-legal::part(label) {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
 .cd-form {
   margin: 1rem 0;
   background: transparent;

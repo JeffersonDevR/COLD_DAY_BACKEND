@@ -95,6 +95,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.page').then((m) => m.LoginPage),
   },
   {
+    // A2: alta pública, sin sesión. Cada rol se crea contra su endpoint atómico.
+    path: 'registro',
+    title: 'Crear cuenta · Cold Day',
+    loadComponent: () => import('./pages/registro/registro.page').then((m) => m.RegistroPage),
+  },
+  {
     path: 'solo-web',
     title: 'Usá la web · Cold Day',
     canActivate: [authGuardMobile],

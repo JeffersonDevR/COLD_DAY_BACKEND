@@ -10,6 +10,13 @@ import { MobileToastService } from './toast.service';
 /** Endpoints de autenticación: un 401 acá son credenciales, no sesión vencida. */
 const AUTH_ENDPOINTS = /\/usuarios\/(login|recuperar-contrasena|reset-contrasena)/;
 
+/**
+ * Altas públicas de A2: el 400/409 lo explica el formulario con su copy por rol
+ * (p. ej. qué campo único chocó). El interceptor se calla para no duplicar el
+ * aviso; la pantalla igual notifica el fallo con su toast.
+ */
+const ALTA_ENDPOINTS = /\/api\/(clientes|tecnicos|proveedores)$/;
+
 const MENSAJE_SIN_DETALLE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
 /**
@@ -63,15 +70,20 @@ export const mobileErrorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       const esAuth = AUTH_ENDPOINTS.test(req.url);
-      if (!esAuth && normalizado.status === 401 && auth.isAuthenticated()) {
+      // Login y altas explican su propio fallo: un único aviso por error.
+      if (esAuth || ALTA_ENDPOINTS.test(req.url)) {
+        return throwError(() => normalizado);
+      }
+
+      if (normalizado.status === 401 && auth.isAuthenticated()) {
         normalizado.sesionNotificada = true;
         void toast.warning('Tu sesión expiró', 'Ingresá de nuevo para continuar.');
         auth.logout();
-      } else if (!esAuth && normalizado.status === 0) {
+      } else if (normalizado.status === 0) {
         void toast.error('Sin conexión', mensajeErrorAccion(normalizado));
-      } else if (!esAuth && normalizado.status >= 500) {
+      } else if (normalizado.status >= 500) {
         void toast.error('Error del servidor', mensajeErrorAccion(normalizado));
-      } else if (!esAuth && normalizado.status >= 400) {
+      } else if (normalizado.status >= 400) {
         void toast.error('No pudimos completar la acción', mensajeErrorAccion(normalizado));
       }
 
