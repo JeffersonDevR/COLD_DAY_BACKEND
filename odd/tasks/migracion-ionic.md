@@ -96,7 +96,7 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
   - `AuthService` sin avisador registrado no rompe: el token `AVISO_SESION` tiene default no-op.
 
 ### P2 — Pantallas de negocio (3 entregas encadenadas)
-- [ ] **P2.1 Auth + cliente:** A1 ✅, A2 ✅ (P2.1a); A4, A5 pendientes (con draft + un-tap perfil).
+- [ ] **P2.1 Auth + cliente:** A1 ✅, A2 ✅ (P2.1a); A4 ✅, A5 ✅ (P2.1b).
 - [ ] **P2.2 Cliente profundo:** A6 (SSE + mapa + poll gated), A7, A8, A9.
 - [ ] **P2.3 Técnico + proveedor:** B1, B2, B3, B4, C1, C2.
 - [ ] Cada entrega: specs de componente/servicio, y prueba manual en dispositivo.
@@ -113,6 +113,23 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
   - Proveedor: `ProveedorApiRequest` no tiene dirección ni ciudad, así que no se piden. Al crear la cuenta aterriza en `/proveedor/documentos` (no en Insumos): nace `PENDIENTE` y sus solicitudes responderían 403, igual que en la web.
   - Habeas Data: el checkbox con la copy de la web (Ley 1581) sigue siendo obligatorio porque el backend lo declara `@NotNull`.
 - Pendiente de esta entrega: prueba manual en emulador (misma limitación de runtime que P1).
+
+#### P2.1b — A4 Panel Cliente + A5 Solicitar servicio (CERRADO 2026-11-03)
+- [x] Filtros, contadores y copy por vista del panel movidos al core compartido; copy del 409 del perfil a `core/errorStatus/perfil-cliente` — `ad783aa`.
+- [x] A5 `/cliente/solicitar`: categoría, descripción (mín. 10), dirección (mín. 5), geocodificación por el proxy del backend o GPS, coordenadas de solo lectura, borrador compartido y alta de perfil en un toque — `dceb033`.
+- [x] A4 `/cliente/panel`: saludo, contadores, `ion-segment` de cuatro vistas, `ion-refresher`, estado vacío accionable, error de carga con «Reintentar», tarjeta de perfil faltante y sondeo de 25 s solo con la app visible — `30cb04b`.
+- [x] Locale `es-CO` registrado en la app móvil (`provideColombianLocale`).
+- Verificación: `npm run mobile:test -- --watch=false` → 10 archivos / 106 tests / 0; `npx ng build mobile` → exit 0 y 0 coincidencias de `primeng|MessageService` en `dist/mobile`; `npx ng test app --watch=false` → 81 / 880 / 0; `tsc --noEmit` móvil y web → 0; `npm run lint` → solo los 8 errores web preexistentes.
+- Diferencias deliberadas con la web:
+  - **Sin mapa interactivo** en esta entrega: la dirección se geocodifica por el proxy del backend o se toma del GPS, y el punto se muestra como texto de solo lectura. El pin arrastrable llega en P3 con mapas nativos.
+  - **Sin foto de evidencia**: el backend es metadata-only, no hay endpoint de upload; no se inventa una cámara.
+  - El fallo de carga inicial no se disfraza de lista vacía, y un refresco fallido conserva la lista que el cliente está leyendo.
+  - «Historial» navega a `/cliente/equipos` (tab real), no al enlace muerto `/cliente/historial` de la web.
+  - El alta de perfil vive en la propia solicitud: `/perfil/agregar` no existe en móvil, así que no se ofrece «completar por separado».
+  - El éxito de A5 navega a `/cliente/panel` (A6 todavía no existe) con el toast del broadcast.
+  - El interceptor móvil se calla en `POST /api/ot`, `POST /api/clientes/perfil`, `GET /api/clientes/me/ots`, `/api/maps/*` y el ping de ubicación: la pantalla es la única voz. Un 401 con sesión activa sigue avisando una vez y cerrando sesión.
+  - El copy compartido del panel pasa a voseo, así que la web también lo muestra.
+- Pendiente de esta entrega: prueba manual en emulador —permiso de geolocalización del WebView y ausencia de mapa— (misma limitación de runtime que P1).
 
 ### P3 — Capacidades nativas (lo que la web no puede dar)
 - [ ] **Token seguro:** `localStorage` → Capacitor Preferences (o Secure Storage).
