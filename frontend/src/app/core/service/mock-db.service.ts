@@ -28,7 +28,7 @@ import {
   InsumoSolicitud,
   TarifaEstimadaResponse,
 } from '../models/common.models';
-import { ApiHttpError } from '../interceptos/error.interceptor';
+import { ApiHttpError } from '../alertas/api-http.error';
 
 @Injectable({
   providedIn: 'root'

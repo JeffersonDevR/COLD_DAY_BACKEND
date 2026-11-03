@@ -28,7 +28,7 @@ import {
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, delay, map } from 'rxjs/operators';
 import { pendienteBackend } from '../errorStatus/pendiente-backend';
-import { ApiHttpError } from '../interceptos/error.interceptor';
+import { ApiHttpError } from '../alertas/api-http.error';
 
 /** Un 404 en `tecnico-ubicacion` significa "todavía no hay posición", no un fallo. */
 function esSinUbicacion(err: unknown): boolean {

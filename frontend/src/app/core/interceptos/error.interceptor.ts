@@ -5,26 +5,9 @@ import { ApiError } from '../models/common.models';
 import { AuthService } from '../service/auth.service';
 import { ToastService } from '../alertas/toast.service';
 
-/**
- * Error normalizado para la UI. Conserva el status HTTP y los `fieldErrors`
- * del backend para que las páginas puedan mostrar mensajes útiles.
- */
-export class ApiHttpError extends Error {
-  /**
-   * `true` cuando el interceptor ya avisó del fallo y cerró la sesión. Las
-   * páginas lo consultan para no repetir el mismo aviso al usuario.
-   */
-  sesionNotificada = false;
+import { ApiHttpError } from '../alertas/api-http.error';
 
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly fieldErrors: string[] = [],
-  ) {
-    super(message);
-    this.name = 'ApiHttpError';
-  }
-}
+export { ApiHttpError } from '../alertas/api-http.error';
 
 /**
  * Convierte la respuesta de error del backend (ApiError.java) en un Error con

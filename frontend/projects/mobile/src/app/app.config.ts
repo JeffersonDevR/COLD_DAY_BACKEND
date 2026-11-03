@@ -1,22 +1,35 @@
-import {ApplicationConfig, provideBrowserGlobalErrorListeners} from '@angular/core';
-import {RouteReuseStrategy, provideRouter, withPreloading, PreloadAllModules} from '@angular/router';
-import {provideHttpClient} from '@angular/common/http';
-import {IonicRouteStrategy, provideIonicAngular} from '@ionic/angular';
-import {routes} from './app.routes';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  PreloadAllModules,
+  RouteReuseStrategy,
+  provideRouter,
+  withPreloading,
+} from '@angular/router';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
+import { authInterceptor } from '@core/interceptos/auth.interceptor';
+import { API_ORIGIN } from '@core/service/api.config';
+import { API_ORIGIN as API_ORIGIN_GENERADO } from '@core/environment/api-origin';
+import { routes } from './app.routes';
+import { mobileErrorInterceptor } from './core/mobile-error.interceptor';
+import { provideAvisoSesion } from './core/toast.service';
 
 /**
- * Mobile app providers.
+ * Providers de la app móvil.
  *
- * No HTTP interceptors yet: `errorInterceptor` lives in `@core` but depends on
- * `ToastService`, which is a PrimeNG facade (web-only UI). Wiring core auth and
- * error handling is P1 work, once the mobile toast/alert adapter exists.
+ * - El core compartido solo depende de puertos: `AVISO_SESION` se cubre con un
+ *   toast de Ionic, así que PrimeNG nunca entra al bundle móvil.
+ * - `API_ORIGIN` sale del mismo módulo generado que usa la web (build-time),
+ *   para no hardcodear el host del backend.
  */
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideIonicAngular({mode: 'md'}),
-    {provide: RouteReuseStrategy, useClass: IonicRouteStrategy},
+    provideIonicAngular({ mode: 'md' }),
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideRouter(routes, withPreloading(PreloadAllModules)),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor, mobileErrorInterceptor])),
+    { provide: API_ORIGIN, useValue: API_ORIGIN_GENERADO },
+    provideAvisoSesion(),
   ],
 };
