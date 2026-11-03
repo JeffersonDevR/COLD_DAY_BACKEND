@@ -96,10 +96,23 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
   - `AuthService` sin avisador registrado no rompe: el token `AVISO_SESION` tiene default no-op.
 
 ### P2 — Pantallas de negocio (3 entregas encadenadas)
-- [ ] **P2.1 Auth + cliente:** A1, A2, A4, A5 (con draft + un-tap perfil). 
+- [ ] **P2.1 Auth + cliente:** A1 ✅, A2 ✅ (P2.1a); A4, A5 pendientes (con draft + un-tap perfil).
 - [ ] **P2.2 Cliente profundo:** A6 (SSE + mapa + poll gated), A7, A8, A9.
 - [ ] **P2.3 Técnico + proveedor:** B1, B2, B3, B4, C1, C2.
 - [ ] Cada entrega: specs de componente/servicio, y prueba manual en dispositivo.
+
+#### P2.1a — A1 Login + A2 Registro (CERRADO 2026-11-03)
+- [x] A1 con el look de Stitch (marca centrada, etiquetas visibles, toggle de contraseña, error inline + toast, enlace al registro) sobre `AuthService`; la navegación sigue saliendo de `ModoService` — `41eff45`.
+- [x] A2 `/registro` público con selector de rol y un set de campos por rol, contra los tres endpoints atómicos que ya usa la web — `80c1e32`.
+- [x] `mensajeErrorAccion` + `copyConflictoAlta` espejado en `pages/registro/registro-copy.ts` (el de la web vive en un módulo que importa el toast de PrimeNG) — `80c1e32`.
+- [x] `mobileErrorInterceptor` se calla en `POST /api/{clientes,tecnicos,proveedores}`: el formulario es la única voz del 400/409 — `80c1e32`.
+- Verificación: `npm run mobile:test -- --watch=false` → 8 archivos / 65 tests / 0; `npx ng build mobile` → exit 0 y 0 coincidencias de `primeng|MessageService` en `dist/mobile`; `npx ng test app --watch=false` → 81 / 880 / 0; `tsc --noEmit` móvil y web → 0; `npm run lint` → solo los 8 errores web preexistentes.
+- Diferencias con la web, forzadas por el backend (no por diseño):
+  - Cliente: `ClienteOnboardingApiRequest` exige `calle` y `ciudad` (`@NotBlank`); el móvil las pide en vez del `'Por definir'`/`'Cúcuta'` fijos de la web. `barrio` y `ubicacion` son opcionales y se omiten hasta que A5 tenga mapa.
+  - Técnico: `TecnicoApiRequest.categoriasServicio` es `@NotEmpty`, así que la especialidad NO puede ser opcional; se preseleccionan las dos de la web y se exige al menos una. `certificaciones: []` como la web: el DTO exige objetos `Certificacion` (nombre, institución, fechas), no texto libre.
+  - Proveedor: `ProveedorApiRequest` no tiene dirección ni ciudad, así que no se piden. Al crear la cuenta aterriza en `/proveedor/documentos` (no en Insumos): nace `PENDIENTE` y sus solicitudes responderían 403, igual que en la web.
+  - Habeas Data: el checkbox con la copy de la web (Ley 1581) sigue siendo obligatorio porque el backend lo declara `@NotNull`.
+- Pendiente de esta entrega: prueba manual en emulador (misma limitación de runtime que P1).
 
 ### P3 — Capacidades nativas (lo que la web no puede dar)
 - [ ] **Token seguro:** `localStorage` → Capacitor Preferences (o Secure Storage).
