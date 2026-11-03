@@ -11,11 +11,35 @@ import { MobileToastService } from './toast.service';
 const AUTH_ENDPOINTS = /\/usuarios\/(login|recuperar-contrasena|reset-contrasena)/;
 
 /**
- * Altas públicas de A2: el 400/409 lo explica el formulario con su copy por rol
- * (p. ej. qué campo único chocó). El interceptor se calla para no duplicar el
- * aviso; la pantalla igual notifica el fallo con su toast.
+ * Acciones cuya pantalla es la ÚNICA voz del fallo: ya muestran el error con su
+ * copy (estado de error del panel, guía del perfil faltante, error inline del
+ * formulario). El interceptor se calla para no duplicar el aviso con un toast
+ * genérico encima del mensaje específico.
+ *
+ * Las rutas van ancladas al final para no silenciar subrutas hermanas
+ * (`POST /api/ot/{id}/cancelar` sí debe avisar por su cuenta).
  */
-const ALTA_ENDPOINTS = /\/api\/(clientes|tecnicos|proveedores)$/;
+const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
+  // Altas públicas de A2.
+  /\/api\/(clientes|tecnicos|proveedores)$/,
+  // Alta rápida del perfil de cliente (A5).
+  /\/api\/clientes\/perfil$/,
+  // Creación de la OT (A5).
+  /\/api\/ot$/,
+  // Ubicación del cliente: es telemetría del formulario y la página la ignora
+  // a propósito (no debe bloquear la creación de la OT).
+  /\/api\/clientes\/me\/ubicacion$/,
+  // Maps: `MapsApi` resuelve con fallback local o `null`, y la pantalla cuenta
+  // el resultado final. El error HTTP del proxy no es la última palabra.
+  /\/api\/maps\//,
+  // Configuración de mapas: el servicio tiene respaldo local y no es una
+  // acción del usuario, así que un fallo acá no merece un toast.
+  /\/api\/config\/maps$/,
+];
+
+function esAccionSilenciosa(url: string): boolean {
+  return ACCION_SILENCIOSA_ENDPOINTS.some((patron) => patron.test(url));
+}
 
 const MENSAJE_SIN_DETALLE = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
 
@@ -54,6 +78,9 @@ export function normalizarErrorMobile(err: unknown): ApiHttpError | Error {
  * - 4xx: copy mapeado por status (`mensajeErrorAccion`).
  * - Login: el 401 son credenciales incorrectas y lo explica la pantalla, no el
  *   interceptor (evita el doble aviso).
+ * - Acciones con copy propio (`ACCION_SILENCIOSA_ENDPOINTS`): el interceptor no
+ *   avisa, pero el 401 con sesión activa sí cierra la sesión: una sesión vencida
+ *   no es un error de negocio de la pantalla.
  *
  * El error normalizado siempre se propaga al llamador; el interceptor nunca
  * lanza por su cuenta.
@@ -69,9 +96,8 @@ export const mobileErrorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => normalizado);
       }
 
-      const esAuth = AUTH_ENDPOINTS.test(req.url);
-      // Login y altas explican su propio fallo: un único aviso por error.
-      if (esAuth || ALTA_ENDPOINTS.test(req.url)) {
+      // Login y recuperación explican su propio fallo: un único aviso por error.
+      if (AUTH_ENDPOINTS.test(req.url)) {
         return throwError(() => normalizado);
       }
 
@@ -79,6 +105,8 @@ export const mobileErrorInterceptor: HttpInterceptorFn = (req, next) => {
         normalizado.sesionNotificada = true;
         void toast.warning('Tu sesión expiró', 'Ingresá de nuevo para continuar.');
         auth.logout();
+      } else if (esAccionSilenciosa(req.url)) {
+        // La pantalla es la única voz: no se agrega un toast genérico encima.
       } else if (normalizado.status === 0) {
         void toast.error('Sin conexión', mensajeErrorAccion(normalizado));
       } else if (normalizado.status >= 500) {

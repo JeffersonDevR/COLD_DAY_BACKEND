@@ -53,6 +53,27 @@ const cargarPlaceholder = () =>
 
 const cargarCuenta = () => import('./pages/cuenta/cuenta.page').then((m) => m.CuentaPage);
 
+const cargarSolicitar = () =>
+  import('./pages/solicitar-servicio/solicitar-servicio.page').then(
+    (m) => m.SolicitarServicioPage,
+  );
+
+/**
+ * Rutas que viven bajo un modo pero no tienen tab propio. Ionic las apila
+ * dentro del mismo outlet, así que se abren encima del panel y el botón de
+ * volver regresa a las tabs.
+ */
+const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
+  CLIENTE: [
+    {
+      // A5: se abre desde el panel y vuelve a él al crear la OT.
+      path: 'solicitar',
+      title: 'Solicitar servicio · Cold Day',
+      loadComponent: cargarSolicitar,
+    },
+  ],
+};
+
 /** Leaf placeholder del inventario: título, copy y la misma pantalla compartida. */
 const hoja = (id: string): Route => {
   const pantalla = PANTALLAS[id];
@@ -84,6 +105,7 @@ const modoRoute = (modo: ModoApp): Route => ({
   children: [
     { path: '', pathMatch: 'full', redirectTo: MODOS[modo].tabs[0].id },
     ...MODOS[modo].tabs.map((tab) => (tab.id === 'cuenta' ? cuentaRoute() : hoja(tab.id))),
+    ...(RUTAS_EXTRA[modo] ?? []),
   ],
 });
 

@@ -45,12 +45,25 @@ describe('mobile routes', () => {
         (tab) => tab.id,
       );
 
-      expect(children.map((child) => child.path)).toEqual(['', ...expected]);
+      // Los tabs van primero y en su orden; después pueden venir rutas extra
+      // del modo (p. ej. `/cliente/solicitar`, que no es un tab).
+      expect(children.slice(0, expected.length + 1).map((child) => child.path)).toEqual([
+        '',
+        ...expected,
+      ]);
       expect(children[0].redirectTo).toBe(expected[0]);
-      for (const child of children.slice(1)) {
+      for (const child of children.slice(1, expected.length + 1)) {
         expect(child.loadComponent).toBeTypeOf('function');
       }
     }
+  });
+
+  it('abre la solicitud de servicio bajo el modo cliente, sin tab propio', () => {
+    const cliente = routes.find((item) => item.path === 'cliente');
+    const solicitar = cliente?.children?.find((child) => child.path === 'solicitar');
+
+    expect(solicitar?.loadComponent).toBeTypeOf('function');
+    expect(MODOS.CLIENTE.tabs.map((tab) => tab.id)).not.toContain('solicitar');
   });
 
   it('leaves the mode home one segment below the mode prefix', () => {

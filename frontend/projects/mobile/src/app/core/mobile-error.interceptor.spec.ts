@@ -125,6 +125,34 @@ describe('mobileErrorInterceptor', () => {
     }
   });
 
+  it('las acciones de A5 con copy propio no reciben un toast genérico', async () => {
+    const urls = [
+      'http://api.test/api/ot',
+      'http://api.test/api/clientes/perfil',
+      'http://api.test/api/clientes/me/ubicacion',
+      'http://api.test/api/config/maps',
+      'http://api.test/api/maps/geocode',
+    ];
+
+    for (const url of urls) {
+      TestBed.resetTestingModule();
+      const { caught, toast } = await run(url, new HttpErrorResponse({ status: 500 }));
+
+      expect(caught).toBeInstanceOf(ApiHttpError);
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(toast.warning).not.toHaveBeenCalled();
+    }
+  });
+
+  it('las subrutas hermanas de la OT sí avisan: el silencio no se propaga', async () => {
+    const { toast } = await run(
+      'http://api.test/api/ot/OT-1/cancelar',
+      new HttpErrorResponse({ status: 409 }),
+    );
+
+    expect(toast.error).toHaveBeenCalledTimes(1);
+  });
+
   it('no convierte en toast un error que no es HTTP', async () => {
     const { caught, toast } = await run('/api/ots', new Error('boom'));
 

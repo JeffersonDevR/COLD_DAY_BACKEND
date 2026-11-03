@@ -1,0 +1,694 @@
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { Router } from '@angular/router';
+import {
+  IonBackButton,
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonInput,
+  IonItem,
+  IonList,
+  IonSpinner,
+  IonTextarea,
+  IonTitle,
+  IonToolbar,
+} from '@ionic/angular';
+import { avisarErrorAccion } from '@core/alertas/mensaje-error';
+import { ApiHttpError } from '@core/alertas/api-http.error';
+import {
+  esErrorPerfilClienteFaltante,
+  MENSAJE_PERFIL_CLIENTE_YA_EXISTE,
+} from '@core/errorStatus/perfil-cliente';
+import { CategoriaServicio, Point, TipoCliente } from '@core/models/common.models';
+import { AuthService } from '@core/service/auth.service';
+import { ClientesApi } from '@core/service/clientes-api';
+import { GeolocationService, mensajeErrorGeolocation } from '@core/service/geolocation.service';
+import { CIUDAD_OPERACION, MapaConfigService } from '@core/service/mapa-config.service';
+import { MapsApi } from '@core/service/maps-api';
+import { SolicitudDraftService } from '@core/service/solicitud-draft.service';
+import { MobileToastService } from '../../core/toast.service';
+
+/** Las cuatro líneas que ofrece la web; el resto del enum no se pide acá. */
+const CATEGORIAS: readonly {
+  valor: CategoriaServicio;
+  etiqueta: string;
+  icono: string;
+}[] = [
+  { valor: 'AIRE_ACONDICIONADO', etiqueta: 'Aire acondicionado', icono: 'snow-outline' },
+  { valor: 'REFRIGERACION', etiqueta: 'Refrigeración', icono: 'thermometer-outline' },
+  { valor: 'ELECTRICIDAD', etiqueta: 'Electricidad', icono: 'flash-outline' },
+  { valor: 'LAVADORAS', etiqueta: 'Lavadoras', icono: 'water-outline' },
+];
+
+const TIPOS_CLIENTE: readonly { valor: TipoCliente; etiqueta: string }[] = [
+  { valor: 'B2C', etiqueta: 'Persona (B2C)' },
+  { valor: 'B2B', etiqueta: 'Empresa (B2B)' },
+];
+
+const MSG_FALTA_UBICACION =
+  'Usá tu ubicación o ubicá la dirección antes de enviar: el técnico necesita el punto exacto.';
+
+/**
+ * A5 — Solicitar servicio (paso 1).
+ *
+ * Igual que la web en todo lo que importa: la misma OT, el mismo borrador y el
+ * mismo alta de perfil en un toque. Diferencias forzadas por esta entrega:
+ *
+ * - No hay mapa interactivo: la dirección se geocodifica por el proxy del
+ *   backend o se toma del GPS, y el pin en mapa llega en P3 con mapas nativos.
+ * - No hay foto de evidencia: el backend es metadata-only, no existe upload.
+ * - El alta del perfil vive en esta misma tarjeta (la ruta web `/perfil/agregar`
+ *   no existe en móvil), así que no se ofrece "completar por separado".
+ */
+@Component({
+  selector: 'app-mobile-solicitar-servicio',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ReactiveFormsModule,
+    IonBackButton,
+    IonButton,
+    IonButtons,
+    IonContent,
+    IonHeader,
+    IonIcon,
+    IonInput,
+    IonItem,
+    IonList,
+    IonSpinner,
+    IonTextarea,
+    IonTitle,
+    IonToolbar,
+  ],
+  template: `
+    <ion-header class="cd-header">
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-back-button defaultHref="/cliente/panel" text=""></ion-back-button>
+        </ion-buttons>
+        <ion-title>Solicitar servicio</ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <header class="cd-solicitud__intro">
+        <h1 class="cd-headline">¿Qué necesitás arreglar?</h1>
+        <p class="cd-muted">
+          Contanos la falla y dónde es. La orden sale a los técnicos cercanos de Cúcuta
+          ({{ radioInicialKm() }} km) y el primero que acepta la toma.
+        </p>
+      </header>
+
+      @if (faltoPerfilCliente()) {
+        <section
+          class="cd-alerta cd-alerta--aviso"
+          role="alert"
+          data-testid="aviso-perfil-cliente"
+        >
+          <h2 class="cd-alerta__titulo">Tu cuenta todavía no tiene perfil de cliente</h2>
+          <p class="cd-alerta__texto">
+            Podés crearlo ahora con la dirección y la ubicación que ya cargaste. Al confirmar,
+            creamos el perfil y enviamos tu solicitud en el mismo paso.
+          </p>
+
+          <div [formGroup]="perfilForm" class="cd-perfil-rapido">
+            <p class="cd-ayuda">Tipo de cliente</p>
+            <div class="cd-chips" role="group" aria-label="Tipo de cliente">
+              @for (tipo of tiposCliente; track tipo.valor) {
+                <button
+                  type="button"
+                  class="cd-chip"
+                  [class.cd-chip--activo]="perfilForm.controls.tipoCliente.value === tipo.valor"
+                  [attr.aria-pressed]="perfilForm.controls.tipoCliente.value === tipo.valor"
+                  [attr.data-testid]="'perfil-tipo-' + tipo.valor.toLowerCase()"
+                  (click)="setTipoCliente(tipo.valor)"
+                >
+                  {{ tipo.etiqueta }}
+                </button>
+              }
+            </div>
+
+            <ion-list lines="none" class="cd-form">
+              <ion-item>
+                <ion-input
+                  formControlName="calle"
+                  label="Dirección"
+                  labelPlacement="stacked"
+                  data-testid="perfil-calle"
+                ></ion-input>
+              </ion-item>
+              <ion-item>
+                <ion-input
+                  formControlName="ciudad"
+                  label="Ciudad"
+                  labelPlacement="stacked"
+                  data-testid="perfil-ciudad"
+                ></ion-input>
+              </ion-item>
+              <ion-item>
+                <ion-input
+                  formControlName="barrio"
+                  label="Barrio (opcional)"
+                  labelPlacement="stacked"
+                  data-testid="perfil-barrio"
+                ></ion-input>
+              </ion-item>
+            </ion-list>
+
+            @if (errorCrearPerfil(); as mensaje) {
+              <p class="cd-auth__error" role="alert" data-testid="error-crear-perfil">{{ mensaje }}</p>
+            }
+            @if (perfilForm.controls.calle.touched && perfilForm.controls.calle.invalid) {
+              <p class="cd-field-error" data-testid="error-perfil-calle">
+                Escribí la dirección del servicio.
+              </p>
+            }
+            @if (perfilForm.controls.ciudad.touched && perfilForm.controls.ciudad.invalid) {
+              <p class="cd-field-error" data-testid="error-perfil-ciudad">
+                Escribí la ciudad del servicio.
+              </p>
+            }
+
+            @if (perfilYaExistia()) {
+              <ion-button
+                size="small"
+                color="secondary"
+                data-testid="perfil-iniciar-sesion"
+                (click)="irAIniciarSesion()"
+              >
+                Iniciar sesión
+              </ion-button>
+            } @else {
+              <ion-button
+                size="small"
+                color="secondary"
+                data-testid="crear-perfil-y-enviar"
+                [disabled]="creandoPerfil() || loading()"
+                (click)="crearPerfilYEnviar()"
+              >
+                @if (creandoPerfil()) {
+                  <ion-spinner name="dots"></ion-spinner>
+                } @else {
+                  Crear perfil y enviar la solicitud
+                }
+              </ion-button>
+            }
+          </div>
+        </section>
+      }
+
+      <form class="cd-solicitud" [formGroup]="solicitudForm" (ngSubmit)="enviar()" novalidate>
+        <fieldset class="cd-bloque">
+          <legend class="cd-bloque__titulo">1. Línea de especialidad</legend>
+          <div class="cd-categorias" role="group" aria-label="Línea de especialidad">
+            @for (cat of categorias; track cat.valor) {
+              <button
+                type="button"
+                class="cd-categoria"
+                [class.cd-categoria--activa]="categoria() === cat.valor"
+                [attr.aria-pressed]="categoria() === cat.valor"
+                [attr.data-testid]="'categoria-' + cat.valor.toLowerCase()"
+                (click)="setCategoria(cat.valor)"
+              >
+                <ion-icon [name]="cat.icono" aria-hidden="true"></ion-icon>
+                <span>{{ cat.etiqueta }}</span>
+              </button>
+            }
+          </div>
+        </fieldset>
+
+        <fieldset class="cd-bloque">
+          <legend class="cd-bloque__titulo">2. Contanos la falla</legend>
+          <ion-list lines="none" class="cd-form">
+            <ion-item>
+              <ion-textarea
+                formControlName="descripcionFalla"
+                label="Descripción"
+                labelPlacement="stacked"
+                placeholder="Ej. El aire no enfría, el compresor arranca y se apaga a los 30 segundos, gotea agua hacia la pared..."
+                [autoGrow]="true"
+                data-testid="descripcion"
+              ></ion-textarea>
+            </ion-item>
+          </ion-list>
+          @if (mensajeCampo('descripcionFalla'); as error) {
+            <p class="cd-field-error" data-testid="error-descripcion">{{ error }}</p>
+          }
+        </fieldset>
+
+        <fieldset class="cd-bloque">
+          <legend class="cd-bloque__titulo">3. Dónde es el servicio</legend>
+          <ion-list lines="none" class="cd-form">
+            <ion-item>
+              <ion-input
+                formControlName="direccion"
+                label="Dirección exacta"
+                labelPlacement="stacked"
+                autocomplete="address-line1"
+                data-testid="direccion"
+              ></ion-input>
+            </ion-item>
+          </ion-list>
+          @if (mensajeCampo('direccion'); as error) {
+            <p class="cd-field-error" data-testid="error-direccion">{{ error }}</p>
+          }
+
+          <div class="cd-ubicacion__acciones">
+            <ion-button
+              size="small"
+              fill="outline"
+              data-testid="geocodificar"
+              [disabled]="geocodificando() || ubicando()"
+              (click)="geocodificar()"
+            >
+              @if (geocodificando()) {
+                <ion-spinner name="dots"></ion-spinner>
+              } @else {
+                <ion-icon slot="start" name="search-outline" aria-hidden="true"></ion-icon>
+                Ubicar dirección
+              }
+            </ion-button>
+            <ion-button
+              size="small"
+              fill="outline"
+              color="tertiary"
+              data-testid="usar-ubicacion"
+              [disabled]="geocodificando() || ubicando()"
+              (click)="usarMiUbicacion()"
+            >
+              @if (ubicando()) {
+                <ion-spinner name="dots"></ion-spinner>
+              } @else {
+                <ion-icon slot="start" name="navigate-outline" aria-hidden="true"></ion-icon>
+                Usar mi ubicación
+              }
+            </ion-button>
+          </div>
+
+          <p class="cd-ayuda">
+            El técnico necesita el punto exacto: ubicá la dirección o compartí tu ubicación
+            actual. El mapa con pin arrastrable llega en la próxima entrega.
+          </p>
+
+          <p class="cd-coordenadas" data-testid="coordenadas">{{ textoCoordenadas() }}</p>
+        </fieldset>
+
+        <p class="cd-ayuda">
+          Al confirmar, tu orden pasa a <strong>buscando técnico</strong> y se envía a los
+          técnicos cercanos: el primero que acepta la toma.
+        </p>
+
+        <ion-button
+          expand="block"
+          type="submit"
+          data-testid="enviar"
+          [disabled]="!listoParaEnviar()"
+        >
+          @if (loading()) {
+            <ion-spinner name="dots"></ion-spinner>
+          } @else {
+            <ion-icon slot="start" name="compass-outline" aria-hidden="true"></ion-icon>
+            Emitir solicitud
+          }
+        </ion-button>
+      </form>
+    </ion-content>
+  `,
+})
+export class SolicitarServicioPage {
+  private readonly clientesApi = inject(ClientesApi);
+  private readonly auth = inject(AuthService);
+  private readonly mapsApi = inject(MapsApi);
+  private readonly geolocation = inject(GeolocationService);
+  private readonly mapaConfig = inject(MapaConfigService);
+  private readonly draftService = inject(SolicitudDraftService);
+  private readonly toast = inject(MobileToastService);
+  private readonly router = inject(Router);
+
+  protected readonly categorias = CATEGORIAS;
+  protected readonly tiposCliente = TIPOS_CLIENTE;
+  protected readonly radioInicialKm = computed(() => this.mapaConfig.radioInicialKm());
+
+  protected readonly categoria = signal<CategoriaServicio>('AIRE_ACONDICIONADO');
+  /** Punto del servicio; `null` hasta que el GPS o la geocodificación lo fijen. */
+  protected readonly coordenadas = signal<Point | null>(null);
+
+  protected readonly loading = signal(false);
+  protected readonly geocodificando = signal(false);
+  protected readonly ubicando = signal(false);
+
+  /** El backend rechaza la OT porque el usuario todavía no tiene perfil de cliente. */
+  protected readonly faltoPerfilCliente = signal(false);
+  protected readonly creandoPerfil = signal(false);
+  protected readonly errorCrearPerfil = signal<string | null>(null);
+  protected readonly perfilYaExistia = signal(false);
+
+  protected readonly solicitudForm = new FormGroup({
+    descripcionFalla: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(10)],
+    }),
+    direccion: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(5)],
+    }),
+  });
+
+  /**
+   * Alta rápida del perfil: la dirección y el punto que ya están en la
+   * solicitud son los datos que el backend necesita.
+   */
+  protected readonly perfilForm = new FormGroup({
+    tipoCliente: new FormControl<TipoCliente>('B2C', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    calle: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    ciudad: new FormControl(CIUDAD_OPERACION, {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    barrio: new FormControl('', { nonNullable: true }),
+  });
+
+  protected listoParaEnviar(): boolean {
+    return (
+      this.solicitudForm.valid &&
+      this.coordenadas() !== null &&
+      !this.loading() &&
+      !this.creandoPerfil()
+    );
+  }
+
+  constructor() {
+    // La configuración del mapa (centro, radio) la publica el backend; sin
+    // respuesta se sigue con el respaldo del servicio.
+    void this.mapaConfig.cargar();
+
+    this.restaurarBorrador();
+    this.solicitudForm.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.guardarBorrador());
+  }
+
+  protected setCategoria(categoria: CategoriaServicio): void {
+    this.categoria.set(categoria);
+    this.guardarBorrador();
+  }
+
+  protected setTipoCliente(tipo: TipoCliente): void {
+    this.perfilForm.controls.tipoCliente.setValue(tipo);
+  }
+
+  protected mensajeCampo(campo: 'descripcionFalla' | 'direccion'): string | null {
+    const control = this.solicitudForm.controls[campo];
+    if (!control.touched || control.valid) return null;
+    if (control.hasError('required')) {
+      return campo === 'direccion'
+        ? 'Escribí la dirección del servicio.'
+        : 'Contanos qué está fallando.';
+    }
+    return campo === 'direccion'
+      ? 'La dirección necesita al menos 5 caracteres.'
+      : 'Describí la falla con al menos 10 caracteres.';
+  }
+
+  protected textoCoordenadas(): string {
+    const punto = this.coordenadas();
+    if (!punto) return 'Sin ubicación todavía: el envío queda bloqueado hasta que la fijes.';
+    return `Latitud ${punto.latitud.toFixed(4)} · Longitud ${punto.longitud.toFixed(4)}`;
+  }
+
+  /** Geocodifica la dirección escrita (proxy del backend) y fija el punto. */
+  protected geocodificar(): void {
+    const direccion = this.solicitudForm.controls.direccion.value.trim();
+    if (direccion.length < 5) {
+      this.solicitudForm.controls.direccion.markAsTouched();
+      void this.toast.info(
+        'Falta la dirección',
+        'Escribí la dirección completa y volvé a intentar.',
+      );
+      return;
+    }
+
+    this.geocodificando.set(true);
+    this.mapsApi.geocodificar(direccion).subscribe({
+      next: (resultado) => {
+        this.geocodificando.set(false);
+        this.fijarCoordenadas({ latitud: resultado.latitud, longitud: resultado.longitud });
+        const formateada = resultado.direccionFormateada?.trim();
+        if (formateada) {
+          this.solicitudForm.controls.direccion.setValue(formateada, { emitEvent: false });
+        }
+        this.guardarBorrador();
+      },
+      error: () => {
+        this.geocodificando.set(false);
+        void this.toast.error(
+          'Sin resultados',
+          'No pudimos ubicar esa dirección. Probá con otra o usá tu ubicación.',
+        );
+      },
+    });
+  }
+
+  /** Toma la posición del dispositivo y resuelve la dirección por geocodificación inversa. */
+  protected usarMiUbicacion(): void {
+    if (this.ubicando()) return;
+
+    this.ubicando.set(true);
+    this.geolocation.obtenerPosicion().subscribe({
+      next: (punto) => {
+        this.ubicando.set(false);
+        this.fijarCoordenadas(punto);
+        this.resolverDireccion(punto);
+      },
+      error: (err: unknown) => {
+        this.ubicando.set(false);
+        void this.toast.error('Sin ubicación', mensajeErrorGeolocation(err));
+      },
+    });
+  }
+
+  protected enviar(): void {
+    if (this.loading() || this.creandoPerfil()) return;
+    if (this.solicitudForm.invalid) {
+      this.solicitudForm.markAllAsTouched();
+      return;
+    }
+    if (!this.coordenadas()) {
+      void this.toast.error('Falta la ubicación', MSG_FALTA_UBICACION);
+      return;
+    }
+
+    this.guardarBorrador();
+    this.enviarSolicitud();
+  }
+
+  /**
+   * Alta de perfil en un solo toque: crea el perfil con los datos de la
+   * solicitud, adopta el token devuelto y reintenta la MISMA OT sin pedir un
+   * dato de nuevo. El toque es el consentimiento: nada se crea en silencio.
+   */
+  protected crearPerfilYEnviar(): void {
+    if (this.creandoPerfil() || this.loading()) return;
+    if (this.perfilForm.invalid) {
+      this.perfilForm.markAllAsTouched();
+      return;
+    }
+
+    const punto = this.coordenadas();
+    if (!punto) {
+      void this.toast.error('Falta la ubicación', MSG_FALTA_UBICACION);
+      return;
+    }
+
+    const datos = this.perfilForm.getRawValue();
+    // La tarjeta es la fuente de verdad: si se corrigió la dirección, la OT se
+    // reintenta con ese valor y no con el que tenía el formulario original.
+    this.solicitudForm.controls.direccion.setValue(datos.calle.trim(), { emitEvent: false });
+    this.guardarBorrador();
+    this.creandoPerfil.set(true);
+    this.errorCrearPerfil.set(null);
+    this.perfilYaExistia.set(false);
+
+    this.clientesApi
+      .crearMiPerfil({
+        tipoCliente: datos.tipoCliente,
+        calle: datos.calle.trim(),
+        ciudad: datos.ciudad.trim(),
+        barrio: datos.barrio.trim() || undefined,
+        ubicacion: punto,
+      })
+      .subscribe({
+        next: (perfil) => {
+          this.creandoPerfil.set(false);
+          if (!perfil.token) {
+            // Backend legado: el JWT en vuelo quedó revocado y no se reintenta
+            // con una sesión muerta. El borrador sigue intacto.
+            this.errorCrearPerfil.set(
+              'Creamos tu perfil, pero la sesión necesita renovarse. Iniciá sesión de nuevo y volvé a enviar la solicitud.',
+            );
+            return;
+          }
+          this.auth.adoptarToken(perfil.token);
+          this.enviarSolicitud();
+        },
+        error: (err: unknown) => {
+          this.creandoPerfil.set(false);
+          if (err instanceof ApiHttpError && err.status === 409) {
+            // El perfil ya está commiteado: reintentar el alta repite el 409.
+            this.perfilYaExistia.set(true);
+            this.errorCrearPerfil.set(MENSAJE_PERFIL_CLIENTE_YA_EXISTE);
+            return;
+          }
+          this.errorCrearPerfil.set(
+            'No pudimos crear tu perfil de cliente. Tus datos siguen acá; probá de nuevo.',
+          );
+        },
+      });
+  }
+
+  /** Cierra la sesión revocada y aterriza en el login para reautenticarse. */
+  protected irAIniciarSesion(): void {
+    this.auth.logout();
+  }
+
+  /** Crea (o reintenta) la OT con el formulario y el punto actuales. */
+  private enviarSolicitud(): void {
+    const punto = this.coordenadas();
+    if (!punto || this.loading()) return;
+
+    this.loading.set(true);
+    this.faltoPerfilCliente.set(false);
+    const formulario = this.solicitudForm.getRawValue();
+    const usuario = this.auth.currentUser();
+
+    // `crearOt` normaliza el body a `OtApiRequest` con `aOtApiRequest`: el
+    // barrio, la marca y el modelo no viajan al backend, igual que en la web.
+    this.clientesApi
+      .crearOt(
+        {
+          categoriaServicio: this.categoria(),
+          descripcionFalla: formulario.descripcionFalla.trim(),
+          direccion: formulario.direccion.trim(),
+          latitud: punto.latitud,
+          longitud: punto.longitud,
+        },
+        String(usuario?.id ?? ''),
+        usuario?.nombre || 'Cliente',
+      )
+      .subscribe({
+        next: (nuevaOt) => {
+          this.loading.set(false);
+          // La solicitud ya existe: el borrador cumplió su función.
+          this.draftService.limpiar();
+          void this.toast.success(
+            'Solicitud creada',
+            `OT ${nuevaOt.codigo || 'Sin código'} transmitida por broadcast (${this.radioInicialKm()} km)`,
+          );
+          // El seguimiento de la OT (A6) llega en P2.2: por ahora se vuelve al
+          // panel, donde la orden ya aparece en la lista.
+          void this.router.navigateByUrl('/cliente/panel');
+        },
+        error: (err: unknown) => {
+          this.loading.set(false);
+          if (esErrorPerfilClienteFaltante(err)) {
+            // Técnico dual-role sin perfil de cliente: en vez de un toast que se
+            // pierde, se ofrece el alta con los datos que ya están cargados.
+            this.mostrarAltaPerfil();
+            return;
+          }
+          avisarErrorAccion(this.toast, 'No pudimos crear la solicitud', err);
+        },
+      });
+  }
+
+  /** Abre la tarjeta de alta rápida con la dirección y la ciudad ya resueltas. */
+  private mostrarAltaPerfil(): void {
+    const formulario = this.solicitudForm.getRawValue();
+    this.perfilForm.patchValue({
+      tipoCliente: 'B2C',
+      calle: formulario.direccion,
+      ciudad: CIUDAD_OPERACION,
+      barrio: '',
+    });
+    this.errorCrearPerfil.set(null);
+    this.perfilYaExistia.set(false);
+    this.faltoPerfilCliente.set(true);
+  }
+
+  /**
+   * Fija el punto del servicio: lo guarda para el envío, lo refleja en el texto
+   * de coordenadas y avisa la ubicación al backend (sin bloquear si falla).
+   */
+  private fijarCoordenadas(punto: Point): void {
+    this.coordenadas.set(punto);
+    this.clientesApi.actualizarUbicacion({ latitud: punto.latitud, longitud: punto.longitud }).subscribe({
+      error: () => {
+        // La captura de ubicación no debe bloquear la creación de la OT.
+      },
+    });
+    this.guardarBorrador();
+  }
+
+  /** Completa la dirección a partir del punto (geocodificación inversa). */
+  private resolverDireccion(punto: Point): void {
+    this.mapsApi.inversa(punto.latitud, punto.longitud).subscribe({
+      next: (direccion) => {
+        const formateada = direccion.direccionFormateada?.trim();
+        if (formateada) {
+          this.solicitudForm.controls.direccion.setValue(formateada, { emitEvent: false });
+        }
+        this.guardarBorrador();
+      },
+      error: () => {
+        void this.toast.error(
+          'Sin dirección',
+          'No pudimos resolver la dirección de ese punto. Escribila a mano.',
+        );
+      },
+    });
+  }
+
+  /** Persiste el borrador con lo que el usuario ya cargó (form + punto + categoría). */
+  private guardarBorrador(): void {
+    const formulario = this.solicitudForm.getRawValue();
+    this.draftService.guardar({
+      categoria: this.categoria(),
+      descripcion: formulario.descripcionFalla,
+      direccion: formulario.direccion,
+      coordenadas: this.coordenadas(),
+      // Sin foto de evidencia en esta entrega (el backend no tiene upload).
+      evidenciaUrl: '',
+      actualizadoEn: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Restaura el borrador sin reabrir validaciones a medio llenar: el usuario
+   * retoma exactamente el formulario que dejó.
+   */
+  private restaurarBorrador(): void {
+    const borrador = this.draftService.leer();
+    if (!borrador) return;
+
+    this.categoria.set(borrador.categoria);
+    this.coordenadas.set(borrador.coordenadas);
+    this.solicitudForm.patchValue(
+      {
+        descripcionFalla: borrador.descripcion,
+        direccion: borrador.direccion,
+      },
+      { emitEvent: false },
+    );
+  }
+}
