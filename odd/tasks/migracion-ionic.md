@@ -38,10 +38,15 @@ Nota de consistencia: el cyan del diseño difiere del sky `#0284c7` de la web. L
 | B4 Perfil técnico y matrículas | `/tecnico/perfil` | `mi-perfil-tecnico-page` + documentos |
 | C1 Solicitudes de insumos | `/proveedor/panel` | `solicitudes-proveedor-page` |
 | C2 Documentos del proveedor | `/proveedor/documentos` | `perfil-documentos-page` |
+| **B0 Panel Técnico** (generada 2026-11-03) | `/tecnico/panel` (home) | `panel-tecnico-page` |
+| **A10 Mis equipos** (generada 2026-11-03) | `/cliente/equipos` | `historial-equipos-page` |
+| **A3.1 Completar perfil cliente** (generada 2026-11-03) | `/perfil/agregar` (one-tap) | `agregar-perfil-page` + draft |
+| **B5 Liquidaciones técnico** (generada 2026-11-03) | `/tecnico/liquidaciones` | `liquidaciones-tecnico-page` |
+| **C0 Panel Proveedor** (generada 2026-11-03) | `/proveedor/panel` (home) | `solicitudes-proveedor-page` (resumen) |
 | Logo | — | asset |
 | Heatmap de A9 | — | descartar (artefacto de Stitch) |
 
-**Pantallas que faltan en Stitch** (generar después vía MCP): panel/home del técnico con estado de ubicación, historial "Mis equipos", agregar segundo perfil, estados vacíos/error de cada flujo, y las variantes de confirmación.
+**Pantallas que siguen faltando** (generar cuando se definan): centro de notificaciones (la campana de A4/B0/C0), estados de error/offline globales, y confirmaciones de acciones destructivas (cancelar OT, rechazar oferta).
 
 ## Arquitectura objetivo
 ```
@@ -62,11 +67,14 @@ Regla: `libs/core` no importa nada de `@angular/material`, PrimeNG ni Tailwind; 
 
 ## Fases
 
-### P0 — Extracción del core (sin tocar pantallas)
-- [ ] Crear `libs/core` como librería Angular (ng-packagr) con alias `@coldday/core`.
-- [ ] Mover sin reescribir: clientes/tecnicos/proveedores/ot/maps APIs, `api.config` + `API_ORIGIN`, `auth.service`, `token-storage`, `sse.service`, `mensaje-error`, `visible-tab-polling`, `solicitud-draft`, `tecnico-tracking` + `tecnico-presencia`, mappers y DTOs, guards y `panel-resolver`, `locale`.
-- [ ] La web importa desde `@coldday/core`; `frontend/src/app/core` queda como re-export temporal para no romper imports internos.
-- [ ] **Criterio:** web sigue con 81 archivos / 880 tests / 0, tsc 0, lint 8. Sin cambios de comportamiento.
+### P0 — Workspace único con core compartido (revisado 2026-11-03)
+La decisión de "app nueva + core compartido" se mantiene, pero **sin librería publicable**: ambos proyectos Angular viven en el workspace de `frontend/` y comparten `src/app/core` por alias. Motivo: una librería `libs/core` con ng-packagr agrega segundo build, segundo install y un paso de publish local sin beneficio mientras web y móvil sean Angular del mismo repo.
+- [ ] Agregar el proyecto `mobile` al workspace (`frontend/projects/mobile`) manteniendo la app web en la raíz.
+- [ ] Alias `@core/*` → `src/app/core/*` en `tsconfig` (web y mobile), sin mover archivos.
+- [ ] Instalar Ionic + Capacitor en el `package.json` del workspace.
+- [ ] Instalar `@ionic/angular` + tema oscuro de Stitch en el proyecto mobile.
+- [ ] **Criterio:** la web sigue con 81 archivos / 880 tests / 0; `ng build mobile` compila el shell vacío; `ng build` (web) sigue OK.
+- Alternativa descartada por costo: `libs/core` como librería publicable.
 
 ### P1 — Scaffold móvil y shell
 - [ ] `mobile/` con Ionic 8 + Angular 21 standalone + Capacitor 7 (Android primero).
@@ -95,6 +103,14 @@ Regla: `libs/core` no importa nada de `@angular/material`, PrimeNG ni Tailwind; 
 - [ ] CI: `assembleRelease` (AAB) + IPA, versionado, firma, entornos (API_ORIGIN por env).
 - [ ] Checklist de tiendas, iconos/splash desde el logo de Stitch.
 - [ ] Plan de migración de usuarios: la web sigue disponible; la app se ofrece como canal.
+
+## Fotos de evidencia (decisión de backend, no de migración)
+El backend es metadata-only. Implementación recomendada cuando se decida:
+1. `POST /api/ot/{id}/evidencias/presign` → autoriza por participación, valida mime/tamaño y devuelve URL firmada de PUT (TTL 60–120 s) para `ots/{otId}/{uuid}.ext`.
+2. La app comprime (cámara Capacitor, lado máx. 1600–2048 px) y sube **directo al bucket** (S3 / R2 / Supabase Storage).
+3. `POST /api/ot/{id}/evidencias` confirma metadata (`storage_key`, mime, bytes, dimensiones, sha256, subida_por) — tabla `ot_evidencia`; emite evento.
+4. Lecturas con URLs firmadas de GET (TTL 5–15 min). Bucket nunca público.
+Guardas: límite de fotos y tamaño por OT, rate limit, `sha256` para idempotencia, re-encode/EXIF, retención y cola offline en la app. Alternativa más rápida: Cloudinary/Firebase Storage (SDK + CDN, vendor lock-in).
 
 ## Riesgos y bloqueantes
 1. **Ubicación en background (alto):** sin P3, el radar expulsa técnicos que manejan con el teléfono bloqueado. Debe entrar en la primera release con técnicos.
