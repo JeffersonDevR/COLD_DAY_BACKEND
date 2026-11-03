@@ -101,7 +101,7 @@ describe('PanelClientePage', () => {
     expect(texto).toContain('Todavía no tenés perfil de cliente');
     expect(texto).toContain('Crear mi perfil de cliente');
     // El 404 de perfil no es una falla de carga ni un listado vacío genérico.
-    expect(texto).not.toContain('No tienes servicios en curso');
+    expect(texto).not.toContain('No tenés servicios en curso');
   });
 
   it('un técnico con perfil de cliente ve sus órdenes', () => {
@@ -116,7 +116,7 @@ describe('PanelClientePage', () => {
 
   it('muestra el estado vacío sin servicios activos', () => {
     const fixture = setup(vi.fn(() => of([])));
-    expect(fixture.nativeElement.textContent).toContain('No tienes servicios en curso');
+    expect(fixture.nativeElement.textContent).toContain('No tenés servicios en curso');
   });
 
   describe('saludo del panel', () => {
@@ -226,13 +226,13 @@ describe('PanelClientePage', () => {
       fixture.componentInstance.filtro.set('COMPLETADAS');
       fixture.detectChanges();
       let texto = fixture.nativeElement.textContent as string;
-      expect(texto).toContain('Todavía no tienes servicios completados');
-      expect(texto).not.toContain('No tienes servicios en curso');
+      expect(texto).toContain('Todavía no tenés servicios completados');
+      expect(texto).not.toContain('No tenés servicios en curso');
 
       fixture.componentInstance.filtro.set('SIN_TECNICO');
       fixture.detectChanges();
       texto = fixture.nativeElement.textContent as string;
-      expect(texto).toContain('No tienes servicios esperando técnico');
+      expect(texto).toContain('No tenés servicios esperando técnico');
     });
   });
 

@@ -10,16 +10,17 @@ import { EmptyState } from '../../shared/empty-state/empty-state';
 import { OtResponse } from '../../core/models/common.models';
 import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-cliente';
 import { recordarPanel } from '../../core/navihationError/panel-resolver';
+import {
+  FiltroOts,
+  OPCIONES_FILTRO_OTS,
+  TEXTOS_FILTRO_OTS,
+  esOtActiva,
+  esOtFinalizada,
+  filtrarOts,
+} from '../../core/service/ots-cliente';
 
-/** Vistas del listado de OTs del cliente. */
-export type FiltroOts = 'TODAS' | 'ACTIVAS' | 'COMPLETADAS' | 'SIN_TECNICO';
-
-/** Textos del encabezado y del estado vacío para cada vista. */
-interface TextoFiltro {
-  subtitulo: string;
-  tituloVacio: string;
-  descripcionVacio: string;
-}
+// Se reexporta para conservar la API pública previa de la página.
+export type { FiltroOts };
 
 @Component({
   selector: 'app-panel-cliente-page',
@@ -43,63 +44,24 @@ export class PanelClientePage {
   readonly sinPerfilCliente = signal<boolean>(false);
 
   readonly serviciosActivos = computed(() => {
-    return this.serviciosCliente().filter(o =>
-      !['FINALIZADA', 'CANCELADA'].includes(o.estado)
-    );
+    return this.serviciosCliente().filter(esOtActiva);
   });
 
   readonly serviciosFinalizados = computed(() => {
-    return this.serviciosCliente().filter(o => o.estado === 'FINALIZADA');
+    return this.serviciosCliente().filter(esOtFinalizada);
   });
 
   /** Vista elegida por el cliente; `ACTIVAS` mantiene el comportamiento de entrada. */
   readonly filtro = signal<FiltroOts>('ACTIVAS');
 
   /** Lista visible según el filtro. Los contadores de las métricas no dependen de ella. */
-  readonly serviciosFiltrados = computed(() => {
-    const ots = this.serviciosCliente();
-    switch (this.filtro()) {
-      case 'COMPLETADAS':
-        return ots.filter(o => o.estado === 'FINALIZADA');
-      case 'SIN_TECNICO':
-        return ots.filter(o => !o.tecnicoId && o.estado !== 'CANCELADA');
-      case 'ACTIVAS':
-        return ots.filter(o => !['FINALIZADA', 'CANCELADA'].includes(o.estado));
-      case 'TODAS':
-      default:
-        return ots;
-    }
-  });
+  readonly serviciosFiltrados = computed(() =>
+    filtrarOts(this.serviciosCliente(), this.filtro()),
+  );
 
-  readonly opcionesFiltro: readonly { valor: FiltroOts; etiqueta: string }[] = [
-    { valor: 'TODAS', etiqueta: 'Todas' },
-    { valor: 'ACTIVAS', etiqueta: 'Activas' },
-    { valor: 'COMPLETADAS', etiqueta: 'Completadas' },
-    { valor: 'SIN_TECNICO', etiqueta: 'Sin técnico' },
-  ];
+  readonly opcionesFiltro = OPCIONES_FILTRO_OTS;
 
-  readonly textosFiltro: Record<FiltroOts, TextoFiltro> = {
-    TODAS: {
-      subtitulo: 'Todas tus órdenes de trabajo, incluidas las canceladas',
-      tituloVacio: 'Todavía no has solicitado un servicio',
-      descripcionVacio: 'Cuando pidas asistencia técnica para tus aires o electrodomésticos, verás aquí el avance de cada orden.',
-    },
-    ACTIVAS: {
-      subtitulo: 'Trazabilidad en tiempo real y asignación perimetral',
-      tituloVacio: 'No tienes servicios en curso',
-      descripcionVacio: 'Todos tus requerimientos técnicos están al día. Si necesitas asistencia para tus aires o electrodomésticos, solicita uno nuevo.',
-    },
-    COMPLETADAS: {
-      subtitulo: 'Órdenes ya finalizadas, con su acta de garantía',
-      tituloVacio: 'Todavía no tienes servicios completados',
-      descripcionVacio: 'Cuando un técnico termine un servicio, quedará listado aquí con su garantía certificada.',
-    },
-    SIN_TECNICO: {
-      subtitulo: 'Órdenes que todavía esperan la asignación de un técnico',
-      tituloVacio: 'No tienes servicios esperando técnico',
-      descripcionVacio: 'Todas tus órdenes ya tienen un técnico asignado o están cerradas.',
-    },
-  };
+  readonly textosFiltro = TEXTOS_FILTRO_OTS;
 
   constructor() {
     // Último panel visitado: `/panel` y "Mi Panel" lo prefieren mientras los
