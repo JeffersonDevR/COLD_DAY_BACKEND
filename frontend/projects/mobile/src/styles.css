@@ -105,3 +105,66 @@ ion-tab-bar {
 .cd-muted {
   color: var(--cd-muted);
 }
+
+/* A1 — Login: la tarjeta ocupa el ancho del teléfono y no se estira al centro. */
+.cd-login {
+  margin: 2.5rem auto 0;
+  max-width: 28rem;
+}
+
+.cd-form {
+  margin: 1rem 0;
+  background: transparent;
+}
+
+.cd-form ion-item {
+  --background: transparent;
+  --border-color: var(--cd-surface-border);
+  --inner-padding-end: 0;
+}
+
+/* A3 — Selector de modo (B15): fila completa, con estado activo y explicación. */
+.cd-modos {
+  margin: 1rem 0;
+}
+
+.cd-modo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  margin-top: 0.5rem;
+  background: #0e1828;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+  color: var(--ion-text-color);
+  font: inherit;
+  text-align: left;
+}
+
+.cd-modo:not(:disabled):active {
+  background: #16243a;
+}
+
+.cd-modo--activo {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
+}
+
+.cd-modo:disabled {
+  color: var(--cd-muted);
+  opacity: 0.65;
+}
+
+.cd-modo__nombre {
+  font-weight: 600;
+}
+
+.cd-modo__nota {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--cd-muted);
+}
+

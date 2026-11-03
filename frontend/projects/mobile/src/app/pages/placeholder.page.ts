@@ -1,14 +1,14 @@
-import {Component, inject} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
-import {IonContent, IonHeader, IonTitle, IonToolbar} from '@ionic/angular';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { IonContent, IonHeader, IonTitle, IonToolbar } from '@ionic/angular';
+import { ActivatedRoute } from '@angular/router';
 
 /**
- * Shared placeholder for the three mobile modes. Each `/tabs/*` route supplies
- * its `title` and `description` through route data, so P0 needs no duplicated
- * screens; P2 replaces these routes with the real inventory pages.
+ * Pantalla compartida de los leaves que todavía no tienen negocio implementado
+ * (P2 los reemplaza). El título y la descripción llegan por `data` de la ruta.
  */
 @Component({
   selector: 'app-mobile-placeholder',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IonContent, IonHeader, IonTitle, IonToolbar],
   template: `
     <ion-header>
