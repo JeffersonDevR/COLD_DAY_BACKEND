@@ -48,33 +48,32 @@ Nota de consistencia: el cyan del diseño difiere del sky `#0284c7` de la web. L
 
 **Pantallas que siguen faltando** (generar cuando se definan): centro de notificaciones (la campana de A4/B0/C0), estados de error/offline globales, y confirmaciones de acciones destructivas (cancelar OT, rechazar oferta).
 
-## Arquitectura objetivo
+## Arquitectura (implementada en P0)
 ```
 repo/
-├── backend/                # sin cambios
-├── frontend/               # web Angular actual (se mantiene)
-├── libs/core/              # NUEVO: librería Angular sin UI
-│   ├── services/           # api clients, auth, sse, tracking, drafts, presencia
-│   ├── models/             # DTOs + modelos de dominio
-│   ├── guards/             # authGuard, roleGuard, panel resolver
-│   └── i18n/               # locale es-CO
-└── mobile/                 # NUEVO: app Ionic + Capacitor
-    ├── src/app/            # shell, tabs, pantallas del inventario
-    ├── capacitor.config.ts
-    └── android/ ios/       # plataformas generadas
+├── backend/                 # sin cambios
+└── frontend/                # workspace Angular único
+    ├── src/                 # app web actual (raíz del workspace)
+    │   └── app/core/        # COMPARTIDO: services, models, guards, i18n (alias @core/*)
+    ├── projects/mobile/     # NUEVA app Ionic + Capacitor
+    │   └── src/app/         # shell, tabs, pantallas del inventario
+    ├── capacitor.config.ts  # appId com.coldday.app, webDir dist/mobile/browser
+    └── angular.json         # proyectos: app (web, default) + mobile
 ```
-Regla: `libs/core` no importa nada de `@angular/material`, PrimeNG ni Tailwind; la UI vive en cada app. Alias `@coldday/core` en ambos `tsconfig`.
+Regla: `src/app/core` no importa PrimeNG, Tailwind ni componentes de pantalla; la UI vive en cada app. Alias `@core/*` (relativo: `./src/app/core/*`) resuelto desde `frontend/`.
+Nota Ionic 9: el export raíz `@ionic/angular` **es** el standalone (`@ionic/angular/standalone` no existe). No se agregó `zone.js`: el shell compila y corre zoneless; validar transiciones en dispositivo en P1.
 
 ## Fases
 
-### P0 — Workspace único con core compartido (revisado 2026-11-03)
+### P0 — Workspace único con core compartido (CERRADO 2026-11-03)
 La decisión de "app nueva + core compartido" se mantiene, pero **sin librería publicable**: ambos proyectos Angular viven en el workspace de `frontend/` y comparten `src/app/core` por alias. Motivo: una librería `libs/core` con ng-packagr agrega segundo build, segundo install y un paso de publish local sin beneficio mientras web y móvil sean Angular del mismo repo.
-- [ ] Agregar el proyecto `mobile` al workspace (`frontend/projects/mobile`) manteniendo la app web en la raíz.
-- [ ] Alias `@core/*` → `src/app/core/*` en `tsconfig` (web y mobile), sin mover archivos.
-- [ ] Instalar Ionic + Capacitor en el `package.json` del workspace.
-- [ ] Instalar `@ionic/angular` + tema oscuro de Stitch en el proyecto mobile.
-- [ ] **Criterio:** la web sigue con 81 archivos / 880 tests / 0; `ng build mobile` compila el shell vacío; `ng build` (web) sigue OK.
+- [x] Agregar el proyecto `mobile` al workspace (`frontend/projects/mobile`) manteniendo la app web en la raíz — `9a70ec9`.
+- [x] Alias `@core/*` (relativo `./src/app/core/*`) en el `tsconfig` raíz — `9a70ec9`.
+- [x] Instalar Ionic 9.0.10 + Capacitor 8.6.0 + ionicons — `37b2d89`.
+- [x] Tema oscuro de Stitch en el proyecto mobile + `capacitor.config.ts` (`webDir dist/mobile/browser`) — `9a70ec9` + `216532a`.
+- [x] **Criterio cumplido:** web 81 archivos / 880 tests / 0; `ng build` (web) y `ng build mobile` exit 0; tsc 0; lint solo los 8 pre-existentes.
 - Alternativa descartada por costo: `libs/core` como librería publicable.
+- Hallazgos de P0: `@ionic/angular/standalone` no existe en v9 (el export raíz es standalone); no se necesita `zone.js`; `ng test`/`ng lint` ahora recorren ambos proyectos (`ng test app` para web-only); `IonRouterOutlet`/`IonIcon` inyectan `NgZone` → validar animaciones/change detection en dispositivo.
 
 ### P1 — Scaffold móvil y shell
 - [ ] `mobile/` con Ionic 8 + Angular 21 standalone + Capacitor 7 (Android primero).
