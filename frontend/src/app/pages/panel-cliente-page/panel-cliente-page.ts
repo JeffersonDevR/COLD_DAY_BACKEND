@@ -9,6 +9,7 @@ import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { EmptyState } from '../../shared/empty-state/empty-state';
 import { OtResponse } from '../../core/models/common.models';
 import { esErrorPerfilClienteFaltante } from '../../core/errorStatus/perfil-cliente';
+import { recordarPanel } from '../../core/navihationError/panel-resolver';
 
 /** Vistas del listado de OTs del cliente. */
 export type FiltroOts = 'TODAS' | 'ACTIVAS' | 'COMPLETADAS' | 'SIN_TECNICO';
@@ -101,6 +102,9 @@ export class PanelClientePage {
   };
 
   constructor() {
+    // Último panel visitado: `/panel` y "Mi Panel" lo prefieren mientras los
+    // roles del usuario sigan habilitándolo.
+    recordarPanel('/cliente/panel');
     const currentId = String(this.authService.currentUser()?.id ?? '');
     this.cargarOts(currentId, true);
     // Refresco del listado: cada 25 s y solo con la pestaña visible.

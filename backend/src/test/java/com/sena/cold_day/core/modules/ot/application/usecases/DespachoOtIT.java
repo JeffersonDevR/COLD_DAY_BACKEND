@@ -182,6 +182,10 @@ class DespachoOtIT {
         tecnico.setLatitud(latitud);
         tecnico.setLongitud(longitud);
         tecnico.setActivo(true);
+        // Dispatch only offers work to technicians who are actually reporting:
+        // a fresh position at the fixed test clock (RF-F1-27).
+        tecnico.setTrackingActivo(true);
+        tecnico.setUbicacionActualizadaEn(AHORA);
         return tecnicoRepository.save(tecnico).getId();
     }
 

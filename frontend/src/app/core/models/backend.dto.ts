@@ -624,3 +624,15 @@ export interface SugerenciaApiResponse {
   descripcion: string;
   placeId: string;
 }
+
+/**
+ * Route measured by the backend through the Google Directions API.
+ * `polyline` is the encoded street geometry; it may be `""` when Google
+ * answered without geometry, in which case the map falls back to a straight
+ * line.
+ */
+export interface RutaApi {
+  distanciaKm: number;
+  duracionMin: number;
+  polyline: string;
+}

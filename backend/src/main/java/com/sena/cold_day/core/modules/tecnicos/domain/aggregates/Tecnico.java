@@ -268,13 +268,23 @@ public class Tecnico {
      * a technician who has stopped moving.
      */
     public boolean reportaUbicacionVigente(Instant ahora) {
-        if (ahora == null) {
-            throw new IllegalArgumentException("The reference instant is required");
-        }
         return trackingActivo
                 && ubicacion != null
                 && ubicacionActualizadaEn != null
-                && ubicacionActualizadaEn.isAfter(ahora.minus(UBICACION_VIGENCIA));
+                && ubicacionActualizadaEn.isAfter(desdeVigenciaUbicacion(ahora));
+    }
+
+    /**
+     * Lower bound of the window {@link #reportaUbicacionVigente(Instant)} still
+     * accepts: {@code ahora - UBICACION_VIGENCIA}. Exposed so persistence
+     * queries that must apply the same freshness rule take the boundary from
+     * here instead of re-deriving the window on their own.
+     */
+    public static Instant desdeVigenciaUbicacion(Instant ahora) {
+        if (ahora == null) {
+            throw new IllegalArgumentException("The reference instant is required");
+        }
+        return ahora.minus(UBICACION_VIGENCIA);
     }
 
     public boolean isActivo() { return activo; }

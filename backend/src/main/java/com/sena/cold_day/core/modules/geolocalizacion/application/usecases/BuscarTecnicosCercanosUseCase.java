@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.geolocalizacion.application.usecases;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -28,17 +30,22 @@ public class BuscarTecnicosCercanosUseCase {
     private final TecnicoDisponibilidadRepository disponibilidadRepository;
     private final TecnicoRepository tecnicoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final Clock clock;
 
     public BuscarTecnicosCercanosUseCase(TecnicoDisponibilidadRepository disponibilidadRepository,
-            TecnicoRepository tecnicoRepository, UsuarioRepository usuarioRepository) {
+            TecnicoRepository tecnicoRepository, UsuarioRepository usuarioRepository, Clock clock) {
         this.disponibilidadRepository = disponibilidadRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public List<TecnicoCercanoResponse> buscar(Point centro, double radioKm, Set<CategoriaServicio> categorias) {
-        return disponibilidadRepository.buscarDisponiblesEnRadio(centro, radioKm, categorias).stream()
+        // The radar only lists technicians whose position is fresh: the window
+        // comes from the aggregate, never from a local literal.
+        Instant desde = Tecnico.desdeVigenciaUbicacion(clock.instant());
+        return disponibilidadRepository.buscarDisponiblesEnRadio(centro, radioKm, categorias, desde).stream()
                 .map(this::enriquecer)
                 .flatMap(Optional::stream)
                 .toList();

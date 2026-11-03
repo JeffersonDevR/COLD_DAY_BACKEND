@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.maps.infrastructure.api.responses;
 
 import com.sena.cold_day.core.modules.maps.domain.model.DireccionGeocodificada;
+import com.sena.cold_day.core.modules.maps.domain.model.Ruta;
 import com.sena.cold_day.core.modules.maps.domain.model.RutaCalculada;
 import com.sena.cold_day.core.modules.maps.domain.model.SugerenciaDireccion;
 
@@ -28,6 +29,18 @@ public final class MapsApiResponses {
     public record DistanciaApiResponse(double distanciaKm, double duracionMin, String distanciaTexto, String duracionTexto) {
         public static DistanciaApiResponse de(RutaCalculada r) {
             return new DistanciaApiResponse(r.distanciaKm(), r.duracionMin(), r.distanciaTexto(), r.duracionTexto());
+        }
+    }
+
+    /**
+     * Ruta real por calles: distancia, ETA y el polyline codificado. Es el
+     * contrato que consume el mapa de seguimiento para dibujar la calle; el
+     * payload crudo de Google ({@code routes}, {@code legs}, {@code copyrights})
+     * nunca sale del backend.
+     */
+    public record RutaApiResponse(double distanciaKm, double duracionMin, String polyline) {
+        public static RutaApiResponse de(Ruta r) {
+            return new RutaApiResponse(r.distanciaKm(), r.duracionMin(), r.polyline());
         }
     }
 

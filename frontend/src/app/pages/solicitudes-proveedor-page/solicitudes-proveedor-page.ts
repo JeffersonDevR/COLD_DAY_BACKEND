@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
+import { recordarPanel } from '../../core/navihationError/panel-resolver';
 import { ToastService } from '../../core/alertas/toast.service';
 import { mensajeErrorAccion, sesionYaNotificada } from '../../core/alertas/mensaje-error';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
@@ -39,6 +40,8 @@ export class SolicitudesProveedorPage implements OnInit {
   readonly accionEnCurso = signal<string | null>(null);
 
   ngOnInit(): void {
+    // Último panel visitado: el portal del proveedor es su panel (`/proveedor/panel`).
+    recordarPanel('/proveedor/panel');
     this.cargar();
   }
 

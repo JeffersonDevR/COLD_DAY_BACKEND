@@ -7,6 +7,7 @@ import { MockDbService } from '../../core/service/mock-db.service';
 import { ApiConfig } from '../../core/service/api.config';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { TecnicoTrackingService } from '../../core/service/tecnico-tracking.service';
+import { TecnicoPresenciaService } from '../../core/service/tecnico-presencia.service';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
@@ -63,6 +64,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   private readonly apiConfig = inject(ApiConfig);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly tracking = inject(TecnicoTrackingService);
+  private readonly presencia = inject(TecnicoPresenciaService);
   private readonly otApi = inject(OtApi);
   private readonly liquidacionApi = inject(LiquidacionApi);
   private readonly toast = inject(ToastService);
@@ -129,6 +131,16 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       const ruta = rutaLocal(origen, destino);
       this.distanciaKm.set(ruta.distanciaKm);
       this.etaMin.set(ruta.duracionMin);
+    });
+
+    /**
+     * Contexto de presencia: el reporte de ubicación depende del estado real de
+     * la OT, no de que esta página siga montada. Mientras la orden esté en
+     * movimiento la política lo enciende sola; al llegar a un estado terminal
+     * (o al cargarse una orden ya cerrada) lo apaga.
+     */
+    effect(() => {
+      this.presencia.sincronizarOt(this.ot());
     });
   }
 
@@ -324,8 +336,8 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
       },
       (orden) => this._otRemoto.set(orden),
     );
-    // Empuja la ubicación del técnico mientras ejecuta el servicio.
-    this.tracking.iniciar();
+    // Empuja la ubicación del técnico mientras ejecuta el servicio. El estado
+    // real de la OT lo aporta el effect de presencia en cuanto llega el GET.
   }
 
   /** Copy del fallo de la carga de la OT (para el aviso con reintentar). */
@@ -342,7 +354,9 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     this.suscripcionEstado = null;
     this.suscripcionRespaldo?.unsubscribe();
     this.suscripcionRespaldo = null;
-    this.tracking.detener();
+    // Se suelta el contexto de ejecución, no el tracking: si el técnico dejó el
+    // switch de disponibilidad encendido, el reporte sigue al salir de la página.
+    this.presencia.liberarContexto();
   }
 
   iniciarDesplazamiento(): void {
@@ -416,7 +430,9 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
   finalizarServicio(): void {
     this.tecnicosApi.finalizarServicio(this.otId(), this.medioPagoCierre()).subscribe({
       next: () => {
-        this.tracking.detener();
+        // La orden dejó de estar en movimiento: la política reevalúa y apaga el
+        // reporte salvo que el switch de disponibilidad siga encendido.
+        this.presencia.liberarContexto();
         this.recargarOt();
         this.registrarPagoCierre();
       },

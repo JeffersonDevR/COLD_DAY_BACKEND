@@ -56,8 +56,8 @@
                 />
               }
 
-              <!-- La ruta: línea recta de 2 puntos (sin Directions API) -->
-              @if (ruta().length === 2) {
+              <!-- La ruta: geometría real por calles si llegó, si no la recta de 2 puntos -->
+              @if (ruta().length >= 2) {
                 <map-polyline [path]="ruta()" [options]="rutaOpciones" />
               }
             </google-map>

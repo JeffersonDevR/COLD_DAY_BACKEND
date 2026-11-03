@@ -125,4 +125,36 @@ describe('MapsApi', () => {
     expect(sugerencias[0].placeId).toBe('mock-caobos');
     expect(await firstValueFrom(api.autocompletar('zzz'))).toEqual([]);
   });
+
+  it('ruta hace POST con origen y destino y devuelve la geometría', async () => {
+    const promise = firstValueFrom(
+      api.ruta({ latitud: 7.9, longitud: -72.5 }, { latitud: 7.88, longitud: -72.49 }),
+    );
+    const req = http.expectOne('/api/maps/ruta');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      origen: { lat: 7.9, lng: -72.5 },
+      destino: { lat: 7.88, lng: -72.49 },
+    });
+    req.flush({ distanciaKm: 2.4, duracionMin: 6, polyline: 'enc_polyline' });
+    expect(await promise).toEqual({ distanciaKm: 2.4, duracionMin: 6, polyline: 'enc_polyline' });
+  });
+
+  it.each([404, 502, 503])('ruta devuelve null con %i (el mapa no depende de Google)', async (status) => {
+    const promise = firstValueFrom(
+      api.ruta({ latitud: 7.9, longitud: -72.5 }, { latitud: 7.88, longitud: -72.49 }),
+    );
+    http.expectOne('/api/maps/ruta').flush('sin ruta', { status, statusText: 'error' });
+    expect(await promise).toBeNull();
+  });
+
+  it('en modo mock devuelve una ruta sembrada con geometría real', async () => {
+    config.setUseMocks(true);
+    const ruta = await firstValueFrom(
+      api.ruta({ latitud: 7.9, longitud: -72.5 }, { latitud: 7.88, longitud: -72.49 }),
+    );
+    expect(ruta?.polyline.length).toBeGreaterThan(0);
+    expect(ruta?.distanciaKm).toBeGreaterThan(0);
+    expect(ruta?.duracionMin).toBeGreaterThan(0);
+  });
 });

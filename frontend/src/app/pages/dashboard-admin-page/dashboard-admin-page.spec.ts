@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { DashboardAdminPage } from './dashboard-admin-page';
 import { AdminApi } from '../../core/service/admin-api';
+import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refresco';
+import { AdminActividad, SseService } from '../../core/service/sse.service';
 import { MetricasAdminResponse } from '../../core/models/common.models';
 
 const metricas: MetricasAdminResponse = {
@@ -20,12 +22,26 @@ const metricas: MetricasAdminResponse = {
   historicoSemanal: [{ dia: 'Lun', completadas: 8, canceladas: 1 }],
 };
 
-function setup(getMetricas: ReturnType<typeof vi.fn> = vi.fn(() => of(metricas))) {
+function actividad(tipo: AdminActividad['tipo']): AdminActividad {
+  return { tipo, id: 'x-1', ocurridaEn: '2026-10-30T10:00:00Z' };
+}
+
+/** Canal admin falso: permite empujar actividad sin abrir un EventSource. */
+function canalAdmin() {
+  const eventos = new Subject<AdminActividad>();
+  return { eventos, sse: { abrirAdminStream: vi.fn(() => eventos.asObservable()) } };
+}
+
+function setup(
+  getMetricas: ReturnType<typeof vi.fn> = vi.fn(() => of(metricas)),
+  sse?: { abrirAdminStream: ReturnType<typeof vi.fn> },
+) {
   TestBed.configureTestingModule({
     imports: [DashboardAdminPage],
     providers: [
       provideRouter([]),
       { provide: AdminApi, useValue: { getMetricas } },
+      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
     ],
   });
   const fixture = TestBed.createComponent(DashboardAdminPage);
@@ -34,6 +50,8 @@ function setup(getMetricas: ReturnType<typeof vi.fn> = vi.fn(() => of(metricas))
 }
 
 describe('DashboardAdminPage', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('carga las métricas al iniciar', () => {
     const fixture = setup();
     expect(fixture.componentInstance.metricas()?.serviciosEnEjecucion).toBe(4);
@@ -70,5 +88,49 @@ describe('DashboardAdminPage', () => {
     expect(getMetricas).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.errorCarga()).toBe(false);
     expect(fixture.componentInstance.metricas()?.serviciosEnEjecucion).toBe(4);
+  });
+
+  describe('actividad administrativa en tiempo real', () => {
+    it('recarga la torre con cualquier actividad, después de la ventana de calma', () => {
+      const getMetricas = vi.fn(() => of(metricas));
+      const { eventos, sse } = canalAdmin();
+      setup(getMetricas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('TECNICO_VALIDADO'));
+      // Todavía dentro del debounce: no hay recarga.
+      expect(getMetricas).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getMetricas).toHaveBeenCalledTimes(2);
+    });
+
+    it('una ráfaga de eventos produce UNA sola recarga', () => {
+      const getMetricas = vi.fn(() => of(metricas));
+      const { eventos, sse } = canalAdmin();
+      setup(getMetricas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      eventos.next(actividad('LIQUIDACION_APROBADA'));
+      eventos.next(actividad('COMPROBANTE_CARGADO'));
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getMetricas).toHaveBeenCalledTimes(2);
+    });
+
+    it('sin canal SSE la torre sigue cargando y reintentando', () => {
+      const getMetricas = vi
+        .fn()
+        .mockReturnValueOnce(throwError(() => new Error('sin red')))
+        .mockReturnValueOnce(of(metricas));
+      const fixture = setup(getMetricas);
+
+      expect(fixture.componentInstance.errorCarga()).toBe(true);
+      fixture.componentInstance.cargarMetricas();
+
+      expect(getMetricas).toHaveBeenCalledTimes(2);
+      expect(fixture.componentInstance.errorCarga()).toBe(false);
+    });
   });
 });

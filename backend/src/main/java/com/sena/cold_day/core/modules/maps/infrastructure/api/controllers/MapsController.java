@@ -16,9 +16,11 @@ import org.springframework.web.server.ResponseStatusException;
 import com.sena.cold_day.core.modules.maps.application.usecases.MapsUseCase;
 import com.sena.cold_day.core.modules.maps.infrastructure.api.requests.MapsApiRequests.DistanciaApiRequest;
 import com.sena.cold_day.core.modules.maps.infrastructure.api.requests.MapsApiRequests.GeocodeApiRequest;
+import com.sena.cold_day.core.modules.maps.infrastructure.api.requests.MapsApiRequests.RutaApiRequest;
 import com.sena.cold_day.core.modules.maps.infrastructure.api.responses.MapsApiResponses.DireccionApiResponse;
 import com.sena.cold_day.core.modules.maps.infrastructure.api.responses.MapsApiResponses.DistanciaApiResponse;
 import com.sena.cold_day.core.modules.maps.infrastructure.api.responses.MapsApiResponses.EstadoApiResponse;
+import com.sena.cold_day.core.modules.maps.infrastructure.api.responses.MapsApiResponses.RutaApiResponse;
 import com.sena.cold_day.core.modules.maps.infrastructure.api.responses.MapsApiResponses.SugerenciaApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,7 +40,7 @@ import jakarta.validation.constraints.Size;
 @RestController
 @RequestMapping("/api/maps")
 @PreAuthorize("isAuthenticated()")
-@Tag(name = "Maps", description = "Proxy Google Maps Platform (geocodificación, autocompletado, distancia)")
+@Tag(name = "Maps", description = "Proxy Google Maps Platform (geocodificación, autocompletado, distancia, ruta)")
 @SecurityRequirement(name = "bearer-jwt")
 public class MapsController {
 
@@ -88,6 +90,15 @@ public class MapsController {
     public DistanciaApiResponse distancia(@Valid @RequestBody DistanciaApiRequest body) {
         return maps.distancia(body.origenLat(), body.origenLng(), body.destinoLat(), body.destinoLng())
                 .map(DistanciaApiResponse::de)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sin ruta entre esos puntos"));
+    }
+
+    @PostMapping("/ruta")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Ruta real por calles: distancia, ETA y polyline codificado (Directions)")
+    public RutaApiResponse ruta(@Valid @RequestBody RutaApiRequest body) {
+        return maps.ruta(body.origen().lat(), body.origen().lng(), body.destino().lat(), body.destino().lng())
+                .map(RutaApiResponse::de)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sin ruta entre esos puntos"));
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.JsonNode;
 
 import com.sena.cold_day.core.modules.maps.domain.model.DireccionGeocodificada;
+import com.sena.cold_day.core.modules.maps.domain.model.Ruta;
 import com.sena.cold_day.core.modules.maps.domain.model.RutaCalculada;
 import com.sena.cold_day.core.modules.maps.domain.model.SugerenciaDireccion;
 import com.sena.cold_day.core.modules.maps.domain.services.MapsPort;
@@ -22,7 +23,7 @@ import com.sena.cold_day.core.modules.maps.infrastructure.config.MapsProperties;
 /**
  * Adaptador Google Maps Platform (server key, solo backend).
  * Endpoints usados — habilitar en Google Cloud Console:
- * Geocoding API, Places API, Distance Matrix API.
+ * Geocoding API, Places API, Distance Matrix API, Directions API.
  */
 @Component
 public class GoogleMapsAdapter implements MapsPort {
@@ -30,12 +31,14 @@ public class GoogleMapsAdapter implements MapsPort {
     private static final String GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json";
     private static final String AUTOCOMPLETE_URL = "https://maps.googleapis.com/maps/api/place/autocomplete/json";
     private static final String DISTANCE_URL = "https://maps.googleapis.com/maps/api/distancematrix/json";
+    private static final String DIRECTIONS_URL = "https://maps.googleapis.com/maps/api/directions/json";
 
     private static final String PARAM_LANGUAGE = "language";
     private static final String PARAM_REGION = "region";
     private static final String FIELD_RESULTS = "results";
     private static final String FIELD_STATUS = "status";
     private static final String STATUS_ZERO_RESULTS = "ZERO_RESULTS";
+    private static final String STATUS_NOT_FOUND = "NOT_FOUND";
     private static final String LAT_LNG_FORMAT = "%f,%f";
 
     private final MapsProperties props;
@@ -135,7 +138,7 @@ public class GoogleMapsAdapter implements MapsPort {
         assertOk(root, "cálculo de distancia");
         JsonNode element = root.path("rows").path(0).path("elements").path(0);
         String status = element.path(FIELD_STATUS).asText("");
-        if (STATUS_ZERO_RESULTS.equals(status) || "NOT_FOUND".equals(status)) {
+        if (STATUS_ZERO_RESULTS.equals(status) || STATUS_NOT_FOUND.equals(status)) {
             return Optional.empty();
         }
         if (!"OK".equals(status)) {
@@ -148,6 +151,47 @@ public class GoogleMapsAdapter implements MapsPort {
                 segundos / 60.0,
                 element.path("distance").path("text").asText(""),
                 element.path("duration").path("text").asText("")));
+    }
+
+    /**
+     * Ruta real por calles (Directions API, {@code mode=driving}). Solo se pide
+     * una alternativa: la primera y única ruta de la respuesta.
+     */
+    @Override
+    public Optional<Ruta> ruta(double origenLat, double origenLng, double destinoLat, double destinoLng) {
+        String origin = String.format(Locale.US, LAT_LNG_FORMAT, origenLat, origenLng);
+        String destination = String.format(Locale.US, LAT_LNG_FORMAT, destinoLat, destinoLng);
+        String url = UriComponentsBuilder.fromUriString(DIRECTIONS_URL)
+                .queryParam("origin", origin)
+                .queryParam("destination", destination)
+                .queryParam("mode", Ruta.MODO_CONDUCCION)
+                .queryParam("key", props.apiKey())
+                .queryParam(PARAM_LANGUAGE, props.language())
+                .queryParam(PARAM_REGION, props.region())
+                .build().toUriString();
+        JsonNode root = get(url);
+        String status = root.path(FIELD_STATUS).asText("");
+        // "Sin ruta" no es un error del proxy: el controlador lo traduce a 404 y
+        // rutaOpcional lo colapsa a vacío para que el mapa caiga a línea recta.
+        if (STATUS_ZERO_RESULTS.equals(status) || STATUS_NOT_FOUND.equals(status)) {
+            return Optional.empty();
+        }
+        assertOk(root, "cálculo de ruta");
+        JsonNode routes = root.path("routes");
+        if (!routes.isArray() || routes.isEmpty()) {
+            return Optional.empty();
+        }
+        JsonNode route = routes.get(0);
+        JsonNode leg = route.path("legs").path(0);
+        if (leg.isMissingNode() || leg.isEmpty()) {
+            return Optional.empty();
+        }
+        double metros = leg.path("distance").path("value").asDouble(0);
+        double segundos = leg.path("duration").path("value").asDouble(0);
+        return Optional.of(new Ruta(
+                metros / 1000.0,
+                segundos / 60.0,
+                route.path("overview_polyline").path("points").asText("")));
     }
 
     private JsonNode get(String url) {

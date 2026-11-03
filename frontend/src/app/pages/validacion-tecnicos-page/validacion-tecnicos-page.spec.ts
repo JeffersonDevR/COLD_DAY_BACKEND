@@ -1,12 +1,28 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ValidacionTecnicosPage } from './validacion-tecnicos-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refresco';
+import { AdminActividad, SseService } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { TecnicoResponse } from '../../core/models/common.models';
+
+interface CanalAdmin {
+  abrirAdminStream: ReturnType<typeof vi.fn>;
+}
+
+function actividad(tipo: AdminActividad['tipo']): AdminActividad {
+  return { tipo, id: 'x-1', ocurridaEn: '2026-10-30T10:00:00Z' };
+}
+
+/** Canal admin falso: permite empujar actividad sin abrir un EventSource. */
+function canalAdmin() {
+  const eventos = new Subject<AdminActividad>();
+  return { eventos, sse: { abrirAdminStream: vi.fn(() => eventos.asObservable()) } };
+}
 
 const tecnico: TecnicoResponse = {
   id: 'TEC-1',
@@ -24,7 +40,11 @@ const tecnico: TecnicoResponse = {
 const MENSAJE_409 =
   'El expediente del técnico no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.';
 
-function setup(validarError?: unknown, getTecnicos?: ReturnType<typeof vi.fn>) {
+function setup(
+  validarError?: unknown,
+  getTecnicos?: ReturnType<typeof vi.fn>,
+  sse?: CanalAdmin,
+) {
   const adminApi = {
     validarDocumentacionTecnico: vi.fn(() =>
       validarError ? throwError(() => validarError) : of(undefined)
@@ -39,6 +59,7 @@ function setup(validarError?: unknown, getTecnicos?: ReturnType<typeof vi.fn>) {
       { provide: AdminApi, useValue: adminApi },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: ToastService, useValue: toast },
+      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
     ],
   });
   const fixture = TestBed.createComponent(ValidacionTecnicosPage);
@@ -131,5 +152,46 @@ describe('ValidacionTecnicosPage', () => {
     expect(fixture.componentInstance.tecnicoARechazar()).not.toBeNull();
     expect(fixture.componentInstance.motivoCtrl.value).toBe('documentos vencidos');
     expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(1);
+  });
+
+  describe('actividad administrativa en tiempo real', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('recarga con una validación de técnico, después de la ventana de calma', () => {
+      const { eventos, sse } = canalAdmin();
+      const { tecnicosApi } = setup(undefined, undefined, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('TECNICO_VALIDADO'));
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignora actividad que no es de validación', () => {
+      const { eventos, sse } = canalAdmin();
+      const { tecnicosApi } = setup(undefined, undefined, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_RESUELTA'));
+      eventos.next(actividad('LIQUIDACION_REGISTRADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(1);
+    });
+
+    it('una ráfaga de validaciones produce UNA sola recarga', () => {
+      const { eventos, sse } = canalAdmin();
+      const { tecnicosApi } = setup(undefined, undefined, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('TECNICO_VALIDADO'));
+      eventos.next(actividad('TECNICO_VALIDACION_RECHAZADA'));
+      eventos.next(actividad('TECNICO_VALIDADO'));
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(2);
+    });
   });
 });

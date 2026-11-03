@@ -16,6 +16,10 @@
           <p class="text-xs text-slate-400 mt-0.5">
             Rastreo perimetral en vivo sobre cartografía satelital y vial
           </p>
+          <!-- Copy honesta: no se elige un técnico, la solicitud se emite a todos los cercanos. -->
+          <p class="text-xs text-sky-200 mt-1 max-w-xl leading-relaxed" data-testid="radar-broadcast">
+            Tu solicitud se envía a los técnicos cercanos; el primero que acepta la toma.
+          </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -171,7 +175,7 @@
                 <div class="p-2 text-slate-900 max-w-[200px]">
                   <div class="font-bold text-xs text-sky-800 mb-0.5">Ubicación del Servicio</div>
                   <div class="text-[11px] text-slate-700">{{ clienteUbicacionNombre() }}</div>
-                  <div class="text-[10px] text-slate-500 mt-1">Centro del radar de asignación</div>
+                  <div class="text-[10px] text-slate-500 mt-1">Tu solicitud se comparte con los técnicos cercanos</div>
                 </div>
               </map-info-window>
             </google-map>

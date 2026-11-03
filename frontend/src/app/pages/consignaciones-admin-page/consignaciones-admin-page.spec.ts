@@ -1,12 +1,28 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ConsignacionesAdminPage } from './consignaciones-admin-page';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
+import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refresco';
+import { AdminActividad, SseService } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 import { LiquidacionResponse, TecnicoResponse } from '../../core/models/common.models';
+
+interface CanalAdmin {
+  abrirAdminStream: ReturnType<typeof vi.fn>;
+}
+
+function actividad(tipo: AdminActividad['tipo']): AdminActividad {
+  return { tipo, id: 'x-1', ocurridaEn: '2026-10-30T10:00:00Z' };
+}
+
+/** Canal admin falso: permite empujar actividad sin abrir un EventSource. */
+function canalAdmin() {
+  const eventos = new Subject<AdminActividad>();
+  return { eventos, sse: { abrirAdminStream: vi.fn(() => eventos.asObservable()) } };
+}
 
 function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionResponse {
   return {
@@ -23,7 +39,11 @@ function liquidacion(overrides: Partial<LiquidacionResponse>): LiquidacionRespon
   };
 }
 
-function setup(getTodasLiquidaciones?: ReturnType<typeof vi.fn>, tecnicosSinRed = false) {
+function setup(
+  getTodasLiquidaciones?: ReturnType<typeof vi.fn>,
+  tecnicosSinRed = false,
+  sse?: CanalAdmin,
+) {
   const liquidacionApi = {
     getTodasLiquidaciones: getTodasLiquidaciones ?? vi.fn(() =>
       of([
@@ -52,11 +72,12 @@ function setup(getTodasLiquidaciones?: ReturnType<typeof vi.fn>, tecnicosSinRed 
       { provide: LiquidacionApi, useValue: liquidacionApi },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: ToastService, useValue: toast },
+      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
     ],
   });
   const fixture = TestBed.createComponent(ConsignacionesAdminPage);
   fixture.detectChanges();
-  return { fixture, liquidacionApi, toast };
+  return { fixture, liquidacionApi, tecnicosApi, toast };
 }
 
 describe('ConsignacionesAdminPage', () => {
@@ -179,5 +200,65 @@ describe('ConsignacionesAdminPage', () => {
     expect(fixture.componentInstance.liqARechazar()).not.toBeNull();
     expect(fixture.componentInstance.motivoCtrl.value).toBe('valor no coincide');
     expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(1);
+  });
+
+  describe('actividad administrativa en tiempo real', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('recarga con un comprobante cargado, después de la ventana de calma', () => {
+      const { eventos, sse } = canalAdmin();
+      const { liquidacionApi, tecnicosApi } = setup(undefined, false, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('COMPROBANTE_CARGADO'));
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(2);
+    });
+
+    it('recarga con cualquier cambio de liquidación', () => {
+      const { eventos, sse } = canalAdmin();
+      const { liquidacionApi } = setup(undefined, false, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('LIQUIDACION_REGISTRADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+
+      eventos.next(actividad('LIQUIDACION_APROBADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(3);
+
+      eventos.next(actividad('LIQUIDACION_RECHAZADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(4);
+    });
+
+    it('ignora actividad que no es de consignaciones', () => {
+      const { eventos, sse } = canalAdmin();
+      const { liquidacionApi } = setup(undefined, false, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      eventos.next(actividad('TECNICO_VALIDACION_RECHAZADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(1);
+    });
+
+    it('una ráfaga de eventos produce UNA sola recarga', () => {
+      const { eventos, sse } = canalAdmin();
+      const { liquidacionApi } = setup(undefined, false, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('COMPROBANTE_CARGADO'));
+      eventos.next(actividad('LIQUIDACION_APROBADA'));
+      eventos.next(actividad('COMPROBANTE_CARGADO'));
+
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+    });
   });
 });

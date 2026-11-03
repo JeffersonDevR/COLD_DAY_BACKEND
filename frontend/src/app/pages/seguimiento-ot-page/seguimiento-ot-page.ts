@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
@@ -13,7 +13,11 @@ import { TecnicosApi } from '../../core/service/tecnicos-api';
 import { rutaLocal } from '../../core/service/distancia-local';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { SseService } from '../../core/service/sse.service';
-import { pollVisibleTab } from '../../core/service/visible-tab-polling';
+import { pollVisibleTab, tabVisible } from '../../core/service/visible-tab-polling';
+import {
+  ESTADOS_TECNICO_EN_MOVIMIENTO,
+  RutaSeguimientoService,
+} from '../../core/service/ruta-seguimiento.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { OtTimeline } from '../../shared/ot-timeline/ot-timeline';
@@ -22,18 +26,6 @@ import { MapaSeguimiento } from '../../shared/mapa-seguimiento/mapa-seguimiento'
 import { CargoVisitaDiagnostico } from '../../shared/cargo-visita/cargo-visita';
 import { EstadoBadge } from '../../shared/estado-badge/estado-badge';
 import { OtResponse, Point, TecnicoCercano, MedioPago, EstadoOt } from '../../core/models/common.models';
-
-/**
- * Estados en los que el técnico asignado debería estar desplazándose. Es la
- * misma lista que gobierna el cargo de visita: mientras la OT no esté aquí, la
- * última posición conocida ya no aporta nada al seguimiento.
- */
-const ESTADOS_TECNICO_EN_MOVIMIENTO: readonly EstadoOt[] = [
-  'ASIGNADA',
-  'EN_CAMINO',
-  'EN_DIAGNOSTICO',
-  'EN_REPARACION',
-];
 
 @Component({
   selector: 'app-seguimiento-ot-page',
@@ -48,9 +40,12 @@ const ESTADOS_TECNICO_EN_MOVIMIENTO: readonly EstadoOt[] = [
     CargoVisitaDiagnostico,
     EstadoBadge
   ],
+  // Page-scoped: the cost guard starts fresh on every visit and its in-flight
+  // request dies with the page instead of leaking between screens.
+  providers: [RutaSeguimientoService],
   templateUrl: './seguimiento-ot-page.html'
 })
-export class SeguimientoOtPage implements OnInit {
+export class SeguimientoOtPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly clientesApi = inject(ClientesApi);
   private readonly otApi = inject(OtApi);
@@ -62,6 +57,8 @@ export class SeguimientoOtPage implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly mapaConfig = inject(MapaConfigService);
+  /** Cost guard for the real street route (not asked on every 15 s tick). */
+  private readonly rutaSeguimiento = inject(RutaSeguimientoService);
 
   readonly otId = signal<string>('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
@@ -73,6 +70,8 @@ export class SeguimientoOtPage implements OnInit {
   readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
   readonly tecnicoUbicacion = signal<Point | null>(null);
+  /** Real street geometry for the map; `null` → the map draws the straight line. */
+  readonly rutaCodificada = this.rutaSeguimiento.rutaCodificada.asReadonly();
   readonly distanciaKm = signal<number | null>(null);
   readonly etaMin = signal<number | null>(null);
   readonly tecnicosCercanos = signal<TecnicoCercano[]>([]);
@@ -288,12 +287,34 @@ export class SeguimientoOtPage implements OnInit {
       .subscribe((ubicacion) => {
         this.tecnicoUbicacion.set(ubicacion);
         this.recalcularDistancia();
+        // La ruta real por calles se pide acá, pero el guard decide si se
+        // gasta o no: el tick de 15 s NO es una petición a Directions.
+        this.actualizarRuta();
       });
   }
 
   private detenerSeguimientoTecnico(): void {
     this.suscripcionSeguimiento?.unsubscribe();
     this.suscripcionSeguimiento = null;
+  }
+
+  /**
+   * Pide la ruta real por calles al guard de costo. Nunca muestra error: un
+   * fallo (404/502/503) llega como `null` y el mapa se queda con la recta.
+   */
+  private actualizarRuta(): void {
+    const origen = this.tecnicoUbicacion();
+    const destino = this.ot()?.punto;
+    if (!origen || !destino) return;
+    this.rutaSeguimiento.actualizar(origen, destino, {
+      visible: tabVisible(),
+      estado: this.ot()?.estado,
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Ninguna petición de ruta sobrevive a la pantalla.
+    this.rutaSeguimiento.detener();
   }
 
   /**

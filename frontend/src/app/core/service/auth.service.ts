@@ -250,6 +250,12 @@ export class AuthService {
     this.setCurrentUser(target);
   }
 
+  /**
+   * Landing tras el login, por rol. NO es el resolutor de paneles: `/panel`,
+   * "Mi Panel" y la preferencia del último panel visitado viven en
+   * `core/navihationError/panel-resolver` (un solo mapa de rutas de panel). No
+   * agregar aquí un cuarto mapa: si cambia una ruta de panel, cambia allá.
+   */
   getDashboardRouteForRole(rol: Rol): string {
     switch (rol) {
       case 'CLIENTE':

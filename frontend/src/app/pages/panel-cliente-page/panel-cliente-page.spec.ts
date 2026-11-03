@@ -6,6 +6,7 @@ import { ClientesApi } from '../../core/service/clientes-api';
 import { AuthService } from '../../core/service/auth.service';
 import { OtResponse } from '../../core/models/common.models';
 import { POLL_INTERVAL_MS } from '../../core/service/visible-tab-polling';
+import { CLAVE_PANEL_PREFERIDO } from '../../core/navihationError/panel-resolver';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
 
 /** Alterna `document.visibilityState` como lo haría el navegador al cambiar de pestaña. */
@@ -41,6 +42,14 @@ function setup(getOts: ReturnType<typeof vi.fn>, sesion: { id: number; nombre?: 
 }
 
 describe('PanelClientePage', () => {
+  it('recuerda el panel del cliente como último panel visitado', () => {
+    window.localStorage.clear();
+
+    setup(vi.fn(() => of([])));
+
+    expect(window.localStorage.getItem(CLAVE_PANEL_PREFERIDO)).toBe('/cliente/panel');
+  });
+
   it('separa servicios activos y finalizados', () => {
     const getOts = vi.fn(() =>
       of([

@@ -12,6 +12,7 @@ import { GoogleMap, MapMarker, MapPolyline } from '@angular/google-maps';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { rutaLocal } from '../../core/service/distancia-local';
+import { decodificarRuta } from './polyline-ruta';
 import { Point } from '../../core/models/common.models';
 import {
   MAPA_ESTILOS,
@@ -26,10 +27,11 @@ import {
  * alrededor del cliente; este mapa muestra al técnico que ya fue asignado,
  * moviéndose hacia el punto de servicio.
  *
- * NO llama a la API de Google Maps: la posición llega del sondeo que ya hace
- * la página (`GET /api/ot/{id}/tecnico-ubicacion`), el destino ya está en la
- * OT y la "ruta" es la línea recta entre los dos (sin Directions API). Todo
- * lo que se dibuja es local.
+ * El componente NO pide nada a Google: la posición llega del sondeo que ya hace
+ * la página (`GET /api/ot/{id}/tecnico-ubicacion`) y la geometría de la calle
+ * llega ya calculada por el backend (`rutaCodificada`, pedida por la página a
+ * través de `RutaSeguimientoService`). Acá solo se decodifica para dibujar; sin
+ * geometría se mantiene la línea recta de 2 puntos.
  *
  * Es progresivo: si el script de Google no carga, el mapa no aparece, pero el
  * texto con la distancia y la ETA sigue visible (la información nunca vive
@@ -61,6 +63,12 @@ export class MapaSeguimiento implements OnInit {
    * `llegadaEn`) y el mapa lo necesita para no seguir diciendo "En camino:".
    */
   readonly llegada = input<boolean>(false);
+  /**
+   * Geometría real de la calle (polyline codificado de Google). Opcional: si
+   * falta, está vacía o no se puede decodificar, la ruta vuelve a ser la línea
+   * recta de 2 puntos.
+   */
+  readonly rutaCodificada = input<string | null>(null);
 
   /** Posición del marcador del técnico; `null` sin posición (no hay pin). */
   readonly posicionMarcador = computed<google.maps.LatLngLiteral | null>(() => {
@@ -75,13 +83,16 @@ export class MapaSeguimiento implements OnInit {
   });
 
   /**
-   * La "ruta": línea recta del técnico al destino (2 puntos). Sin posición
-   * del técnico no hay línea: mejor un mapa vacío que una ruta inventada.
+   * La ruta dibujada: la geometría real por calles cuando el backend la trajo y
+   * se puede decodificar; si no, la línea recta del técnico al destino (2
+   * puntos). Sin posición del técnico no hay línea: mejor un mapa vacío que una
+   * ruta inventada.
    */
   readonly ruta = computed<google.maps.LatLngLiteral[]>(() => {
     const tecnico = this.posicionMarcador();
     const destino = this.destinoMarcador();
-    return tecnico && destino ? [tecnico, destino] : [];
+    if (!tecnico || !destino) return [];
+    return decodificarRuta(this.rutaCodificada()) ?? [tecnico, destino];
   });
 
   /**
@@ -134,7 +145,7 @@ export class MapaSeguimiento implements OnInit {
   readonly marcadorTecnicoOpciones = MARCADOR_TECNICO_OPCIONES;
   readonly marcadorDestinoOpciones = MARCADOR_CLIENTE_OPCIONES;
 
-  /** La línea recta de la ruta. */
+  /** La línea de la ruta (real por calles o recta, según lo que haya). */
   readonly rutaOpciones: google.maps.PolylineOptions = {
     strokeColor: '#38bdf8',
     strokeOpacity: 0.9,

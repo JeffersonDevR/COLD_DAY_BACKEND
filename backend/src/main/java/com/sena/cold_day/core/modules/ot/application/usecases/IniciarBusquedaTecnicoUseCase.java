@@ -19,6 +19,7 @@ import com.sena.cold_day.core.modules.ot.domain.repository.OfertaOtRepository;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.services.NotificacionPushPort;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.ActorOt;
+import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 
 /**
  * CU-08/RF-F1-09: starts dispatch for an urgent OT. From {@code SOLICITADA} it
@@ -78,8 +79,9 @@ public class IniciarBusquedaTecnicoUseCase {
     }
 
     private int ejecutarOferta(Ot ot, double radioKm, Instant ahora) {
-        List<TecnicoCercano> disponibles = disponibilidadRepository
-                .buscarDisponiblesEnRadio(ot.getUbicacion(), radioKm, Set.of(ot.getCategoriaServicio()));
+        List<TecnicoCercano> disponibles = disponibilidadRepository.buscarDisponiblesEnRadio(
+                ot.getUbicacion(), radioKm, Set.of(ot.getCategoriaServicio()),
+                Tecnico.desdeVigenciaUbicacion(ahora));
         for (TecnicoCercano cercano : disponibles) {
             OfertaOt oferta = OfertaOt.crear(ot.getId(), cercano.tecnicoId(), radioKm, ahora,
                     ahora.plus(VENTANA_BUSQUEDA));
