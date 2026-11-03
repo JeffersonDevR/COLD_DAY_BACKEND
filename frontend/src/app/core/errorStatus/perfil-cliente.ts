@@ -1,4 +1,4 @@
-import { ApiHttpError } from '../interceptos/error.interceptor';
+import { ApiHttpError } from '../alertas/api-http.error';
 
 /** Mensaje exacto que devuelve el backend (404) cuando el usuario no tiene perfil de cliente. */
 const PATRON_PERFIL_CLIENTE_FALTANTE = /no existe un perfil de cliente/i;

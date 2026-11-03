@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { DecodedToken, TokenStorageService } from './token-storage.service';
 import { CLAVE_COMPARTIR_UBICACION } from './tecnico-presencia.service';
-import { ToastService } from '../alertas/toast.service';
+import { AVISO_SESION } from '../alertas/aviso-sesion';
 import { Rol, TokenResponse, UsuarioResponse } from '../models/common.models';
 
 @Injectable({
@@ -12,7 +12,7 @@ import { Rol, TokenResponse, UsuarioResponse } from '../models/common.models';
 export class AuthService {
   private readonly tokenStorage = inject(TokenStorageService);
   private readonly router = inject(Router);
-  private readonly toast = inject(ToastService);
+  private readonly avisoSesion = inject(AVISO_SESION);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   /** Temporizador que cierra la sesión justo cuando expira el JWT. */
@@ -109,7 +109,10 @@ export class AuthService {
 
   private expirarSesion(): void {
     if (!this.isAuthenticated()) return;
-    this.toast.warning('Sesión expirada', 'Tu sesión caducó. Inicia sesión de nuevo para continuar.');
+    this.avisoSesion.advertir(
+      'Sesión expirada',
+      'Tu sesión caducó. Inicia sesión de nuevo para continuar.',
+    );
     this.logout();
   }
 

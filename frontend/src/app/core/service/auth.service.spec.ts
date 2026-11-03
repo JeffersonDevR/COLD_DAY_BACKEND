@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import { ToastService } from '../alertas/toast.service';
+import { AVISO_SESION, AvisoSesion } from '../alertas/aviso-sesion';
 import { Rol, UsuarioResponse } from '../models/common.models';
 import { CLAVE_COMPARTIR_UBICACION } from './tecnico-presencia.service';
 import { CLAVE_PANEL_PREFERIDO } from '../navihationError/panel-resolver';
@@ -27,16 +27,18 @@ const adminUser: UsuarioResponse = {
 
 describe('AuthService', () => {
   let router: { navigate: ReturnType<typeof vi.fn> };
-  let toast: { warning: ReturnType<typeof vi.fn> };
+  let avisoSesion: AvisoSesion;
+  let advertirSesion: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     window.localStorage.clear();
     router = { navigate: vi.fn() };
-    toast = { warning: vi.fn() };
+    advertirSesion = vi.fn();
+    avisoSesion = { advertir: advertirSesion as AvisoSesion['advertir'] };
     TestBed.configureTestingModule({
       providers: [
         { provide: Router, useValue: router },
-        { provide: ToastService, useValue: toast },
+        { provide: AVISO_SESION, useValue: avisoSesion },
       ],
     });
   });
@@ -277,7 +279,7 @@ describe('AuthService', () => {
 
     vi.advanceTimersByTime(2100);
 
-    expect(toast.warning).toHaveBeenCalled();
+    expect(advertirSesion).toHaveBeenCalled();
     expect(service.isAuthenticated()).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });

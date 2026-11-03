@@ -1,4 +1,4 @@
-import { ApiHttpError } from '../interceptos/error.interceptor';
+import { ApiHttpError } from './api-http.error';
 
 /**
  * Copy humana para el fallo de una acción iniciada por el usuario. El status

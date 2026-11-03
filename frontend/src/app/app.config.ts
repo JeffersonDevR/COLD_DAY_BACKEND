@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  Provider,
   inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
@@ -14,6 +15,8 @@ import Aura from '@primeuix/themes/aura';
 import {routes} from './app.routes';
 import {authInterceptor} from './core/interceptos/auth.interceptor';
 import {errorInterceptor} from './core/interceptos/error.interceptor';
+import {ToastService} from './core/alertas/toast.service';
+import {AVISO_SESION, AvisoSesion} from './core/alertas/aviso-sesion';
 import {initializeAppearance} from './core/service/appearance';
 import {MapaConfigService} from './core/service/mapa-config.service';
 import {provideColombianLocale} from './core/i18n/locale';
@@ -41,6 +44,22 @@ const ColdDayPreset = definePreset(Aura, {
   },
 });
 
+/**
+ * Adaptador web del puerto `AVISO_SESION`: delega en la fachada de toasts de
+ * PrimeNG con la severidad y el copy que ya usaba `AuthService`.
+ */
+function provideAvisoSesionToast(): Provider {
+  return {
+    provide: AVISO_SESION,
+    useFactory: (): AvisoSesion => {
+      const toast = inject(ToastService);
+      return {
+        advertir: (titulo: string, mensaje?: string) => toast.warning(titulo, mensaje),
+      };
+    },
+  };
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     // Built-in pipes (date, number) format in Colombian Spanish.
@@ -59,6 +78,7 @@ export const appConfig: ApplicationConfig = {
     }),
     // authInterceptor adjunta el JWT del backend; errorInterceptor traduce ApiError.
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
+    provideAvisoSesionToast(),
     providePrimeNG({
       ripple: true,
       theme: {
