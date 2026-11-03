@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   IonButton,
   IonContent,
@@ -20,21 +20,44 @@ const MENSAJES_LOGIN: Record<number, string> = {
   401: 'Correo o contraseña incorrectos. Revisalos e intentá de nuevo.',
 };
 
-/** A1 — Login móvil contra el backend real (mismo AuthService que la web). */
+/**
+ * A1 — Login móvil contra el backend real (mismo `AuthService` que la web).
+ *
+ * La pantalla sigue el diseño de Stitch: marca centrada, campos con etiqueta
+ * visible, botón primario cyan, error inline y acceso al registro. El fallo se
+ * anuncia con el toast móvil y además queda escrito bajo el formulario, para
+ * que no se pierda si el toast ya se cerró.
+ */
 @Component({
   selector: 'app-mobile-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IonButton, IonContent, IonInput, IonItem, IonList, IonSpinner],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    IonButton,
+    IonContent,
+    IonInput,
+    IonItem,
+    IonList,
+    IonSpinner,
+  ],
   template: `
-    <ion-content class="ion-padding">
-      <section class="cd-card cd-login">
-        <p class="cd-eyebrow">Cold Day</p>
-        <h1 class="cd-headline">Ingresá a tu cuenta</h1>
-        <p class="cd-muted">
-          Servicios técnicos de refrigeración, aire acondicionado y electricidad.
-        </p>
+    <ion-content class="cd-auth" [fullscreen]="true">
+      <main class="cd-auth__inner">
+        <header class="cd-auth__brand">
+          <svg class="cd-logo" viewBox="0 0 48 48" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <path d="M24 7v34M9.3 15.5l29.4 17M9.3 32.5l29.4-17" />
+              <path d="M24 7l-3.5 3.5M24 7l3.5 3.5M24 41l-3.5-3.5M24 41l3.5-3.5" />
+              <path d="M9.3 15.5l1.2 4.7M9.3 15.5l4.8-.8M38.7 32.5l-1.2-4.7M38.7 32.5l-4.8.8" />
+              <path d="M9.3 32.5l4.8.8M9.3 32.5l1.2-4.7M38.7 15.5l-4.8-.8M38.7 15.5l-1.2 4.7" />
+            </g>
+          </svg>
+          <h1 class="cd-wordmark">Cold Day</h1>
+          <p class="cd-tagline">Operaciones en frío, en tiempo real.</p>
+        </header>
 
-        <form [formGroup]="loginForm" (ngSubmit)="enviar()">
+        <form class="cd-auth__form" [formGroup]="loginForm" (ngSubmit)="enviar()" novalidate>
           <ion-list lines="none" class="cd-form">
             <ion-item>
               <ion-input
@@ -50,7 +73,7 @@ const MENSAJES_LOGIN: Record<number, string> = {
             <ion-item>
               <ion-input
                 formControlName="password"
-                type="password"
+                [type]="verPassword() ? 'text' : 'password'"
                 autocomplete="current-password"
                 label="Contraseña"
                 labelPlacement="stacked"
@@ -59,12 +82,24 @@ const MENSAJES_LOGIN: Record<number, string> = {
             </ion-item>
           </ion-list>
 
+          <button
+            type="button"
+            class="cd-auth__toggle"
+            data-testid="toggle-password"
+            (click)="alternarPassword()"
+          >
+            {{ verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña' }}
+          </button>
+
+          @if (error(); as mensaje) {
+            <p class="cd-auth__error" role="alert" data-testid="error-login">{{ mensaje }}</p>
+          }
+
           <ion-button
             expand="block"
             type="submit"
             data-testid="entrar"
             [disabled]="loginForm.invalid || loading()"
-            (click)="enviar()"
           >
             @if (loading()) {
               <ion-spinner name="dots"></ion-spinner>
@@ -73,7 +108,12 @@ const MENSAJES_LOGIN: Record<number, string> = {
             }
           </ion-button>
         </form>
-      </section>
+
+        <p class="cd-auth__link">
+          ¿No tenés cuenta?
+          <a routerLink="/registro" data-testid="ir-registro">Creá una</a>
+        </p>
+      </main>
     </ion-content>
   `,
 })
@@ -85,6 +125,8 @@ export class LoginPage {
   private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
+  protected readonly verPassword = signal(false);
+  protected readonly error = signal<string | null>(null);
 
   protected readonly loginForm = new FormGroup({
     correo: new FormControl('', {
@@ -97,10 +139,15 @@ export class LoginPage {
     }),
   });
 
+  protected alternarPassword(): void {
+    this.verPassword.update((visible) => !visible);
+  }
+
   protected enviar(): void {
     if (this.loginForm.invalid || this.loading()) return;
 
     this.loading.set(true);
+    this.error.set(null);
     const { correo, password } = this.loginForm.getRawValue();
 
     this.usuariosApi.login(correo, password).subscribe({
@@ -114,7 +161,11 @@ export class LoginPage {
       },
       error: (err: unknown) => {
         this.loading.set(false);
-        void this.toast.error('No pudimos iniciar sesión', mensajeErrorAccion(err, MENSAJES_LOGIN));
+        // Nunca el mensaje crudo del backend: `mensajeErrorAccion` traduce el
+        // status a copy humana y el 401 tiene su propia frase de login.
+        const mensaje = mensajeErrorAccion(err, MENSAJES_LOGIN);
+        this.error.set(mensaje);
+        void this.toast.error('No pudimos iniciar sesión', mensaje);
       },
     });
   }
