@@ -134,6 +134,21 @@ class MapsRutaApiTest {
         verifyNoInteractions(maps);
     }
 
+    /**
+     * A Google contract violation (a Directions body without a status, for
+     * example) must leave the API as a 502 with the canonical payload, never as
+     * an unhandled 500.
+     */
+    @Test
+    void responde502ConApiErrorCuandoGoogleFalla() throws Exception {
+        when(maps.ruta(7.8, -72.5, 7.9, -72.6))
+                .thenThrow(new IllegalStateException("Google Maps falló (cálculo de ruta)"));
+
+        mockMvc.perform(post("/api/maps/ruta").contentType(MediaType.APPLICATION_JSON).content(CUERPO))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$[0].status").value(502));
+    }
+
     private MockMvc mvc(boolean enabled, String apiKey) {
         MapsProperties props = new MapsProperties(apiKey, enabled, "es", "CO", 4000, 60, 200);
         MapsUseCase useCase = new MapsUseCase(maps, props, new RutaCache(props));

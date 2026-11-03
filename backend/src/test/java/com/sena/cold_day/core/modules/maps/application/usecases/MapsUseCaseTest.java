@@ -233,37 +233,10 @@ class MapsUseCaseTest {
         verify(maps, times(1)).ruta(7.81, -72.5, 7.9, -72.6);
     }
 
-    @Test
-    void rutaOpcionalDevuelveLaRutaCuandoMapsEstaDisponible() {
-        when(maps.ruta(OLAT, OLNG, 8.0, -72.5)).thenReturn(Optional.of(RUTA));
-
-        assertThat(useCase("server-key", true).rutaOpcional(OLAT, OLNG, 8.0, -72.5)).contains(RUTA);
-    }
-
-    @Test
-    void rutaOpcionalDevuelveVacioSinConsultarCuandoMapsNoEstaDisponible() {
-        assertThat(useCase("server-key", false).rutaOpcional(OLAT, OLNG, 8.0, -72.5)).isEmpty();
-        assertThat(useCase("  ", true).rutaOpcional(OLAT, OLNG, 8.0, -72.5)).isEmpty();
-
-        verify(maps, never()).ruta(anyDouble(), anyDouble(), anyDouble(), anyDouble());
-    }
-
-    @Test
-    void rutaOpcionalDevuelveVacioCuandoNoHayRuta() {
-        when(maps.ruta(OLAT, OLNG, 8.0, -72.5)).thenReturn(Optional.empty());
-
-        assertThat(useCase("server-key", true).rutaOpcional(OLAT, OLNG, 8.0, -72.5)).isEmpty();
-    }
-
-    @Test
-    void rutaOpcionalDevuelveVacioYNoPropagaCuandoGoogleFalla() {
-        when(maps.ruta(OLAT, OLNG, 8.0, -72.5)).thenThrow(new IllegalStateException("Google no respondio"));
-
-        assertThatCode(() -> useCase("server-key", true).rutaOpcional(OLAT, OLNG, 8.0, -72.5))
-                .doesNotThrowAnyException();
-        assertThat(useCase("server-key", true).rutaOpcional(OLAT, OLNG, 8.0, -72.5)).isEmpty();
-    }
-
+    /**
+     * A failed Directions call must not poison the cache: the next identical
+     * lookup reaches the port again and returns the route.
+     */
     @Test
     void unFalloNoSeCacheaYSeReintentaLaProximaLlamada() {
         when(maps.ruta(7.8, -72.5, 7.9, -72.6))
@@ -271,7 +244,8 @@ class MapsUseCaseTest {
                 .thenReturn(Optional.of(RUTA));
         MapsUseCase useCase = useCase("server-key", true);
 
-        assertThat(useCase.rutaOpcional(7.8, -72.5, 7.9, -72.6)).isEmpty();
+        assertThatThrownBy(() -> useCase.ruta(7.8, -72.5, 7.9, -72.6))
+                .isInstanceOf(IllegalStateException.class);
         assertThat(useCase.ruta(7.8, -72.5, 7.9, -72.6)).contains(RUTA);
 
         verify(maps, times(2)).ruta(7.8, -72.5, 7.9, -72.6);

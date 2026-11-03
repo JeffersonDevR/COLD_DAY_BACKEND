@@ -172,7 +172,7 @@ public class GoogleMapsAdapter implements MapsPort {
         JsonNode root = get(url);
         String status = root.path(FIELD_STATUS).asText("");
         // "Sin ruta" no es un error del proxy: el controlador lo traduce a 404 y
-        // rutaOpcional lo colapsa a vacío para que el mapa caiga a línea recta.
+        // el frontend degrada a línea recta con su catchError.
         if (STATUS_ZERO_RESULTS.equals(status) || STATUS_NOT_FOUND.equals(status)) {
             return Optional.empty();
         }
