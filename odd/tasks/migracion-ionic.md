@@ -75,13 +75,25 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 - Alternativa descartada por costo: `libs/core` como librería publicable.
 - Hallazgos de P0: `@ionic/angular/standalone` no existe en v9 (el export raíz es standalone); no se necesita `zone.js`; `ng test`/`ng lint` ahora recorren ambos proyectos (`ng test app` para web-only); `IonRouterOutlet`/`IonIcon` inyectan `NgZone` → validar animaciones/change detection en dispositivo.
 
-### P1 — Scaffold móvil y shell
-- [ ] `mobile/` con Ionic 8 + Angular 21 standalone + Capacitor 7 (Android primero).
-- [ ] Tema oscuro con los tokens de Stitch (variables CSS de Ionic: `--ion-background-color`, `--ion-color-primary`, fuentes).
-- [ ] `API_ORIGIN` por variable de build + `capacitor.config.ts` (appId `com.coldday.app`).
-- [ ] Shell: tabs por modo (cliente: Panel/Servicio/Cuenta · técnico: Radar/Mis OTs/Perfil · proveedor: Insumos/Documentos/Cuenta) + guard de modo.
-- [ ] A3 con el **selector "Modo cliente / Modo técnico"** (B15) persistido.
-- [ ] **Criterio:** app corre en emulador Android contra el backend real; login + tabs navegan; sin pantallas de negocio todavía.
+### P1 — Scaffold móvil y shell (CERRADO 2026-11-03)
+- [x] `mobile/` con Ionic 9 + Angular 21 standalone + Capacitor 8 (Android primero) — P0.
+- [x] Tema oscuro con los tokens de Stitch (variables CSS de Ionic: `--ion-background-color`, `--ion-color-primary`, fuentes) — P0.
+- [x] `API_ORIGIN` por variable de build + `capacitor.config.ts` (appId `com.coldday.app`); el móvil inyecta el mismo módulo generado que la web — `7c98fc7`.
+- [x] Shell: tabs por modo + guards — `9f4d30b`.
+  - cliente: Panel (`/cliente/panel`), Equipos (`/cliente/equipos`), Cuenta.
+  - técnico: Radar (`/tecnico/radar`), Mis OTs (`/tecnico/ots`), Liquidaciones (`/tecnico/liquidaciones`), Cuenta.
+  - proveedor: Insumos (`/proveedor/insumos`), Documentos (`/proveedor/documentos`), Cuenta.
+  - Los leaves son placeholders hasta P2, salvo Cuenta. Además de `/cliente|tecnico|proveedor/cuenta`, existe `/cuenta` canónico (misma pantalla, fuera de las tabs) para respetar el inventario.
+- [x] A3 con el **selector "Modo cliente / técnico / proveedor"** (B15) persistido en `coldday.modo`; admin/contable van a `/solo-web` — `17318d2`.
+- [x] Login funcional (A1 mínimo) con `AuthService`, toast móvil y estado de carga — `53be419`.
+- [x] Desacople de la capa compartida del UI web: puerto `AVISO_SESION` + `ApiHttpError` en su propio módulo — `8213d23`.
+- [x] Error HTTP móvil: 401 avisa una vez y cierra sesión; 0/5xx/4xx con copy humano — `7c98fc7`.
+- [ ] **Criterio pendiente:** app corriendo en emulador Android contra el backend real; requiere dispositivo/emulador y no es verificable en este runtime.
+- Hallazgos de P1:
+  - El bundle móvil no contiene PrimeNG (grep de `dist/mobile` sin coincidencias). La clave: `AuthService` solo conoce `AVISO_SESION` y `mensaje-error`/`mock-db` ya no importan el interceptor de la web.
+  - Ionic 9 con `ion-tabs` sin `ion-tab` hijos crea su propio `ion-router-outlet`: el id de cada tab debe ser el segmento de ruta y Ionic navega a `<prefijo>/<id>`.
+  - Zoneless: los avisos de cambio de estado de Ionic (transiciones, tab bar) siguen dependiendo de listeners fuera de Angular; hay que validarlos en dispositivo antes de dar por buena la UX.
+  - `AuthService` sin avisador registrado no rompe: el token `AVISO_SESION` tiene default no-op.
 
 ### P2 — Pantallas de negocio (3 entregas encadenadas)
 - [ ] **P2.1 Auth + cliente:** A1, A2, A4, A5 (con draft + un-tap perfil). 
