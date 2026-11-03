@@ -106,10 +106,94 @@ ion-tab-bar {
   color: var(--cd-muted);
 }
 
-/* A1 — Login: la tarjeta ocupa el ancho del teléfono y no se estira al centro. */
-.cd-login {
-  margin: 2.5rem auto 0;
-  max-width: 28rem;
+/* A1/A2 — Auth (Stitch): pantalla completa, marca centrada y formulario. */
+.cd-auth {
+  --background: radial-gradient(120% 80% at 50% 0%, #12334a 0%, var(--ion-background-color) 62%);
+}
+
+.cd-auth__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 26rem;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: calc(2rem + env(safe-area-inset-top)) 1.25rem
+    calc(2rem + env(safe-area-inset-bottom));
+}
+
+.cd-auth__brand {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.cd-logo {
+  width: 64px;
+  height: 64px;
+  padding: 12px;
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 0 32px rgba(34, 211, 238, 0.18);
+}
+
+.cd-wordmark {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ion-text-color);
+}
+
+.cd-tagline {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--cd-muted);
+}
+
+.cd-auth__form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cd-auth__toggle {
+  justify-self: end;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ion-color-primary);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.cd-auth__error {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.85rem;
+  color: #fecaca;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: var(--cd-radius);
+}
+
+.cd-auth__link {
+  margin: 0;
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--cd-muted);
+}
+
+.cd-auth__link a {
+  color: var(--ion-color-primary);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .cd-form {
