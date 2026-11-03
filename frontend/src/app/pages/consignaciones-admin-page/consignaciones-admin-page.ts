@@ -30,8 +30,8 @@ export class ConsignacionesAdminPage {
   private readonly liquidacionApi = inject(LiquidacionApi);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
-  /** Canal admin; `null` sin backend SSE (mock/SSR/specs): la pantalla sigue igual. */
-  private readonly sse = inject(SseService, { optional: true });
+  /** Canal admin: sin backend real el stream se completa vacío (mock/SSR). */
+  private readonly sse = inject(SseService);
   private readonly destruir = inject(DestroyRef);
 
   /** Comisión de la plataforma (15%), alineada al backend. */

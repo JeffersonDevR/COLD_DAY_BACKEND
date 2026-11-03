@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { ToastService } from '../alertas/toast.service';
 import { Rol, UsuarioResponse } from '../models/common.models';
+import { CLAVE_COMPARTIR_UBICACION } from './tecnico-presencia.service';
+import { CLAVE_PANEL_PREFERIDO } from '../navihationError/panel-resolver';
 
 const TOKEN_KEY = 'coldday.token';
 
@@ -225,6 +227,23 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
     expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull();
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('logout olvida el compartir-ubicación que dejó el técnico anterior', () => {
+    const service = create();
+    service.setCurrentUser(adminUser);
+    window.localStorage.setItem(CLAVE_COMPARTIR_UBICACION, 'true');
+    window.localStorage.setItem(CLAVE_PANEL_PREFERIDO, '/cliente/panel');
+
+    service.logout();
+
+    // El switch es del técnico, no del dispositivo: no sobrevive al logout.
+    expect(window.localStorage.getItem(CLAVE_COMPARTIR_UBICACION)).toBeNull();
+    // El resto de preferencias del dispositivo no son estado de sesión.
+    expect(window.localStorage.getItem(CLAVE_PANEL_PREFERIDO)).toBe('/cliente/panel');
+    // El comportamiento del token no cambia.
+    expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull();
+    expect(service.isAuthenticated()).toBe(false);
   });
 
   it('switchDemoRole cambia el perfil demo', () => {

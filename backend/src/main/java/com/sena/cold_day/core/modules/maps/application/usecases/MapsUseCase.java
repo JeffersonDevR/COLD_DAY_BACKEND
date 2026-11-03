@@ -108,28 +108,6 @@ public class MapsUseCase {
         return rutaCacheada(new Point(oLat, oLng), new Point(dLat, dLng));
     }
 
-    /**
-     * Non-throwing route lookup (same contract as
-     * {@link #distanciaOpcional(double, double, double, double)}): an empty
-     * result — never a 503 — when maps is disabled, unconfigured, has no route
-     * or fails. The live map then degrades to a straight line instead of
-     * breaking the tracking screen.
-     */
-    @SuppressWarnings("java:S7467")
-    public Optional<Ruta> rutaOpcional(double oLat, double oLng, double dLat, double dLng) {
-        Point o = new Point(oLat, oLng);
-        Point d = new Point(dLat, dLng);
-        if (!props.usable()) {
-            return Optional.empty();
-        }
-        try {
-            return rutaCacheada(o, d);
-        } catch (RuntimeException ex) {
-            // ex es intencionalmente no usado: este método nunca debe lanzar.
-            return Optional.empty();
-        }
-    }
-
     private Optional<Ruta> rutaCacheada(Point origen, Point destino) {
         RutaCache.Key clave = RutaCache.Key.of(origen.latitud(), origen.longitud(), destino.latitud(),
                 destino.longitud(), Ruta.MODO_CONDUCCION);

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { EMPTY, of, Subject, throwError } from 'rxjs';
 import { ConsignacionesAdminPage } from './consignaciones-admin-page';
 import { LiquidacionApi } from '../../core/service/liquidacion-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
@@ -72,7 +72,8 @@ function setup(
       { provide: LiquidacionApi, useValue: liquidacionApi },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: ToastService, useValue: toast },
-      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
+      // Sin canal explícito, el stream se completa vacío: la degradación real.
+      { provide: SseService, useValue: sse ?? { abrirAdminStream: () => EMPTY } },
     ],
   });
   const fixture = TestBed.createComponent(ConsignacionesAdminPage);
@@ -259,6 +260,47 @@ describe('ConsignacionesAdminPage', () => {
 
       vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
       expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+    });
+
+    it('no solapa recargas: con una en vuelo deja UNA pendiente', () => {
+      const enVuelo = new Subject<LiquidacionResponse[]>();
+      const getTodasLiquidaciones = vi
+        .fn()
+        .mockReturnValueOnce(of([liquidacion({ id: 'L1' })]))
+        .mockReturnValueOnce(enVuelo.asObservable())
+        .mockReturnValue(of([liquidacion({ id: 'L1' })]));
+      const { eventos, sse } = canalAdmin();
+      const { liquidacionApi } = setup(getTodasLiquidaciones, false, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('COMPROBANTE_CARGADO'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+
+      // Llega más actividad mientras la recarga sigue en vuelo.
+      eventos.next(actividad('LIQUIDACION_APROBADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(2);
+
+      // Al terminar, recién ahí corre la pendiente (una sola).
+      enVuelo.next([liquidacion({ id: 'L1' })]);
+      enVuelo.complete();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(liquidacionApi.getTodasLiquidaciones).toHaveBeenCalledTimes(3);
+    });
+
+    it('al destruir la pantalla no queda un refresco pendiente', () => {
+      const getTodasLiquidaciones = vi.fn(() => of([liquidacion({ id: 'L1' })]));
+      const { eventos, sse } = canalAdmin();
+      const { fixture } = setup(getTodasLiquidaciones, false, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('COMPROBANTE_CARGADO'));
+      fixture.destroy();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(getTodasLiquidaciones).toHaveBeenCalledTimes(1);
     });
   });
 });

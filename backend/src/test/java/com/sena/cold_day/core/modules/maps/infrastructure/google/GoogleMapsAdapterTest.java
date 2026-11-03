@@ -217,8 +217,25 @@ class GoogleMapsAdapterTest {
                 .hasMessageContaining("Cuota");
     }
 
+    /**
+     * A body without a status (an empty JSON object) is not a transport failure
+     * and must not surface as an NPE: it is reported as the controlled error the
+     * advice maps to 502.
+     */
     @Test
-    void anEmptyBodyIsRejectedDefensively() {        server.expect(requestTo(Matchers.containsString("/geocode/json")))
+    void rutaFailsOnABodyWithoutStatus() {
+        server.expect(requestTo(Matchers.containsString("/directions/json")))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> adapter.ruta(7.8, -72.5, 7.9, -72.6))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Google Maps falló")
+                .hasMessageContaining("cálculo de ruta");
+    }
+
+    @Test
+    void anEmptyBodyIsRejectedDefensively() {
+        server.expect(requestTo(Matchers.containsString("/geocode/json")))
                 .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
         assertThatThrownBy(() -> adapter.geocodificar("Calle 1"))

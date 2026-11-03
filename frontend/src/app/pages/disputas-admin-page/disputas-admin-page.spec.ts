@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { EMPTY, of, Subject, throwError } from 'rxjs';
 import { DisputasAdminPage } from './disputas-admin-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refresco';
@@ -47,7 +47,8 @@ function setup(getTodasDisputas?: ReturnType<typeof vi.fn>, sse?: CanalAdmin) {
       { provide: AdminApi, useValue: adminApi },
       { provide: AuthService, useValue: { currentUser: () => ({ nombre: 'Admin Uno' }) } },
       { provide: ToastService, useValue: toast },
-      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
+      // Sin canal explícito, el stream se completa vacío: la degradación real.
+      { provide: SseService, useValue: sse ?? { abrirAdminStream: () => EMPTY } },
     ],
   });
   const fixture = TestBed.createComponent(DisputasAdminPage);

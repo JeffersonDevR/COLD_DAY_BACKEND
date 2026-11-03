@@ -2,6 +2,7 @@ import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { DecodedToken, TokenStorageService } from './token-storage.service';
+import { CLAVE_COMPARTIR_UBICACION } from './tecnico-presencia.service';
 import { ToastService } from '../alertas/toast.service';
 import { Rol, TokenResponse, UsuarioResponse } from '../models/common.models';
 
@@ -194,8 +195,24 @@ export class AuthService {
       this.expiryTimer = null;
     }
     this.tokenStorage.clearToken();
+    this.olvidarCompartirUbicacion();
     this._currentUser.set(null);
     this.router.navigate(['/login']);
+  }
+
+  /**
+   * Location sharing is a device preference, but it belongs to the technician
+   * who turned it on: on a shared browser the next login must not inherit
+   * "compartiendo". Theme, layout and panel preference are not session state
+   * and stay untouched.
+   */
+  private olvidarCompartirUbicacion(): void {
+    if (!this.isBrowser) return;
+    try {
+      window.localStorage.removeItem(CLAVE_COMPARTIR_UBICACION);
+    } catch {
+      // Storage blocked: there was nothing persisted to remove.
+    }
   }
 
   switchDemoRole(rol: Rol): void {

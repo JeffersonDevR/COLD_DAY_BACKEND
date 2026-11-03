@@ -17,8 +17,8 @@ import { CargaError } from '../../shared/carga-error/carga-error';
 })
 export class DashboardAdminPage implements OnInit {
   private readonly adminApi = inject(AdminApi);
-  /** Canal admin; `null` sin backend SSE (mock/SSR/specs): la torre sigue igual. */
-  private readonly sse = inject(SseService, { optional: true });
+  /** Canal admin: sin backend real el stream se completa vacío (mock/SSR). */
+  private readonly sse = inject(SseService);
   private readonly destruir = inject(DestroyRef);
 
   /** Comisión de la plataforma (15%), alineada al backend. */

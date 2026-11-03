@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { EMPTY, of, Subject, throwError } from 'rxjs';
 import { ValidacionTecnicosPage } from './validacion-tecnicos-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { TecnicosApi } from '../../core/service/tecnicos-api';
@@ -59,7 +59,8 @@ function setup(
       { provide: AdminApi, useValue: adminApi },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: ToastService, useValue: toast },
-      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
+      // Sin canal explícito, el stream se completa vacío: la degradación real.
+      { provide: SseService, useValue: sse ?? { abrirAdminStream: () => EMPTY } },
     ],
   });
   const fixture = TestBed.createComponent(ValidacionTecnicosPage);
@@ -192,6 +193,47 @@ describe('ValidacionTecnicosPage', () => {
 
       vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
       expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(2);
+    });
+
+    it('no solapa recargas: con una en vuelo deja UNA pendiente', () => {
+      const enVuelo = new Subject<TecnicoResponse[]>();
+      const getTecnicos = vi
+        .fn()
+        .mockReturnValueOnce(of([tecnico]))
+        .mockReturnValueOnce(enVuelo.asObservable())
+        .mockReturnValue(of([tecnico]));
+      const { eventos, sse } = canalAdmin();
+      const { tecnicosApi } = setup(undefined, getTecnicos, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('TECNICO_VALIDADO'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(2);
+
+      // Llega más actividad mientras la recarga sigue en vuelo.
+      eventos.next(actividad('TECNICO_VALIDACION_RECHAZADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(2);
+
+      // Al terminar, recién ahí corre la pendiente (una sola).
+      enVuelo.next([tecnico]);
+      enVuelo.complete();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(tecnicosApi.getTecnicos).toHaveBeenCalledTimes(3);
+    });
+
+    it('al destruir la pantalla no queda un refresco pendiente', () => {
+      const getTecnicos = vi.fn(() => of([tecnico]));
+      const { eventos, sse } = canalAdmin();
+      const { fixture } = setup(undefined, getTecnicos, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('TECNICO_VALIDADO'));
+      fixture.destroy();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(getTecnicos).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -40,7 +40,7 @@ describe('RutaSeguimientoService', () => {
     vi.useRealTimers();
   });
 
-  it('pide una sola ruta por ventana de 60 s aunque el sondeo sea cada 15 s', () => {
+  it('con menos de 200 m recorridos pide una sola ruta por ventana de 60 s', () => {
     const { servicio, mapsApi } = setup();
 
     expect(servicio.actualizar(ORIGEN, DESTINO, EN_CAMINO)).toBe(true);
@@ -145,6 +145,23 @@ describe('RutaSeguimientoService', () => {
 
     expect(() => servicio.actualizar(ORIGEN, DESTINO, EN_CAMINO)).not.toThrow();
     expect(servicio.rutaCodificada()).toBeNull();
+  });
+
+  it('un fallo cuenta como petición: no reintenta dentro de la ventana', () => {
+    const { servicio, mapsApi } = setup(() => throwError(() => new Error('502')));
+
+    // El turno se registra ANTES de llamar: un 502 también se paga.
+    expect(servicio.actualizar(ORIGEN, DESTINO, EN_CAMINO)).toBe(true);
+    vi.advanceTimersByTime(15_000);
+
+    expect(servicio.actualizar(ORIGEN, DESTINO, EN_CAMINO)).toBe(false);
+    expect(servicio.actualizar(CERCA, DESTINO, EN_CAMINO)).toBe(false);
+    expect(mapsApi.ruta).toHaveBeenCalledTimes(1);
+
+    // Cumplida la ventana vuelve a intentar: el fallo no apaga la ruta.
+    vi.advanceTimersByTime(INTERVALO_MIN_RUTA_MS);
+    expect(servicio.actualizar(ORIGEN, DESTINO, EN_CAMINO)).toBe(true);
+    expect(mapsApi.ruta).toHaveBeenCalledTimes(2);
   });
 
   it('los estados en movimiento son los mismos que gobiernan el seguimiento', () => {

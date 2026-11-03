@@ -15,7 +15,11 @@ export const ESTADOS_TECNICO_EN_MOVIMIENTO: readonly EstadoOt[] = [
   'EN_REPARACION',
 ];
 
-/** Minimum time between two Directions requests, whatever the poll cadence. */
+/**
+ * Minimum time between two Directions requests. It is NOT a hard gate: a
+ * displacement over `DISTANCIA_MIN_RUTA_M` bypasses it. Whichever comes first
+ * (window elapsed OR meaningful movement) buys the request.
+ */
 export const INTERVALO_MIN_RUTA_MS = 60_000;
 
 /** Displacement (metres) that makes an early request worth paying for. */

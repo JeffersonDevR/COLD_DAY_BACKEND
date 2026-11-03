@@ -40,6 +40,16 @@ public final class RutasPublicas {
             // Authorization header). Only this exact path is open; the ticket
             // endpoint POST /api/sse/ticket stays behind anyRequest().authenticated().
             "GET /api/ot/{id}/stream",
+            // Admin activity stream, same ticket contract. The ticket carries the
+            // roles, so the ADMINISTRADOR check lives in the controller; every
+            // other /api/admin path stays admin-only because SecurityConfig puts
+            // this exact rule before /api/admin/**.
+            "GET /api/admin/stream",
+            // Technician offer stream, same ticket contract: the subscription
+            // target is the technician resolved from the ticket, never the path.
+            // The sibling read endpoint GET /api/tecnicos/me/ofertas stays
+            // authenticated.
+            "GET /api/tecnicos/me/ofertas/stream",
             // Map view configuration: the map loader reads it before the user
             // signs in (login and registration show a map). It carries no
             // personal data, only the center, the metropolitan bounds, the zoom

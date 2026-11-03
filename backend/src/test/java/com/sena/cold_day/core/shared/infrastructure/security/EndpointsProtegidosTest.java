@@ -115,6 +115,49 @@ class EndpointsProtegidosTest {
                 .toList();
     }
 
+    /**
+     * Being in the allowlist only means the JWT filter never sees these paths:
+     * the ticket gate must still reject an anonymous request that carries no
+     * ticket. A valid ticket opening the stream over an unauthenticated request
+     * is proven end to end by the per-channel integration tests
+     * ({@code AdminStreamIT}, {@code TecnicoOfertasStreamIT},
+     * {@code SseOtStreamIT}), so this test and those integration tests together
+     * cover both halves of "anonymous but ticket-protected".
+     */
+    @TestFactory
+    @DisplayName("los streams publicos siguen exigiendo ticket")
+    List<DynamicTest> losStreamsPublicosExigenTicket() {
+        List<String> streams = RutasPublicas.EXACTAS.stream()
+                .filter(entrada -> entrada.endsWith("/stream"))
+                .toList();
+
+        assertThat(streams).as("los canales SSE deben estar en la lista publica").isNotEmpty();
+
+        return streams.stream()
+                .map(entrada -> DynamicTest.dynamicTest(entrada, () -> {
+                    String[] partes = entrada.split(" ", 2);
+                    int status = mockMvc.perform(request(HttpMethod.valueOf(partes[0]),
+                                    rutaConIdentificadorConvertible(partes[1])))
+                            .andReturn().getResponse().getStatus();
+                    assertThat(status)
+                            .as("%s esta en la lista publica pero debe exigir ticket (respondio %d)",
+                                    entrada, status)
+                            .isEqualTo(401);
+                }))
+                .toList();
+    }
+
+    /**
+     * Unlike {@link RutasPublicas#rutaSolicitable(String)}, this probe has to get
+     * past argument resolution: these paths are permitAll, so the security chain
+     * no longer answers first and a placeholder id would be rejected as a 400
+     * before the ticket is ever looked at. A valid UUID keeps the probe on the
+     * path that proves the ticket gate.
+     */
+    private static String rutaConIdentificadorConvertible(String patron) {
+        return patron.replaceAll("\\{[^}/]+}", "00000000-0000-0000-0000-000000000000");
+    }
+
     /** Documents what the contract actually covers, so a silent shrink is visible. */
     @Test
     @DisplayName("el contrato cubre una superficie de endpoints no trivial")

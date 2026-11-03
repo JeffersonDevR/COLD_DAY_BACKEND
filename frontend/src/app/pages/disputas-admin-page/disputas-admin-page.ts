@@ -24,8 +24,8 @@ export class DisputasAdminPage {
   private readonly adminApi = inject(AdminApi);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
-  /** Canal admin; `null` sin backend SSE (mock/SSR/specs): la bandeja sigue igual. */
-  private readonly sse = inject(SseService, { optional: true });
+  /** Canal admin: sin backend real el stream se completa vacío (mock/SSR). */
+  private readonly sse = inject(SseService);
   private readonly destruir = inject(DestroyRef);
 
   readonly disputas = signal<DisputaResponse[]>([]);
