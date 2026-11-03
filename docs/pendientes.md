@@ -60,14 +60,14 @@ Cerrado en main (merges 4ae81d5 PR #62 backend + a8e5a04 PR #63 frontend, apilad
 
 - [ ] **3 sitios que muestran el mensaje crudo del backend** al usuario: `seguimiento-ot-page.ts:275,295` y `panel-tecnico-page.ts:117` — misma clase de fuga que se corrigió en T4 (`err.message` crudo en vez de copy humano).
 - [ ] **Clase de LOADS silenciosos**: `ot-carga.ts:42` (deja la página **en blanco**), `dashboard-admin-page.ts:56`, `diagnostico-ot-page.ts:85`, `pago-acta-page.ts:95`, `ejecucion-ot-page.ts:185`, `seguimiento-ot-page.ts:133`, y el poll de ubicación que **muere en silencio** cuando el backend responde 404 (`seguimiento-ot-page.ts:202`).
-- [ ] **El tablero admin no se actualiza nunca**: disputas, consignaciones, liquidaciones y validación de técnicos (no hay bridges para `DisputaAbierta/Resuelta`, `Liquidacion*`, `ComprobanteCargado`, `TecnicoValidado`) → requiere un canal `admin` (M/L).
+- [x] **El tablero admin no se actualiza nunca** (CERRADO 2026-11-03): el canal `admin` ya existe (`176e682` backend, `4d4076b` frontend) y las cuatro pantallas (torre, consignaciones, disputas, validación) recargan con debounce y una sola recarga pendiente.
 - [ ] **`OtSinTecnicosDisponibles` no se emite** (`EscalarRadioUseCase:104`): el estado queda `BUSCANDO_TECNICO` y el cliente no ve que el radio creció.
 - [ ] **El nombre propio del usuario**: el JWT no lo trae (`TokenResponse` = token/expiracion/rol/roles) → requiere backend (agregar `nombre` al token o un `/api/usuarios/me`).
 - [ ] **Batería**: `ejecucion-ot-page.ts:131` reporta ubicación aunque el técnico esté solo `DISPONIBLE` (no ejecutando).
 - [ ] **Botón de reportar ubicación**: el diseño de `tecnico-activar-ubicacion` (reportar para aparecer en el radar, sin OT) es incómodo; el live tracking debería alimentarse del ciclo de vida de la OT.
-- [ ] **Navegación a `/panel`**: `PanelRedirectComponent` sigue eligiendo por **rol primario** → un dual-role puede no llegar al panel de técnico por esa vía (el botón "Mi Panel" ya se corrigió en `2c2bf0a`).
+- [x] **Navegación a `/panel`** (CERRADO 2026-11-03): `PanelRedirectComponent`, el botón "Mi Panel" del topbar y el acceso "Mi Panel" del sidebar comparten `PanelResolver` (`4966ec8`): preferencia → rol primario → primer panel ruteable.
 - [ ] **Registry SSE en memoria**: con más de una instancia en Railway, un evento publicado en una no llega al cliente de otra. Hoy corre 1 instancia.
-- [ ] **El proxy `/api/maps` no tiene `directions`**: si alguna vez se quiere la ruta real por calles, hay que habilitar el scope en la key y pagar por viaje.
+- [x] **El proxy `/api/maps` no tiene `directions`** (CERRADO 2026-11-03): el proxy ya expone `directions` (`ee89e64`) y el seguimiento dibuja la ruta real por calles bajo un guard de costo (`0da1fe2`): 60 s o más de 200 m, lo que ocurra primero.
 
 ## 4. Orden sugerido
 
