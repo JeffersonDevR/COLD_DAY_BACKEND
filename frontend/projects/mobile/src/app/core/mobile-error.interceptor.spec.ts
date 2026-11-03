@@ -125,8 +125,9 @@ describe('mobileErrorInterceptor', () => {
     }
   });
 
-  it('las acciones de A5 con copy propio no reciben un toast genérico', async () => {
+  it('las acciones de A4/A5 con copy propio no reciben un toast genérico', async () => {
     const urls = [
+      'http://api.test/api/clientes/me/ots',
       'http://api.test/api/ot',
       'http://api.test/api/clientes/perfil',
       'http://api.test/api/clientes/me/ubicacion',
@@ -142,6 +143,18 @@ describe('mobileErrorInterceptor', () => {
       expect(toast.error).not.toHaveBeenCalled();
       expect(toast.warning).not.toHaveBeenCalled();
     }
+  });
+
+  it('el listado del panel no silencia la sesión vencida: un 401 avisa y cierra sesión', async () => {
+    const { caught, toast, authService } = await run(
+      'http://api.test/api/clientes/me/ots',
+      new HttpErrorResponse({ status: 401 }),
+    );
+
+    expect((caught as ApiHttpError).sesionNotificada).toBe(true);
+    expect(toast.warning).toHaveBeenCalledTimes(1);
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(authService.logout).toHaveBeenCalledTimes(1);
   });
 
   it('las subrutas hermanas de la OT sí avisan: el silencio no se propaga', async () => {

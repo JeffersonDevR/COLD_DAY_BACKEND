@@ -26,6 +26,8 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   /\/api\/clientes\/perfil$/,
   // Creación de la OT (A5).
   /\/api\/ot$/,
+  // Listado del panel del cliente (A4).
+  /\/api\/clientes\/me\/ots$/,
   // Ubicación del cliente: es telemetría del formulario y la página la ignora
   // a propósito (no debe bloquear la creación de la OT).
   /\/api\/clientes\/me\/ubicacion$/,

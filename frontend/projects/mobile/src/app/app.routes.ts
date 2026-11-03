@@ -1,3 +1,4 @@
+import type { Type } from '@angular/core';
 import type { Route, Routes } from '@angular/router';
 import { MODOS, ModoApp } from './modo/modo';
 import { authGuardMobile, modoActualGuard, modoGuard } from './modo/modo.guards';
@@ -53,6 +54,16 @@ const cargarPlaceholder = () =>
 
 const cargarCuenta = () => import('./pages/cuenta/cuenta.page').then((m) => m.CuentaPage);
 
+/**
+ * Pantallas reales que reemplazan al placeholder de su leaf. La clave es
+ * `<modo>/<id de tab>`; lo que no está acá sigue siendo un placeholder hasta
+ * que su entrega llegue.
+ */
+const HOJAS_REALES: Readonly<Record<string, () => Promise<Type<unknown>>>> = {
+  'cliente/panel': () =>
+    import('./pages/panel-cliente/panel-cliente.page').then((m) => m.PanelClientePage),
+};
+
 const cargarSolicitar = () =>
   import('./pages/solicitar-servicio/solicitar-servicio.page').then(
     (m) => m.SolicitarServicioPage,
@@ -74,14 +85,14 @@ const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
   ],
 };
 
-/** Leaf placeholder del inventario: título, copy y la misma pantalla compartida. */
-const hoja = (id: string): Route => {
+/** Leaf de un modo: su pantalla real o el placeholder del inventario. */
+const hoja = (modo: ModoApp, id: string): Route => {
   const pantalla = PANTALLAS[id];
   return {
     path: id,
     title: `${pantalla.title} · Cold Day`,
     data: { title: pantalla.title, description: pantalla.description },
-    loadComponent: cargarPlaceholder,
+    loadComponent: HOJAS_REALES[`${modo.toLowerCase()}/${id}`] ?? cargarPlaceholder,
   };
 };
 
@@ -104,7 +115,7 @@ const modoRoute = (modo: ModoApp): Route => ({
   loadComponent: () => import('./pages/modo-tabs/modo-tabs.page').then((m) => m.ModoTabsPage),
   children: [
     { path: '', pathMatch: 'full', redirectTo: MODOS[modo].tabs[0].id },
-    ...MODOS[modo].tabs.map((tab) => (tab.id === 'cuenta' ? cuentaRoute() : hoja(tab.id))),
+    ...MODOS[modo].tabs.map((tab) => (tab.id === 'cuenta' ? cuentaRoute() : hoja(modo, tab.id))),
     ...(RUTAS_EXTRA[modo] ?? []),
   ],
 });

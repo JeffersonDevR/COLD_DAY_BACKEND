@@ -66,6 +66,17 @@ describe('mobile routes', () => {
     expect(MODOS.CLIENTE.tabs.map((tab) => tab.id)).not.toContain('solicitar');
   });
 
+  it('el panel del cliente tiene pantalla propia, no el placeholder compartido', () => {
+    const cliente = routes.find((item) => item.path === 'cliente');
+    const panel = cliente?.children?.find((child) => child.path === 'panel');
+    // Equipos todavía es placeholder: comparten el mismo cargador. El panel no.
+    const equipos = cliente?.children?.find((child) => child.path === 'equipos');
+
+    expect(panel?.loadComponent).toBeTypeOf('function');
+    expect(equipos?.loadComponent).toBeTypeOf('function');
+    expect(panel?.loadComponent).not.toBe(equipos?.loadComponent);
+  });
+
   it('leaves the mode home one segment below the mode prefix', () => {
     expect(MODOS.CLIENTE.home).toBe('/cliente/panel');
     expect(MODOS.TECNICO.home).toBe('/tecnico/radar');
