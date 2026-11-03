@@ -10,8 +10,8 @@ import { AdminActividad, SseService, TipoActividadAdmin } from './sse.service';
 export const ESPERA_RECARGA_ADMIN_MS = 700;
 
 export interface RefrescoActividadAdmin {
-  /** Canal admin; `null` cuando no está disponible (mock, SSR, specs sin HTTP). */
-  readonly sse: SseService | null;
+  /** Canal admin. Sin backend real el stream se completa vacío (degradación silenciosa). */
+  readonly sse: SseService;
   /** Ciclo de vida de la pantalla: corta el stream y el timer pendiente. */
   readonly destruir: DestroyRef;
   /** Tipos que ameritan recargar; `'todos'` recarga con cualquier actividad. */
@@ -31,13 +31,10 @@ export interface RefrescoActividadAdmin {
  * - Ignora los `tipo` que no le importan a la pantalla.
  * - Agrupa una ráfaga en una sola recarga (debounce).
  * - Nunca lanza una recarga mientras otra está en vuelo; deja UNA pendiente.
- * - Degrada en silencio: si el stream no existe o se rinde, la pantalla sigue
- *   con su carga + reintento manual de siempre.
+ * - Degrada en silencio: si el stream no emite (mock, SSR sin `EventSource`) o
+ *   se rinde, la pantalla sigue con su carga + reintento manual de siempre.
  */
 export function refrescarConActividadAdmin(refresco: RefrescoActividadAdmin): void {
-  const sse = refresco.sse;
-  if (sse === null) return;
-
   const esperaMs = refresco.esperaMs ?? ESPERA_RECARGA_ADMIN_MS;
   const tipos = refresco.tipos;
 
@@ -89,7 +86,7 @@ export function refrescarConActividadAdmin(refresco: RefrescoActividadAdmin): vo
     }
   });
 
-  sse
+  refresco.sse
     .abrirAdminStream()
     .pipe(
       filter((actividad: AdminActividad) => tipos === 'todos' || tipos.includes(actividad.tipo)),

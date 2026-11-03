@@ -57,6 +57,18 @@ describe('buildMenu — accesos por rol', () => {
     expect(rutasDe(['CONTABLE'])).toEqual(['/admin/dashboard', '/admin/consignaciones', '/admin/monitoreo']);
   });
 
+  it('el acceso "Mi Panel" usa la ruta de panel resuelta por el llamador', () => {
+    const rutas = rutasDe(['CLIENTE', 'TECNICO']);
+
+    // Sin ruta resuelta el menú conserva el fallback estático.
+    expect(rutas).toContain('/tecnico/panel');
+
+    const resueltas = buildMenu(['CLIENTE', 'TECNICO'], '/cliente/panel')
+      .flatMap((seccion) => seccion.items.map((item) => item.routerLink));
+    expect(resueltas).toContain('/cliente/panel');
+    expect(resueltas).not.toContain('/tecnico/panel');
+  });
+
   it('no expone rutas de proveedor a un TECNICO', () => {
     const rutas = rutasDe(['TECNICO']);
 

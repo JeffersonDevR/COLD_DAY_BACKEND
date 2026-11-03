@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import { EMPTY, of, Subject, throwError } from 'rxjs';
 import { DashboardAdminPage } from './dashboard-admin-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refresco';
@@ -41,7 +41,8 @@ function setup(
     providers: [
       provideRouter([]),
       { provide: AdminApi, useValue: { getMetricas } },
-      ...(sse ? [{ provide: SseService, useValue: sse }] : []),
+      // Sin canal explícito, el stream se completa vacío: la degradación real.
+      { provide: SseService, useValue: sse ?? { abrirAdminStream: () => EMPTY } },
     ],
   });
   const fixture = TestBed.createComponent(DashboardAdminPage);
@@ -119,7 +120,7 @@ describe('DashboardAdminPage', () => {
       expect(getMetricas).toHaveBeenCalledTimes(2);
     });
 
-    it('sin canal SSE la torre sigue cargando y reintentando', () => {
+    it('sin eventos del canal admin la torre sigue cargando y reintentando', () => {
       const getMetricas = vi
         .fn()
         .mockReturnValueOnce(throwError(() => new Error('sin red')))
@@ -131,6 +132,47 @@ describe('DashboardAdminPage', () => {
 
       expect(getMetricas).toHaveBeenCalledTimes(2);
       expect(fixture.componentInstance.errorCarga()).toBe(false);
+    });
+
+    it('no solapa recargas: con una en vuelo deja UNA pendiente', () => {
+      const enVuelo = new Subject<MetricasAdminResponse>();
+      const getMetricas = vi
+        .fn()
+        .mockReturnValueOnce(of(metricas))
+        .mockReturnValueOnce(enVuelo.asObservable())
+        .mockReturnValue(of(metricas));
+      const { eventos, sse } = canalAdmin();
+      setup(getMetricas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getMetricas).toHaveBeenCalledTimes(2);
+
+      // Llega más actividad mientras la recarga sigue en vuelo.
+      eventos.next(actividad('LIQUIDACION_APROBADA'));
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+      expect(getMetricas).toHaveBeenCalledTimes(2);
+
+      // Al terminar, recién ahí corre la pendiente (una sola).
+      enVuelo.next(metricas);
+      enVuelo.complete();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(getMetricas).toHaveBeenCalledTimes(3);
+    });
+
+    it('al destruir la pantalla no queda un refresco pendiente', () => {
+      const getMetricas = vi.fn(() => of(metricas));
+      const { eventos, sse } = canalAdmin();
+      const fixture = setup(getMetricas, sse);
+      vi.useFakeTimers();
+
+      eventos.next(actividad('DISPUTA_ABIERTA'));
+      fixture.destroy();
+      vi.advanceTimersByTime(ESPERA_RECARGA_ADMIN_MS);
+
+      expect(getMetricas).toHaveBeenCalledTimes(1);
     });
   });
 });
