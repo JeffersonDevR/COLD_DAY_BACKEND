@@ -16,6 +16,9 @@
     "watch": "ng build --watch --configuration development",
     "pretest": "npm run gen:config",
     "test": "ng test",
+    "mobile:start": "ng serve mobile",
+    "mobile:build": "ng build mobile",
+    "mobile:test": "ng test mobile",
     "prelint": "npm run gen:config",
     "lint": "ng lint",
     "sonar": "node scripts/sonar.mjs"
