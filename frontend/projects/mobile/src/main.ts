@@ -2,6 +2,7 @@ import {bootstrapApplication} from '@angular/platform-browser';
 import {addIcons} from 'ionicons';
 import {
   addCircleOutline,
+  addOutline,
   alertCircleOutline,
   arrowBackOutline,
   arrowForwardOutline,
@@ -18,6 +19,7 @@ import {
   checkmarkOutline,
   chevronForwardOutline,
   closeCircleOutline,
+  closeOutline,
   compassOutline,
   construct,
   constructOutline,
@@ -71,6 +73,7 @@ import {appConfig} from './app/app.config';
 // equivalent glyph for document/ID affordances.
 addIcons({
   addCircleOutline,
+  addOutline,
   alertCircleOutline,
   arrowBackOutline,
   arrowForwardOutline,
@@ -87,6 +90,7 @@ addIcons({
   checkmarkOutline,
   chevronForwardOutline,
   closeCircleOutline,
+  closeOutline,
   compassOutline,
   construct,
   constructOutline,

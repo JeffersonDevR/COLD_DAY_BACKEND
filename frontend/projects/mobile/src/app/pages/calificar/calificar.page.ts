@@ -52,7 +52,6 @@ const MENSAJES_CALIFICACION: Record<number, string> = {
     IonButtons,
     IonCard,
     IonCardContent,
-    IonChip,
     IonContent,
     IonHeader,
     IonIcon,

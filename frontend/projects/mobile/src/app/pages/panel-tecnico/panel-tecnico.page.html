@@ -1,0 +1,168 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Panel técnico</p>
+      <h1 class="cd-headline" data-testid="tecnico-nombre">
+        {{ tecnico()?.nombre || 'Tu panel de técnico' }}
+      </h1>
+      <p class="cd-hero__nota">
+        @if (validacionAprobada()) {
+          Cuenta habilitada para recibir órdenes
+        } @else {
+          Tu cuenta todavía no está habilitada para recibir órdenes
+        }
+      </p>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (validacionRechazada()) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="validacion-rechazada">
+      <h2 class="cd-alerta__titulo">Tu cuenta no está habilitada</h2>
+      <p class="cd-alerta__texto">
+        {{ tecnico()?.motivoRechazoValidacion || 'Revisá tu documentación desde la web para volver a postularte.' }}
+      </p>
+    </section>
+  } @else if (tecnico() && !validacionAprobada()) {
+    <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="validacion-pendiente">
+      <h2 class="cd-alerta__titulo">Validación en curso</h2>
+      <p class="cd-alerta__texto">
+        Cuando el equipo apruebe tus documentos vas a poder aceptar ofertas. Mientras tanto podés completar tu perfil.
+      </p>
+    </section>
+  }
+
+  <!-- Presencia: un solo switch decide si el técnico aparece en el radar. -->
+  <ion-card class="cd-card">
+    <ion-card-content>
+      <div class="cd-ot__cabecera">
+        <div>
+          <h2 class="cd-card__titulo">Compartir ubicación</h2>
+          <p class="cd-muted">
+            @switch (modoUbicacion()) {
+              @case ('ejecutando') {
+                Reportando automáticamente por la OT en curso.
+              }
+              @case ('compartiendo') {
+                Visible en el radar mientras reportás tu posición.
+              }
+              @default {
+                Ubicación apagada: no aparecerás en las ofertas.
+              }
+            }
+          </p>
+        </div>
+        <ion-toggle
+          [checked]="compartirUbicacion()"
+          [disabled]="switchBloqueado()"
+          (ionChange)="alternarCompartirUbicacion($any($event))"
+          aria-label="Compartir ubicación"
+          data-testid="switch-ubicacion"
+        ></ion-toggle>
+      </div>
+
+      @if (switchBloqueado()) {
+        <p class="cd-ayuda" data-testid="switch-bloqueado">
+          Se mantiene activo mientras tenés una OT en curso.
+        </p>
+      }
+
+      @if (radarVisible()) {
+        <span class="cd-chip cd-chip--ok" data-testid="radar-visible">Visible en el radar</span>
+      }
+
+      @if (ubicacionMotivo(); as motivo) {
+        <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ubicacion-motivo">
+          <p class="cd-alerta__texto">{{ motivo }}</p>
+          <ion-button size="small" (click)="reintentarUbicacion()" data-testid="ubicacion-reintentar">
+            <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+            Reintentar
+          </ion-button>
+        </section>
+      }
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Disponibilidad operativa (el backend la bloquea con OT activa). -->
+  <ion-card class="cd-card">
+    <ion-card-content>
+      <h2 class="cd-card__titulo">Disponibilidad</h2>
+      @if (bloqueadoPorLiquidacion()) {
+        <section class="cd-alerta cd-alerta--error" role="alert" data-testid="bloqueado-liquidacion">
+          <h2 class="cd-alerta__titulo">Operación bloqueada</h2>
+          <p class="cd-alerta__texto">
+            Tenés liquidaciones pendientes. Regularizalas desde la web para volver a tomar servicios.
+          </p>
+        </section>
+      } @else {
+        <ion-segment
+          [value]="disponibilidad()"
+          (ionChange)="cambiarDisponibilidad($any($event).detail.value)"
+          data-testid="segment-disponibilidad"
+        >
+          <ion-segment-button value="DISPONIBLE" data-testid="disp-disponible">
+            <ion-label>Disponible</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="OCUPADO" data-testid="disp-ocupado">
+            <ion-label>Ocupado</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="FUERA_DE_SERVICIO" data-testid="disp-fuera">
+            <ion-label>Fuera</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+        <p class="cd-ayuda">Con una OT en curso no podés cambiar la disponibilidad.</p>
+      }
+    </ion-card-content>
+  </ion-card>
+
+  <!-- OTs activas -->
+  <h2 class="cd-section__titulo">Tus órdenes activas</h2>
+
+  @if (cargando()) {
+    <div class="cd-cargando" data-testid="ots-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando tus órdenes…</p>
+    </div>
+  }
+
+  @if (otsError()) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ots-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar tus órdenes</h2>
+      <p class="cd-alerta__texto">Revisá tu conexión e intentá de nuevo.</p>
+      <ion-button size="small" (click)="reintentarOts()" data-testid="ots-reintentar">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (!cargando() && !otsError() && misOts().length === 0) {
+    <section class="cd-vacio" data-testid="ots-vacio">
+      <h2 class="cd-vacio__titulo">No tenés órdenes en curso</h2>
+      <p class="cd-vacio__texto">Cuando aceptes una oferta, la vas a ver acá con su estado y dirección.</p>
+      <ion-button class="cd-cta" (click)="irARadar()" data-testid="ir-radar">
+        <ion-icon slot="start" name="radio-outline" aria-hidden="true"></ion-icon>
+        Ver ofertas cercanas
+      </ion-button>
+    </section>
+  }
+
+  @for (orden of misOts(); track orden.id) {
+    <article class="cd-ot" [attr.data-testid]="'ot-' + orden.id" (click)="abrirOt(orden.id)">
+      <div class="cd-ot__cabecera">
+        <div>
+          <p class="cd-ot__codigo">{{ orden.codigo || 'Orden de trabajo' }}</p>
+          <p class="cd-ot__categoria">{{ orden.categoriaServicio.replace('_', ' ') }}</p>
+        </div>
+        <span class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}">{{ etiquetaEstado(orden.estado) }}</span>
+      </div>
+      <p class="cd-ot__descripcion">{{ orden.descripcionFalla }}</p>
+      <p class="cd-ot__direccion">
+        <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+        {{ orden.direccion }}
+      </p>
+      <p class="cd-ayuda">Tocá para abrir la ejecución</p>
+    </article>
+  }
+</ion-content>

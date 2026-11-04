@@ -2087,3 +2087,11 @@ ion-tab-bar ion-tab-button ion-icon {
   background: rgba(34, 197, 94, 0.1);
   border-color: rgba(34, 197, 94, 0.4);
 }
+
+/* B3 — Ejecución: una línea de insumo (descripción + cantidad + quitar). */
+.cd-fila-insumo {
+  display: grid;
+  grid-template-columns: 1fr 5rem auto;
+  align-items: center;
+  gap: 0.35rem;
+}

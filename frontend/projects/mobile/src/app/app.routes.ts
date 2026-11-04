@@ -62,6 +62,10 @@ const cargarCuenta = () => import('./pages/cuenta/cuenta.page').then((m) => m.Cu
 const HOJAS_REALES: Readonly<Record<string, () => Promise<Type<unknown>>>> = {
   'cliente/panel': () =>
     import('./pages/panel-cliente/panel-cliente.page').then((m) => m.PanelClientePage),
+  'tecnico/radar': () =>
+    import('./pages/ofertas-tecnico/ofertas-tecnico.page').then((m) => m.OfertasTecnicoPage),
+  'tecnico/ots': () =>
+    import('./pages/panel-tecnico/panel-tecnico.page').then((m) => m.PanelTecnicoPageMobile),
 };
 
 const cargarSolicitar = () =>
@@ -80,6 +84,9 @@ const cargarPagoActa = () =>
 
 const cargarCalificar = () =>
   import('./pages/calificar/calificar.page').then((m) => m.CalificarPage);
+
+const cargarEjecucion = () =>
+  import('./pages/ejecucion-ot/ejecucion-ot.page').then((m) => m.EjecucionOtPage);
 
 /**
  * Rutas que viven bajo un modo pero no tienen tab propio. Ionic las apila
@@ -123,6 +130,15 @@ const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
           loadComponent: cargarCalificar,
         },
       ],
+    },
+  ],
+  TECNICO: [
+    {
+      // B3: ejecución de la OT asignada. Se abre desde el panel o al aceptar
+      // una oferta; vuelve a las tabs al finalizar.
+      path: 'ejecucion/:id',
+      title: 'Ejecución de la OT · Cold Day',
+      loadComponent: cargarEjecucion,
     },
   ],
 };
