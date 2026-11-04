@@ -83,8 +83,13 @@ describe('mobile routes', () => {
     // A7 hangs off the OT branch: ot/:id is componentless and its children
     // stack in the same outlet as the follow-up screen.
     expect(ot?.loadComponent).toBeUndefined();
-    // A8 landed: its route hangs off the same branch. A9 does not exist yet.
-    expect(ot?.children?.map((child) => child.path)).toEqual(['', 'diagnostico', 'pago']);
+    // A8 and A9 landed: both routes hang off the same branch.
+    expect(ot?.children?.map((child) => child.path)).toEqual([
+      '',
+      'diagnostico',
+      'pago',
+      'calificar',
+    ]);
 
     const diagnostico = ot?.children?.find((child) => child.path === 'diagnostico');
     expect(diagnostico?.loadComponent).toBeTypeOf('function');
@@ -92,9 +97,13 @@ describe('mobile routes', () => {
     const pago = ot?.children?.find((child) => child.path === 'pago');
     expect(pago?.loadComponent).toBeTypeOf('function');
 
-    // A9 does not exist yet: its route lands in a later delivery.
+    const calificar = ot?.children?.find((child) => child.path === 'calificar');
+    expect(calificar?.loadComponent).toBeTypeOf('function');
+
+    // A9 is nested under ot/:id, not a direct child of the mode.
     const hijas = (cliente?.children ?? []).map((child) => child.path);
     expect(hijas).not.toContain('ot/:id/calificar');
+    expect(hijas).toContain('ot/:id');
   });
 
   it('el panel del cliente tiene pantalla propia, no el placeholder compartido', () => {

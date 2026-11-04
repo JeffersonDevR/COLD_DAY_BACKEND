@@ -1,0 +1,132 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        [defaultHref]="backHref()"
+        text=""
+        aria-label="Volver a la orden"
+      ></ion-back-button>
+    </ion-buttons>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Calificar servicio</p>
+      @if (ot(); as orden) {
+        <div class="cd-ot-head">
+          <h1 class="cd-headline cd-ot-head__codigo" data-testid="ot-codigo">
+            {{ orden.codigo || 'Orden de trabajo' }}
+          </h1>
+          <span
+            class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}"
+            data-testid="ot-estado"
+          >{{ etiquetaEstado(orden.estado) }}</span>
+        </div>
+        <p class="cd-hero__nota">Tu opinión actualiza la reputación del técnico</p>
+      } @else {
+        <h1 class="cd-headline cd-ot-head__codigo">Calificar servicio</h1>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- The load is never invisible: either content, or an error with Retry. -->
+  @if (cargandoInicial()) {
+    <div class="cd-cargando" data-testid="ot-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando la orden…</p>
+    </div>
+  }
+
+  @if (otErrorCarga(); as errorCarga) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
+      <p class="cd-alerta__texto">{{ errorCarga }}</p>
+      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (ot(); as orden) {
+    @if (!estaFinalizada()) {
+      <section class="cd-alerta cd-alerta--info" role="status" data-testid="calificar-no-finalizada">
+        <h2 class="cd-alerta__titulo">Todavía no podés calificar</h2>
+        <p class="cd-alerta__texto">
+          La calificación se habilita cuando el servicio está finalizado. Estado actual:
+          {{ etiquetaEstado(orden.estado) }}.
+        </p>
+      </section>
+    }
+
+    @if (yaCalificada()) {
+      <section class="cd-alerta cd-alerta--ok" role="status" data-testid="calificar-ya-hecha">
+        <h2 class="cd-alerta__titulo">Ya calificaste este servicio</h2>
+        <p class="cd-alerta__texto">Solo se registra una reseña por orden de trabajo.</p>
+      </section>
+    }
+
+    <ion-card class="cd-card">
+      <ion-card-content>
+        <h2 class="cd-headline">¿Cómo fue el servicio?</h2>
+        <p class="cd-muted">Elegí de 1 a 5 estrellas. Sin puntaje no se puede enviar.</p>
+
+        <div class="cd-estrellas" role="group" aria-label="Puntaje del servicio">
+          @for (n of [1, 2, 3, 4, 5]; track n) {
+            <button
+              type="button"
+              class="cd-estrella"
+              [class.cd-estrella--activa]="n <= estrellas()"
+              [attr.aria-label]="n + ' estrella' + (n === 1 ? '' : 's')"
+              [attr.aria-pressed]="n <= estrellas()"
+              (click)="elegirEstrellas(n)"
+              [attr.data-testid]="'estrella-' + n"
+            >
+              <ion-icon [name]="n <= estrellas() ? 'star' : 'star-outline'"></ion-icon>
+            </button>
+          }
+        </div>
+        <p class="cd-estrellas__valor" data-testid="estrellas-valor">
+          {{ estrellas() === 0 ? 'Sin puntaje' : estrellas() + ' de 5' }}
+        </p>
+
+        <h3 class="cd-calificar__subtitulo">¿Qué destacás?</h3>
+        <div class="cd-chips">
+          @for (tag of tagsDisponibles; track tag) {
+            <button
+              type="button"
+              class="cd-chip cd-chip--opcion"
+              [class.cd-chip--activo]="tieneTag(tag)"
+              [attr.aria-pressed]="tieneTag(tag)"
+              (click)="toggleTag(tag)"
+              [attr.data-testid]="'tag-' + $index"
+            >{{ tag }}</button>
+          }
+        </div>
+
+        <h3 class="cd-calificar__subtitulo">Comentario (opcional)</h3>
+        <ion-textarea
+          [formControl]="comentarioCtrl"
+          [autoGrow]="true"
+          [maxlength]="1000"
+          placeholder="Contanos cómo fue el servicio"
+          aria-label="Comentario"
+          data-testid="comentario"
+        ></ion-textarea>
+
+        <ion-button
+          expand="block"
+          class="cd-cta"
+          [disabled]="!puedeEnviar()"
+          (click)="enviarCalificacion()"
+          data-testid="enviar-calificacion"
+        >
+          @if (enviando()) {
+            <ion-spinner name="dots"></ion-spinner>
+          } @else {
+            Enviar calificación
+          }
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  }
+</ion-content>
