@@ -72,6 +72,9 @@ const cargarSolicitar = () =>
 const cargarSeguimientoOt = () =>
   import('./pages/seguimiento-ot/seguimiento-ot.page').then((m) => m.SeguimientoOtPage);
 
+const cargarDiagnostico = () =>
+  import('./pages/diagnostico/diagnostico.page').then((m) => m.DiagnosticoPage);
+
 /**
  * Rutas que viven bajo un modo pero no tienen tab propio. Ionic las apila
  * dentro del mismo outlet, así que se abren encima del panel y el botón de
@@ -86,11 +89,24 @@ const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
       loadComponent: cargarSolicitar,
     },
     {
-      // A6: seguimiento de la OT. A7 (diagnostico), A8 (pago) y A9 (calificar)
-      // llegan en la próxima entrega; sus CTAs apuntan a esas rutas futuras.
+      // A6: follow-up screen for the OT. A7 (diagnostico) hangs off the
+      // same branch: the route is componentless and the children stack in
+      // the same outlet. A8 (pago) and A9 (calificar) do not exist yet.
       path: 'ot/:id',
       title: 'Seguimiento de la OT · Cold Day',
-      loadComponent: cargarSeguimientoOt,
+      children: [
+        {
+          path: '',
+          pathMatch: 'full',
+          title: 'Seguimiento de la OT · Cold Day',
+          loadComponent: cargarSeguimientoOt,
+        },
+        {
+          path: 'diagnostico',
+          title: 'Diagnóstico y presupuesto · Cold Day',
+          loadComponent: cargarDiagnostico,
+        },
+      ],
     },
   ],
 };

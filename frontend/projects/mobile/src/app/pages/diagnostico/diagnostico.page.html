@@ -1,0 +1,222 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        [defaultHref]="backHref()"
+        text=""
+        aria-label="Volver a la orden"
+      ></ion-back-button>
+    </ion-buttons>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Diagnóstico y presupuesto</p>
+      @if (ot(); as orden) {
+        <div class="cd-ot-head">
+          <h1 class="cd-headline cd-ot-head__codigo" data-testid="ot-codigo">
+            {{ orden.codigo || 'Orden de trabajo' }}
+          </h1>
+          <span
+            class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}"
+            data-testid="ot-estado"
+          >{{ etiquetaEstado(orden.estado) }}</span>
+        </div>
+        <p class="cd-hero__nota">
+          Revisión en sitio por {{ orden.tecnicoNombre || 'un técnico por asignar' }}
+        </p>
+      } @else {
+        <h1 class="cd-headline cd-ot-head__codigo">Diagnóstico y presupuesto</h1>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- The load is never invisible: either content, or an error with Retry. -->
+  @if (cargandoInicial()) {
+    <div class="cd-cargando" data-testid="ot-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando el diagnóstico…</p>
+    </div>
+  }
+
+  @if (otErrorCarga(); as errorCarga) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
+      <p class="cd-alerta__texto">{{ errorCarga }}</p>
+      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (ot(); as orden) {
+    <!-- Dictamen técnico oficial -->
+    <ion-card class="cd-dictamen">
+      <ion-card-content>
+        <div class="cd-dictamen__encabezado">
+          <span class="cd-dictamen__icono" aria-hidden="true">
+            <ion-icon name="construct-outline"></ion-icon>
+          </span>
+          <div>
+            <h2 class="cd-dictamen__titulo">Dictamen técnico oficial</h2>
+            <p class="cd-dictamen__sub">Lo que el técnico encontró en la visita</p>
+          </div>
+        </div>
+
+        <div class="cd-dictamen__cuerpo" data-testid="dictamen-texto">
+          @if (dictamen(); as texto) {
+            {{ texto }}
+          } @else {
+            <span class="cd-muted">El técnico todavía no cargó el dictamen de este equipo.</span>
+          }
+        </div>
+
+        <!-- Fixed three-row cost breakdown (no per-line budget) -->
+        <h3 class="cd-desglose__titulo">Desglose de costos de intervención (COP)</h3>
+        <div class="cd-desglose">
+          <div class="cd-desglose__fila cd-desglose__fila--visita">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Visita y diagnóstico</span>
+              @if (estimacion(); as est) {
+                @if (est.fueraDeRango) {
+                  <p class="cd-desglose__nota cd-desglose__nota--aviso">
+                    Fuera del radio de cobertura ({{ est.distanciaKm.toLocaleString('es-CO') }} km):
+                    se confirma con el técnico
+                  </p>
+                } @else {
+                  <p class="cd-desglose__nota">
+                    Tarifa por distancia: {{ est.distanciaKm.toLocaleString('es-CO') }} km ·
+                    {{ etiquetaFuente(est.tarifaFuente) }}
+                  </p>
+                }
+              } @else {
+                <p class="cd-desglose__nota">El cargo de visita se confirma con el técnico</p>
+              }
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-visita">{{ visitaLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__fila">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Mano de obra certificada</span>
+              @if (manoObra() === null) {
+                <p class="cd-desglose__nota" data-testid="presupuesto-pendiente">
+                  El técnico todavía no cargó el presupuesto
+                </p>
+              }
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-mano-obra">{{ manoObraLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__fila">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Repuestos y materiales</span>
+              <p class="cd-desglose__nota">Repuestos declarados por el técnico</p>
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-repuestos">{{ repuestosLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__total">
+            <span>Total a autorizar</span>
+            <strong data-testid="costo-total">{{ formatoTotal(totalServicio()) }}</strong>
+          </div>
+        </div>
+        <p class="cd-desglose__legal">
+          <ion-icon name="information-circle-outline" aria-hidden="true"></ion-icon>
+          La visita y el diagnóstico se cobran según la distancia aunque no apruebes la reparación.
+        </p>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Decision: only while the OT waits for the client's answer -->
+    @if (orden.estado === 'EN_DIAGNOSTICO') {
+      <div class="cd-decision" data-testid="decision-presupuesto">
+        <ion-button
+          fill="outline"
+          color="danger"
+          data-testid="rechazar-presupuesto"
+          (click)="abrirRechazo()"
+        >
+          <ion-icon slot="start" name="thumbs-down-outline" aria-hidden="true"></ion-icon>
+          Rechazar presupuesto
+        </ion-button>
+        <ion-button class="cd-cta" data-testid="aprobar-presupuesto" (click)="aprobarPresupuesto()">
+          <ion-icon slot="start" name="thumbs-up-outline" aria-hidden="true"></ion-icon>
+          Aprobar e iniciar reparación
+        </ion-button>
+      </div>
+
+      @if (mostrarRechazo()) {
+        <section
+          class="cd-rechazo"
+          aria-labelledby="rechazo-titulo"
+          data-testid="panel-rechazo"
+        >
+          <div class="cd-rechazo__encabezado">
+            <ion-icon name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+            <h2 id="rechazo-titulo">Motivo de rechazo</h2>
+          </div>
+          <p class="cd-rechazo__texto">
+            Se abre un caso de mediación administrativa para revisar la discrepancia
+            (costo, repuestos o tiempo).
+          </p>
+          <label class="cd-rechazo__label" for="motivo-rechazo">Motivo del rechazo *</label>
+          <textarea
+            id="motivo-rechazo"
+            class="cd-textarea"
+            rows="3"
+            [formControl]="motivoRechazo"
+            placeholder="Explicá la discrepancia en repuestos, costo o tiempo estimado…"
+          ></textarea>
+          <p class="cd-field-hint">Mínimo 5 caracteres.</p>
+          @if (ayudaMotivo(); as ayuda) {
+            <p class="cd-field-error" role="alert">{{ ayuda }}</p>
+          }
+          <div class="cd-rechazo__acciones">
+            <ion-button fill="clear" color="medium" data-testid="rechazo-cancelar" (click)="cerrarRechazo()">
+              Cancelar
+            </ion-button>
+            <ion-button
+              color="danger"
+              data-testid="rechazo-confirmar"
+              [disabled]="motivoRechazo.invalid"
+              (click)="rechazarPresupuesto()"
+            >
+              Confirmar rechazo
+            </ion-button>
+          </div>
+        </section>
+      }
+    } @else {
+      <div class="cd-gestionado" role="status" data-testid="presupuesto-gestionado">
+        <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+        <p>
+          Presupuesto gestionado con éxito. Estado actual:
+          <strong>{{ etiquetaEstado(orden.estado) }}</strong>
+        </p>
+      </div>
+    }
+
+    <!-- Chat with the technician: honest "coming soon", strictly non-interactive -->
+    <section class="cd-proximamente" data-testid="chat-proximamente" aria-label="Chat próximamente">
+      <span class="cd-proximamente__avatar" aria-hidden="true">
+        <ion-icon name="chatbubbles-outline"></ion-icon>
+      </span>
+      <div class="cd-proximamente__datos">
+        <p class="cd-proximamente__titulo">
+          Chat con {{ orden.tecnicoNombre || 'el técnico por asignar' }}
+        </p>
+        <span class="cd-proximamente__badge">Próximamente</span>
+      </div>
+      <p class="cd-proximamente__texto">
+        Todavía no podés escribirle desde acá. Mientras tanto, coordiná los detalles
+        del servicio por teléfono con quien te atienda.
+      </p>
+    </section>
+  }
+
+  <ion-button expand="block" fill="outline" class="cd-volver" data-testid="volver-ot" (click)="volver()">
+    <ion-icon slot="start" name="arrow-back-outline" aria-hidden="true"></ion-icon>
+    Volver al seguimiento de la OT
+  </ion-button>
+</ion-content>

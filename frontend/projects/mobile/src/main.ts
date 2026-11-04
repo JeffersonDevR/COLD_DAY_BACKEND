@@ -3,6 +3,7 @@ import {addIcons} from 'ionicons';
 import {
   addCircleOutline,
   alertCircleOutline,
+  arrowBackOutline,
   arrowForwardOutline,
   buildOutline,
   calendarOutline,
@@ -53,6 +54,8 @@ import {
   starOutline,
   swapHorizontalOutline,
   thermometerOutline,
+  thumbsDownOutline,
+  thumbsUpOutline,
   timeOutline,
   walletOutline,
   waterOutline,
@@ -67,6 +70,7 @@ import {appConfig} from './app/app.config';
 addIcons({
   addCircleOutline,
   alertCircleOutline,
+  arrowBackOutline,
   arrowForwardOutline,
   buildOutline,
   calendarOutline,
@@ -117,6 +121,8 @@ addIcons({
   starOutline,
   swapHorizontalOutline,
   thermometerOutline,
+  thumbsDownOutline,
+  thumbsUpOutline,
   timeOutline,
   walletOutline,
   waterOutline,
