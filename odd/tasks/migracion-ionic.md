@@ -97,7 +97,7 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 
 ### P2 — Pantallas de negocio (3 entregas encadenadas)
 - [ ] **P2.1 Auth + cliente:** A1 ✅, A2 ✅ (P2.1a); A4 ✅, A5 ✅ (P2.1b).
-- [ ] **P2.2 Cliente profundo:** A6 (SSE + mapa + poll gated) y A7 entregados (`fb18f74`, `d469129`); A8 entregado (`58ab9b1`); **A9 pendiente**.
+- [x] **P2.2 Cliente profundo:** A6 (`fb18f74`), A7 (`d469129`), A8 (`58ab9b1`), A9 (esta entrega); fixes de fidelidad Dark Ops en `3f83991`. Detalle en la sección P2.2.
 - [ ] **P2.3 Técnico + proveedor:** B1, B2, B3, B4, C1, C2.
 - [ ] Cada entrega: specs de componente/servicio, y prueba manual en dispositivo.
 
@@ -154,6 +154,15 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 - [ ] Checklist de tiendas, iconos/splash desde el logo de Stitch.
 - [ ] Plan de migración de usuarios: la web sigue disponible; la app se ofrece como canal.
 
+#### P2.2 — A6–A9 (CERRADO 2026-11-04)
+- [x] **A6 Seguimiento** `fb18f74`: SSE + poll de respaldo 25 s, posición del técnico cada 15 s con gate de visibilidad, ETA haversine 25 km/h, mapa WebView con degradación honesta (tarjeta + "Reintentar mapa"), acciones completas (cancelar, pagar visita, disputa, presupuesto, calificar).
+- [x] **A7 Diagnóstico y presupuesto** `d469129`: dictamen con fallbacks honestos, tres filas de costo, total idéntico a la web, aprobar/rechazar solo en `EN_DIAGNOSTICO`, rechazo inline con motivo ≥5.
+- [x] **A8 Pago y acta** `58ab9b1` + `7799734`: canvas normalizado con Pointer Events, CTA honesto ("Registrar acta de garantía"), gating explícito en `FINALIZADA`, 409/400 con copy propia, guard `finalize()` en lugar del bug de `complete()` de la web.
+- [x] **A9 Calificar** `1b5fc42`: estrellas sin default, 6 aspectos, payload con `[Aspectos: …]` **siempre** (paridad exacta con la web), 409 con copy propia, bloqueo cuando no está FINALIZADA o ya fue calificada.
+- [x] **Fidelidad Dark Ops** `3f83991`: overrides bajo `:root.md` (canvas `#0b1220`, surfaces `#111b2e`), Space Mono/Public Sans cargadas, CTA 48 px Grotesk + glow, iconos registrados, tab bar 64 px.
+- Verificación al cierre: móvil **14 archivos / 201 tests / 0**; web **83 archivos / 890 tests / 0**; `ng build mobile` exit 0; 0 coincidencias de PrimeNG; `tsc` 0/0; lint solo los 8 errores preexistentes.
+- Pendiente: reconstrucción estructural de fidelidad (chrome/componentes de A1/A2/A3/A4/A5) según `odd/tasks/ionic-stitch-fidelity.md`, y prueba en dispositivo (mapa WebView, dialer, SSE/poll con la app en background).
+
 ## Fotos de evidencia (decisión de backend, no de migración)
 El backend es metadata-only. Implementación recomendada cuando se decida:
 1. `POST /api/ot/{id}/evidencias/presign` → autoriza por participación, valida mime/tamaño y devuelve URL firmada de PUT (TTL 60–120 s) para `ots/{otId}/{uuid}.ext`.
@@ -176,6 +185,6 @@ Guardas: límite de fotos y tamaño por OT, rate limit, `sha256` para idempotenc
 - Reescribir backend.
 
 ## Verificación
-- Cada fase con su suite (web: 81/880; móvil: specs nuevas) + build Android.
+- Cada fase con su suite (web: **83 archivos / 890 tests**; móvil: **14 / 201**) + build Android.
 - Prueba manual en emulador/dispositivo por fase.
 - Verificador independiente por entrega (review nativa no transitable en este runtime).
