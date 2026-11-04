@@ -66,17 +66,44 @@ describe('mobile routes', () => {
     expect(MODOS.CLIENTE.tabs.map((tab) => tab.id)).not.toContain('solicitar');
   });
 
-  it('abre el seguimiento de la OT bajo el modo cliente, sin tab propio', () => {
+  it('opens the OT follow-up screen under the client mode, without its own tab', () => {
     const cliente = routes.find((item) => item.path === 'cliente');
-    const seguimiento = cliente?.children?.find((child) => child.path === 'ot/:id');
+    const seguimiento = cliente?.children
+      ?.find((child) => child.path === 'ot/:id')
+      ?.children?.find((child) => child.path === '');
 
     expect(seguimiento?.loadComponent).toBeTypeOf('function');
     expect(MODOS.CLIENTE.tabs.map((tab) => tab.id)).not.toContain('ot');
-    // A7/A8/A9 todavía no existen: sus rutas llegan en la próxima entrega.
+  });
+
+  it('opens the OT diagnosis screen nested under ot/:id, without its own tab', () => {
+    const cliente = routes.find((item) => item.path === 'cliente');
+    const ot = cliente?.children?.find((child) => child.path === 'ot/:id');
+
+    // A7 hangs off the OT branch: ot/:id is componentless and its children
+    // stack in the same outlet as the follow-up screen.
+    expect(ot?.loadComponent).toBeUndefined();
+    // A8 and A9 landed: both routes hang off the same branch.
+    expect(ot?.children?.map((child) => child.path)).toEqual([
+      '',
+      'diagnostico',
+      'pago',
+      'calificar',
+    ]);
+
+    const diagnostico = ot?.children?.find((child) => child.path === 'diagnostico');
+    expect(diagnostico?.loadComponent).toBeTypeOf('function');
+
+    const pago = ot?.children?.find((child) => child.path === 'pago');
+    expect(pago?.loadComponent).toBeTypeOf('function');
+
+    const calificar = ot?.children?.find((child) => child.path === 'calificar');
+    expect(calificar?.loadComponent).toBeTypeOf('function');
+
+    // A9 is nested under ot/:id, not a direct child of the mode.
     const hijas = (cliente?.children ?? []).map((child) => child.path);
-    expect(hijas).not.toContain('ot/:id/diagnostico');
-    expect(hijas).not.toContain('ot/:id/pago');
     expect(hijas).not.toContain('ot/:id/calificar');
+    expect(hijas).toContain('ot/:id');
   });
 
   it('el panel del cliente tiene pantalla propia, no el placeholder compartido', () => {

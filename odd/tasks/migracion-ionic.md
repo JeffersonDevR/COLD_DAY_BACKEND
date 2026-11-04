@@ -97,7 +97,7 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 
 ### P2 — Pantallas de negocio (3 entregas encadenadas)
 - [ ] **P2.1 Auth + cliente:** A1 ✅, A2 ✅ (P2.1a); A4 ✅, A5 ✅ (P2.1b).
-- [ ] **P2.2 Cliente profundo:** A6 (SSE + mapa + poll gated), A7, A8, A9.
+- [x] **P2.2 Cliente profundo:** A6 (`fb18f74`), A7 (`d469129`), A8 (`58ab9b1`), A9 (esta entrega); fixes de fidelidad Dark Ops en `3f83991`. Detalle en la sección P2.2.
 - [ ] **P2.3 Técnico + proveedor:** B1, B2, B3, B4, C1, C2.
 - [ ] Cada entrega: specs de componente/servicio, y prueba manual en dispositivo.
 
@@ -131,6 +131,15 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
   - El copy compartido del panel pasa a voseo, así que la web también lo muestra.
 - Pendiente de esta entrega: prueba manual en emulador —permiso de geolocalización del WebView y ausencia de mapa— (misma limitación de runtime que P1).
 
+#### P2.2 (en curso) — A6/A7/A8 entregados, A9 pendiente
+- [x] A6 `/cliente/ot/:id` (SSE + mapa + poll gated) — `fb18f74`.
+- [x] A7 `/cliente/ot/:id/diagnostico` (respuesta del cliente al presupuesto) — `d469129`.
+- [x] A8 `/cliente/ot/:id/pago` — `58ab9b1`. Sin selector de medio de pago (ningún endpoint lo recibe); CTA "Registrar acta de garantía" deshabilitado sin trazo y mientras la OT no esté FINALIZADA (banner lo explica; el servidor sigue mandando: FINALIZADA o 409); montos read-only con formato es-CO y split de comisión 15/85 desde una constante compartida del core (`COMISION_PLATAFORMA_RATE`, espejo de `environment.commissionRate` y de `app.liquidacion.comision-porcentaje`) para no arrastrar la key de Google Maps al bundle nativo; canvas 480×140 con Pointer Events; éxito solo con `codigoVerificacion` del servidor; 409/400/403 con copy propia; la firma dibujada sobrevive a un fallo del registro.
+- Verificación (A8): `npx ng build mobile` → exit 0 y 0 coincidencias de `primeng|MessageService` en `dist/mobile`; `npm run mobile:test -- --watch=false` → 13 archivos / 192 tests / 0; `npx ng test app --watch=false` → 83 / 890 / 0; `tsc --noEmit` móvil y web → 0; `npm run lint` → solo los 8 errores web preexistentes, móvil limpio.
+- Diferencias deliberadas con la web (A8): sin selector de medio de pago; la visita no se consulta (fila "Por confirmar", misma convención que A7); el CTA se deshabilita antes de FINALIZADA en vez de enseñar con el 409; la cláusula legal se conserva verbatim de la web; la visita pagada/pendiente se muestra como nota (bloqueo real: servidor, 409).
+- Hallazgo (A8): el web reseteaba `guardando` en `complete`, así que un error de red dejaba el botón deshabilitado para siempre; el móvil lo resetea en `finalize`. Candidato a backport en `pago-acta-page` web.
+- Pendiente de esta entrega: prueba manual en emulador (misma limitación de runtime que P1); A9 (calificar) y el cierre de P2.2.
+
 ### P3 — Capacidades nativas (lo que la web no puede dar)
 - [ ] **Token seguro:** `localStorage` → Capacitor Preferences (o Secure Storage).
 - [ ] **Push real (FCM/APNs):** adapter del `NotificacionPushPort` (hoy `LoggingNotificacionPushAdapter`), endpoint de device tokens, permiso, tap → deep link a la oferta/OT.
@@ -144,6 +153,15 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 - [ ] CI: `assembleRelease` (AAB) + IPA, versionado, firma, entornos (API_ORIGIN por env).
 - [ ] Checklist de tiendas, iconos/splash desde el logo de Stitch.
 - [ ] Plan de migración de usuarios: la web sigue disponible; la app se ofrece como canal.
+
+#### P2.2 — A6–A9 (CERRADO 2026-11-04)
+- [x] **A6 Seguimiento** `fb18f74`: SSE + poll de respaldo 25 s, posición del técnico cada 15 s con gate de visibilidad, ETA haversine 25 km/h, mapa WebView con degradación honesta (tarjeta + "Reintentar mapa"), acciones completas (cancelar, pagar visita, disputa, presupuesto, calificar).
+- [x] **A7 Diagnóstico y presupuesto** `d469129`: dictamen con fallbacks honestos, tres filas de costo, total idéntico a la web, aprobar/rechazar solo en `EN_DIAGNOSTICO`, rechazo inline con motivo ≥5.
+- [x] **A8 Pago y acta** `58ab9b1` + `7799734`: canvas normalizado con Pointer Events, CTA honesto ("Registrar acta de garantía"), gating explícito en `FINALIZADA`, 409/400 con copy propia, guard `finalize()` en lugar del bug de `complete()` de la web.
+- [x] **A9 Calificar** `1b5fc42`: estrellas sin default, 6 aspectos, payload con `[Aspectos: …]` **siempre** (paridad exacta con la web), 409 con copy propia, bloqueo cuando no está FINALIZADA o ya fue calificada.
+- [x] **Fidelidad Dark Ops** `3f83991`: overrides bajo `:root.md` (canvas `#0b1220`, surfaces `#111b2e`), Space Mono/Public Sans cargadas, CTA 48 px Grotesk + glow, iconos registrados, tab bar 64 px.
+- Verificación al cierre: móvil **14 archivos / 201 tests / 0**; web **83 archivos / 890 tests / 0**; `ng build mobile` exit 0; 0 coincidencias de PrimeNG; `tsc` 0/0; lint solo los 8 errores preexistentes.
+- Pendiente: reconstrucción estructural de fidelidad (chrome/componentes de A1/A2/A3/A4/A5) según `odd/tasks/ionic-stitch-fidelity.md`, y prueba en dispositivo (mapa WebView, dialer, SSE/poll con la app en background).
 
 ## Fotos de evidencia (decisión de backend, no de migración)
 El backend es metadata-only. Implementación recomendada cuando se decida:
@@ -167,6 +185,6 @@ Guardas: límite de fotos y tamaño por OT, rate limit, `sha256` para idempotenc
 - Reescribir backend.
 
 ## Verificación
-- Cada fase con su suite (web: 81/880; móvil: specs nuevas) + build Android.
+- Cada fase con su suite (web: **83 archivos / 890 tests**; móvil: **14 / 201**) + build Android.
 - Prueba manual en emulador/dispositivo por fase.
 - Verificador independiente por entrega (review nativa no transitable en este runtime).

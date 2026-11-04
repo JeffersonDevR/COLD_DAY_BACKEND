@@ -125,7 +125,7 @@ describe('mobileErrorInterceptor', () => {
     }
   });
 
-  it('las acciones de A4/A5/A6 con copy propio no reciben un toast genérico', async () => {
+  it('las acciones con copy propio de pantalla no reciben un toast genérico', async () => {
     const urls = [
       'http://api.test/api/clientes/me/ots',
       'http://api.test/api/ot',
@@ -138,6 +138,8 @@ describe('mobileErrorInterceptor', () => {
       'http://api.test/api/ot/OT-1/tecnico-ubicacion',
       'http://api.test/api/ot/OT-1/cancelar',
       'http://api.test/api/ot/OT-1/pagar-visita',
+      // A8 — la pantalla del acta es la única voz.
+      'http://api.test/api/ot/OT-1/acta',
       'http://api.test/api/disputas/ot/OT-1',
       'http://api.test/api/sse/ticket',
     ];
