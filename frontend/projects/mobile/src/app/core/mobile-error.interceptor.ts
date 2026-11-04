@@ -16,8 +16,9 @@ const AUTH_ENDPOINTS = /\/usuarios\/(login|recuperar-contrasena|reset-contrasena
  * formulario). El interceptor se calla para no duplicar el aviso con un toast
  * genérico encima del mensaje específico.
  *
- * Las rutas van ancladas al final para no silenciar subrutas hermanas
- * (`POST /api/ot/{id}/cancelar` sí debe avisar por su cuenta).
+ * Las rutas van ancladas al final para no silenciar subrutas hermanas. Las
+ * subrutas de OT de pantallas que todavía no existen (p. ej. las acciones del
+ * rol técnico) sí avisan: su única voz es el interceptor.
  */
 const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   // Altas públicas de A2.
@@ -31,6 +32,15 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   // Ubicación del cliente: es telemetría del formulario y la página la ignora
   // a propósito (no debe bloquear la creación de la OT).
   /\/api\/clientes\/me\/ubicacion$/,
+  // A6 — Seguimiento de OT: la pantalla es la única voz (banner con
+  // Reintentar para la carga, toast propio para las acciones, silencio para
+  // el sondeo y el stream).
+  /\/api\/ot\/[^/]+$/,
+  /\/api\/ot\/[^/]+\/tecnico-ubicacion$/,
+  /\/api\/ot\/[^/]+\/cancelar$/,
+  /\/api\/ot\/[^/]+\/pagar-visita$/,
+  /\/api\/disputas\/ot\/[^/]+$/,
+  /\/api\/sse\/ticket$/,
   // Maps: `MapsApi` resuelve con fallback local o `null`, y la pantalla cuenta
   // el resultado final. El error HTTP del proxy no es la última palabra.
   /\/api\/maps\//,

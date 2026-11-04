@@ -69,6 +69,9 @@ const cargarSolicitar = () =>
     (m) => m.SolicitarServicioPage,
   );
 
+const cargarSeguimientoOt = () =>
+  import('./pages/seguimiento-ot/seguimiento-ot.page').then((m) => m.SeguimientoOtPage);
+
 /**
  * Rutas que viven bajo un modo pero no tienen tab propio. Ionic las apila
  * dentro del mismo outlet, así que se abren encima del panel y el botón de
@@ -81,6 +84,13 @@ const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
       path: 'solicitar',
       title: 'Solicitar servicio · Cold Day',
       loadComponent: cargarSolicitar,
+    },
+    {
+      // A6: seguimiento de la OT. A7 (diagnostico), A8 (pago) y A9 (calificar)
+      // llegan en la próxima entrega; sus CTAs apuntan a esas rutas futuras.
+      path: 'ot/:id',
+      title: 'Seguimiento de la OT · Cold Day',
+      loadComponent: cargarSeguimientoOt,
     },
   ],
 };

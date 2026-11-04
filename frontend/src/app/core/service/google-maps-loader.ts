@@ -42,6 +42,31 @@ export class GoogleMapsLoaderService {
   private readinessCancelled = false;
 
   /**
+   * Reintenta la carga tras un fallo (botón "Reintentar mapa").
+   *
+   * `init()` cachea el resultado de la primera carga: sin esto, una vez que el
+   * script falló o venció el timeout de readiness, llamar a `init()` de nuevo
+   * devolvería el `false` cacheado y el usuario no tendría forma de recuperar
+   * el mapa sin recargar la app. Acá se descarta lo cacheado (script roto y
+   * callback global) y se vuelve a intentar desde cero.
+   */
+  reintentar(): Promise<boolean> {
+    if (this.isLoaded()) {
+      return Promise.resolve(true);
+    }
+    if (typeof document !== 'undefined') {
+      document.getElementById('google-maps-platform-script')?.remove();
+      const win = window as unknown as Record<string, unknown>;
+      delete win['__coldDayMapsInit'];
+    }
+    this.loadPromise = null;
+    this.readinessPromise = null;
+    this.readinessCancelled = false;
+    this.loadError.set(null);
+    return this.init();
+  }
+
+  /**
    * Tiempo máximo (ms) que `waitForReady` espera a que la API quede utilizable.
    * Campo privado y sobreescribible: las pruebas lo bajan para no esperar 10s.
    */

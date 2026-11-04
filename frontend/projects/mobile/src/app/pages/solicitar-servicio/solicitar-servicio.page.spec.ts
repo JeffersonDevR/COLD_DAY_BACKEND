@@ -289,8 +289,8 @@ describe('SolicitarServicioPage móvil', () => {
       'Solicitud creada',
       expect.stringContaining(nuevaOt.id),
     );
-    // A6 todavía no existe: se vuelve al panel, donde la OT ya aparece.
-    expect(navigate).toHaveBeenCalledWith('/cliente/panel');
+    // A6: al crear la OT el cliente aterriza en su seguimiento.
+    expect(navigate).toHaveBeenCalledWith(`/cliente/ot/${nuevaOt.id}`);
     expect(page.loading()).toBe(false);
   });
 
@@ -388,7 +388,7 @@ describe('SolicitarServicioPage móvil', () => {
       expect(clientesApi.crearOt).toHaveBeenCalledTimes(2);
       expect(page.faltoPerfilCliente()).toBe(false);
       expect(TestBed.inject(SolicitudDraftService).leer()).toBeNull();
-      expect(navigate).toHaveBeenCalledWith('/cliente/panel');
+      expect(navigate).toHaveBeenCalledWith(`/cliente/ot/${nuevaOt.id}`);
     });
 
     it('la dirección corregida en la tarjeta también se usa en la OT reintentada', () => {

@@ -1,0 +1,455 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/cliente/panel" text="" aria-label="Volver al panel"></ion-back-button>
+    </ion-buttons>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Seguimiento de la orden</p>
+      @if (ot(); as orden) {
+        <div class="cd-ot-head">
+          <h1 class="cd-headline cd-ot-head__codigo" data-testid="ot-codigo">
+            {{ orden.codigo || 'Orden de trabajo' }}
+          </h1>
+          <span
+            class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}"
+            data-testid="ot-estado"
+          >{{ etiquetaEstado(orden.estado) }}</span>
+        </div>
+        <p class="cd-hero__nota">
+          Creada el {{ orden.fechaCreacion | date: 'medium' }} · {{ orden.barrio || orden.direccion }}
+        </p>
+      } @else {
+        <h1 class="cd-headline cd-ot-head__codigo">Orden de trabajo</h1>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- La carga nunca queda invisible: o hay contenido, o hay error con Reintentar. -->
+  @if (cargandoInicial()) {
+    <div class="cd-cargando" data-testid="ot-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando la orden…</p>
+    </div>
+  }
+
+  @if (otErrorCarga(); as errorCarga) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
+      <p class="cd-alerta__texto">{{ errorCarga }}</p>
+      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (ot(); as orden) {
+    <!-- Acciones contextuales según el estado -->
+    <div class="cd-acciones" data-testid="ot-acciones">
+      @if (orden.estado === 'EN_DIAGNOSTICO' && orden.diagnostico) {
+        <ion-button
+          color="warning"
+          data-testid="cta-presupuesto"
+          (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
+        >
+          <ion-icon slot="start" name="cash-outline" aria-hidden="true"></ion-icon>
+          Revisar Presupuesto
+          @if (orden.presupuesto) {
+            ($ {{ orden.presupuesto.total | number: '1.0-0' }})
+          } @else {
+            (sin presupuesto)
+          }
+        </ion-button>
+      }
+
+      @if (orden.estado === 'FINALIZADA') {
+        <ion-button
+          color="success"
+          data-testid="cta-acta"
+          (click)="irA(['/cliente/ot', orden.id, 'pago'])"
+        >
+          <ion-icon slot="start" name="document-text-outline" aria-hidden="true"></ion-icon>
+          Ver Acta y Pago
+        </ion-button>
+
+        @if (!orden.calificacion) {
+          <ion-button
+            fill="outline"
+            color="warning"
+            data-testid="cta-calificar"
+            (click)="irA(['/cliente/ot', orden.id, 'calificar'])"
+          >
+            <ion-icon slot="start" name="star-outline" aria-hidden="true"></ion-icon>
+            Calificar Servicio
+          </ion-button>
+        }
+      }
+
+      @if (orden.estado === 'EN_DIAGNOSTICO' || orden.estado === 'EN_REPARACION') {
+        <ion-button fill="outline" color="tertiary" data-testid="cta-disputa" (click)="abrirModalDisputa()">
+          <ion-icon slot="start" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+          Abrir Disputa
+        </ion-button>
+      }
+
+      @if (puedeCancelar()) {
+        <ion-button fill="outline" color="danger" data-testid="cta-cancelar" (click)="abrirModalCancelar()">
+          <ion-icon slot="start" name="close-circle-outline" aria-hidden="true"></ion-icon>
+          Cancelar Solicitud
+        </ion-button>
+      }
+    </div>
+
+    <!-- SOLICITADA / BUSCANDO_TECNICO: búsqueda en curso (sin radar) -->
+    @if (orden.estado === 'SOLICITADA' || orden.estado === 'BUSCANDO_TECNICO') {
+      <ion-card class="cd-buscando" data-testid="buscando-tecnico">
+        <ion-card-content class="cd-buscando__cuerpo">
+          <span class="cd-buscando__icono" aria-hidden="true">
+            <ion-icon name="search-outline"></ion-icon>
+          </span>
+          <div>
+            <h2 class="cd-buscando__titulo">Buscando técnico…</h2>
+            <p class="cd-buscando__texto">
+              Estamos avisando a los técnicos de Cúcuta sobre tu solicitud
+              <strong>{{ orden.codigo || '' }}</strong>. Apenas uno acepte, vas a ver acá
+              su ubicación y cuánto falta para que llegue.
+            </p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- RF-F1-26: pago de la visita para habilitar el desplazamiento o reabrir el despacho -->
+    @if (puedePagarVisita()) {
+      <ion-card class="cd-pago" data-testid="panel-pago-visita">
+        <ion-card-content>
+          <div class="cd-pago__encabezado">
+            <span class="cd-pago__icono" aria-hidden="true">
+              <ion-icon name="wallet-outline"></ion-icon>
+            </span>
+            <div>
+              <h2 class="cd-pago__titulo">
+                {{ pagoVisitaReabreDespacho() ? 'Pagar la visita y reabrir el despacho' : 'Pagar la visita' }}
+              </h2>
+              <p class="cd-pago__texto">
+                @if (pagoVisitaReabreDespacho()) {
+                  Quedó pendiente la tarifa de visita. Al pagarla, la orden vuelve a buscar un técnico disponible.
+                } @else {
+                  El técnico está asignado y espera tu pago de visita para iniciar el desplazamiento.
+                }
+              </p>
+            </div>
+          </div>
+
+          <div class="cd-pago__medios" role="group" aria-label="Medio de pago">
+            <button
+              type="button"
+              class="cd-chip-pago"
+              [class.cd-chip-pago--activo]="medioPagoVisita() === 'EFECTIVO'"
+              [attr.aria-pressed]="medioPagoVisita() === 'EFECTIVO'"
+              data-testid="medio-efectivo"
+              (click)="medioPagoVisita.set('EFECTIVO')"
+            >
+              <ion-icon name="cash-outline" aria-hidden="true"></ion-icon>
+              Efectivo
+            </button>
+            <button
+              type="button"
+              class="cd-chip-pago"
+              [class.cd-chip-pago--activo]="medioPagoVisita() === 'TRANSFERENCIA'"
+              [attr.aria-pressed]="medioPagoVisita() === 'TRANSFERENCIA'"
+              data-testid="medio-transferencia"
+              (click)="medioPagoVisita.set('TRANSFERENCIA')"
+            >
+              <ion-icon name="card-outline" aria-hidden="true"></ion-icon>
+              Transferencia
+            </button>
+          </div>
+
+          <ion-button
+            expand="block"
+            color="warning"
+            data-testid="pagar-visita"
+            [disabled]="pagandoVisita()"
+            (click)="pagarVisita()"
+          >
+            <ion-icon slot="start" name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+            {{
+              pagandoVisita()
+                ? 'Procesando pago…'
+                : (pagoVisitaReabreDespacho()
+                    ? 'Pagar visita y reabrir despacho'
+                    : 'Pagar visita')
+            }}
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Mapa de seguimiento: solo con técnico asignado y en movimiento -->
+    @if (mostrarSeguimientoActivo()) {
+      <div class="cd-mapa-bloque">
+        <app-mapa-seguimiento
+          [posicionTecnico]="tecnicoUbicacion()"
+          [destino]="orden.punto ?? null"
+          [destinoNombre]="orden.barrio || 'Punto de servicio'"
+          [tecnicoNombre]="orden.tecnicoNombre || 'El técnico'"
+          [llegada]="!!orden.llegadaEn"
+          [rutaCodificada]="rutaCodificada()"
+        />
+      </div>
+    }
+
+    <!-- Tarjeta del técnico asignado -->
+    @if (orden.tecnicoId) {
+      <ion-card class="cd-tecnico" data-testid="tecnico-card">
+        <ion-card-content>
+          <div class="cd-tecnico__fila">
+            <div class="cd-tecnico__avatar" aria-hidden="true">
+              {{ (orden.tecnicoNombre || 'T').charAt(0) }}
+            </div>
+            <div class="cd-tecnico__datos">
+              <div class="cd-tecnico__nombre-fila">
+                <h2 class="cd-tecnico__nombre">{{ orden.tecnicoNombre || 'Buscando técnico…' }}</h2>
+                @if (ratingTecnico(); as rating) {
+                  <span class="cd-tecnico__rating" data-testid="tecnico-rating">
+                    <ion-icon name="star" aria-hidden="true"></ion-icon>
+                    {{ rating }}
+                  </span>
+                } @else {
+                  <span class="cd-tecnico__sin-rating" data-testid="tecnico-sin-rating">Sin rating</span>
+                }
+              </div>
+              <p class="cd-tecnico__rol">
+                Técnico asignado
+                @if (orden.tecnicoTelefono) { · Móvil: {{ orden.tecnicoTelefono }} }
+              </p>
+              <div class="cd-tecnico__estado" data-testid="estado-tecnico" aria-live="polite">
+                @if (orden.llegadaEn; as llegada) {
+                  <ion-icon
+                    name="checkmark-circle-outline"
+                    class="cd-tecnico__icono cd-tecnico__icono--ok"
+                    aria-hidden="true"
+                  ></ion-icon>
+                  <span class="cd-tecnico__llego">El técnico llegó {{ llegada | date: 'medium' }}</span>
+                } @else {
+                  <ion-icon
+                    name="car-outline"
+                    class="cd-tecnico__icono cd-tecnico__icono--camino"
+                    aria-hidden="true"
+                  ></ion-icon>
+                  @if (etaMin() !== null) {
+                    <span class="cd-tecnico__camino">
+                      En camino a tu ubicación (ETA: ~{{ etaMin() }} min · {{ distanciaKm() | number: '1.1-1' }} km)
+                    </span>
+                  } @else {
+                    <span class="cd-tecnico__camino">En camino a tu ubicación</span>
+                  }
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="cd-tecnico__acciones">
+            <!-- En el dispositivo el enlace tel: abre el marcador. -->
+            @if (orden.tecnicoTelefono) {
+              <a
+                class="cd-boton-superficie"
+                [href]="'tel:' + orden.tecnicoTelefono"
+                data-testid="tecnico-llamar"
+              >
+                <ion-icon name="call-outline" aria-hidden="true"></ion-icon>
+                Llamar
+              </a>
+            }
+            <ion-button
+              size="small"
+              data-testid="tecnico-diagnostico"
+              (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
+            >
+              <ion-icon slot="start" name="chatbubbles-outline" aria-hidden="true"></ion-icon>
+              Diagnóstico / Presupuesto
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Línea de tiempo del ciclo operativo -->
+    <app-ot-timeline [estadoActual]="orden.estado" [historial]="orden.historial ?? []" />
+
+    <!-- Detalle de la falla y evidencias -->
+    <ion-card class="cd-detalle">
+      <ion-card-content>
+        <h2 class="cd-card__titulo">Detalle técnico reportado</h2>
+        <p class="cd-detalle__texto">{{ orden.descripcionFalla }}</p>
+
+        @if (orden.evidenciaUrls && orden.evidenciaUrls.length > 0) {
+          <p class="cd-detalle__subtitulo">Evidencia fotográfica</p>
+          <div class="cd-evidencias">
+            @for (url of orden.evidenciaUrls; track url) {
+              <img
+                class="cd-evidencia"
+                [src]="url"
+                alt="Evidencia técnica de la falla"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+            }
+          </div>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <div class="cd-columnas">
+      <!-- Ficha del servicio -->
+      <ion-card class="cd-ficha">
+        <ion-card-content>
+          <h2 class="cd-card__titulo">Ficha del servicio</h2>
+          <div class="cd-ficha__fila">
+            <span>Línea</span>
+            <strong>{{ orden.categoriaServicio.replaceAll('_', ' ') }}</strong>
+          </div>
+          <div class="cd-ficha__fila">
+            <span>Dirección</span>
+            <strong class="cd-ficha__derecha">{{ orden.direccion }}</strong>
+          </div>
+          @if (etaMin() !== null && !orden.llegadaEn) {
+            <div class="cd-ficha__fila">
+              <span>Llegada estimada</span>
+              <strong class="cd-ficha__eta">{{ etaMin() }} min · {{ distanciaKm() | number: '1.1-1' }} km</strong>
+            </div>
+          }
+          <div class="cd-ficha__fila">
+            <span>Barrio</span>
+            <strong>{{ orden.barrio || 'Centro' }}</strong>
+          </div>
+          <div class="cd-ficha__fila">
+            <span>Garantía</span>
+            <strong class="cd-ficha__garantia">90 días tras firma</strong>
+          </div>
+          @if (orden.presupuesto) {
+            <div class="cd-ficha__total" data-testid="ficha-total-cotizado">
+              <span>Total cotizado</span>
+              <strong>$ {{ orden.presupuesto.total | number: '1.0-0' }} COP</strong>
+            </div>
+          }
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Regla de cancelación gratuita -->
+      <div class="cd-nota cd-nota--cancelacion" role="note">
+        <ion-icon name="information-circle-outline" aria-hidden="true"></ion-icon>
+        <p>
+          <strong>Política de cancelación.</strong> Disponés de 10 minutos de gracia tras la
+          asignación para cancelar sin cargo. No es posible cancelar una vez iniciada la fase
+          de reparación física.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de cancelación -->
+  @if (mostrarModalCancelar()) {
+    <div class="cd-modal__overlay" role="presentation">
+      <div
+        class="cd-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-cancelar-titulo"
+        data-testid="modal-cancelar"
+      >
+        <div class="cd-modal__encabezado cd-modal__encabezado--peligro">
+          <ion-icon name="close-circle-outline" aria-hidden="true"></ion-icon>
+          <h2 id="modal-cancelar-titulo">Cancelar solicitud de OT</h2>
+        </div>
+        <p class="cd-modal__texto">
+          Indicá el motivo de la cancelación. Solo es admisible antes del inicio de la reparación.
+        </p>
+        <label class="cd-modal__label" for="motivo-cancelar">Motivo de la cancelación *</label>
+        <textarea
+          id="motivo-cancelar"
+          class="cd-textarea"
+          rows="3"
+          [formControl]="motivoControl"
+          placeholder="Ej. Ya resolví el inconveniente, o debo salir de urgencia de la ciudad…"
+        ></textarea>
+        <p class="cd-field-hint">Mínimo 5 caracteres.</p>
+        @if (ayudaMotivo(motivoControl); as ayuda) {
+          <p class="cd-field-error" role="alert">{{ ayuda }}</p>
+        }
+        <div class="cd-modal__acciones">
+          <ion-button
+            fill="clear"
+            color="medium"
+            data-testid="cancelar-volver"
+            (click)="mostrarModalCancelar.set(false)"
+          >
+            Volver
+          </ion-button>
+          <ion-button
+            color="danger"
+            data-testid="cancelar-confirmar"
+            [disabled]="motivoControl.invalid"
+            (click)="confirmarCancelacion()"
+          >
+            Confirmar cancelación
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de disputa -->
+  @if (mostrarModalDisputa()) {
+    <div class="cd-modal__overlay" role="presentation">
+      <div
+        class="cd-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-disputa-titulo"
+        data-testid="modal-disputa"
+      >
+        <div class="cd-modal__encabezado cd-modal__encabezado--disputa">
+          <ion-icon name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+          <h2 id="modal-disputa-titulo">Abrir disputa</h2>
+        </div>
+        <p class="cd-modal__texto">
+          Describí la discrepancia (costo, repuestos o calidad). El área administrativa mediará el caso.
+        </p>
+        <label class="cd-modal__label" for="motivo-disputa">Motivo de la disputa *</label>
+        <textarea
+          id="motivo-disputa"
+          class="cd-textarea"
+          rows="3"
+          [formControl]="motivoDisputaControl"
+          placeholder="Explicá el motivo de la disputa…"
+        ></textarea>
+        <p class="cd-field-hint">Mínimo 5 caracteres.</p>
+        @if (ayudaMotivo(motivoDisputaControl); as ayuda) {
+          <p class="cd-field-error" role="alert">{{ ayuda }}</p>
+        }
+        <div class="cd-modal__acciones">
+          <ion-button
+            fill="clear"
+            color="medium"
+            data-testid="disputa-volver"
+            (click)="mostrarModalDisputa.set(false)"
+          >
+            Volver
+          </ion-button>
+          <ion-button
+            color="tertiary"
+            data-testid="disputa-confirmar"
+            [disabled]="motivoDisputaControl.invalid"
+            (click)="confirmarDisputa()"
+          >
+            Confirmar disputa
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  }
+</ion-content>

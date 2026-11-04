@@ -408,6 +408,7 @@ interface FormularioAlta {
           <ion-button
             expand="block"
             type="submit"
+            class="cd-cta cd-cta--xl"
             data-testid="crear-cuenta"
             [disabled]="loading() || registroForm.invalid || !especialidadesValidas()"
           >

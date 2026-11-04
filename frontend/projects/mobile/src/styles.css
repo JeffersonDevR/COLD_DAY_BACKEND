@@ -4,23 +4,102 @@
  * 1546876662301161963). Scoped to the Ionic mobile project: the web app keeps
  * its own Tailwind/PrimeNG theme untouched.
  *
- * The Ionic base/CSS is loaded from angular.json (styles) before this file, so
- * these declarations win the cascade.
+ * The Ionic base/CSS is loaded from angular.json (styles) before this file.
+ * dark.always.css declares its dark palette under `:root.md` / `:root.ios`
+ * (specificity 0,2,0), which beats a plain `:root` (0,1,0) no matter what the
+ * load order is. All app overrides below are therefore scoped to
+ * `:root, :root.md, :root.ios` (same specificity; this file loads later).
  */
 
-:root {
+:root,
+:root.md,
+:root.ios {
   /* Typography */
   --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --cd-font-headline: 'Space Grotesk', 'Inter', sans-serif;
+  --cd-font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --cd-font-label: 'Public Sans', 'Inter', sans-serif;
 
   /* Surfaces */
   --ion-background-color: #0b1220;
   --ion-background-color-rgb: 11, 18, 32;
   --ion-text-color: #e2e8f0;
   --ion-text-color-rgb: 226, 232, 240;
-  --cd-surface: #111c2e;
-  --cd-surface-border: rgba(226, 232, 240, 0.08);
+  --cd-surface: #111b2e;
+  --cd-surface-border: #1e293b;
+  --cd-surface-border-strong: #334155;
   --cd-muted: #94a3b8;
+  --cd-dim: #64748b;
+
+  /* On-canvas steps, re-based on #0b1220 -> #f3f3f3 with the Stitch
+     hairlines as anchors (step-150 #1e293b, step-250 #334155). */
+  --ion-background-color-step-50: #111a29;
+  --ion-background-color-step-100: #182132;
+  --ion-background-color-step-150: #1e293b;
+  --ion-background-color-step-200: #283548;
+  --ion-background-color-step-250: #334155;
+  --ion-background-color-step-300: #414e60;
+  --ion-background-color-step-350: #4e5a6c;
+  --ion-background-color-step-400: #5c6777;
+  --ion-background-color-step-450: #6a7482;
+  --ion-background-color-step-500: #78818d;
+  --ion-background-color-step-550: #858d99;
+  --ion-background-color-step-600: #939aa4;
+  --ion-background-color-step-650: #a1a7af;
+  --ion-background-color-step-700: #aeb3bb;
+  --ion-background-color-step-750: #bcc0c6;
+  --ion-background-color-step-800: #cacdd1;
+  --ion-background-color-step-850: #d8dadc;
+  --ion-background-color-step-900: #e5e6e8;
+  --ion-background-color-step-950: #f3f3f3;
+  --ion-text-color-step-50: #d7dde6;
+  --ion-text-color-step-100: #ccd2dc;
+  --ion-text-color-step-150: #c1c8d1;
+  --ion-text-color-step-200: #b6bdc7;
+  --ion-text-color-step-250: #abb2bd;
+  --ion-text-color-step-300: #a0a7b3;
+  --ion-text-color-step-350: #959ca9;
+  --ion-text-color-step-400: #8a929e;
+  --ion-text-color-step-450: #7f8794;
+  --ion-text-color-step-500: #747c8a;
+  --ion-text-color-step-550: #697180;
+  --ion-text-color-step-600: #5e6775;
+  --ion-text-color-step-650: #535c6b;
+  --ion-text-color-step-700: #485161;
+  --ion-text-color-step-750: #3d4657;
+  --ion-text-color-step-800: #323b4d;
+  --ion-text-color-step-850: #273142;
+  --ion-text-color-step-900: #1c2638;
+  --ion-text-color-step-950: #111b2e;
+
+  /* Semantic hues: replace Ionic's traffic-light defaults. */
+  --ion-color-danger: #f87171;
+  --ion-color-danger-rgb: 248, 113, 113;
+  --ion-color-danger-contrast: #2a0a0a;
+  --ion-color-danger-contrast-rgb: 42, 10, 10;
+  --ion-color-danger-shade: #da6363;
+  --ion-color-danger-tint: #f97f7f;
+
+  --ion-color-success: #22c55e;
+  --ion-color-success-rgb: 34, 197, 94;
+  --ion-color-success-contrast: #052e16;
+  --ion-color-success-contrast-rgb: 5, 46, 22;
+  --ion-color-success-shade: #1ead53;
+  --ion-color-success-tint: #38cb6e;
+
+  --ion-color-warning: #f59e0b;
+  --ion-color-warning-rgb: 245, 158, 11;
+  --ion-color-warning-contrast: #1a1204;
+  --ion-color-warning-contrast-rgb: 26, 18, 4;
+  --ion-color-warning-shade: #d88b0a;
+  --ion-color-warning-tint: #f7a821;
+
+  --ion-color-medium: #94a3b8;
+  --ion-color-medium-rgb: 148, 163, 184;
+  --ion-color-medium-contrast: #0b1220;
+  --ion-color-medium-contrast-rgb: 11, 18, 32;
+  --ion-color-medium-shade: #828fa2;
+  --ion-color-medium-tint: #9facbf;
 
   /* Brand */
   --ion-color-primary: #22d3ee;
@@ -44,8 +123,10 @@
   --ion-color-tertiary-shade: #937adc;
   --ion-color-tertiary-tint: #b097fb;
 
-  /* Roundness (Stitch ROUND_EIGHT) */
+  /* Roundness (Stitch ROUND_EIGHT): controls 8 px, cards 12 px, badges 4 px. */
   --cd-radius: 8px;
+  --cd-radius-card: 12px;
+  --cd-radius-badge: 4px;
 
   /* Ionic component mapping */
   --ion-toolbar-background: var(--cd-surface);
@@ -64,19 +145,94 @@ body {
   color: var(--ion-text-color);
 }
 
-ion-card,
 ion-button {
   --border-radius: var(--cd-radius);
 }
 
 ion-card {
+  --border-radius: var(--cd-radius-card);
+}
+
+ion-card {
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
   box-shadow: none;
 }
 
 ion-tab-bar {
-  border-top: 1px solid var(--cd-surface-border);
+  --background: var(--ion-toolbar-background);
+  --border: 1px solid var(--cd-surface-border);
+}
+
+ion-tab-bar.cd-tab-bar {
+  height: 64px;
+  min-height: 64px;
+}
+
+ion-tab-bar ion-tab-button ion-label {
+  margin-top: 3px;
+  margin-bottom: 3px;
+  font-family: var(--cd-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+ion-tab-bar ion-tab-button.tab-selected ion-label {
+  font-weight: 700;
+}
+
+ion-tab-bar ion-tab-button ion-icon {
+  font-size: 22px;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.2);
+}
+
+/* Icon sizing standard: 20 px inline, 24 px emphasis. */
+.cd-icon {
+  font-size: 20px;
+}
+
+.cd-icon--lg {
+  font-size: 24px;
+}
+
+/* Primary CTA (Stitch): 48 px, headline 700, normal case, cyan glow, no Material elevation. */
+.cd-cta {
+  --background: var(--ion-color-primary);
+  --background-hover: var(--ion-color-primary-tint);
+  --background-activated: var(--ion-color-primary-shade);
+  --color: #042f2e;
+  --border-radius: 8px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+  --min-height: 48px;
+  min-height: 48px;
+  height: 48px;
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.cd-cta.button-solid,
+.cd-cta.button-solid.ion-activated {
+  --box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+}
+
+.cd-cta:active {
+  transform: scale(0.99);
+}
+
+.cd-cta--xl {
+  --border-radius: 12px;
+  border-radius: 12px;
 }
 
 /* Shared primitives for the P0 placeholder screens. */
@@ -88,8 +244,9 @@ ion-tab-bar {
 
 .cd-eyebrow {
   margin: 0 0 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-family: var(--cd-font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ion-color-primary);
@@ -99,7 +256,7 @@ ion-tab-bar {
   padding: 1.25rem;
   background: var(--cd-surface);
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
 }
 
 .cd-muted {
@@ -108,7 +265,7 @@ ion-tab-bar {
 
 /* A1/A2 — Auth (Stitch): pantalla completa, marca centrada y formulario. */
 .cd-auth {
-  --background: radial-gradient(120% 80% at 50% 0%, #12334a 0%, var(--ion-background-color) 62%);
+  --background: var(--ion-background-color);
 }
 
 .cd-auth__inner {
@@ -117,11 +274,11 @@ ion-tab-bar {
   gap: 1.1rem;
   box-sizing: border-box;
   width: 100%;
-  max-width: 26rem;
+  max-width: 24.375rem;
   min-height: 100%;
   margin: 0 auto;
-  padding: calc(2rem + env(safe-area-inset-top)) 1.25rem
-    calc(2rem + env(safe-area-inset-bottom));
+  padding: calc(2rem + env(safe-area-inset-top, 16px)) 1.25rem
+    calc(2rem + env(safe-area-inset-bottom, 12px));
 }
 
 .cd-auth__brand {
@@ -247,7 +404,7 @@ ion-tab-bar {
   padding: 0.75rem 0.9rem 0.9rem;
   background: rgba(17, 28, 46, 0.6);
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
 }
 
 .cd-section__titulo {
@@ -324,7 +481,7 @@ ion-tab-bar {
   margin-top: 0.5rem;
   background: #0e1828;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
   color: var(--ion-text-color);
   font: inherit;
   text-align: left;
@@ -358,7 +515,7 @@ ion-tab-bar {
 /* A4/A5 — encabezado de pantalla: título y acción principal sobre el surface. */
 .cd-header ion-toolbar {
   --min-height: 0;
-  --padding-top: calc(0.5rem + env(safe-area-inset-top));
+  --padding-top: calc(0.5rem + env(safe-area-inset-top, 16px));
   --padding-bottom: 0.85rem;
   padding: 0 1rem;
 }
@@ -409,7 +566,7 @@ ion-tab-bar {
   padding: 0.75rem 0.6rem;
   background: var(--cd-surface);
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
   text-align: center;
 }
 
@@ -421,8 +578,11 @@ ion-tab-bar {
 }
 
 .cd-metrica__rotulo {
+  font-family: var(--cd-font-label);
   font-size: 0.65rem;
   line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--cd-muted);
 }
 
@@ -451,7 +611,7 @@ ion-tab-bar {
 }
 
 .cd-ot__codigo {
-  font-family: ui-monospace, 'SFMono-Regular', monospace;
+  font-family: var(--cd-font-mono);
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--cd-muted);
@@ -527,7 +687,7 @@ ion-tab-bar {
   padding: 2rem 1rem;
   background: rgba(17, 28, 46, 0.6);
   border: 1px dashed var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
   text-align: center;
 }
 
@@ -557,7 +717,7 @@ ion-tab-bar {
   margin-bottom: 1rem;
   padding: 1rem;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
 }
 
 .cd-alerta--error {
@@ -605,7 +765,7 @@ ion-tab-bar {
   padding: 0.85rem 0.9rem 1rem;
   background: rgba(17, 28, 46, 0.6);
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
 }
 
 .cd-bloque__titulo {
@@ -644,7 +804,7 @@ ion-tab-bar {
 }
 
 .cd-categoria ion-icon {
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
 .cd-ubicacion__acciones {
@@ -656,7 +816,7 @@ ion-tab-bar {
 
 .cd-coordenadas {
   margin: 0.25rem 0 0;
-  font-family: ui-monospace, 'SFMono-Regular', monospace;
+  font-family: var(--cd-font-mono);
   font-size: 0.72rem;
   color: var(--cd-muted);
 }
@@ -668,3 +828,739 @@ ion-tab-bar {
 }
 
 
+
+/* A6 — Seguimiento de la OT: mapa, técnico, tiempo, modales. */
+.cd-hero--compacto {
+  gap: 0.15rem;
+  padding-bottom: 0.15rem;
+}
+
+.cd-ot-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cd-ot-head__codigo {
+  margin: 0;
+  font-family: var(--cd-font-mono);
+  font-size: 1.25rem;
+}
+
+.cd-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Búsqueda de técnico (sin radar): estado honesto mientras nadie acepta. */
+.cd-buscando {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.cd-buscando__cuerpo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cd-buscando__icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.15);
+  animation: cd-buscando-pulso 1.6s ease-in-out infinite;
+}
+
+.cd-buscando__icono ion-icon {
+  font-size: 1.35rem;
+}
+
+@keyframes cd-buscando-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-buscando__icono { animation: none; }
+}
+
+.cd-buscando__titulo {
+  margin: 0 0 0.25rem;
+  font-size: 0.98rem;
+}
+
+.cd-buscando__texto {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--cd-muted);
+}
+
+.cd-buscando__texto strong {
+  color: var(--ion-text-color);
+}
+
+/* Mapa de seguimiento (WebView): bloque contenido y sus estados. */
+.cd-mapa-bloque {
+  margin-bottom: 0.75rem;
+}
+
+.cd-map__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.cd-map__titulo {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+}
+
+.cd-map__nota {
+  margin: 0.1rem 0 0;
+  font-size: 0.72rem;
+  color: var(--cd-muted);
+}
+
+.cd-map__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 999px;
+}
+
+.cd-map__chip--llegada {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(110, 231, 183, 0.45);
+}
+
+.cd-map__lienzo {
+  position: relative;
+  height: 240px;
+  overflow: hidden;
+  background: #0e1828;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-map__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.cd-map__vacio,
+.cd-map__cargando,
+.cd-map__fallback {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.35rem;
+  height: 100%;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.cd-map__vacio ion-icon,
+.cd-map__fallback ion-icon {
+  font-size: 1.6rem;
+  color: var(--cd-muted);
+}
+
+.cd-map__vacio-titulo,
+.cd-map__fallback-titulo {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cd-map__vacio-texto {
+  margin: 0;
+  max-width: 19rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-map__resumen {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ion-text-color);
+}
+
+/* Tarjeta del técnico asignado. */
+.cd-tecnico {
+  margin-bottom: 0.75rem;
+}
+
+.cd-tecnico__fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cd-tecnico__avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 3.25rem;
+  height: 3.25rem;
+  font-family: var(--cd-font-headline);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  text-transform: uppercase;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 12px;
+}
+
+.cd-tecnico__datos {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cd-tecnico__nombre-fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cd-tecnico__nombre {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cd-tecnico__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fcd34d;
+}
+
+.cd-tecnico__rating ion-icon {
+  font-size: 0.9rem;
+}
+
+.cd-tecnico__sin-rating {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+  border: 1px dashed var(--cd-surface-border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.cd-tecnico__rol {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--cd-muted);
+}
+
+.cd-tecnico__estado {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cd-tecnico__icono {
+  font-size: 1rem;
+}
+
+.cd-tecnico__icono--ok {
+  color: #34d399;
+}
+
+.cd-tecnico__icono--camino {
+  color: var(--ion-color-primary);
+}
+
+.cd-tecnico__llego {
+  color: #6ee7b7;
+}
+
+.cd-tecnico__camino {
+  color: var(--ion-color-primary);
+}
+
+.cd-tecnico__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.cd-boton-superficie {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+  text-decoration: none;
+  background: #16243a;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-boton-superficie:active {
+  background: #1c2f4d;
+}
+
+/* Panel de pago de la visita (RF-F1-26). */
+.cd-pago {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.cd-pago__encabezado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.cd-pago__icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: var(--cd-radius);
+}
+
+.cd-pago__icono ion-icon {
+  font-size: 1.25rem;
+}
+
+.cd-pago__titulo {
+  margin: 0 0 0.2rem;
+  font-size: 0.92rem;
+}
+
+.cd-pago__texto {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-pago__medios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.cd-chip-pago {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+  background: transparent;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-chip-pago--activo {
+  color: #1a1204;
+  background: var(--ion-color-secondary);
+  border-color: var(--ion-color-secondary);
+}
+
+/* Timeline del ciclo operativo (regla compartida; piel móvil). */
+.cd-timeline {
+  padding: 0.9rem;
+  margin-bottom: 0.75rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-timeline__encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.cd-timeline__titulo {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cd-timeline__nota {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--cd-muted);
+}
+
+.cd-timeline__pasos {
+  display: flex;
+  gap: 0.15rem;
+  overflow-x: auto;
+  margin: 0;
+  padding: 0.25rem 0 0.35rem;
+  list-style: none;
+  scrollbar-width: none;
+}
+
+.cd-timeline__pasos::-webkit-scrollbar {
+  display: none;
+}
+
+.cd-timeline__paso {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  min-width: 4rem;
+  padding: 0.2rem 0.1rem;
+  color: var(--cd-muted);
+  text-align: center;
+}
+
+.cd-timeline__nodo {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 2px solid var(--cd-surface-border);
+  border-radius: 999px;
+  color: var(--cd-muted);
+  background: #0e1828;
+}
+
+.cd-timeline__nodo ion-icon {
+  font-size: 1rem;
+}
+
+.cd-timeline__etiqueta {
+  font-size: 0.62rem;
+  line-height: 1.2;
+}
+
+.cd-timeline__paso.is-completed .cd-timeline__nodo {
+  color: #04121a;
+  background: #34d399;
+  border-color: #34d399;
+}
+
+.cd-timeline__paso.is-completed .cd-timeline__etiqueta {
+  color: #a7f3d0;
+}
+
+.cd-timeline__paso.is-current .cd-timeline__nodo {
+  color: #04121a;
+  background: var(--ion-color-primary);
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.2);
+}
+
+.cd-timeline__paso.is-current .cd-timeline__etiqueta {
+  color: var(--ion-color-primary);
+  font-weight: 700;
+}
+
+.cd-timeline__historial {
+  margin-top: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--cd-surface-border);
+}
+
+.cd-timeline__historial-toggle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+  cursor: pointer;
+}
+
+.cd-timeline__historial-lista {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-timeline__historial-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.5rem;
+  background: rgba(14, 24, 40, 0.6);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+  font-size: 0.72rem;
+}
+
+.cd-timeline__actor {
+  flex: 0 0 auto;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  background: #16243a;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: 6px;
+}
+
+.cd-timeline__historial-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-timeline__historial-fecha {
+  color: var(--cd-muted);
+  font-size: 0.65rem;
+}
+
+.cd-timeline__historial-motivo {
+  margin: 0.2rem 0 0;
+  color: var(--cd-muted);
+  line-height: 1.4;
+}
+
+/* Detalle y ficha del servicio. */
+.cd-card__titulo {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-detalle__texto {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.cd-detalle__subtitulo {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+}
+
+.cd-evidencias {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.cd-evidencia {
+  width: 8rem;
+  height: 6rem;
+  object-fit: cover;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+}
+
+.cd-columnas {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cd-ficha__fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--cd-surface-border);
+}
+
+.cd-ficha__fila span {
+  color: var(--cd-muted);
+}
+
+.cd-ficha__derecha {
+  text-align: right;
+}
+
+.cd-ficha__eta {
+  color: var(--ion-color-primary);
+}
+
+.cd-ficha__garantia {
+  color: #6ee7b7;
+}
+
+.cd-ficha__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.78rem;
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: var(--cd-radius);
+}
+
+.cd-nota {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--cd-radius);
+}
+
+.cd-nota p {
+  margin: 0;
+}
+
+.cd-nota ion-icon {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  color: #fcd34d;
+}
+
+/* Modales de acción (cancelar / disputar). */
+.cd-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 12px));
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(2px);
+}
+
+.cd-modal {
+  width: 100%;
+  max-width: 26rem;
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: calc(var(--cd-radius) + 4px);
+}
+
+.cd-modal__encabezado {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cd-modal__encabezado h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.cd-modal__encabezado ion-icon {
+  font-size: 1.35rem;
+}
+
+.cd-modal__encabezado--peligro {
+  color: #fca5a5;
+}
+
+.cd-modal__encabezado--disputa {
+  color: #c4b5fd;
+}
+
+.cd-modal__texto {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--cd-muted);
+}
+
+.cd-modal__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.cd-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ion-text-color);
+  background: #0e1828;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius);
+  resize: vertical;
+}
+
+.cd-textarea:focus {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 1px;
+}
+
+.cd-field-hint {
+  margin: -0.2rem 0 0;
+  font-size: 0.68rem;
+  color: var(--cd-muted);
+}
+
+.cd-modal__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* Pie de tarjeta OT en el panel: acceso al seguimiento. */
+.cd-ot__acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+}
