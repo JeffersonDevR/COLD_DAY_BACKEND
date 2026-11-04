@@ -14,7 +14,6 @@ import {
   IonButtons,
   IonCard,
   IonCardContent,
-  IonChip,
   IonContent,
   IonHeader,
   IonIcon,

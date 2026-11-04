@@ -6,7 +6,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { OtResponse } from '@core/models/common.models';
-import { OfertaCreada, SseService } from '@core/service/sse.service';
+import { SseService } from '@core/service/sse.service';
 import { TecnicoPresenciaService } from '@core/service/tecnico-presencia.service';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { OtApi } from '@core/service/ot-api';

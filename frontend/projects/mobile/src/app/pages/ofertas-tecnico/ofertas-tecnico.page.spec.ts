@@ -117,7 +117,7 @@ describe('OfertasTecnicoPage (B1)', () => {
   });
 
   it('un 409 explica la concurrencia sin inventar otras causas', () => {
-    const { fixture, api, toast } = setup({
+    const { fixture, toast } = setup({
       ofertasApi: { aceptarOferta: vi.fn(() => throwError(() => new ApiHttpError('tomada', 409))) },
     });
     fixture.componentInstance.aceptar(oferta());

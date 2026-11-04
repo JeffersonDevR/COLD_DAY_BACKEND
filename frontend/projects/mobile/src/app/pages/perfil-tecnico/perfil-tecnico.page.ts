@@ -7,7 +7,6 @@ import {
   IonCardContent,
   IonContent,
   IonHeader,
-  IonIcon,
   IonSpinner,
   IonToolbar,
 } from '@ionic/angular';

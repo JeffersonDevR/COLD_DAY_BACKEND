@@ -10,8 +10,6 @@ import { ProveedoresApi } from '@core/service/proveedores-api';
 import { MobileToastService } from '../../core/toast.service';
 import { DocumentosProveedorPage } from './documentos-proveedor.page';
 
-type Stub = ReturnType<typeof vi.fn>;
-
 function setup({
   documentos = [] as DocumentoProveedorResponse[],
   estado = 'PENDIENTE' as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',

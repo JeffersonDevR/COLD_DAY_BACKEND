@@ -22,7 +22,7 @@ import {
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { AUXILIARES_MAX } from '@core/environment/auxiliares';
-import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '@core/models/common.models';
+import { OfertaTecnicoResponse, TecnicoResponse } from '@core/models/common.models';
 import { SseService } from '@core/service/sse.service';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';

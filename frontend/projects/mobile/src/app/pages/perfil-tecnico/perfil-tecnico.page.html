@@ -40,13 +40,13 @@
           @if (t.numeroIdentificacion) {
             <div><dt>Identificación</dt><dd>{{ t.numeroIdentificacion }}</dd></div>
           }
-          @if (t.reputacion != null) {
+          @if (t.reputacion !== undefined) {
             <div><dt>Reputación</dt><dd>{{ t.reputacion }} / 5</dd></div>
           }
-          @if (t.serviciosCompletados != null) {
+          @if (t.serviciosCompletados !== undefined) {
             <div><dt>Servicios completados</dt><dd>{{ t.serviciosCompletados }}</dd></div>
           }
-          @if (t.deudaComisionCop != null) {
+          @if (t.deudaComisionCop !== undefined) {
             <div><dt>Deuda de comisión</dt><dd>$ {{ t.deudaComisionCop.toLocaleString('es-CO') }} COP</dd></div>
           }
         </dl>

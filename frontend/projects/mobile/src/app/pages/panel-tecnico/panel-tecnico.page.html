@@ -159,7 +159,14 @@
   }
 
   @for (orden of misOts(); track orden.id) {
-    <article class="cd-ot" [attr.data-testid]="'ot-' + orden.id" (click)="abrirOt(orden.id)">
+    <article
+      class="cd-ot"
+      role="button"
+      tabindex="0"
+      [attr.data-testid]="'ot-' + orden.id"
+      (click)="abrirOt(orden.id)"
+      (keydown.enter)="abrirOt(orden.id)"
+    >
       <div class="cd-ot__cabecera">
         <div>
           <p class="cd-ot__codigo">{{ orden.codigo || 'Orden de trabajo' }}</p>

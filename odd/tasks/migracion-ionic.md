@@ -98,7 +98,7 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 ### P2 — Pantallas de negocio (3 entregas encadenadas)
 - [ ] **P2.1 Auth + cliente:** A1 ✅, A2 ✅ (P2.1a); A4 ✅, A5 ✅ (P2.1b).
 - [x] **P2.2 Cliente profundo:** A6 (`fb18f74`), A7 (`d469129`), A8 (`58ab9b1`), A9 (esta entrega); fixes de fidelidad Dark Ops en `3f83991`. Detalle en la sección P2.2.
-- [ ] **P2.3 Técnico + proveedor:** B1, B2, B3, B4, C1, C2.
+- [x] **P2.3 Técnico + proveedor:** B1, B2, B3 (`fcf753a`), B4, C1 y C2 (`6b5e930`). Detalle en la sección P2.3.
 - [ ] Cada entrega: specs de componente/servicio, y prueba manual en dispositivo.
 
 #### P2.1a — A1 Login + A2 Registro (CERRADO 2026-11-03)
@@ -163,6 +163,17 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 - Verificación al cierre: móvil **14 archivos / 201 tests / 0**; web **83 archivos / 890 tests / 0**; `ng build mobile` exit 0; 0 coincidencias de PrimeNG; `tsc` 0/0; lint solo los 8 errores preexistentes.
 - Pendiente: reconstrucción estructural de fidelidad (chrome/componentes de A1/A2/A3/A4/A5) según `odd/tasks/ionic-stitch-fidelity.md`, y prueba en dispositivo (mapa WebView, dialer, SSE/poll con la app en background).
 
+#### P2.3 — Técnico + proveedor (CERRADO 2026-11-04)
+- [x] **B1 Radar de ofertas** `fcf753a`: lista de ofertas con distancia/vigencia, auxiliares 0..10, 409 de concurrencia con copy propia, SSE + poll 25 s, bloqueo por validación/liquidación.
+- [x] **B2 Panel técnico** `fcf753a`: disponibilidad (segment, 409 con copy), switch de ubicación ligado a la política de presencia (bloqueado durante OT), OTs activas con error/retry y navegación a ejecución.
+- [x] **B3 Ejecución** `fcf753a`: iniciar desplazamiento (gate por visita paga), llegada, diagnóstico + presupuesto + insumos, finalizar con medio de pago, historial de insumos de la OT.
+- [x] **B4 Perfil técnico** `6b5e930`: datos, validación con motivo de rechazo, especialidades editables (≥1, orden canónico) y documentos en lectura. La carga de documentos queda en la web (no hay upload en el backend).
+- [x] **C1 Solicitudes de proveedor** `6b5e930`: aceptar/rechazar/entregar, 403 = gate documental, 409 = otra empresa tomó la solicitud, estados de oferta y requerimiento.
+- [x] **C2 Documentos de proveedor** `6b5e930`: estado de validación de la sesión y declaración de metadata (tipo + vencimiento). Sin subida de archivos: se dice explícitamente.
+- Verificación al cierre: móvil **20 archivos / 241 tests / 0**; web **83 / 890 / 0**; `ng build mobile` exit 0; 0 PrimeNG; `tsc` 0/0; lint móvil limpio (web solo los 8 preexistentes).
+- Nota: `getMisOts`/`getOfertasParaTecnico` resuelven el técnico desde el principal; el `tecnicoId` solo se usa en modo mock.
+- Pendiente: el radar móvil no dibuja el mapa del radar (llega con la pasada de fidelidad/P3); la ejecución no permite pedir insumos por separado del diagnóstico (van juntos en el mismo formulario).
+
 ## Fotos de evidencia (decisión de backend, no de migración)
 El backend es metadata-only. Implementación recomendada cuando se decida:
 1. `POST /api/ot/{id}/evidencias/presign` → autoriza por participación, valida mime/tamaño y devuelve URL firmada de PUT (TTL 60–120 s) para `ots/{otId}/{uuid}.ext`.
@@ -185,6 +196,6 @@ Guardas: límite de fotos y tamaño por OT, rate limit, `sha256` para idempotenc
 - Reescribir backend.
 
 ## Verificación
-- Cada fase con su suite (web: **83 archivos / 890 tests**; móvil: **14 / 201**) + build Android.
+- Cada fase con su suite (web: **83 archivos / 890 tests**; móvil: **20 / 241**) + build Android.
 - Prueba manual en emulador/dispositivo por fase.
 - Verificador independiente por entrega (review nativa no transitable en este runtime).
