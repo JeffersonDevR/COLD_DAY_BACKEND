@@ -14,6 +14,7 @@ import {
   IonButton,
   IonCheckbox,
   IonContent,
+  IonIcon,
   IonInput,
   IonItem,
   IonList,
@@ -130,6 +131,7 @@ interface FormularioAlta {
     IonButton,
     IonCheckbox,
     IonContent,
+    IonIcon,
     IonInput,
     IonItem,
     IonList,
@@ -140,6 +142,19 @@ interface FormularioAlta {
   template: `
     <ion-content class="cd-auth" [fullscreen]="true">
       <main class="cd-auth__inner">
+        <div class="cd-auth__bar cd-auth__bar--nav">
+          <a class="cd-auth__back" routerLink="/login" aria-label="Volver al ingreso">
+            <ion-icon name="arrow-back-outline" aria-hidden="true"></ion-icon>
+          </a>
+          <h1 class="cd-auth__bar-titulo">Crear cuenta</h1>
+          <ion-icon class="cd-auth__shield" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+        </div>
+
+        <div class="cd-auth__ops">
+          <span class="cd-auth__ops-marca">Cold Day · Ops CO</span>
+          <span class="cd-auth__ops-fase">Fase registro</span>
+        </div>
+
         <header class="cd-auth__brand">
           <svg class="cd-logo" viewBox="0 0 48 48" aria-hidden="true">
             <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
@@ -169,9 +184,10 @@ interface FormularioAlta {
           }
         </section>
 
-        <form class="cd-auth__form" [formGroup]="registroForm" (ngSubmit)="enviar()" novalidate>
+        <form class="cd-auth__form cd-card" [formGroup]="registroForm" (ngSubmit)="enviar()" novalidate>
           <ion-list lines="none" class="cd-form">
             <ion-item>
+              <ion-icon slot="start" name="person-outline" aria-hidden="true"></ion-icon>
               <ion-input
                 formControlName="nombre"
                 autocomplete="name"
@@ -185,6 +201,7 @@ interface FormularioAlta {
             }
 
             <ion-item>
+              <ion-icon slot="start" name="mail-outline" aria-hidden="true"></ion-icon>
               <ion-input
                 formControlName="correo"
                 type="email"
@@ -200,6 +217,7 @@ interface FormularioAlta {
             }
 
             <ion-item>
+              <ion-icon slot="start" name="call-outline" aria-hidden="true"></ion-icon>
               <ion-input
                 formControlName="telefono"
                 type="tel"
@@ -215,6 +233,7 @@ interface FormularioAlta {
             }
 
             <ion-item>
+              <ion-icon slot="start" name="lock-closed-outline" aria-hidden="true"></ion-icon>
               <ion-input
                 formControlName="password"
                 [type]="verPassword() ? 'text' : 'password'"
@@ -229,6 +248,7 @@ interface FormularioAlta {
             }
 
             <ion-item>
+              <ion-icon slot="start" name="lock-closed-outline" aria-hidden="true"></ion-icon>
               <ion-input
                 formControlName="confirmacion"
                 [type]="verPassword() ? 'text' : 'password'"
@@ -243,14 +263,20 @@ interface FormularioAlta {
             }
           </ion-list>
 
-          <button
+          <ion-button
+            fill="clear"
             type="button"
-            class="cd-auth__toggle"
+            class="cd-auth__ojo"
+            [attr.aria-label]="verPassword() ? 'Ocultar contraseñas' : 'Mostrar contraseñas'"
             data-testid="toggle-password"
             (click)="alternarPassword()"
           >
+            <ion-icon
+              [name]="verPassword() ? 'eye-off-outline' : 'eye-outline'"
+              aria-hidden="true"
+            ></ion-icon>
             {{ verPassword() ? 'Ocultar contraseñas' : 'Mostrar contraseñas' }}
-          </button>
+          </ion-button>
 
           @if (rol() === 'CLIENTE') {
             <fieldset class="cd-section" data-testid="campos-cliente">

@@ -60,7 +60,7 @@ describe('CuentaPage', () => {
     expect(boton(fixture, 'modo-cliente').disabled).toBe(false);
     expect(boton(fixture, 'modo-tecnico').disabled).toBe(true);
     expect(boton(fixture, 'modo-proveedor').disabled).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Tu cuenta no tiene este perfil');
+    expect(fixture.nativeElement.textContent).toContain('No disponible');
   });
 
   it('permite cambiar a un perfil disponible', () => {

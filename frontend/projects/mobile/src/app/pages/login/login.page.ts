@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import {
   IonButton,
   IonContent,
+  IonIcon,
   IonInput,
   IonItem,
   IonList,
@@ -36,6 +37,7 @@ const MENSAJES_LOGIN: Record<number, string> = {
     RouterLink,
     IonButton,
     IonContent,
+    IonIcon,
     IonInput,
     IonItem,
     IonList,
@@ -44,6 +46,14 @@ const MENSAJES_LOGIN: Record<number, string> = {
   template: `
     <ion-content class="cd-auth" [fullscreen]="true">
       <main class="cd-auth__inner">
+        <div class="cd-auth__bar">
+          <span class="cd-auth__pill">
+            <span class="cd-auth__dot" aria-hidden="true"></span>
+            Sistema activo
+          </span>
+          <ion-icon class="cd-auth__shield" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+        </div>
+
         <header class="cd-auth__brand">
           <svg class="cd-logo" viewBox="0 0 48 48" aria-hidden="true">
             <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
@@ -57,9 +67,10 @@ const MENSAJES_LOGIN: Record<number, string> = {
           <p class="cd-tagline">Operaciones en frío, en tiempo real.</p>
         </header>
 
-        <form class="cd-auth__form" [formGroup]="loginForm" (ngSubmit)="enviar()" novalidate>
+        <form class="cd-auth__form cd-card" [formGroup]="loginForm" (ngSubmit)="enviar()" novalidate>
           <ion-list lines="none" class="cd-form">
             <ion-item>
+              <ion-icon slot="start" name="mail-outline" aria-hidden="true"></ion-icon>
               <ion-input
                 formControlName="correo"
                 type="email"
@@ -71,6 +82,7 @@ const MENSAJES_LOGIN: Record<number, string> = {
               ></ion-input>
             </ion-item>
             <ion-item>
+              <ion-icon slot="start" name="lock-closed-outline" aria-hidden="true"></ion-icon>
               <ion-input
                 formControlName="password"
                 [type]="verPassword() ? 'text' : 'password'"
@@ -79,17 +91,22 @@ const MENSAJES_LOGIN: Record<number, string> = {
                 labelPlacement="stacked"
                 data-testid="password"
               ></ion-input>
+              <ion-button
+                slot="end"
+                fill="clear"
+                type="button"
+                class="cd-auth__ojo"
+                [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                data-testid="toggle-password"
+                (click)="alternarPassword()"
+              >
+                <ion-icon
+                  [name]="verPassword() ? 'eye-off-outline' : 'eye-outline'"
+                  aria-hidden="true"
+                ></ion-icon>
+              </ion-button>
             </ion-item>
           </ion-list>
-
-          <button
-            type="button"
-            class="cd-auth__toggle"
-            data-testid="toggle-password"
-            (click)="alternarPassword()"
-          >
-            {{ verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña' }}
-          </button>
 
           @if (error(); as mensaje) {
             <p class="cd-auth__error" role="alert" data-testid="error-login">{{ mensaje }}</p>
@@ -114,6 +131,11 @@ const MENSAJES_LOGIN: Record<number, string> = {
           ¿No tenés cuenta?
           <a routerLink="/registro" data-testid="ir-registro">Creá una</a>
         </p>
+
+        <footer class="cd-auth__footer">
+          <ion-icon name="lock-closed-outline" aria-hidden="true"></ion-icon>
+          <span>Conexión cifrada de extremo a extremo · Colombia</span>
+        </footer>
       </main>
     </ion-content>
   `,

@@ -157,7 +157,7 @@ describe('LoginPage móvil', () => {
     toggle.click();
     expect(page.verPassword()).toBe(true);
     fixture.detectChanges();
-    expect(toggle.textContent).toContain('Ocultar');
+    expect(toggle.getAttribute('aria-label')).toContain('Ocultar');
     toggle.click();
     expect(page.verPassword()).toBe(false);
   });
