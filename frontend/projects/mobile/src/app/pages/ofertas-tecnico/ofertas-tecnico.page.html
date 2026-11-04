@@ -1,0 +1,107 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Radar de ofertas</p>
+      <h1 class="cd-headline">Ofertas cercanas</h1>
+      <p class="cd-hero__nota">
+        Tu oferta se envía a los técnicos cercanos; el primero que acepta la toma.
+      </p>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (tecnico() && !validacionAprobada()) {
+    <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="radar-no-habilitado">
+      <h2 class="cd-alerta__titulo">Todavía no podés tomar ofertas</h2>
+      <p class="cd-alerta__texto">
+        Tu documentación está pendiente de aprobación o fue rechazada. Podés completar tu perfil desde la web.
+      </p>
+    </section>
+  }
+
+  @if (bloqueadoPorLiquidacion()) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="radar-bloqueado">
+      <h2 class="cd-alerta__titulo">Operación bloqueada</h2>
+      <p class="cd-alerta__texto">
+        Tenés liquidaciones pendientes. Regularizalas desde la web para volver a tomar servicios.
+      </p>
+    </section>
+  }
+
+  @if (cargando()) {
+    <div class="cd-cargando" data-testid="radar-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Buscando ofertas cerca de ti…</p>
+    </div>
+  }
+
+  @if (errorCarga()) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="radar-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar las ofertas</h2>
+      <p class="cd-alerta__texto">Revisá tu conexión e intentá de nuevo.</p>
+      <ion-button size="small" (click)="reintentar()" data-testid="radar-reintentar">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (!cargando() && !errorCarga() && ofertas().length === 0) {
+    <section class="cd-vacio" data-testid="radar-vacio">
+      <h2 class="cd-vacio__titulo">No hay ofertas activas</h2>
+      <p class="cd-vacio__texto">
+        Cuando un cliente pida un servicio cerca de tu zona, la oferta aparece acá y te llega al instante.
+        Mantené tu ubicación compartida y tu disponibilidad en “Disponible”.
+      </p>
+    </section>
+  }
+
+  @for (oferta of ofertas(); track trackOt($index, oferta)) {
+    <article class="cd-ot" [attr.data-testid]="'oferta-' + oferta.ot.id">
+      <div class="cd-ot__cabecera">
+        <div>
+          <p class="cd-ot__codigo">{{ oferta.ot.codigo || 'Orden de trabajo' }}</p>
+          <p class="cd-ot__categoria">{{ oferta.ot.categoriaServicio.replace('_', ' ') }}</p>
+        </div>
+        <span class="cd-chip cd-chip--espera">Expira en {{ expira(oferta.segundosRestantes) }}</span>
+      </div>
+
+      <p class="cd-ot__descripcion">{{ oferta.ot.descripcionFalla }}</p>
+      <p class="cd-ot__direccion">
+        <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+        {{ oferta.ot.direccion }}
+      </p>
+      <p class="cd-ayuda">
+        A {{ distancia(oferta.distanciaKm) }} · radio vigente {{ distancia(oferta.radioVigenteKm) }}
+      </p>
+
+      <div class="cd-ot__acciones">
+        <ion-select
+          label="Auxiliares"
+          interface="popover"
+          [value]="auxiliaresDe(oferta.ot.id)"
+          (ionChange)="setAuxiliares(oferta.ot.id, $any($event).detail.value)"
+          [attr.data-testid]="'auxiliares-' + oferta.ot.id"
+        >
+          @for (n of auxiliaresOpciones; track n) {
+            <ion-select-option [value]="n">{{ n }}</ion-select-option>
+          }
+        </ion-select>
+
+        <ion-button
+          class="cd-cta"
+          [disabled]="loadingOt() === oferta.ot.id || !validacionAprobada() || bloqueadoPorLiquidacion()"
+          (click)="aceptar(oferta)"
+          [attr.data-testid]="'aceptar-' + oferta.ot.id"
+        >
+          @if (loadingOt() === oferta.ot.id) {
+            <ion-spinner name="dots"></ion-spinner>
+          } @else {
+            Aceptar
+          }
+        </ion-button>
+      </div>
+    </article>
+  }
+</ion-content>

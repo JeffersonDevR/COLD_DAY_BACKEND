@@ -1,0 +1,103 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Portal proveedor</p>
+      <h1 class="cd-headline">Mis documentos</h1>
+      <p class="cd-hero__nota">Declaraciones de metadata: tipo y vencimiento.</p>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <section class="cd-alerta cd-alerta--{{ tonoEstado() }}" role="status" data-testid="estado-validacion">
+    <h2 class="cd-alerta__titulo">
+      @switch (estadoValidacion()) {
+        @case ('APROBADO') { Documentación aprobada }
+        @case ('RECHAZADO') { Documentación rechazada }
+        @default { Validación en curso }
+      }
+    </h2>
+    <p class="cd-alerta__texto" data-testid="estado-explicacion">{{ explicacionEstado() }}</p>
+  </section>
+
+  @if (cargando()) {
+    <div class="cd-cargando" data-testid="documentos-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando documentos…</p>
+    </div>
+  }
+
+  @if (!cargando() && documentos().length === 0) {
+    <section class="cd-vacio" data-testid="documentos-vacio">
+      <h2 class="cd-vacio__titulo">Todavía no declaraste documentos</h2>
+      <p class="cd-vacio__texto">
+        Declará al menos el RUT para que un administrador pueda validar tu cuenta.
+      </p>
+    </section>
+  }
+
+  @for (documento of documentos(); track documento.id) {
+    <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">
+      <div class="cd-ot__cabecera">
+        <div>
+          <p class="cd-ot__codigo">{{ documento.tipo }}</p>
+          @if (documento.fechaVencimiento) {
+            <p class="cd-ot__categoria">Vence {{ documento.fechaVencimiento }}</p>
+          }
+        </div>
+      </div>
+    </article>
+  }
+
+  <ion-button expand="block" fill="outline" (click)="alternarForm()" data-testid="alternar-form">
+    <ion-icon slot="start" name="add-outline" aria-hidden="true"></ion-icon>
+    {{ mostrarForm() ? 'Cancelar' : 'Declarar documento' }}
+  </ion-button>
+
+  @if (mostrarForm()) {
+    <ion-card class="cd-card">
+      <ion-card-content>
+        <form [formGroup]="docForm" class="cd-form" (ngSubmit)="registrar()">
+          <ion-select
+            formControlName="tipo"
+            label="Tipo de documento"
+            labelPlacement="stacked"
+            interface="popover"
+            data-testid="campo-tipo"
+          >
+            <ion-select-option value="RUT">RUT</ion-select-option>
+            <ion-select-option value="CEDULA">Cédula</ion-select-option>
+            <ion-select-option value="CERTIFICADO">Certificado</ion-select-option>
+            <ion-select-option value="OTRO">Otro</ion-select-option>
+          </ion-select>
+
+          <ion-input
+            type="date"
+            formControlName="fechaVencimiento"
+            label="Fecha de vencimiento"
+            labelPlacement="stacked"
+            data-testid="campo-vencimiento"
+          ></ion-input>
+
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            type="submit"
+            [disabled]="guardando()"
+            data-testid="guardar-documento"
+          >
+            @if (guardando()) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              Declarar documento
+            }
+          </ion-button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  <p class="cd-ayuda">
+    El backend guarda solo la metadata del documento (tipo y vencimiento): no hay subida de archivos todavía.
+  </p>
+</ion-content>

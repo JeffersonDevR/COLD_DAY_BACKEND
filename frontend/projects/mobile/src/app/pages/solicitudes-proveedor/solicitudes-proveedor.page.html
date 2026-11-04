@@ -1,0 +1,112 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Portal proveedor</p>
+      <h1 class="cd-headline">Solicitudes de insumos</h1>
+      <p class="cd-hero__nota">Aceptá, rechazá o confirmá entregas de repuestos.</p>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (cargando()) {
+    <div class="cd-cargando" data-testid="solicitudes-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando solicitudes…</p>
+    </div>
+  }
+
+  @if (validacionBloquea()) {
+    <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="validacion-bloquea">
+      <h2 class="cd-alerta__titulo">Tu cuenta todavía no está habilitada</h2>
+      <p class="cd-alerta__texto">
+        Un administrador revisa tu documentación. Mientras tanto no podés aceptar pedidos de insumos.
+      </p>
+    </section>
+  }
+
+  @if (errorCarga() && !validacionBloquea()) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="solicitudes-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar las solicitudes</h2>
+      <p class="cd-alerta__texto">Revisá tu conexión e intentá de nuevo.</p>
+      <ion-button size="small" (click)="cargar()" data-testid="solicitudes-reintentar">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (!cargando() && !errorCarga() && ofertas().length === 0) {
+    <section class="cd-vacio" data-testid="solicitudes-vacio">
+      <h2 class="cd-vacio__titulo">No tenés solicitudes</h2>
+      <p class="cd-vacio__texto">
+        Cuando un técnico pida repuestos cerca de tu zona, la solicitud aparece acá.
+      </p>
+    </section>
+  }
+
+  @for (oferta of ofertas(); track oferta.id) {
+    <article class="cd-ot" [attr.data-testid]="'solicitud-' + oferta.id">
+      <div class="cd-ot__cabecera">
+        <div>
+          <p class="cd-ot__codigo">Solicitud de insumos</p>
+          @if (oferta.requerimiento; as req) {
+            <p class="cd-ot__categoria">OT {{ req.otId.slice(0, 8) }} · {{ etiquetaRequerimiento(req.estado) }}</p>
+          }
+        </div>
+        <span class="cd-chip cd-chip--{{ tonoOferta(oferta.estado) }}" data-testid="estado-oferta">
+          {{ etiquetaOferta(oferta.estado) }}
+        </span>
+      </div>
+
+      @if (oferta.requerimiento; as req) {
+        @for (item of req.items; track $index) {
+          <p class="cd-ot__descripcion">{{ item.cantidad }} × {{ item.descripcion }}</p>
+        }
+        @if (req.observaciones) {
+          <p class="cd-ayuda">{{ req.observaciones }}</p>
+        }
+      }
+
+      @if (oferta.estado === 'PENDIENTE') {
+        <div class="cd-ot__acciones">
+          <ion-button
+            class="cd-cta"
+            [disabled]="accionEnCurso() === oferta.id"
+            (click)="aceptar(oferta)"
+            [attr.data-testid]="'aceptar-' + oferta.id"
+          >
+            @if (accionEnCurso() === oferta.id) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              Aceptar
+            }
+          </ion-button>
+          <ion-button
+            fill="outline"
+            color="danger"
+            [disabled]="accionEnCurso() === oferta.id"
+            (click)="rechazar(oferta)"
+            [attr.data-testid]="'rechazar-' + oferta.id"
+          >
+            Rechazar
+          </ion-button>
+        </div>
+      }
+
+      @if (oferta.estado === 'ACEPTADA' && oferta.requerimiento?.estado !== 'ENTREGADO') {
+        <div class="cd-ot__acciones">
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            [disabled]="accionEnCurso() === oferta.id"
+            (click)="entregar(oferta)"
+            [attr.data-testid]="'entregar-' + oferta.id"
+          >
+            Confirmar entrega
+          </ion-button>
+        </div>
+      }
+    </article>
+  }
+</ion-content>

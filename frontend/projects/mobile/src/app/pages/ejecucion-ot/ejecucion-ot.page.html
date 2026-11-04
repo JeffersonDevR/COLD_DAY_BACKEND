@@ -1,0 +1,210 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tecnico/ots" text="" aria-label="Volver al panel"></ion-back-button>
+    </ion-buttons>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Ejecución de la OT</p>
+      @if (ot(); as orden) {
+        <div class="cd-ot-head">
+          <h1 class="cd-headline cd-ot-head__codigo" data-testid="ot-codigo">
+            {{ orden.codigo || 'Orden de trabajo' }}
+          </h1>
+          <span class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}" data-testid="ot-estado">
+            {{ etiquetaEstado(orden.estado) }}
+          </span>
+        </div>
+        <p class="cd-hero__nota">{{ orden.direccion }}</p>
+      } @else {
+        <h1 class="cd-headline">Ejecución de la OT</h1>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (cargandoInicial()) {
+    <div class="cd-cargando" data-testid="ot-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando la orden…</p>
+    </div>
+  }
+
+  @if (otErrorCarga(); as errorCarga) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
+      <p class="cd-alerta__texto">{{ errorCarga }}</p>
+      <ion-button size="small" (click)="reintentarCargaOt()" data-testid="ot-reintentar">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (ot(); as orden) {
+    <!-- Desplazamiento: la visita debe estar paga. -->
+    @if (orden.estado === 'ASIGNADA') {
+      @if (desplazamientoBloqueadoPorPago()) {
+        <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="visita-pendiente">
+          <h2 class="cd-alerta__titulo">Visita pendiente de pago</h2>
+          <p class="cd-alerta__texto">
+            El cliente debe pagar la visita antes de que puedas iniciar el desplazamiento.
+          </p>
+        </section>
+      }
+      <ion-button
+        expand="block"
+        class="cd-cta"
+        [disabled]="desplazamientoBloqueadoPorPago()"
+        (click)="iniciarDesplazamiento()"
+        data-testid="iniciar-desplazamiento"
+      >
+        <ion-icon slot="start" name="navigate-outline" aria-hidden="true"></ion-icon>
+        Iniciar desplazamiento
+      </ion-button>
+    }
+
+    @if (orden.estado === 'EN_CAMINO' && !enSitio()) {
+      <ion-button expand="block" class="cd-cta" (click)="llegarADomicilio()" data-testid="llegar">
+        <ion-icon slot="start" name="location-outline" aria-hidden="true"></ion-icon>
+        Llegué al domicilio
+      </ion-button>
+    }
+
+    <!-- Diagnóstico + presupuesto + insumos -->
+    @if (mostrarDiagnostico()) {
+      <ion-card class="cd-card">
+        <ion-card-content>
+          <h2 class="cd-card__titulo">Diagnóstico y presupuesto</h2>
+          <form [formGroup]="diagnosticoForm" class="cd-form" (ngSubmit)="enviarDiagnostico()">
+            <ion-textarea
+              formControlName="diagnostico"
+              label="Diagnóstico"
+              labelPlacement="stacked"
+              [autoGrow]="true"
+              placeholder="Qué encontraste y qué hay que reparar"
+              data-testid="campo-diagnostico"
+            ></ion-textarea>
+
+            <ion-input
+              type="number"
+              inputmode="decimal"
+              formControlName="manoDeObra"
+              label="Mano de obra (COP)"
+              labelPlacement="stacked"
+              placeholder="0"
+              data-testid="campo-mano-obra"
+            ></ion-input>
+
+            <ion-input
+              type="number"
+              inputmode="decimal"
+              formControlName="repuestos"
+              label="Repuestos (COP)"
+              labelPlacement="stacked"
+              placeholder="0"
+              data-testid="campo-repuestos"
+            ></ion-input>
+
+            <p class="cd-desglose__total" data-testid="total-presupuesto">
+              Total: $ {{ totalPresupuesto().toLocaleString('es-CO') }} COP
+            </p>
+
+            <h3 class="cd-calificar__subtitulo">Insumos que necesitás</h3>
+            @for (grupo of insumos.controls; track $index) {
+              <div class="cd-fila-insumo" [formGroup]="grupo">
+                <ion-input
+                  formControlName="descripcion"
+                  placeholder="Ej. Gas R410A 900g"
+                  [attr.data-testid]="'insumo-desc-' + $index"
+                ></ion-input>
+                <ion-input
+                  type="number"
+                  inputmode="numeric"
+                  formControlName="cantidad"
+                  placeholder="1"
+                  [attr.data-testid]="'insumo-cant-' + $index"
+                ></ion-input>
+                <ion-button fill="clear" color="danger" (click)="quitarInsumo($index)" aria-label="Quitar insumo">
+                  <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+                </ion-button>
+              </div>
+            }
+            <ion-button fill="clear" size="small" (click)="agregarInsumo()" data-testid="agregar-insumo">
+              <ion-icon slot="start" name="add-outline" aria-hidden="true"></ion-icon>
+              Agregar insumo
+            </ion-button>
+
+            <ion-button
+              expand="block"
+              class="cd-cta"
+              type="submit"
+              [disabled]="enviandoDiagnostico()"
+              data-testid="enviar-diagnostico"
+            >
+              @if (enviandoDiagnostico()) {
+                <ion-spinner name="dots"></ion-spinner>
+              } @else {
+                Enviar diagnóstico al cliente
+              }
+            </ion-button>
+          </form>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Cierre del servicio -->
+    @if (orden.estado === 'EN_REPARACION') {
+      <ion-card class="cd-card">
+        <ion-card-content>
+          <h2 class="cd-card__titulo">Finalizar servicio</h2>
+          <ion-segment
+            [value]="medioPagoCierre()"
+            (ionChange)="medioPagoCierre.set($any($event).detail.value)"
+            data-testid="medio-pago"
+          >
+            <ion-segment-button value="EFECTIVO"><ion-label>Efectivo</ion-label></ion-segment-button>
+            <ion-segment-button value="TRANSFERENCIA"><ion-label>Transferencia</ion-label></ion-segment-button>
+          </ion-segment>
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            [disabled]="finalizando()"
+            (click)="finalizarServicio()"
+            data-testid="finalizar-servicio"
+          >
+            @if (finalizando()) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              Finalizar y notificar al cliente
+            }
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    @if (orden.estado === 'FINALIZADA') {
+      <section class="cd-alerta cd-alerta--ok" role="status" data-testid="ot-finalizada">
+        <h2 class="cd-alerta__titulo">Servicio finalizado</h2>
+        <p class="cd-alerta__texto">El cliente ya puede ver el acta y calificar el servicio.</p>
+      </section>
+      <ion-button expand="block" class="cd-cta" (click)="irAlPanel()">Volver al panel</ion-button>
+    }
+
+    <!-- Insumos ya solicitados -->
+    @if (insumosOt().length > 0) {
+      <h2 class="cd-section__titulo">Insumos solicitados</h2>
+      @for (solicitud of insumosOt(); track solicitud.id) {
+        <article class="cd-ot" [attr.data-testid]="'insumo-' + solicitud.id">
+          <div class="cd-ot__cabecera">
+            <p class="cd-ot__codigo">{{ solicitud.items.length }} insumo(s)</p>
+            <span class="cd-chip cd-chip--curso">{{ etiquetaInsumo(solicitud.estado) }}</span>
+          </div>
+          @for (item of solicitud.items; track $index) {
+            <p class="cd-ot__descripcion">{{ item.cantidad }} × {{ item.descripcion }}</p>
+          }
+        </article>
+      }
+    }
+  }
+</ion-content>
