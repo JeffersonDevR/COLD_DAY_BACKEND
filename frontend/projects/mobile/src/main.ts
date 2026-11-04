@@ -40,6 +40,7 @@ import {
   informationCircleOutline,
   locationOutline,
   lockClosedOutline,
+  logOutOutline,
   mailOutline,
   mapOutline,
   navigateOutline,
@@ -63,6 +64,7 @@ import {
   trashOutline,
   walletOutline,
   waterOutline,
+  videocamOutline,
 } from 'ionicons/icons';
 import {MobileApp} from './app/app';
 import {appConfig} from './app/app.config';
@@ -111,6 +113,7 @@ addIcons({
   informationCircleOutline,
   locationOutline,
   lockClosedOutline,
+  logOutOutline,
   mailOutline,
   mapOutline,
   navigateOutline,
@@ -134,6 +137,7 @@ addIcons({
   trashOutline,
   walletOutline,
   waterOutline,
+  videocamOutline,
 });
 
 bootstrapApplication(MobileApp, appConfig).catch((err) => console.error(err));

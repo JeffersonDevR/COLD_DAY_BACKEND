@@ -69,6 +69,18 @@ import { MobileToastService } from '../../core/toast.service';
   template: `
     <ion-header class="cd-header">
       <ion-toolbar>
+        <div class="cd-panel__barra">
+          <div class="cd-panel__identidad">
+            <span class="cd-panel__logo" aria-hidden="true">
+              <ion-icon name="snow-outline"></ion-icon>
+            </span>
+            <div>
+              <p class="cd-panel__marca">Cold Day · Ops</p>
+              <p class="cd-panel__rol">Panel de operaciones</p>
+            </div>
+          </div>
+          <span class="cd-chip cd-chip--activo">Cliente</span>
+        </div>
         <div class="cd-hero">
           <p class="cd-eyebrow">Panel del cliente</p>
           <h1 class="cd-headline" data-testid="panel-saludo">Hola, {{ nombre() }}</h1>
@@ -147,9 +159,9 @@ import { MobileToastService } from '../../core/toast.service';
             </span>
             <span class="cd-metrica__rotulo">Servicios concluidos</span>
           </article>
-          <article class="cd-metrica">
-            <span class="cd-metrica__valor">90 días</span>
-            <span class="cd-metrica__rotulo">Garantía certificada</span>
+          <article class="cd-metrica cd-metrica--aviso">
+            <span class="cd-metrica__valor" data-testid="panel-total-sin-tecnico">{{ sinTecnico() }}</span>
+            <span class="cd-metrica__rotulo">Sin técnico</span>
           </article>
         </section>
 
@@ -183,14 +195,19 @@ import { MobileToastService } from '../../core/toast.service';
             <ion-card class="cd-ot" data-testid="panel-ot">
               <ion-card-content>
                 <div class="cd-ot__cabecera">
-                  <span class="cd-ot__codigo" data-testid="panel-ot-codigo">
-                    {{ ot.codigo || 'Sin código' }}
+                  <span class="cd-ot__icono" aria-hidden="true">
+                    <ion-icon [name]="iconoCategoria(ot)"></ion-icon>
                   </span>
+                  <div class="cd-ot__titulos">
+                    <span class="cd-ot__codigo" data-testid="panel-ot-codigo">
+                      {{ ot.codigo || 'Sin código' }}
+                    </span>
+                    <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
+                  </div>
                   <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{
                     etiqueta(ot.estado)
                   }}</span>
                 </div>
-                <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
                 <p class="cd-ot__descripcion">{{ ot.descripcionFalla }}</p>
                 <div class="cd-ot__pie">
                   <span class="cd-ot__direccion">
@@ -250,6 +267,11 @@ export class PanelClientePage {
   protected readonly activas = computed(() => contarOtsActivas(this.ots()));
   protected readonly finalizadas = computed(() => contarOtsFinalizadas(this.ots()));
 
+  /** Órdenes abiertas sin técnico asignado (la métrica amber de Stitch). */
+  protected readonly sinTecnico = computed(
+    () => this.ots().filter((o) => !o.tecnicoId && o.estado !== 'CANCELADA').length,
+  );
+
   /** El JWT real no emite `nombre`: una sesión sin nombre se saluda por su rol. */
   protected readonly nombre = computed(() => this.auth.currentUser()?.nombre || 'Cliente');
 
@@ -273,6 +295,24 @@ export class PanelClientePage {
   /** La categoría viene como enum del backend: se muestra legible, sin guiones bajos. */
   protected categoria(ot: OtResponse): string {
     return ot.categoriaServicio.replaceAll('_', ' ');
+  }
+
+  /** Ícono del tile por categoría (ionicons ya registrados en main.ts). */
+  protected iconoCategoria(ot: OtResponse): string {
+    switch (ot.categoriaServicio) {
+      case 'AIRE_ACONDICIONADO':
+        return 'snow-outline';
+      case 'REFRIGERACION':
+        return 'thermometer-outline';
+      case 'LAVADORAS':
+        return 'water-outline';
+      case 'ELECTRICIDAD':
+        return 'flash-outline';
+      case 'CAMARAS_VIGILANCIA':
+        return 'videocam-outline';
+      default:
+        return 'build-outline';
+    }
   }
 
   protected cambiarFiltro(evento: SegmentCustomEvent): void {
