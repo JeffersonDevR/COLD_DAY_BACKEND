@@ -31,7 +31,8 @@ import {
 import { CategoriaServicio, Point, TipoCliente } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
 import { ClientesApi } from '@core/service/clientes-api';
-import { GeolocationService, mensajeErrorGeolocation } from '@core/service/geolocation.service';
+import { mensajeErrorGeolocation } from '@core/service/geolocation.service';
+import { MobileGeolocationService } from '../../core/geolocation-native';
 import { CIUDAD_OPERACION, MapaConfigService } from '@core/service/mapa-config.service';
 import { MapsApi } from '@core/service/maps-api';
 import { SolicitudDraftService } from '@core/service/solicitud-draft.service';
@@ -298,7 +299,22 @@ const MSG_FALTA_UBICACION =
             actual. El mapa con pin arrastrable llega en la próxima entrega.
           </p>
 
-          <p class="cd-coordenadas" data-testid="coordenadas">{{ textoCoordenadas() }}</p>
+          @if (coordenadas()) {
+            <div class="cd-ubicacion-confirmada" data-testid="ubicacion-confirmada">
+              <ion-icon name="checkmark-circle" aria-hidden="true"></ion-icon>
+              <div class="cd-ubicacion-confirmada__datos">
+                <p class="cd-ubicacion-confirmada__titulo">Ubicación confirmada</p>
+                <p class="cd-ubicacion-confirmada__texto">
+                  {{ solicitudForm.controls.direccion.value }}
+                </p>
+                <p class="cd-ubicacion-confirmada__coords" data-testid="coordenadas">
+                  {{ textoCoordenadas() }}
+                </p>
+              </div>
+            </div>
+          } @else {
+            <p class="cd-ayuda">Todavía no fijaste el punto exacto del servicio.</p>
+          }
         </fieldset>
 
         <p class="cd-ayuda">
@@ -328,7 +344,7 @@ export class SolicitarServicioPage {
   private readonly clientesApi = inject(ClientesApi);
   private readonly auth = inject(AuthService);
   private readonly mapsApi = inject(MapsApi);
-  private readonly geolocation = inject(GeolocationService);
+  private readonly geolocation = inject(MobileGeolocationService);
   private readonly mapaConfig = inject(MapaConfigService);
   private readonly draftService = inject(SolicitudDraftService);
   private readonly toast = inject(MobileToastService);

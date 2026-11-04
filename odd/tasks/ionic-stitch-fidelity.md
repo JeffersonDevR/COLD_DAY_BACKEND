@@ -344,3 +344,14 @@ One-character drift in `--cd-surface` (`styles.css:21`). **Fix:** `#111b2e`. Sim
 
 ## Bottom line
 The app is **functionally faithful** (real auth, real OTs, honest error/empty states, draft persistence, dual-role handled) but **visually not the Dark Ops design** — and it isn't close by accident: **one root-cause cascade bug** (RC-1) de-brands every screen, and the rest is missing Stitch components (chrome, glow CTAs, icon tiles, Urgente FAB, fixed CTAs, mono labels) plus two self-inflicted gaps (unregistered icons, fonts never loaded). Fix RC-1 → RC-3 → RC-4 → RC-6 and re-audit A1/A2 for **CLOSE**; A3/A4/A5 need the structural rebuilds listed above before they can claim anything but **OFF-BRAND**.
+
+## Estado de implementación (actualizado 2026-11-04)
+Implementado: RC-1..RC-4 y RC-6 (`3f83991`), chrome y card de A1/A2, identidad/tiles/métrica amber/filtros en A4, rebuild de A3 con avatar y tarjetas de modo, safe-area de headers planos, foco/invalid de inputs, card de ubicación de A5, quitar el scroll horizontal y la CTA fija de A5 (parcial).
+
+### Decisiones de omisión (deliberadas, no defectos)
+- **A4 — FAB "Urgente" y bloque "Diagnóstico rápido"**: no se implementan porque no existe flujo de urgencia ni autodiagnóstico del cliente en el backend. La CTA primaria del hero cubre la acción real ("Pedir un técnico"). Un botón sin flujo sería UI falsa.
+- **A4 — campana de notificaciones**: omitida mientras no exista centro de notificaciones. El punto ámbar de Stitch no se simula.
+- **Tab bar — IA de 3 tabs** (Panel/Equipos/Cuenta · Radar/Mis OTs/Liquidaciones/Cuenta · Insumos/Documentos/Cuenta): se mantiene la de 3–4 por modo. La de 5 de Stitch incluye "Urgente" y "Solicitudes" sin flujo propio en la app; adoptarla requeriría producto nuevo.
+- **A5 — mapa interactivo con pin**: descopeado a P3 (mapas nativos / key por plataforma). Hoy la dirección se geocodifica por el proxy o se toma del GPS, con card de confirmación.
+- **A3 — "Agregar perfil"**: se muestra como bloque informativo, no como botones: el alta de perfil secundario no tiene pantalla móvil todavía.
+- **Logo**: se mantiene el SVG propio (el asset de Stitch es un raster alojado en `aida`, no licenciado para el repo).

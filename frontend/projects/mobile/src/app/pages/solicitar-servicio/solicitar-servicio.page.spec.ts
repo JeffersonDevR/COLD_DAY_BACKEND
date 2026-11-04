@@ -9,7 +9,7 @@ import { MENSAJE_PERFIL_CLIENTE_YA_EXISTE } from '@core/errorStatus/perfil-clien
 import { CategoriaServicio, OtResponse, Point } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
 import { ClientesApi } from '@core/service/clientes-api';
-import { GeolocationService } from '@core/service/geolocation.service';
+import { MobileGeolocationService } from '../../core/geolocation-native';
 import { MapaConfigService } from '@core/service/mapa-config.service';
 import { MapsApi } from '@core/service/maps-api';
 import { SolicitudDraftService } from '@core/service/solicitud-draft.service';
@@ -104,7 +104,7 @@ function setup(
       provideRouter([]),
       { provide: ClientesApi, useValue: clientesApi },
       { provide: MapsApi, useValue: mapsApi },
-      { provide: GeolocationService, useValue: geolocation },
+      { provide: MobileGeolocationService, useValue: geolocation },
       { provide: MapaConfigService, useValue: mapaConfig },
       { provide: AuthService, useValue: auth },
       { provide: MobileToastService, useValue: toast },

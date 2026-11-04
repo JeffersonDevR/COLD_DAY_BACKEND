@@ -174,6 +174,16 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 - Nota: `getMisOts`/`getOfertasParaTecnico` resuelven el técnico desde el principal; el `tecnicoId` solo se usa en modo mock.
 - Pendiente: el radar móvil no dibuja el mapa del radar (llega con la pasada de fidelidad/P3); la ejecución no permite pedir insumos por separado del diagnóstico (van juntos en el mismo formulario).
 
+#### P3 — avance (2026-11-04)
+- [x] **Ciclo de vida nativo**: `VISIBILITY_SOURCE` en core con fuente web por defecto; la app móvil la provee desde `App.addListener('appStateChange')` (+ fallback a `document` en `ng serve mobile`). Polls, GPS y refrescos ahora se detienen de verdad cuando la app pasa a segundo plano en el dispositivo.
+- [x] **Geolocalización nativa**: `@capacitor/geolocation` con pedido de permiso y mensaje honesto si se deniega; A5 la usa y en web cae al navegador con el mismo contrato `Observable<Point>`.
+- [x] Plugins instalados: `@capacitor/app`, `@capacitor/geolocation`, `@capacitor/preferences` (este último queda listo para token seguro).
+- [ ] **Token seguro**: migrar `TokenStorageService` (hoy `localStorage`) a Preferences/almacenamiento seguro. Requiere refactor async del arranque de sesión.
+- [ ] **Push real (FCM)**: adapter del `NotificacionPushPort`, endpoint de device tokens, permiso y deep link. Requiere proyecto Firebase + credenciales.
+- [ ] **Ubicación en background**: plugin de background geolocation + foreground service (Android) / background modes (iOS). Requiere `android/` y prueba en dispositivo.
+- [ ] **Mapas nativos** (SDK por plataforma) y **deep links** (App Links/Universal Links): requieren claves y configuración de plataforma.
+- [ ] **Cámara/uploads**: depende de la decisión de storage (presigned); el backend sigue metadata-only.
+
 ## Fotos de evidencia (decisión de backend, no de migración)
 El backend es metadata-only. Implementación recomendada cuando se decida:
 1. `POST /api/ot/{id}/evidencias/presign` → autoriza por participación, valida mime/tamaño y devuelve URL firmada de PUT (TTL 60–120 s) para `ots/{otId}/{uuid}.ext`.
