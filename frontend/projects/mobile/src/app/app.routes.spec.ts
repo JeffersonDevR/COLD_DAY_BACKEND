@@ -83,14 +83,17 @@ describe('mobile routes', () => {
     // A7 hangs off the OT branch: ot/:id is componentless and its children
     // stack in the same outlet as the follow-up screen.
     expect(ot?.loadComponent).toBeUndefined();
-    expect(ot?.children?.map((child) => child.path)).toEqual(['', 'diagnostico']);
+    // A8 landed: its route hangs off the same branch. A9 does not exist yet.
+    expect(ot?.children?.map((child) => child.path)).toEqual(['', 'diagnostico', 'pago']);
 
     const diagnostico = ot?.children?.find((child) => child.path === 'diagnostico');
     expect(diagnostico?.loadComponent).toBeTypeOf('function');
 
-    // A8/A9 do not exist yet: their routes land in a later delivery.
+    const pago = ot?.children?.find((child) => child.path === 'pago');
+    expect(pago?.loadComponent).toBeTypeOf('function');
+
+    // A9 does not exist yet: its route lands in a later delivery.
     const hijas = (cliente?.children ?? []).map((child) => child.path);
-    expect(hijas).not.toContain('ot/:id/pago');
     expect(hijas).not.toContain('ot/:id/calificar');
   });
 

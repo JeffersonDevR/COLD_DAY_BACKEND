@@ -39,6 +39,8 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   /\/api\/ot\/[^/]+\/tecnico-ubicacion$/,
   /\/api\/ot\/[^/]+\/cancelar$/,
   /\/api\/ot\/[^/]+\/pagar-visita$/,
+  // A8 — the acta screen is the only voice (its 400/409/403 copy is the page's).
+  /\/api\/ot\/[^/]+\/acta$/,
   /\/api\/disputas\/ot\/[^/]+$/,
   /\/api\/sse\/ticket$/,
   // Maps: `MapsApi` resuelve con fallback local o `null`, y la pantalla cuenta

@@ -21,6 +21,7 @@ import {
   compassOutline,
   construct,
   constructOutline,
+  createOutline,
   cube,
   cubeOutline,
   documentText,
@@ -57,6 +58,7 @@ import {
   thumbsDownOutline,
   thumbsUpOutline,
   timeOutline,
+  trashOutline,
   walletOutline,
   waterOutline,
 } from 'ionicons/icons';
@@ -88,6 +90,7 @@ addIcons({
   compassOutline,
   construct,
   constructOutline,
+  createOutline,
   cube,
   cubeOutline,
   documentText,
@@ -124,6 +127,7 @@ addIcons({
   thumbsDownOutline,
   thumbsUpOutline,
   timeOutline,
+  trashOutline,
   walletOutline,
   waterOutline,
 });

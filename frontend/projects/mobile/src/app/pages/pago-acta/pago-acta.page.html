@@ -1,0 +1,250 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button
+        [defaultHref]="backHref()"
+        text=""
+        aria-label="Volver a la orden"
+      ></ion-back-button>
+    </ion-buttons>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Pago y acta de garantía</p>
+      @if (ot(); as orden) {
+        <div class="cd-ot-head">
+          <h1 class="cd-headline cd-ot-head__codigo" data-testid="ot-codigo">
+            {{ orden.codigo || 'Orden de trabajo' }}
+          </h1>
+          <span
+            class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}"
+            data-testid="ot-estado"
+          >{{ etiquetaEstado(orden.estado) }}</span>
+        </div>
+        <p class="cd-hero__nota">
+          Certificación de entrega a satisfacción con 90 días de amparo
+        </p>
+      } @else {
+        <h1 class="cd-headline cd-ot-head__codigo">Pago y acta de garantía</h1>
+      }
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- The load is never invisible: either content, or an error with Retry. -->
+  @if (cargandoInicial()) {
+    <div class="cd-cargando" data-testid="ot-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando la orden…</p>
+    </div>
+  }
+
+  @if (otErrorCarga(); as errorCarga) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
+      <p class="cd-alerta__texto">{{ errorCarga }}</p>
+      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (ot(); as orden) {
+    <!-- The acta is registerable only once the service is FINALIZADA. -->
+    @if (!esFinalizada()) {
+      <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="acta-no-finalizada">
+        <h2 class="cd-alerta__titulo">El acta se registra al finalizar el servicio</h2>
+        <p class="cd-alerta__texto">
+          La orden está en estado {{ etiquetaEstado(orden.estado) }}. Cuando el técnico
+          cierre el servicio vas a poder firmar el acta desde acá; hasta entonces
+          el botón queda deshabilitado.
+        </p>
+      </section>
+    }
+
+    <!-- Acta de garantía: document and digital signature -->
+    <ion-card class="cd-acta">
+      <ion-card-content>
+        <div class="cd-acta__encabezado">
+          <div class="cd-acta__marca">
+            <span class="cd-acta__icono" aria-hidden="true">
+              <ion-icon name="shield-checkmark-outline"></ion-icon>
+            </span>
+            <div>
+              <h2 class="cd-acta__empresa">COLD DAY S.A.S.</h2>
+              <p class="cd-acta__nit">NIT 901.849.201-4 • Cúcuta, N. de S.</p>
+            </div>
+          </div>
+          <span class="cd-chip cd-chip--ok">Garantía 90 días</span>
+        </div>
+
+        <!-- Legal clause, verbatim from the web acta -->
+        <div class="cd-acta__clausula" data-testid="acta-clausula">
+          <p>
+            <strong>ACTA DE CONFORMIDAD Y SERVICIO:</strong> Se certifica que el técnico
+            <strong>{{ orden.tecnicoNombre || 'a cargo' }}</strong> ha ejecutado a
+            conformidad el servicio de {{ categoriaLabel() }} en el inmueble ubicado en
+            <strong>{{ orden.direccion }}</strong>
+            ({{ orden.barrio || 'Cúcuta' }}).
+          </p>
+          <p>
+            La labor y repuestos homologados cuentan con una cobertura legal y
+            operativa de <strong>90 días calendario</strong> a partir de la fecha de
+            suscripción del presente documento, amparada por la póliza y auditoría de
+            COLD DAY S.A.S.
+          </p>
+        </div>
+
+        <!-- Digital signature (Pointer Events) -->
+        <div class="cd-firma">
+          <div class="cd-firma__cabecera">
+            <span class="cd-firma__label" id="firma-label">
+              Firma digital de conformidad del cliente *
+            </span>
+            <ion-button
+              fill="clear"
+              size="small"
+              color="medium"
+              data-testid="limpiar-firma"
+              aria-label="Limpiar firma"
+              (click)="limpiarFirma()"
+            >
+              <ion-icon slot="start" name="trash-outline" aria-hidden="true"></ion-icon>
+              Limpiar firma
+            </ion-button>
+          </div>
+
+          <div class="cd-firma__lienzo">
+            <canvas
+              #signatureCanvas
+              width="480"
+              height="140"
+              class="cd-firma__canvas"
+              role="img"
+              aria-labelledby="firma-label"
+              data-testid="firma-canvas"
+              (pointerdown)="startDrawing($event)"
+              (pointermove)="draw($event)"
+              (pointerup)="stopDrawing()"
+              (pointercancel)="stopDrawing()"
+              (pointerleave)="stopDrawing()"
+            ></canvas>
+            @if (!hasFirma()) {
+              <div class="cd-firma__placeholder" aria-hidden="true">
+                Dibujá tu firma acá con el dedo
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Acta CTA: enabled only with a stroke, no request in flight, no acta yet and FINALIZADA -->
+        <div class="cd-acta__acciones">
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            data-testid="registrar-acta"
+            [disabled]="!hasFirma() || guardando() || !!acta() || !esFinalizada()"
+            (click)="registrarActa()"
+          >
+            @if (guardando()) {
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              Registrando el acta…
+            } @else if (acta()) {
+              <ion-icon slot="start" name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+              Acta registrada
+            } @else {
+              <ion-icon slot="start" name="create-outline" aria-hidden="true"></ion-icon>
+              Registrar acta de garantía
+            }
+          </ion-button>
+          @if (acta(); as actaFirmada) {
+            <p class="cd-acta__codigo" data-testid="acta-codigo" role="status">
+              Acta registrada. Código de verificación:
+              <strong>{{ actaFirmada.codigoVerificacion }}</strong>
+            </p>
+          } @else {
+            <p class="cd-muted cd-acta__sin-firma">
+              Sin firmar — aún no hay acta registrada
+            </p>
+          }
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Liquidación del pago: read-only amounts -->
+    <ion-card class="cd-liquidacion">
+      <ion-card-content>
+        <h2 class="cd-card__titulo">Liquidación del pago</h2>
+
+        <div class="cd-desglose">
+          <div class="cd-desglose__fila cd-desglose__fila--visita">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Visita y diagnóstico</span>
+              <p class="cd-desglose__nota">El cargo de visita se confirma con el técnico</p>
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-visita">{{ visitaLabel() }}</span>
+          </div>
+
+          @if (visitaPendienteDePago()) {
+            <p class="cd-desglose__nota cd-desglose__nota--aviso cd-visita-linea">
+              Visita pendiente de pago: el técnico no puede iniciar el desplazamiento
+              hasta que se registre.
+            </p>
+          } @else if (visitaPagada()) {
+            <p class="cd-desglose__nota cd-desglose__nota--ok cd-visita-linea">
+              Visita pagada: el técnico ya puede iniciar el desplazamiento.
+            </p>
+          }
+
+          <div class="cd-desglose__fila">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Mano de obra certificada</span>
+              @if (manoObra() === null) {
+                <p class="cd-desglose__nota" data-testid="presupuesto-pendiente">
+                  El técnico todavía no cargó el presupuesto
+                </p>
+              }
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-mano-obra">{{ manoObraLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__fila">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Repuestos y materiales</span>
+              <p class="cd-desglose__nota">Repuestos declarados por el técnico</p>
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-repuestos">{{ repuestosLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__total">
+            <span>Total a pagar</span>
+            <strong data-testid="costo-total">{{ formatoTotal(totalMonto()) }}</strong>
+          </div>
+        </div>
+
+        @if (!orden.presupuesto) {
+          <p class="cd-desglose__nota cd-presupuesto-nota">
+            Sin presupuesto registrado: el técnico todavía no cargó los montos del servicio.
+          </p>
+        }
+
+        <!-- Commission split (transparency) -->
+        <div class="cd-comision" aria-label="Retención de comisión de plataforma">
+          <div class="cd-comision__fila">
+            <span>Comisión COLD DAY ({{ comisionPorcentaje }}%):</span>
+            <span data-testid="comision-plataforma">$ {{ comisionMonto().toLocaleString('es-CO') }}</span>
+          </div>
+          <div class="cd-comision__fila">
+            <span>Monto líquido técnico ({{ liquidoPorcentaje }}%):</span>
+            <span data-testid="liquido-tecnico">$ {{ liquidoTecnicoMonto().toLocaleString('es-CO') }}</span>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  }
+
+  <ion-button expand="block" fill="outline" class="cd-volver" data-testid="volver-ot" (click)="volver()">
+    <ion-icon slot="start" name="arrow-back-outline" aria-hidden="true"></ion-icon>
+    Volver al seguimiento de la OT
+  </ion-button>
+</ion-content>
