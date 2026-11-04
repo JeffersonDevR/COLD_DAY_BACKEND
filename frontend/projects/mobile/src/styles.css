@@ -2469,6 +2469,120 @@ ion-header:not(.cd-header) {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Campos con cuerpo (Stitch): fondo canvas, borde, radio 8 y altura táctil. */
+.cd-form ion-item {
+  --background: #0b1220;
+  --min-height: 48px;
+  --padding-start: 0.75rem;
+  --inner-padding-end: 0.5rem;
+  --padding-top: 0.3rem;
+  --padding-bottom: 0.3rem;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: 8px;
+  margin-bottom: 0.55rem;
+  overflow: hidden;
+}
+
+.cd-form ion-item ion-icon[slot='start'] {
+  color: var(--cd-muted);
+  font-size: 1.1rem;
+  margin-inline-end: 0.5rem;
+}
+
+.cd-form ion-input,
+.cd-form ion-select,
+.cd-form ion-textarea {
+  font-size: 0.85rem;
+}
+
+.cd-form .label-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-form ion-item ion-button[slot='end'] {
+  margin-inline-end: -0.35rem;
+}
+
+/* Responsive: ningún control de Ionic puede forzar min-content más ancho que
+   la pantalla (grid items con min-width:auto desbordaban a 1317 px en registro). */
+ion-list,
+ion-item,
+ion-input,
+ion-textarea,
+ion-select,
+ion-card,
+ion-card-content,
+form {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cd-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.cd-auth__form > * {
+  min-width: 0;
+}
+
+/* A4: tres métricas y filtros deben caber en 360–390 px, nunca empujar el ancho. */
+.cd-metricas {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cd-metrica {
+  min-width: 0;
+}
+
+.cd-filtros {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.cd-filtros ion-segment-button {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+/* El CTA usa las variables de Ionic, no solo `background` en el host. */
+.cd-cta {
+  --background: var(--ion-color-primary);
+  --color: #042f2e;
+  --box-shadow: none;
+}
+
+/* A2/A3: la barra de navegación no debe comprimir el chip de estado. */
+.cd-auth__bar--nav {
+  grid-template-columns: auto 1fr auto;
+}
+
+/* A3: tarjetas de modo con contenido que puede encogerse. */
+.cd-modo {
+  min-width: 0;
+}
+
+.cd-modo__texto {
+  min-width: 0;
+}
+
+.cd-modo__nombre,
+.cd-modo__nota {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cd-modo__pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .cd-form ion-item.item-has-focus {
   --border-color: var(--ion-color-primary);
   border-radius: 8px;
