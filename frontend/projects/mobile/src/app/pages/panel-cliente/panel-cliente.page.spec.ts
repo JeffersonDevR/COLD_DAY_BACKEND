@@ -176,6 +176,19 @@ describe('PanelClientePage móvil', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="panel-vacio"]')).not.toBeNull();
   });
 
+  it('cada OT ofrece el acceso al seguimiento (A6)', () => {
+    const { fixture, navigate } = setup(vi.fn(() => of(otsDeEjemplo())));
+
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('[data-testid="panel-ot-ver"]'),
+    ) as HTMLElement[];
+    expect(enlaces).toHaveLength(2);
+
+    enlaces[0].click();
+
+    expect(navigate).toHaveBeenCalledWith('/cliente/ot/en-camino');
+  });
+
   it('un fallo de carga inicial muestra el error con Reintentar y no una lista vacía', () => {
     const getOts = vi.fn(() => throwError(() => new ApiHttpError('boom', 500)));
     const { fixture, page } = setup(getOts);

@@ -595,9 +595,8 @@ export class SolicitarServicioPage {
             'Solicitud creada',
             `OT ${nuevaOt.codigo || 'Sin código'} transmitida por broadcast (${this.radioInicialKm()} km)`,
           );
-          // El seguimiento de la OT (A6) llega en P2.2: por ahora se vuelve al
-          // panel, donde la orden ya aparece en la lista.
-          void this.router.navigateByUrl('/cliente/panel');
+          // A6: el cliente aterriza en el seguimiento de la OT que acaba de crear.
+          void this.router.navigateByUrl(`/cliente/ot/${nuevaOt.id}`);
         },
         error: (err: unknown) => {
           this.loading.set(false);

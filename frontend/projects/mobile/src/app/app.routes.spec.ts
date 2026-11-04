@@ -66,6 +66,19 @@ describe('mobile routes', () => {
     expect(MODOS.CLIENTE.tabs.map((tab) => tab.id)).not.toContain('solicitar');
   });
 
+  it('abre el seguimiento de la OT bajo el modo cliente, sin tab propio', () => {
+    const cliente = routes.find((item) => item.path === 'cliente');
+    const seguimiento = cliente?.children?.find((child) => child.path === 'ot/:id');
+
+    expect(seguimiento?.loadComponent).toBeTypeOf('function');
+    expect(MODOS.CLIENTE.tabs.map((tab) => tab.id)).not.toContain('ot');
+    // A7/A8/A9 todavía no existen: sus rutas llegan en la próxima entrega.
+    const hijas = (cliente?.children ?? []).map((child) => child.path);
+    expect(hijas).not.toContain('ot/:id/diagnostico');
+    expect(hijas).not.toContain('ot/:id/pago');
+    expect(hijas).not.toContain('ot/:id/calificar');
+  });
+
   it('el panel del cliente tiene pantalla propia, no el placeholder compartido', () => {
     const cliente = routes.find((item) => item.path === 'cliente');
     const panel = cliente?.children?.find((child) => child.path === 'panel');

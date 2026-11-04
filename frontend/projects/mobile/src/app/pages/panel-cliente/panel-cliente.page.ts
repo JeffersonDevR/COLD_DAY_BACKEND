@@ -23,6 +23,7 @@ import { mensajeErrorAccion, sesionYaNotificada } from '@core/alertas/mensaje-er
 import { esErrorPerfilClienteFaltante } from '@core/errorStatus/perfil-cliente';
 import { EstadoOt, OtResponse } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
+import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { ClientesApi } from '@core/service/clientes-api';
 import {
   FiltroOts,
@@ -34,37 +35,6 @@ import {
 } from '@core/service/ots-cliente';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { MobileToastService } from '../../core/toast.service';
-
-/** Etiqueta del estado de la OT, la misma que usa la web. */
-const ETIQUETA_ESTADO: Readonly<Record<EstadoOt, string>> = {
-  SOLICITADA: 'Solicitada',
-  BUSCANDO_TECNICO: 'Buscando técnico',
-  ASIGNADA: 'Asignada',
-  EN_CAMINO: 'En camino',
-  EN_DIAGNOSTICO: 'En diagnóstico',
-  EN_REPARACION: 'En reparación',
-  FINALIZADA: 'Finalizada',
-  CANCELADA: 'Cancelada',
-  SIN_TECNICOS_DISPONIBLES: 'Sin técnicos',
-  DISPUTADA: 'En disputa',
-};
-
-/** Tono del chip de estado: un color por familia, no uno por estado. */
-function tonoEstado(estado: EstadoOt): 'ok' | 'curso' | 'espera' | 'cerrada' {
-  switch (estado) {
-    case 'FINALIZADA':
-      return 'ok';
-    case 'CANCELADA':
-    case 'DISPUTADA':
-    case 'SIN_TECNICOS_DISPONIBLES':
-      return 'cerrada';
-    case 'SOLICITADA':
-    case 'BUSCANDO_TECNICO':
-      return 'espera';
-    default:
-      return 'curso';
-  }
-}
 
 /**
  * A4 — Panel del cliente.
@@ -231,6 +201,17 @@ function tonoEstado(estado: EstadoOt): 'ok' | 'curso' | 'espera' | 'cerrada' {
                     <span class="cd-muted">{{ fecha | date: 'shortTime' }}</span>
                   }
                 </div>
+                <div class="cd-ot__acciones">
+                  <ion-button
+                    size="small"
+                    fill="clear"
+                    data-testid="panel-ot-ver"
+                    (click)="verSeguimiento(ot.id)"
+                  >
+                    Ver seguimiento
+                    <ion-icon slot="end" name="chevron-forward-outline" aria-hidden="true"></ion-icon>
+                  </ion-button>
+                </div>
               </ion-card-content>
             </ion-card>
           }
@@ -282,11 +263,11 @@ export class PanelClientePage {
   }
 
   protected etiqueta(estado: EstadoOt): string {
-    return ETIQUETA_ESTADO[estado];
+    return ETIQUETA_ESTADO_OT[estado];
   }
 
   protected tono(estado: EstadoOt): 'ok' | 'curso' | 'espera' | 'cerrada' {
-    return tonoEstado(estado);
+    return tonoEstadoOt(estado);
   }
 
   /** La categoría viene como enum del backend: se muestra legible, sin guiones bajos. */
@@ -317,6 +298,11 @@ export class PanelClientePage {
    */
   protected verEquipos(): void {
     void this.router.navigateByUrl('/cliente/equipos');
+  }
+
+  /** A6: cada OT del listado abre su seguimiento. */
+  protected verSeguimiento(id: string): void {
+    void this.router.navigateByUrl(`/cliente/ot/${id}`);
   }
 
   /**

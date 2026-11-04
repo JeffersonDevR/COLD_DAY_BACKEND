@@ -125,7 +125,7 @@ describe('mobileErrorInterceptor', () => {
     }
   });
 
-  it('las acciones de A4/A5 con copy propio no reciben un toast genérico', async () => {
+  it('las acciones de A4/A5/A6 con copy propio no reciben un toast genérico', async () => {
     const urls = [
       'http://api.test/api/clientes/me/ots',
       'http://api.test/api/ot',
@@ -133,6 +133,13 @@ describe('mobileErrorInterceptor', () => {
       'http://api.test/api/clientes/me/ubicacion',
       'http://api.test/api/config/maps',
       'http://api.test/api/maps/geocode',
+      // A6 — la pantalla es la única voz de estas rutas.
+      'http://api.test/api/ot/OT-1',
+      'http://api.test/api/ot/OT-1/tecnico-ubicacion',
+      'http://api.test/api/ot/OT-1/cancelar',
+      'http://api.test/api/ot/OT-1/pagar-visita',
+      'http://api.test/api/disputas/ot/OT-1',
+      'http://api.test/api/sse/ticket',
     ];
 
     for (const url of urls) {
@@ -158,8 +165,10 @@ describe('mobileErrorInterceptor', () => {
   });
 
   it('las subrutas hermanas de la OT sí avisan: el silencio no se propaga', async () => {
+    // `iniciar-desplazamiento` es una acción del rol técnico (P2.3): su pantalla
+    // todavía no existe, así que el interceptor es su única voz.
     const { toast } = await run(
-      'http://api.test/api/ot/OT-1/cancelar',
+      'http://api.test/api/ot/OT-1/iniciar-desplazamiento',
       new HttpErrorResponse({ status: 409 }),
     );
 
