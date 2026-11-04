@@ -31,7 +31,8 @@ import {
 import { CategoriaServicio, Point, TipoCliente } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
 import { ClientesApi } from '@core/service/clientes-api';
-import { GeolocationService, mensajeErrorGeolocation } from '@core/service/geolocation.service';
+import { mensajeErrorGeolocation } from '@core/service/geolocation.service';
+import { MobileGeolocationService } from '../../core/geolocation-native';
 import { CIUDAD_OPERACION, MapaConfigService } from '@core/service/mapa-config.service';
 import { MapsApi } from '@core/service/maps-api';
 import { SolicitudDraftService } from '@core/service/solicitud-draft.service';
@@ -343,7 +344,7 @@ export class SolicitarServicioPage {
   private readonly clientesApi = inject(ClientesApi);
   private readonly auth = inject(AuthService);
   private readonly mapsApi = inject(MapsApi);
-  private readonly geolocation = inject(GeolocationService);
+  private readonly geolocation = inject(MobileGeolocationService);
   private readonly mapaConfig = inject(MapaConfigService);
   private readonly draftService = inject(SolicitudDraftService);
   private readonly toast = inject(MobileToastService);

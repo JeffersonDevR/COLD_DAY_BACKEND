@@ -10,10 +10,12 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
 import { authInterceptor } from '@core/interceptos/auth.interceptor';
 import { API_ORIGIN } from '@core/service/api.config';
 import { API_ORIGIN as API_ORIGIN_GENERADO } from '@core/environment/api-origin';
+import { VISIBILITY_SOURCE } from '@core/service/visible-tab-polling';
 import { provideColombianLocale } from '@core/i18n/locale';
 import { routes } from './app.routes';
 import { mobileErrorInterceptor } from './core/mobile-error.interceptor';
 import { provideAvisoSesion } from './core/toast.service';
+import { visibilidadMovil } from './core/app-visibility';
 
 /**
  * Providers de la app móvil.
@@ -33,6 +35,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(withInterceptors([authInterceptor, mobileErrorInterceptor])),
     { provide: API_ORIGIN, useValue: API_ORIGIN_GENERADO },
+    // En nativo la visibilidad sale del ciclo de vida del sistema, no del WebView.
+    { provide: VISIBILITY_SOURCE, useFactory: visibilidadMovil },
     provideColombianLocale(),
     provideAvisoSesion(),
   ],
