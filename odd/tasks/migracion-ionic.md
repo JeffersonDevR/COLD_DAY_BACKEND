@@ -97,7 +97,7 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
 
 ### P2 — Pantallas de negocio (3 entregas encadenadas)
 - [ ] **P2.1 Auth + cliente:** A1 ✅, A2 ✅ (P2.1a); A4 ✅, A5 ✅ (P2.1b).
-- [ ] **P2.2 Cliente profundo:** A6 (SSE + mapa + poll gated), A7, A8, A9.
+- [ ] **P2.2 Cliente profundo:** A6 (SSE + mapa + poll gated) y A7 entregados (`fb18f74`, `d469129`); A8 entregado (`58ab9b1`); **A9 pendiente**.
 - [ ] **P2.3 Técnico + proveedor:** B1, B2, B3, B4, C1, C2.
 - [ ] Cada entrega: specs de componente/servicio, y prueba manual en dispositivo.
 
@@ -130,6 +130,15 @@ La decisión de "app nueva + core compartido" se mantiene, pero **sin librería 
   - El interceptor móvil se calla en `POST /api/ot`, `POST /api/clientes/perfil`, `GET /api/clientes/me/ots`, `/api/maps/*` y el ping de ubicación: la pantalla es la única voz. Un 401 con sesión activa sigue avisando una vez y cerrando sesión.
   - El copy compartido del panel pasa a voseo, así que la web también lo muestra.
 - Pendiente de esta entrega: prueba manual en emulador —permiso de geolocalización del WebView y ausencia de mapa— (misma limitación de runtime que P1).
+
+#### P2.2 (en curso) — A6/A7/A8 entregados, A9 pendiente
+- [x] A6 `/cliente/ot/:id` (SSE + mapa + poll gated) — `fb18f74`.
+- [x] A7 `/cliente/ot/:id/diagnostico` (respuesta del cliente al presupuesto) — `d469129`.
+- [x] A8 `/cliente/ot/:id/pago` — `58ab9b1`. Sin selector de medio de pago (ningún endpoint lo recibe); CTA "Registrar acta de garantía" deshabilitado sin trazo y mientras la OT no esté FINALIZADA (banner lo explica; el servidor sigue mandando: FINALIZADA o 409); montos read-only con formato es-CO y split de comisión 15/85 desde una constante compartida del core (`COMISION_PLATAFORMA_RATE`, espejo de `environment.commissionRate` y de `app.liquidacion.comision-porcentaje`) para no arrastrar la key de Google Maps al bundle nativo; canvas 480×140 con Pointer Events; éxito solo con `codigoVerificacion` del servidor; 409/400/403 con copy propia; la firma dibujada sobrevive a un fallo del registro.
+- Verificación (A8): `npx ng build mobile` → exit 0 y 0 coincidencias de `primeng|MessageService` en `dist/mobile`; `npm run mobile:test -- --watch=false` → 13 archivos / 192 tests / 0; `npx ng test app --watch=false` → 83 / 890 / 0; `tsc --noEmit` móvil y web → 0; `npm run lint` → solo los 8 errores web preexistentes, móvil limpio.
+- Diferencias deliberadas con la web (A8): sin selector de medio de pago; la visita no se consulta (fila "Por confirmar", misma convención que A7); el CTA se deshabilita antes de FINALIZADA en vez de enseñar con el 409; la cláusula legal se conserva verbatim de la web; la visita pagada/pendiente se muestra como nota (bloqueo real: servidor, 409).
+- Hallazgo (A8): el web reseteaba `guardando` en `complete`, así que un error de red dejaba el botón deshabilitado para siempre; el móvil lo resetea en `finalize`. Candidato a backport en `pago-acta-page` web.
+- Pendiente de esta entrega: prueba manual en emulador (misma limitación de runtime que P1); A9 (calificar) y el cierre de P2.2.
 
 ### P3 — Capacidades nativas (lo que la web no puede dar)
 - [ ] **Token seguro:** `localStorage` → Capacitor Preferences (o Secure Storage).
