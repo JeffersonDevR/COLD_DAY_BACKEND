@@ -12,13 +12,13 @@ import { GoogleMap, MapMarker, MapPolyline } from '@angular/google-maps';
 import { GoogleMapsLoaderService } from '../../core/service/google-maps-loader';
 import { MapaConfigService } from '../../core/service/mapa-config.service';
 import { rutaLocal } from '../../core/service/distancia-local';
-import { decodificarRuta } from './polyline-ruta';
+import { decodificarRuta } from '../../core/service/polyline-ruta';
 import { Point } from '../../core/models/common.models';
 import {
-  MAPA_ESTILOS,
   MARCADOR_CLIENTE_OPCIONES,
   MARCADOR_TECNICO_OPCIONES,
 } from '../mapa-radar/mapa-radar';
+import { MAPA_ESTILOS } from '../../core/service/mapa-estilos';
 
 /**
  * Mapa de seguimiento: dónde está el técnico y hacia dónde va.
