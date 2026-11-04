@@ -298,7 +298,22 @@ const MSG_FALTA_UBICACION =
             actual. El mapa con pin arrastrable llega en la próxima entrega.
           </p>
 
-          <p class="cd-coordenadas" data-testid="coordenadas">{{ textoCoordenadas() }}</p>
+          @if (coordenadas()) {
+            <div class="cd-ubicacion-confirmada" data-testid="ubicacion-confirmada">
+              <ion-icon name="checkmark-circle" aria-hidden="true"></ion-icon>
+              <div class="cd-ubicacion-confirmada__datos">
+                <p class="cd-ubicacion-confirmada__titulo">Ubicación confirmada</p>
+                <p class="cd-ubicacion-confirmada__texto">
+                  {{ solicitudForm.controls.direccion.value }}
+                </p>
+                <p class="cd-ubicacion-confirmada__coords" data-testid="coordenadas">
+                  {{ textoCoordenadas() }}
+                </p>
+              </div>
+            </div>
+          } @else {
+            <p class="cd-ayuda">Todavía no fijaste el punto exacto del servicio.</p>
+          }
         </fieldset>
 
         <p class="cd-ayuda">

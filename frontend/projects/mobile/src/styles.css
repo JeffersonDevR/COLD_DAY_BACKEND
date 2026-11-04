@@ -2462,3 +2462,62 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--cd-muted);
   border: 1px solid var(--cd-surface-border);
 }
+
+/* Cierre de fidelidad: safe-area en headers planos, foco/invalid de inputs y
+   card de ubicación confirmada de A5. */
+ion-header:not(.cd-header) {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.cd-form ion-item.item-has-focus {
+  --border-color: var(--ion-color-primary);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ion-color-primary);
+}
+
+.cd-form ion-item.ion-invalid.ion-touched {
+  --border-color: var(--ion-color-danger);
+  border-radius: 8px;
+}
+
+.cd-ubicacion-confirmada {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-ubicacion-confirmada ion-icon {
+  color: #22c55e;
+  font-size: 1.1rem;
+  margin-top: 0.1rem;
+}
+
+.cd-ubicacion-confirmada__datos {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cd-ubicacion-confirmada__titulo {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.cd-ubicacion-confirmada__texto {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.cd-ubicacion-confirmada__coords {
+  margin: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--cd-muted);
+}
