@@ -66,6 +66,14 @@ const HOJAS_REALES: Readonly<Record<string, () => Promise<Type<unknown>>>> = {
     import('./pages/ofertas-tecnico/ofertas-tecnico.page').then((m) => m.OfertasTecnicoPage),
   'tecnico/ots': () =>
     import('./pages/panel-tecnico/panel-tecnico.page').then((m) => m.PanelTecnicoPageMobile),
+  'proveedor/insumos': () =>
+    import('./pages/solicitudes-proveedor/solicitudes-proveedor.page').then(
+      (m) => m.SolicitudesProveedorPage,
+    ),
+  'proveedor/documentos': () =>
+    import('./pages/documentos-proveedor/documentos-proveedor.page').then(
+      (m) => m.DocumentosProveedorPage,
+    ),
 };
 
 const cargarSolicitar = () =>
@@ -139,6 +147,13 @@ const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
       path: 'ejecucion/:id',
       title: 'Ejecución de la OT · Cold Day',
       loadComponent: cargarEjecucion,
+    },
+    {
+      // B4: perfil, especialidades y documentos del técnico.
+      path: 'perfil',
+      title: 'Mi perfil técnico · Cold Day',
+      loadComponent: () =>
+        import('./pages/perfil-tecnico/perfil-tecnico.page').then((m) => m.PerfilTecnicoPage),
     },
   ],
 };

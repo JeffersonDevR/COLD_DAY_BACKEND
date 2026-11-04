@@ -199,6 +199,10 @@ export class PanelTecnicoPageMobile implements OnInit {
     void this.router.navigate(['/tecnico/radar']);
   }
 
+  irAPerfil(): void {
+    void this.router.navigate(['/tecnico/perfil']);
+  }
+
   abrirOt(otId: string): void {
     void this.router.navigate(['/tecnico/ejecucion', otId]);
   }

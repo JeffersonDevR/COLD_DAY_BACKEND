@@ -1,0 +1,127 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tecnico/ots" text="" aria-label="Volver al panel"></ion-back-button>
+    </ion-buttons>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Mi perfil</p>
+      <h1 class="cd-headline">{{ tecnico()?.nombre || 'Perfil técnico' }}</h1>
+      <p class="cd-hero__nota">Especialidades, validación y documentos</p>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @if (cargando()) {
+    <div class="cd-cargando" data-testid="perfil-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando tu perfil…</p>
+    </div>
+  }
+
+  @if (tecnico(); as t) {
+    <ion-card class="cd-card">
+      <ion-card-content>
+        <div class="cd-ot__cabecera">
+          <h2 class="cd-card__titulo">Validación</h2>
+          <span class="cd-chip cd-chip--{{ tonoValidacion() }}" data-testid="estado-validacion">
+            {{ validacion() }}
+          </span>
+        </div>
+        @if (motivoRechazo(); as motivo) {
+          <p class="cd-alerta__texto" data-testid="motivo-rechazo">{{ motivo }}</p>
+        }
+
+        <dl class="cd-perfil-datos">
+          <div><dt>Correo</dt><dd>{{ t.correo }}</dd></div>
+          @if (t.telefono) {
+            <div><dt>Teléfono</dt><dd>{{ t.telefono }}</dd></div>
+          }
+          @if (t.numeroIdentificacion) {
+            <div><dt>Identificación</dt><dd>{{ t.numeroIdentificacion }}</dd></div>
+          }
+          @if (t.reputacion != null) {
+            <div><dt>Reputación</dt><dd>{{ t.reputacion }} / 5</dd></div>
+          }
+          @if (t.serviciosCompletados != null) {
+            <div><dt>Servicios completados</dt><dd>{{ t.serviciosCompletados }}</dd></div>
+          }
+          @if (t.deudaComisionCop != null) {
+            <div><dt>Deuda de comisión</dt><dd>$ {{ t.deudaComisionCop.toLocaleString('es-CO') }} COP</dd></div>
+          }
+        </dl>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="cd-card">
+      <ion-card-content>
+        <h2 class="cd-card__titulo">Especialidades</h2>
+        <p class="cd-muted">Elegí al menos una. Las ofertas que recibís dependen de esto.</p>
+        <div class="cd-chips">
+          @for (categoria of categorias; track categoria) {
+            <button
+              type="button"
+              class="cd-chip cd-chip--opcion"
+              [class.cd-chip--activo]="estaSeleccionada(categoria)"
+              [attr.aria-pressed]="estaSeleccionada(categoria)"
+              (click)="toggleCategoria(categoria)"
+              [attr.data-testid]="'categoria-' + categoria"
+            >{{ etiquetaCategoria(categoria) }}</button>
+          }
+        </div>
+
+        @if (seleccionVacia()) {
+          <p class="cd-field-error" data-testid="especialidad-error">
+            Necesitás al menos una especialidad para recibir ofertas.
+          </p>
+        }
+
+        <ion-button
+          expand="block"
+          class="cd-cta"
+          [disabled]="seleccionVacia() || guardando() || !hayCambios()"
+          (click)="guardar()"
+          data-testid="guardar-especialidades"
+        >
+          @if (guardando()) {
+            <ion-spinner name="dots"></ion-spinner>
+          } @else {
+            Guardar especialidades
+          }
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <h2 class="cd-section__titulo">Documentos</h2>
+    @if (documentos().length === 0) {
+      <section class="cd-vacio" data-testid="documentos-vacio">
+        <h2 class="cd-vacio__titulo">Sin documentos cargados</h2>
+        <p class="cd-vacio__texto">
+          La carga de documentos se hace desde la web: la app todavía no tiene cámara ni subida de archivos.
+        </p>
+      </section>
+    } @else {
+      @for (documento of documentos(); track documento.id) {
+        <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">
+          <div class="cd-ot__cabecera">
+            <div>
+              <p class="cd-ot__codigo">{{ documento.nombre || etiquetaDocumento(documento.tipo) }}</p>
+              @if (documento.fechaVencimiento) {
+                <p class="cd-ot__categoria">Vence {{ documento.fechaVencimiento }}</p>
+              }
+            </div>
+            <span class="cd-chip cd-chip--{{ tonoDocumento(documento) }}">
+              {{ documento.estadoValidacion }}
+            </span>
+          </div>
+          @if (documento.observaciones) {
+            <p class="cd-ot__descripcion">{{ documento.observaciones }}</p>
+          }
+        </article>
+      }
+    }
+    <p class="cd-ayuda">
+      Para subir o renovar un documento usá la web hasta que la app tenga cámara y subida de archivos.
+    </p>
+  }
+</ion-content>

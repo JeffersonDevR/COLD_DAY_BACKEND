@@ -2095,3 +2095,27 @@ ion-tab-bar ion-tab-button ion-icon {
   align-items: center;
   gap: 0.35rem;
 }
+
+/* B4 — Perfil técnico: pares dato/valor. */
+.cd-perfil-datos {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+}
+
+.cd-perfil-datos > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.82rem;
+}
+
+.cd-perfil-datos dt {
+  color: var(--cd-muted);
+}
+
+.cd-perfil-datos dd {
+  margin: 0;
+  text-align: right;
+  color: var(--ion-text-color);
+}
