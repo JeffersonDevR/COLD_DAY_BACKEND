@@ -309,6 +309,7 @@ const MSG_FALTA_UBICACION =
         <ion-button
           expand="block"
           type="submit"
+          class="cd-cta"
           data-testid="enviar"
           [disabled]="!listoParaEnviar()"
         >

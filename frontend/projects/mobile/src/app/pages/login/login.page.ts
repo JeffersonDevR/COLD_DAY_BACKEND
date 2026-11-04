@@ -98,6 +98,7 @@ const MENSAJES_LOGIN: Record<number, string> = {
           <ion-button
             expand="block"
             type="submit"
+            class="cd-cta"
             data-testid="entrar"
             [disabled]="loginForm.invalid || loading()"
           >

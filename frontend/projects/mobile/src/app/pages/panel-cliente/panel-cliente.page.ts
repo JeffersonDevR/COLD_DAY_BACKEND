@@ -77,7 +77,7 @@ import { MobileToastService } from '../../core/toast.service';
             que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.
           </p>
           <div class="cd-hero__acciones">
-            <ion-button size="small" data-testid="panel-solicitar" (click)="pedirTecnico()">
+            <ion-button class="cd-cta" data-testid="panel-solicitar" (click)="pedirTecnico()">
               <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
               Pedir un técnico
             </ion-button>
