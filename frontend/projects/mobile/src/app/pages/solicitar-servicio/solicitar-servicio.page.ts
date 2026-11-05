@@ -8,7 +8,6 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
-  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
@@ -129,8 +128,7 @@ const MSG_FALTA_UBICACION =
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule,
-    IonBackButton,
-    IonButton,
+      IonButton,
     IonButtons,
     IonContent,
     IonFooter,
@@ -148,20 +146,34 @@ const MSG_FALTA_UBICACION =
     <ion-header class="cd-header">
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button defaultHref="/cliente/panel" text=""></ion-back-button>
+          <ion-button fill="clear" aria-label="Volver" data-testid="volver" (click)="atras()">
+            <ion-icon slot="icon-only" name="arrow-back-outline" aria-hidden="true"></ion-icon>
+          </ion-button>
         </ion-buttons>
-        <ion-title>Solicitar servicio</ion-title>
+        <ion-title>Nueva solicitud</ion-title>
+        <ion-buttons slot="end">
+          <span class="cd-paso__contador" data-testid="paso-contador">
+            Paso {{ paso() }} de {{ totalPasos }}
+          </span>
+        </ion-buttons>
       </ion-toolbar>
+      <div class="cd-paso__pista" aria-hidden="true">
+        @for (n of [1, 2, 3]; track n) {
+          <span class="cd-paso__punto" [class.cd-paso__punto--activo]="n <= paso()"></span>
+        }
+      </div>
     </ion-header>
 
     <ion-content class="ion-padding">
-      <header class="cd-solicitud__intro">
-        <h1 class="cd-headline">¿Qué necesitás arreglar?</h1>
-        <p class="cd-muted">
-          Contanos la falla y dónde es. La orden sale a los técnicos cercanos de Cúcuta
-          ({{ radioInicialKm() }} km) y el primero que acepta la toma.
-        </p>
-      </header>
+      @if (paso() === 1) {
+        <header class="cd-solicitud__intro">
+          <h1 class="cd-headline">¿Dónde es el servicio?</h1>
+          <p class="cd-muted">
+            El técnico necesita el punto exacto. La orden sale a los técnicos cercanos de Cúcuta
+            ({{ radioInicialKm() }} km) y el primero que acepta la toma.
+          </p>
+        </header>
+      }
 
       @if (faltoPerfilCliente()) {
         <section
@@ -265,6 +277,7 @@ const MSG_FALTA_UBICACION =
       }
 
       <form class="cd-solicitud" [formGroup]="solicitudForm" (ngSubmit)="enviar()" novalidate>
+        @if (paso() === 2) {
         <fieldset class="cd-bloque">
           <legend class="cd-bloque__titulo">1. Selecciona la especialidad</legend>
           <div class="cd-categorias" role="radiogroup" aria-label="Línea de especialidad">
@@ -324,7 +337,9 @@ const MSG_FALTA_UBICACION =
             <p class="cd-field-error" data-testid="error-descripcion">{{ error }}</p>
           }
         </fieldset>
+        }
 
+        @if (paso() === 1) {
         <fieldset class="cd-bloque">
           <legend class="cd-bloque__titulo">3. Dónde es el servicio</legend>
           <ion-list lines="none" class="cd-form">
@@ -396,32 +411,89 @@ const MSG_FALTA_UBICACION =
             <p class="cd-ayuda">Todavía no fijaste el punto exacto del servicio.</p>
           }
         </fieldset>
+        }
 
-        <p class="cd-ayuda">
-          Al confirmar, tu orden pasa a <strong>buscando técnico</strong> y se envía a los
-          técnicos cercanos: el primero que acepta la toma.
-        </p>
+        @if (paso() === 3) {
+          <section class="cd-card cd-resumen" data-testid="resumen-solicitud">
+            <p class="cd-eyebrow">Revisá tu solicitud</p>
+
+            <div class="cd-resumen__fila">
+              <div>
+                <span class="cd-resumen__rotulo">Especialidad</span>
+                <p class="cd-resumen__valor" data-testid="resumen-especialidad">
+                  {{ etiquetaCategoria() }}
+                </p>
+              </div>
+              <button type="button" class="cd-resumen__editar" (click)="irAPaso(2)">
+                Editar
+              </button>
+            </div>
+
+            <div class="cd-resumen__fila">
+              <div>
+                <span class="cd-resumen__rotulo">Falla</span>
+                <p class="cd-resumen__valor" data-testid="resumen-descripcion">
+                  {{ solicitudForm.controls.descripcionFalla.value }}
+                </p>
+              </div>
+              <button type="button" class="cd-resumen__editar" (click)="irAPaso(2)">
+                Editar
+              </button>
+            </div>
+
+            <div class="cd-resumen__fila">
+              <div>
+                <span class="cd-resumen__rotulo">Ubicación</span>
+                <p class="cd-resumen__valor" data-testid="resumen-direccion">
+                  {{ solicitudForm.controls.direccion.value }}
+                </p>
+                <p class="cd-resumen__coords">{{ textoCoordenadas() }}</p>
+              </div>
+              <button type="button" class="cd-resumen__editar" (click)="irAPaso(1)">
+                Editar
+              </button>
+            </div>
+          </section>
+
+          <p class="cd-ayuda">
+            Al solicitar, tu orden pasa a <strong>buscando técnico</strong> y se envía a los
+            técnicos cercanos: el primero que acepta la toma.
+          </p>
+        }
       </form>
     </ion-content>
 
     <ion-footer class="cd-footer">
-      <ion-button
-        expand="block"
-        class="cd-cta"
-        type="button"
-        data-testid="enviar"
-        [attr.aria-busy]="loading()"
-        [disabled]="!listoParaEnviar()"
-        (click)="enviar()"
-      >
-        @if (loading()) {
-          <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
-          <span class="cd-cta__loading">Procesando…</span>
-        } @else {
-          <ion-icon slot="start" name="compass-outline" aria-hidden="true"></ion-icon>
-          Solicitar técnico
-        }
-      </ion-button>
+      @if (paso() < 3) {
+        <ion-button
+          expand="block"
+          class="cd-cta"
+          type="button"
+          data-testid="continuar-paso"
+          [disabled]="paso() === 1 ? !puedeContinuarPaso1() : !puedeContinuarPaso2()"
+          (click)="avanzar()"
+        >
+          {{ paso() === 1 ? 'Continuar' : 'Continuar a revisión' }}
+        </ion-button>
+      } @else {
+        <ion-button
+          expand="block"
+          class="cd-cta"
+          type="button"
+          data-testid="enviar"
+          [attr.aria-busy]="loading()"
+          [disabled]="!listoParaEnviar()"
+          (click)="enviar()"
+        >
+          @if (loading()) {
+            <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+            <span class="cd-cta__loading">Procesando…</span>
+          } @else {
+            <ion-icon slot="start" name="compass-outline" aria-hidden="true"></ion-icon>
+            Solicitar técnico
+          }
+        </ion-button>
+      }
     </ion-footer>
   `,
 })
@@ -447,6 +519,10 @@ export class SolicitarServicioPage {
   protected readonly geocodificando = signal(false);
   protected readonly ubicando = signal(false);
   protected readonly dictando = signal(false);
+
+  /** Pasos del flujo: 1 ubicación, 2 especialidad y falla, 3 revisión. */
+  protected readonly paso = signal<1 | 2 | 3>(1);
+  protected readonly totalPasos = 3;
 
   /** El backend rechaza la OT porque el usuario todavía no tiene perfil de cliente. */
   protected readonly faltoPerfilCliente = signal(false);
@@ -489,6 +565,48 @@ export class SolicitarServicioPage {
       !this.loading() &&
       !this.creandoPerfil()
     );
+  }
+
+  /** Paso 1 exige dirección válida y punto fijado; el resto lo valida el submit. */
+  protected puedeContinuarPaso1(): boolean {
+    return this.solicitudForm.controls.direccion.valid && this.coordenadas() !== null;
+  }
+
+  protected puedeContinuarPaso2(): boolean {
+    return this.solicitudForm.controls.descripcionFalla.valid;
+  }
+
+  protected avanzar(): void {
+    if (this.paso() === 1) {
+      this.solicitudForm.controls.direccion.markAsTouched();
+      if (!this.puedeContinuarPaso1()) return;
+      this.paso.set(2);
+      return;
+    }
+    if (this.paso() === 2) {
+      this.solicitudForm.controls.descripcionFalla.markAsTouched();
+      if (!this.puedeContinuarPaso2()) return;
+      this.paso.set(3);
+    }
+  }
+
+  protected irAPaso(paso: 1 | 2 | 3): void {
+    this.paso.set(paso);
+  }
+
+  /** Atrás: retrocede un paso; en el primero sale de la solicitud. */
+  protected atras(): void {
+    if (this.paso() > 1) {
+      this.paso.update((actual) => (actual - 1) as 1 | 2 | 3);
+      return;
+    }
+    void this.router.navigateByUrl('/cliente/panel');
+  }
+
+  /** Etiqueta completa de la especialidad elegida, para el resumen del paso 3. */
+  protected etiquetaCategoria(): string {
+    const categoria = this.categorias.find((c) => c.valor === this.categoria());
+    return categoria ? `${categoria.etiqueta} · ${categoria.subtipo}` : '';
   }
 
   constructor() {

@@ -921,6 +921,82 @@ ion-tab-bar ion-tab-button ion-icon {
   margin-bottom: 0.35rem;
 }
 
+/* A5 — indicador de pasos y resumen de la revisión. */
+.cd-paso__contador {
+  padding-right: 0.35rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--cd-muted);
+}
+
+.cd-paso__pista {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0 1rem 0.6rem;
+}
+
+.cd-paso__punto {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--cd-surface-border-strong);
+}
+
+.cd-paso__punto--activo {
+  background: var(--ion-color-primary);
+}
+
+.cd-resumen {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cd-resumen__fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cd-resumen__rotulo {
+  display: block;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-resumen__valor {
+  margin: 0.15rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ion-text-color);
+  overflow-wrap: anywhere;
+}
+
+.cd-resumen__coords {
+  margin: 0.1rem 0 0;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-resumen__editar {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 0.5rem;
+  background: none;
+  border: 0;
+  color: var(--ion-color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .cd-ubicacion__acciones {
   display: flex;
   flex-wrap: wrap;

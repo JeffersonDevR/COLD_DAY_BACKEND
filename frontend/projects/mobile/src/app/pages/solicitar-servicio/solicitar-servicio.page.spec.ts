@@ -39,12 +39,19 @@ interface SolicitarInternals {
   readonly perfilYaExistia: WritableSignal<boolean>;
   readonly solicitudForm: FormGroup;
   readonly perfilForm: FormGroup;
+  readonly paso: WritableSignal<1 | 2 | 3>;
   setCategoria(categoria: CategoriaServicio): void;
   geocodificar(): void;
   usarMiUbicacion(): void;
   enviar(): void;
   crearPerfilYEnviar(): void;
   listoParaEnviar(): boolean;
+  puedeContinuarPaso1(): boolean;
+  puedeContinuarPaso2(): boolean;
+  avanzar(): void;
+  irAPaso(paso: 1 | 2 | 3): void;
+  atras(): void;
+  etiquetaCategoria(): string;
 }
 
 function setup(
@@ -144,17 +151,19 @@ describe('SolicitarServicioPage móvil', () => {
     window.sessionStorage.clear();
   });
 
-  it('arranca sin dirección ni coordenadas y con el formulario inválido', () => {
+  it('arranca en el paso 1, sin dirección ni coordenadas y con el formulario inválido', () => {
     const { fixture, page } = setup();
 
+    expect(page.paso()).toBe(1);
     expect(page.solicitudForm.getRawValue()).toEqual({
       descripcionFalla: '',
       direccion: '',
     });
     expect(page.coordenadas()).toBeNull();
     expect(page.listoParaEnviar()).toBe(false);
+    expect(page.puedeContinuarPaso1()).toBe(false);
     expect(
-      estaDeshabilitado(fixture.nativeElement.querySelector('[data-testid="enviar"]')),
+      estaDeshabilitado(fixture.nativeElement.querySelector('[data-testid="continuar-paso"]')),
     ).toBe(true);
   });
 
@@ -478,9 +487,14 @@ describe('SolicitarServicioPage móvil', () => {
     });
   });
 
-  it('el CTA de la solicitud vive en el footer fijo y se anuncia como acción primaria', () => {
-    const { fixture } = setup();
+  it('el CTA del paso 3 vive en el footer fijo y se anuncia como acción primaria', () => {
+    const { fixture, page } = setup();
+    prepararSolicitud(page);
+    page.avanzar();
+    page.avanzar();
+    fixture.detectChanges();
 
+    expect(page.paso()).toBe(3);
     const footer = fixture.nativeElement.querySelector('ion-footer.cd-footer');
     expect(footer).not.toBeNull();
     const enviar = footer.querySelector('[data-testid="enviar"]') as HTMLElement;
@@ -490,7 +504,10 @@ describe('SolicitarServicioPage móvil', () => {
   });
 
   it('el dictado por voz solo se ofrece cuando el WebView soporta el reconocimiento', () => {
-    const { fixture } = setup();
+    const { fixture, page } = setup();
+    prepararSolicitud(page);
+    page.avanzar();
+    fixture.detectChanges();
 
     const dictado = fixture.nativeElement.querySelector(
       '[data-testid="dictar-falla"]',
@@ -499,5 +516,96 @@ describe('SolicitarServicioPage móvil', () => {
     // jsdom no implementa SpeechRecognition: el botón queda deshabilitado.
     expect(dictado?.disabled).toBe(true);
     expect(dictado?.textContent).toContain('Dictar por voz');
+  });
+
+  describe('flujo en tres pasos', () => {
+    it('no avanza del paso 1 sin dirección válida y punto fijado', () => {
+      const { fixture, page } = setup();
+
+      page.avanzar();
+      fixture.detectChanges();
+      expect(page.paso()).toBe(1);
+
+      // Dirección sin geocodificar: sigue faltando el punto.
+      page.solicitudForm.controls['direccion'].setValue('Calle 15 # 3E-28');
+      page.avanzar();
+      fixture.detectChanges();
+      expect(page.paso()).toBe(1);
+
+      page.geocodificar();
+      page.avanzar();
+      fixture.detectChanges();
+      expect(page.paso()).toBe(2);
+    });
+
+    it('pide la falla antes de pasar a la revisión', () => {
+      const { fixture, page } = setup();
+      prepararSolicitud(page);
+      page.avanzar();
+      fixture.detectChanges();
+      expect(page.paso()).toBe(2);
+
+      page.solicitudForm.controls['descripcionFalla'].setValue('');
+      page.avanzar();
+      fixture.detectChanges();
+      expect(page.paso()).toBe(2);
+
+      page.solicitudForm.controls['descripcionFalla'].setValue(
+        'La heladera hace un ruido fuerte y no enfría desde ayer.',
+      );
+      page.avanzar();
+      fixture.detectChanges();
+      expect(page.paso()).toBe(3);
+    });
+
+    it('atrás retrocede un paso y en el primero sale de la solicitud', () => {
+      const { fixture, page, navigate } = setup();
+      prepararSolicitud(page);
+      page.avanzar();
+      page.avanzar();
+      fixture.detectChanges();
+      expect(page.paso()).toBe(3);
+
+      page.atras();
+      expect(page.paso()).toBe(2);
+      page.atras();
+      expect(page.paso()).toBe(1);
+
+      page.atras();
+      expect(navigate).toHaveBeenCalledWith('/cliente/panel');
+    });
+
+    it('el resumen del paso 3 muestra especialidad, falla y ubicación completas', () => {
+      const { fixture, page } = setup();
+      prepararSolicitud(page);
+      page.setCategoria('REFRIGERACION');
+      page.avanzar();
+      page.avanzar();
+      fixture.detectChanges();
+
+      const texto = (testid: string) =>
+        fixture.nativeElement.querySelector(`[data-testid="${testid}"]`)?.textContent ?? '';
+
+      expect(texto('resumen-especialidad')).toContain('Refrigeración');
+      expect(texto('resumen-especialidad')).toContain('Heladeras y freezers');
+      expect(texto('resumen-descripcion')).toContain('El aire mini-split no enfría');
+      expect(texto('resumen-direccion')).toContain('Calle 15 # 3E-28');
+      expect(fixture.nativeElement.querySelector('[data-testid="resumen-solicitud"]')).not.toBeNull();
+    });
+
+    it('el CTA del footer cambia de etiqueta según el paso', () => {
+      const { fixture, page } = setup();
+      prepararSolicitud(page);
+      fixture.detectChanges();
+
+      const cta = () =>
+        fixture.nativeElement.querySelector('[data-testid="continuar-paso"]')?.textContent ?? '';
+
+      expect(cta()).toContain('Continuar');
+      page.avanzar();
+      fixture.detectChanges();
+      expect(cta()).toContain('Continuar a revisión');
+      expect(fixture.nativeElement.querySelector('[data-testid="enviar"]')).toBeNull();
+    });
   });
 });
