@@ -75,7 +75,7 @@
       @if (ubicacionMotivo(); as motivo) {
         <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ubicacion-motivo">
           <p class="cd-alerta__texto">{{ motivo }}</p>
-          <ion-button size="small" (click)="reintentarUbicacion()" data-testid="ubicacion-reintentar">
+          <ion-button class="cd-cta" (click)="reintentarUbicacion()" data-testid="ubicacion-reintentar">
             <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
             Reintentar
           </ion-button>
@@ -84,7 +84,6 @@
 
       <ion-button
         fill="clear"
-        size="small"
         (click)="irAPerfil()"
         data-testid="ir-perfil"
       >
