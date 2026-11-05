@@ -7,6 +7,7 @@ import {
   IonCard,
   IonCardContent,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonLabel,
@@ -56,6 +57,7 @@ import { MobileToastService } from '../../core/toast.service';
     IonCard,
     IonCardContent,
     IonContent,
+    IonFooter,
     IonHeader,
     IonIcon,
     IonLabel,
@@ -81,30 +83,6 @@ import { MobileToastService } from '../../core/toast.service';
           </div>
           <span class="cd-chip cd-chip--activo">Cliente</span>
         </div>
-        <div class="cd-hero">
-          <p class="cd-eyebrow">Panel del cliente</p>
-          <h1 class="cd-headline" data-testid="panel-saludo">Hola, {{ nombre() }}</h1>
-          <p class="cd-hero__nota">
-            Pedí un servicio y tu solicitud sale a los técnicos cercanos de Cúcuta: el primero
-            que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.
-          </p>
-          <div class="cd-hero__acciones">
-            <ion-button class="cd-cta" data-testid="panel-solicitar" (click)="pedirTecnico()">
-              <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
-              Pedir un técnico
-            </ion-button>
-            <ion-button
-              size="small"
-              fill="outline"
-              color="medium"
-              data-testid="panel-equipos"
-              (click)="verEquipos()"
-            >
-              <ion-icon slot="start" name="time-outline" aria-hidden="true"></ion-icon>
-              Historial
-            </ion-button>
-          </div>
-        </div>
       </ion-toolbar>
     </ion-header>
 
@@ -117,6 +95,27 @@ import { MobileToastService } from '../../core/toast.service';
         ></ion-refresher-content>
       </ion-refresher>
 
+      <div class="cd-hero">
+        <p class="cd-eyebrow">Panel del cliente</p>
+        <h1 class="cd-headline" data-testid="panel-saludo">Hola, {{ nombre() }}</h1>
+        <p class="cd-hero__nota">
+          Pedí un servicio y tu solicitud sale a los técnicos cercanos de Cúcuta: el primero
+          que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.
+        </p>
+        <div class="cd-hero__acciones">
+          <ion-button
+            size="small"
+            fill="outline"
+            color="primary"
+            data-testid="panel-equipos"
+            (click)="verEquipos()"
+          >
+            <ion-icon slot="start" name="time-outline" aria-hidden="true"></ion-icon>
+            Historial
+          </ion-button>
+        </div>
+      </div>
+
       @if (cargando()) {
         <div class="cd-cargando" data-testid="panel-cargando">
           <ion-spinner name="dots"></ion-spinner>
@@ -126,7 +125,7 @@ import { MobileToastService } from '../../core/toast.service';
         <section class="cd-alerta cd-alerta--error" role="alert" data-testid="panel-error">
           <h2 class="cd-alerta__titulo">No pudimos cargar tus servicios</h2>
           <p class="cd-alerta__texto">{{ mensaje }}</p>
-          <ion-button size="small" data-testid="panel-reintentar" (click)="reintentar()">
+          <ion-button class="cd-cta" data-testid="panel-reintentar" (click)="reintentar()">
             Reintentar
           </ion-button>
         </section>
@@ -139,8 +138,7 @@ import { MobileToastService } from '../../core/toast.service';
             cargar ahí: al confirmar, el perfil se crea y la orden sale en el mismo paso.
           </p>
           <ion-button
-            size="small"
-            color="secondary"
+            class="cd-cta"
             data-testid="panel-crear-perfil"
             (click)="pedirTecnico()"
           >
@@ -186,9 +184,6 @@ import { MobileToastService } from '../../core/toast.service';
             <ion-icon name="file-tray-outline" aria-hidden="true"></ion-icon>
             <h2 class="cd-vacio__titulo">{{ textos().tituloVacio }}</h2>
             <p class="cd-vacio__texto">{{ textos().descripcionVacio }}</p>
-            <ion-button size="small" data-testid="panel-vacio-cta" (click)="pedirTecnico()">
-              Pedir un técnico
-            </ion-button>
           </section>
         } @else {
           @for (ot of serviciosFiltrados(); track ot.id) {
@@ -235,6 +230,18 @@ import { MobileToastService } from '../../core/toast.service';
         }
       }
     </ion-content>
+
+    <ion-footer class="cd-footer">
+      <ion-button
+        expand="block"
+        class="cd-cta"
+        data-testid="panel-solicitar"
+        (click)="pedirTecnico()"
+      >
+        <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
+        Pedir un técnico
+      </ion-button>
+    </ion-footer>
   `,
 })
 export class PanelClientePage {

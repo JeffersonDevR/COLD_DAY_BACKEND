@@ -262,6 +262,22 @@ ion-tab-bar ion-tab-button ion-icon {
   border-radius: 12px;
 }
 
+/* Fixed bottom CTA bar (thumb zone) shared by transactional screens. */
+.cd-footer {
+  background: var(--cd-surface);
+  border-top: 1px solid var(--cd-surface-border);
+}
+
+.cd-footer ion-toolbar {
+  --background: var(--cd-surface);
+  --min-height: 0;
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 0.75rem;
+  --padding-bottom: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* Shared primitives for the P0 placeholder screens. */
 .cd-headline {
   font-family: var(--cd-font-headline);
@@ -662,14 +678,11 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-ot__descripcion {
-  display: -webkit-box;
-  overflow: hidden;
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.4;
   color: var(--cd-muted);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .cd-ot__pie {
@@ -685,12 +698,11 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-ot__direccion {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.25rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
   color: var(--cd-muted);
+  overflow-wrap: anywhere;
 }
 
 /* Chips: el estado de la OT se lee de un color, no de un icono. */
@@ -2372,10 +2384,10 @@ ion-tab-bar ion-tab-button ion-icon {
   --color-checked: var(--ion-color-primary);
   --indicator-color: transparent;
   --border-radius: 8px;
-  min-height: 32px;
+  min-height: 48px;
   margin-right: 0.3rem;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.62rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
