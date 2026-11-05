@@ -38,7 +38,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
       <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
       <p class="cd-alerta__texto">{{ errorCarga }}</p>
-      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+      <ion-button class="cd-cta" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
         <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
         Reintentar
       </ion-button>
@@ -50,7 +50,7 @@
     <div class="cd-acciones" data-testid="ot-acciones">
       @if (orden.estado === 'EN_DIAGNOSTICO' && orden.diagnostico) {
         <ion-button
-          color="warning"
+          class="cd-cta"
           data-testid="cta-presupuesto"
           (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
         >
@@ -66,7 +66,7 @@
 
       @if (orden.estado === 'FINALIZADA') {
         <ion-button
-          color="success"
+          class="cd-cta"
           data-testid="cta-acta"
           (click)="irA(['/cliente/ot', orden.id, 'pago'])"
         >
@@ -77,7 +77,6 @@
         @if (!orden.calificacion) {
           <ion-button
             fill="outline"
-            color="warning"
             data-testid="cta-calificar"
             (click)="irA(['/cliente/ot', orden.id, 'calificar'])"
           >
@@ -88,7 +87,7 @@
       }
 
       @if (orden.estado === 'EN_DIAGNOSTICO' || orden.estado === 'EN_REPARACION') {
-        <ion-button fill="outline" color="tertiary" data-testid="cta-disputa" (click)="abrirModalDisputa()">
+        <ion-button fill="outline" data-testid="cta-disputa" (click)="abrirModalDisputa()">
           <ion-icon slot="start" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
           Abrir Disputa
         </ion-button>
@@ -170,8 +169,9 @@
 
           <ion-button
             expand="block"
-            color="warning"
+            class="cd-cta cd-cta--amber"
             data-testid="pagar-visita"
+            [attr.aria-busy]="pagandoVisita()"
             [disabled]="pagandoVisita()"
             (click)="pagarVisita()"
           >
@@ -265,7 +265,7 @@
               </a>
             }
             <ion-button
-              size="small"
+              fill="outline"
               data-testid="tecnico-diagnostico"
               (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
             >
@@ -280,26 +280,11 @@
     <!-- Línea de tiempo del ciclo operativo -->
     <app-ot-timeline [estadoActual]="orden.estado" [historial]="orden.historial ?? []" />
 
-    <!-- Detalle de la falla y evidencias -->
+    <!-- Detalle de la falla reportada -->
     <ion-card class="cd-detalle">
       <ion-card-content>
         <h2 class="cd-card__titulo">Detalle técnico reportado</h2>
         <p class="cd-detalle__texto">{{ orden.descripcionFalla }}</p>
-
-        @if (orden.evidenciaUrls && orden.evidenciaUrls.length > 0) {
-          <p class="cd-detalle__subtitulo">Evidencia fotográfica</p>
-          <div class="cd-evidencias">
-            @for (url of orden.evidenciaUrls; track url) {
-              <img
-                class="cd-evidencia"
-                [src]="url"
-                alt="Evidencia técnica de la falla"
-                loading="lazy"
-                referrerpolicy="no-referrer"
-              />
-            }
-          </div>
-        }
       </ion-card-content>
     </ion-card>
 
@@ -359,6 +344,8 @@
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-cancelar-titulo"
+        cdkTrapFocus
+        cdkTrapFocusAutoCapture
         data-testid="modal-cancelar"
       >
         <div class="cd-modal__encabezado cd-modal__encabezado--peligro">
@@ -410,6 +397,8 @@
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-disputa-titulo"
+        cdkTrapFocus
+        cdkTrapFocusAutoCapture
         data-testid="modal-disputa"
       >
         <div class="cd-modal__encabezado cd-modal__encabezado--disputa">

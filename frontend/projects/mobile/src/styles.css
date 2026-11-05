@@ -257,14 +257,22 @@ ion-tab-bar ion-tab-button ion-icon {
   letter-spacing: 0;
 }
 
+/* Amber CTA for money actions: dark label keeps AA contrast on #f59e0b. */
+.cd-cta--amber {
+  --background: var(--ion-color-secondary);
+  --background-hover: var(--ion-color-secondary-tint);
+  --background-activated: var(--ion-color-secondary-shade);
+  --color: #1f1300;
+  --box-shadow: none;
+}
+
 .cd-cta--xl {
   --border-radius: 12px;
   border-radius: 12px;
 }
 
 /* Fixed bottom CTA bar (thumb zone) shared by transactional screens. */
-.cd-footer {
-  background: var(--cd-surface);
+.cd-footer {  background: var(--cd-surface);
   border-top: 1px solid var(--cd-surface-border);
 }
 
