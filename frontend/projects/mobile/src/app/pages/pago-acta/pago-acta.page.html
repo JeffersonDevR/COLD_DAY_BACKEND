@@ -209,18 +209,6 @@
             Sin presupuesto registrado: el técnico todavía no cargó los montos del servicio.
           </p>
         }
-
-        <!-- Commission split (transparency) -->
-        <div class="cd-comision" aria-label="Retención de comisión de plataforma">
-          <div class="cd-comision__fila">
-            <span>Comisión COLD DAY ({{ comisionPorcentaje }}%):</span>
-            <span data-testid="comision-plataforma">$ {{ comisionMonto().toLocaleString('es-CO') }}</span>
-          </div>
-          <div class="cd-comision__fila">
-            <span>Monto líquido técnico ({{ liquidoPorcentaje }}%):</span>
-            <span data-testid="liquido-tecnico">$ {{ liquidoTecnicoMonto().toLocaleString('es-CO') }}</span>
-          </div>
-        </div>
       </ion-card-content>
     </ion-card>
   }
