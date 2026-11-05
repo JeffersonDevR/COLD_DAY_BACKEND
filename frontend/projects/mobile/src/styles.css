@@ -145,6 +145,25 @@ body {
   color: var(--ion-text-color);
 }
 
+/* Focus visible (WCAG 2.4.7): one ring for every interactive element.
+   Ionic resets focus in several shadow parts, so this sits on the host. */
+a:focus-visible,
+button:focus-visible,
+ion-button:focus-visible,
+ion-item:focus-visible,
+ion-input:focus-visible,
+ion-textarea:focus-visible,
+ion-select:focus-visible,
+ion-chip:focus-visible,
+ion-segment-button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--cd-radius);
+}
+
+/* Type floor: functional microcopy never goes below 12 px. */
+
 ion-button {
   --border-radius: var(--cd-radius);
 }
@@ -215,7 +234,7 @@ ion-tab-bar ion-tab-button ion-icon {
   height: 48px;
   margin: 0;
   font-family: var(--cd-font-headline);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
@@ -228,6 +247,14 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-cta:active {
   transform: scale(0.99);
+}
+
+/* Loading state: spinner + explicit verb, never an empty button. */
+.cd-cta__loading {
+  margin-left: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .cd-cta--xl {
@@ -294,8 +321,8 @@ ion-tab-bar ion-tab-button ion-icon {
   padding: 12px;
   color: var(--ion-color-primary);
   background: rgba(34, 211, 238, 0.08);
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  border-radius: 18px;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
   box-shadow: 0 0 32px rgba(34, 211, 238, 0.18);
 }
 
@@ -331,13 +358,24 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-auth__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
   margin: 0;
   padding: 0.65rem 0.8rem;
   font-size: 0.85rem;
+  line-height: 1.35;
   color: #fecaca;
   background: rgba(248, 113, 113, 0.12);
   border: 1px solid rgba(248, 113, 113, 0.35);
   border-radius: var(--cd-radius);
+}
+
+.cd-auth__error ion-icon {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  font-size: 1rem;
+  color: #f87171;
 }
 
 .cd-auth__link {
@@ -2165,6 +2203,9 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-auth__ojo {
   --padding-start: 0;
   --padding-end: 0;
+  --min-height: 48px;
+  min-height: 48px;
+  width: 48px;
   margin: 0 -0.4rem 0 0;
 }
 
@@ -2174,14 +2215,14 @@ ion-tab-bar ion-tab-button ion-icon {
   justify-content: center;
   gap: 0.35rem;
   padding: 1rem 0 calc(env(safe-area-inset-bottom, 12px) + 0.5rem);
-  font-family: 'Space Mono', monospace;
-  font-size: 0.65rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
   color: var(--cd-muted);
   text-align: center;
 }
 
 .cd-auth__footer ion-icon {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .cd-auth__form.cd-card {
