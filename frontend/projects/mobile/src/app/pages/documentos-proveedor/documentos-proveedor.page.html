@@ -83,11 +83,13 @@
             expand="block"
             class="cd-cta"
             type="submit"
+            [attr.aria-busy]="guardando()"
             [disabled]="guardando()"
             data-testid="guardar-documento"
           >
             @if (guardando()) {
-              <ion-spinner name="dots"></ion-spinner>
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Guardando…</span>
             } @else {
               Declarar documento
             }
