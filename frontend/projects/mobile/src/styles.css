@@ -2530,6 +2530,43 @@ form {
   min-width: 0;
 }
 
+/* Foto local (cámara sin envío de evidencias). */
+.cd-foto {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cd-foto__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-foto__titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cd-foto__preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--cd-surface-border);
+}
+
+.cd-foto__nota {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--cd-muted);
+}
+
+.cd-foto__input {
+  display: none;
+}
+
 /* A4: tres métricas y filtros deben caber en 360–390 px, nunca empujar el ancho. */
 .cd-metricas {
   grid-template-columns: repeat(3, minmax(0, 1fr));

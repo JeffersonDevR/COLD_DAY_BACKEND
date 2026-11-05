@@ -37,6 +37,7 @@ import { CIUDAD_OPERACION, MapaConfigService } from '@core/service/mapa-config.s
 import { MapsApi } from '@core/service/maps-api';
 import { SolicitudDraftService } from '@core/service/solicitud-draft.service';
 import { MobileToastService } from '../../core/toast.service';
+import { FotoLocalComponent } from '../../shared/foto-local/foto-local';
 
 /** Las cuatro líneas que ofrece la web; el resto del enum no se pide acá. */
 const CATEGORIAS: readonly {
@@ -88,6 +89,7 @@ const MSG_FALTA_UBICACION =
     IonTextarea,
     IonTitle,
     IonToolbar,
+    FotoLocalComponent,
   ],
   template: `
     <ion-header class="cd-header">
@@ -244,6 +246,10 @@ const MSG_FALTA_UBICACION =
             <p class="cd-field-error" data-testid="error-descripcion">{{ error }}</p>
           }
         </fieldset>
+
+        <section class="cd-bloque">
+          <app-foto-local />
+        </section>
 
         <fieldset class="cd-bloque">
           <legend class="cd-bloque__titulo">3. Dónde es el servicio</legend>
