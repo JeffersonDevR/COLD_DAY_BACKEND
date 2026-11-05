@@ -34,7 +34,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
       <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
       <p class="cd-alerta__texto">{{ errorCarga }}</p>
-      <ion-button size="small" (click)="reintentarCargaOt()" data-testid="ot-reintentar">
+      <ion-button class="cd-cta" (click)="reintentarCargaOt()" data-testid="ot-reintentar">
         <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
         Reintentar
       </ion-button>
@@ -130,7 +130,7 @@
                 </ion-button>
               </div>
             }
-            <ion-button fill="clear" size="small" (click)="agregarInsumo()" data-testid="agregar-insumo">
+            <ion-button fill="clear" (click)="agregarInsumo()" data-testid="agregar-insumo">
               <ion-icon slot="start" name="add-outline" aria-hidden="true"></ion-icon>
               Agregar insumo
             </ion-button>

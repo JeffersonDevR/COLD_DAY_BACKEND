@@ -158,14 +158,18 @@ describe('PanelClientePage móvil', () => {
     ]);
   });
 
-  it('el estado vacío explica qué falta según la vista y ofrece pedir un técnico', () => {
+  it('el estado vacío explica qué falta según la vista y deja el CTA fijo como única acción', () => {
     const { fixture, page } = setup(vi.fn(() => of([ot({ tecnicoId: 'tec-1' })])));
 
     page.cambiarFiltro(filtro('COMPLETADAS'));
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid="panel-vacio"]')).not.toBeNull();
     expect(texto(fixture)).toContain('Todavía no tenés servicios completados');
-    expect(fixture.nativeElement.querySelector('[data-testid="panel-vacio-cta"]')).not.toBeNull();
+    // Una sola acción primaria por pantalla: el CTA vive en el footer fijo.
+    expect(fixture.nativeElement.querySelector('[data-testid="panel-vacio-cta"]')).toBeNull();
+    const footer = fixture.nativeElement.querySelector('ion-footer.cd-footer');
+    expect(footer).not.toBeNull();
+    expect(footer.querySelector('[data-testid="panel-solicitar"]')).not.toBeNull();
   });
 
   it('la lista vacía del filtro inicial no es un error de carga', () => {

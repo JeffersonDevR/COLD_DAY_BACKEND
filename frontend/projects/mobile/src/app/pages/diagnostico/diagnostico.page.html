@@ -42,7 +42,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
       <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
       <p class="cd-alerta__texto">{{ errorCarga }}</p>
-      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+      <ion-button class="cd-cta" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
         <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
         Reintentar
       </ion-button>
@@ -130,22 +130,6 @@
 
     <!-- Decision: only while the OT waits for the client's answer -->
     @if (orden.estado === 'EN_DIAGNOSTICO') {
-      <div class="cd-decision" data-testid="decision-presupuesto">
-        <ion-button
-          fill="outline"
-          color="danger"
-          data-testid="rechazar-presupuesto"
-          (click)="abrirRechazo()"
-        >
-          <ion-icon slot="start" name="thumbs-down-outline" aria-hidden="true"></ion-icon>
-          Rechazar presupuesto
-        </ion-button>
-        <ion-button class="cd-cta" data-testid="aprobar-presupuesto" (click)="aprobarPresupuesto()">
-          <ion-icon slot="start" name="thumbs-up-outline" aria-hidden="true"></ion-icon>
-          Aprobar e iniciar reparación
-        </ion-button>
-      </div>
-
       @if (mostrarRechazo()) {
         <section
           class="cd-rechazo"
@@ -197,22 +181,7 @@
       </div>
     }
 
-    <!-- Chat with the technician: honest "coming soon", strictly non-interactive -->
-    <section class="cd-proximamente" data-testid="chat-proximamente" aria-label="Chat próximamente">
-      <span class="cd-proximamente__avatar" aria-hidden="true">
-        <ion-icon name="chatbubbles-outline"></ion-icon>
-      </span>
-      <div class="cd-proximamente__datos">
-        <p class="cd-proximamente__titulo">
-          Chat con {{ orden.tecnicoNombre || 'el técnico por asignar' }}
-        </p>
-        <span class="cd-proximamente__badge">Próximamente</span>
-      </div>
-      <p class="cd-proximamente__texto">
-        Todavía no podés escribirle desde acá. Mientras tanto, coordiná los detalles
-        del servicio por teléfono con quien te atienda.
-      </p>
-    </section>
+    <!-- Chat with the technician is out of scope in this release: no placeholder block. -->
   }
 
   <ion-button expand="block" fill="outline" class="cd-volver" data-testid="volver-ot" (click)="volver()">
@@ -220,3 +189,25 @@
     Volver al seguimiento de la OT
   </ion-button>
 </ion-content>
+
+@if (ot(); as orden) {
+  @if (orden.estado === 'EN_DIAGNOSTICO') {
+    <ion-footer class="cd-footer">
+      <div class="cd-decision" data-testid="decision-presupuesto">
+        <ion-button
+          fill="outline"
+          color="danger"
+          data-testid="rechazar-presupuesto"
+          (click)="abrirRechazo()"
+        >
+          <ion-icon slot="start" name="thumbs-down-outline" aria-hidden="true"></ion-icon>
+          Rechazar
+        </ion-button>
+        <ion-button class="cd-cta" data-testid="aprobar-presupuesto" (click)="aprobarPresupuesto()">
+          <ion-icon slot="start" name="thumbs-up-outline" aria-hidden="true"></ion-icon>
+          Aprobar y reparar
+        </ion-button>
+      </div>
+    </ion-footer>
+  }
+}

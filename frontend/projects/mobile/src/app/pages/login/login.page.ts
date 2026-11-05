@@ -109,7 +109,10 @@ const MENSAJES_LOGIN: Record<number, string> = {
           </ion-list>
 
           @if (error(); as mensaje) {
-            <p class="cd-auth__error" role="alert" data-testid="error-login">{{ mensaje }}</p>
+            <p class="cd-auth__error" role="alert" data-testid="error-login">
+              <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+              <span>{{ mensaje }}</span>
+            </p>
           }
 
           <ion-button
@@ -117,10 +120,12 @@ const MENSAJES_LOGIN: Record<number, string> = {
             type="submit"
             class="cd-cta"
             data-testid="entrar"
+            [attr.aria-busy]="loading()"
             [disabled]="loginForm.invalid || loading()"
           >
             @if (loading()) {
-              <ion-spinner name="dots"></ion-spinner>
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Entrando…</span>
             } @else {
               Entrar
             }

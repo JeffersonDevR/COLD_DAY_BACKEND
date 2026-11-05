@@ -145,6 +145,25 @@ body {
   color: var(--ion-text-color);
 }
 
+/* Focus visible (WCAG 2.4.7): one ring for every interactive element.
+   Ionic resets focus in several shadow parts, so this sits on the host. */
+a:focus-visible,
+button:focus-visible,
+ion-button:focus-visible,
+ion-item:focus-visible,
+ion-input:focus-visible,
+ion-textarea:focus-visible,
+ion-select:focus-visible,
+ion-chip:focus-visible,
+ion-segment-button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--cd-radius);
+}
+
+/* Type floor: functional microcopy never goes below 12 px. */
+
 ion-button {
   --border-radius: var(--cd-radius);
 }
@@ -215,7 +234,7 @@ ion-tab-bar ion-tab-button ion-icon {
   height: 48px;
   margin: 0;
   font-family: var(--cd-font-headline);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
@@ -230,9 +249,41 @@ ion-tab-bar ion-tab-button ion-icon {
   transform: scale(0.99);
 }
 
+/* Loading state: spinner + explicit verb, never an empty button. */
+.cd-cta__loading {
+  margin-left: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Amber CTA for money actions: dark label keeps AA contrast on #f59e0b. */
+.cd-cta--amber {
+  --background: var(--ion-color-secondary);
+  --background-hover: var(--ion-color-secondary-tint);
+  --background-activated: var(--ion-color-secondary-shade);
+  --color: #1f1300;
+  --box-shadow: none;
+}
+
 .cd-cta--xl {
   --border-radius: 12px;
   border-radius: 12px;
+}
+
+/* Fixed bottom CTA bar (thumb zone) shared by transactional screens. */
+.cd-footer {  background: var(--cd-surface);
+  border-top: 1px solid var(--cd-surface-border);
+}
+
+.cd-footer ion-toolbar {
+  --background: var(--cd-surface);
+  --min-height: 0;
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 0.75rem;
+  --padding-bottom: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* Shared primitives for the P0 placeholder screens. */
@@ -294,8 +345,8 @@ ion-tab-bar ion-tab-button ion-icon {
   padding: 12px;
   color: var(--ion-color-primary);
   background: rgba(34, 211, 238, 0.08);
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  border-radius: 18px;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
   box-shadow: 0 0 32px rgba(34, 211, 238, 0.18);
 }
 
@@ -331,13 +382,24 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-auth__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
   margin: 0;
   padding: 0.65rem 0.8rem;
   font-size: 0.85rem;
+  line-height: 1.35;
   color: #fecaca;
   background: rgba(248, 113, 113, 0.12);
   border: 1px solid rgba(248, 113, 113, 0.35);
   border-radius: var(--cd-radius);
+}
+
+.cd-auth__error ion-icon {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  font-size: 1rem;
+  color: #f87171;
 }
 
 .cd-auth__link {
@@ -624,14 +686,11 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-ot__descripcion {
-  display: -webkit-box;
-  overflow: hidden;
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.4;
   color: var(--cd-muted);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .cd-ot__pie {
@@ -647,12 +706,11 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-ot__direccion {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.25rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
   color: var(--cd-muted);
+  overflow-wrap: anywhere;
 }
 
 /* Chips: el estado de la OT se lee de un color, no de un icono. */
@@ -784,27 +842,159 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-categoria {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.7rem;
-  background: #0e1828;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-height: 96px;
+  padding: 0.85rem;
+  background: var(--cd-surface);
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-card);
   color: var(--cd-muted);
   font: inherit;
-  font-size: 0.78rem;
   text-align: left;
 }
 
 .cd-categoria--activa {
   color: var(--ion-color-primary);
-  background: rgba(34, 211, 238, 0.1);
+  background: rgba(34, 211, 238, 0.08);
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+}
+
+.cd-categoria__icono {
+  font-size: 1.5rem;
+}
+
+.cd-categoria__marca {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--cd-surface-border-strong);
+  border-radius: 999px;
+}
+
+.cd-categoria--activa .cd-categoria__marca {
+  background: var(--ion-color-primary);
   border-color: var(--ion-color-primary);
 }
 
-.cd-categoria ion-icon {
-  font-size: 1.25rem;
+.cd-categoria--activa .cd-categoria__marca::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  border-right: 2px solid #042f2e;
+  border-bottom: 2px solid #042f2e;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.cd-categoria__texto {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.cd-categoria__nombre {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ion-text-color);
+  overflow-wrap: anywhere;
+}
+
+.cd-categoria__subtipo {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--cd-muted);
+  overflow-wrap: anywhere;
+}
+
+.cd-bloque__accion {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.35rem;
+}
+
+/* A5 — indicador de pasos y resumen de la revisión. */
+.cd-paso__contador {
+  padding-right: 0.35rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--cd-muted);
+}
+
+.cd-paso__pista {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0 1rem 0.6rem;
+}
+
+.cd-paso__punto {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--cd-surface-border-strong);
+}
+
+.cd-paso__punto--activo {
+  background: var(--ion-color-primary);
+}
+
+.cd-resumen {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cd-resumen__fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cd-resumen__rotulo {
+  display: block;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-resumen__valor {
+  margin: 0.15rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ion-text-color);
+  overflow-wrap: anywhere;
+}
+
+.cd-resumen__coords {
+  margin: 0.1rem 0 0;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-resumen__editar {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 0.5rem;
+  background: none;
+  border: 0;
+  color: var(--ion-color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .cd-ubicacion__acciones {
@@ -2045,8 +2235,8 @@ ion-tab-bar ion-tab-button ion-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   background: transparent;
   border: 0;
@@ -2165,6 +2355,9 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-auth__ojo {
   --padding-start: 0;
   --padding-end: 0;
+  --min-height: 48px;
+  min-height: 48px;
+  width: 48px;
   margin: 0 -0.4rem 0 0;
 }
 
@@ -2174,14 +2367,14 @@ ion-tab-bar ion-tab-button ion-icon {
   justify-content: center;
   gap: 0.35rem;
   padding: 1rem 0 calc(env(safe-area-inset-bottom, 12px) + 0.5rem);
-  font-family: 'Space Mono', monospace;
-  font-size: 0.65rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
   color: var(--cd-muted);
   text-align: center;
 }
 
 .cd-auth__footer ion-icon {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .cd-auth__form.cd-card {
@@ -2331,10 +2524,10 @@ ion-tab-bar ion-tab-button ion-icon {
   --color-checked: var(--ion-color-primary);
   --indicator-color: transparent;
   --border-radius: 8px;
-  min-height: 32px;
+  min-height: 48px;
   margin-right: 0.3rem;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.62rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -2372,9 +2565,9 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-cuenta__rol {
   margin: 0.15rem 0;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ion-color-primary);
 }
@@ -2442,14 +2635,15 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-modo__nota {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--cd-muted);
 }
 
 .cd-modo__pill {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.58rem;
-  letter-spacing: 0.08em;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #042f2e;
   background: var(--ion-color-primary);

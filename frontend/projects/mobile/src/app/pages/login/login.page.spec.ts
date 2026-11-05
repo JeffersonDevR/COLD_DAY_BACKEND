@@ -88,6 +88,21 @@ describe('LoginPage móvil', () => {
     expect(page.loading()).toBe(true);
   });
 
+  it('expone el estado de carga con aria-busy y un verbo visible', () => {
+    const { fixture, page } = setup(of(respuesta));
+    completar(page);
+    fixture.detectChanges();
+
+    expect(botonEntrar(fixture).getAttribute('aria-busy')).toBe('false');
+
+    page.loading.set(true);
+    fixture.detectChanges();
+
+    const boton = botonEntrar(fixture);
+    expect(boton.getAttribute('aria-busy')).toBe('true');
+    expect(boton.textContent).toContain('Entrando');
+  });
+
   it('un login exitoso establece la sesión y navega al home del modo', () => {
     const { page, usuariosApi, auth, navigate } = setup(of(respuesta));
     completar(page, 'persona@coldday.co');
@@ -132,6 +147,7 @@ describe('LoginPage móvil', () => {
 
     const inline = fixture.nativeElement.querySelector('[data-testid="error-login"]');
     expect(inline.textContent).toContain('Correo o contraseña incorrectos');
+    expect(inline.querySelector('ion-icon')).not.toBeNull();
   });
 
   it('no repite el mensaje crudo del backend en el toast', () => {

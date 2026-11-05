@@ -42,7 +42,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
       <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
       <p class="cd-alerta__texto">{{ errorCarga }}</p>
-      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+      <ion-button class="cd-cta" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
         <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
         Reintentar
       </ion-button>
@@ -103,7 +103,6 @@
             </span>
             <ion-button
               fill="clear"
-              size="small"
               color="medium"
               data-testid="limpiar-firma"
               aria-label="Limpiar firma"
@@ -122,6 +121,7 @@
               class="cd-firma__canvas"
               role="img"
               aria-labelledby="firma-label"
+              aria-describedby="firma-ayuda"
               data-testid="firma-canvas"
               (pointerdown)="startDrawing($event)"
               (pointermove)="draw($event)"
@@ -130,33 +130,15 @@
               (pointerleave)="stopDrawing()"
             ></canvas>
             @if (!hasFirma()) {
-              <div class="cd-firma__placeholder" aria-hidden="true">
+              <div class="cd-firma__placeholder" id="firma-ayuda">
                 Dibujá tu firma acá con el dedo
               </div>
             }
           </div>
         </div>
 
-        <!-- Acta CTA: enabled only with a stroke, no request in flight, no acta yet and FINALIZADA -->
+        <!-- Estado del acta (el CTA vive en el footer fijo) -->
         <div class="cd-acta__acciones">
-          <ion-button
-            expand="block"
-            class="cd-cta"
-            data-testid="registrar-acta"
-            [disabled]="!hasFirma() || guardando() || !!acta() || !esFinalizada()"
-            (click)="registrarActa()"
-          >
-            @if (guardando()) {
-              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
-              Registrando el acta…
-            } @else if (acta()) {
-              <ion-icon slot="start" name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
-              Acta registrada
-            } @else {
-              <ion-icon slot="start" name="create-outline" aria-hidden="true"></ion-icon>
-              Registrar acta de garantía
-            }
-          </ion-button>
           @if (acta(); as actaFirmada) {
             <p class="cd-acta__codigo" data-testid="acta-codigo" role="status">
               Acta registrada. Código de verificación:
@@ -227,18 +209,6 @@
             Sin presupuesto registrado: el técnico todavía no cargó los montos del servicio.
           </p>
         }
-
-        <!-- Commission split (transparency) -->
-        <div class="cd-comision" aria-label="Retención de comisión de plataforma">
-          <div class="cd-comision__fila">
-            <span>Comisión COLD DAY ({{ comisionPorcentaje }}%):</span>
-            <span data-testid="comision-plataforma">$ {{ comisionMonto().toLocaleString('es-CO') }}</span>
-          </div>
-          <div class="cd-comision__fila">
-            <span>Monto líquido técnico ({{ liquidoPorcentaje }}%):</span>
-            <span data-testid="liquido-tecnico">$ {{ liquidoTecnicoMonto().toLocaleString('es-CO') }}</span>
-          </div>
-        </div>
       </ion-card-content>
     </ion-card>
   }
@@ -248,3 +218,27 @@
     Volver al seguimiento de la OT
   </ion-button>
 </ion-content>
+
+@if (ot(); as orden) {
+  <ion-footer class="cd-footer">
+    <ion-button
+      expand="block"
+      class="cd-cta"
+      data-testid="registrar-acta"
+      [attr.aria-busy]="guardando()"
+      [disabled]="!hasFirma() || guardando() || !!acta() || !esFinalizada()"
+      (click)="registrarActa()"
+    >
+      @if (guardando()) {
+        <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+        <span class="cd-cta__loading">Registrando el acta…</span>
+      } @else if (acta()) {
+        <ion-icon slot="start" name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+        Acta registrada
+      } @else {
+        <ion-icon slot="start" name="create-outline" aria-hidden="true"></ion-icon>
+        Registrar acta de garantía
+      }
+    </ion-button>
+  </ion-footer>
+}

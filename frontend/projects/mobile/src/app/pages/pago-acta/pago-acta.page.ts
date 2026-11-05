@@ -20,13 +20,13 @@ import {
   IonCard,
   IonCardContent,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonSpinner,
   IonToolbar,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
-import { COMISION_PLATAFORMA_RATE } from '@core/environment/comision-plataforma';
 import { ApiConfig } from '@core/service/api.config';
 import { MockDbService } from '@core/service/mock-db.service';
 import { OtApi } from '@core/service/ot-api';
@@ -88,6 +88,7 @@ const MENSAJES_ACTA: Record<number, string> = {
     IonCard,
     IonCardContent,
     IonContent,
+    IonFooter,
     IonHeader,
     IonIcon,
     IonSpinner,
@@ -180,18 +181,6 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   readonly backHref = computed(() =>
     this.otId() ? `/cliente/ot/${this.otId()}` : '/cliente/panel',
   );
-
-  /** Commission split, same math as the web (rate 0.15). Not rounded: the web displays the raw product. */
-  readonly comisionMonto = computed<number>(() =>
-    this.totalMonto() * COMISION_PLATAFORMA_RATE,
-  );
-
-  readonly liquidoTecnicoMonto = computed<number>(() =>
-    this.totalMonto() * (1 - COMISION_PLATAFORMA_RATE),
-  );
-
-  readonly comisionPorcentaje = Math.round(COMISION_PLATAFORMA_RATE * 100);
-  readonly liquidoPorcentaje = 100 - this.comisionPorcentaje;
 
   readonly categoriaLabel = computed<string>(
     () => this.ot()?.categoriaServicio.replace('_', ' ') ?? '',
