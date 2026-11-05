@@ -39,6 +39,7 @@ public record OtApiResponse(
         Double longitud,
         String clienteNombre,
         String tecnicoNombre,
+        String tecnicoTelefono,
         int auxiliaresRequeridos,
         String medioPagoVisita,
         Integer calificacionEstrellas,
@@ -63,11 +64,20 @@ public record OtApiResponse(
         List<HistorialEstadoApiResponse> historial) {
 
     public static OtApiResponse from(OtResponse response) {
-        return from(response, null, null);
+        return from(response, null, null, null);
     }
 
     /** Listado enriquecido con los nombres legibles de cliente y técnico. */
     public static OtApiResponse from(OtResponse response, String clienteNombre, String tecnicoNombre) {
+        return from(response, clienteNombre, tecnicoNombre, null);
+    }
+
+    /**
+     * Detalle enriquecido: además del nombre, el teléfono del técnico asignado.
+     * Es lo que la app móvil necesita para ofrecer "Llamar" sin inventar datos.
+     */
+    public static OtApiResponse from(OtResponse response, String clienteNombre, String tecnicoNombre,
+            String tecnicoTelefono) {
         Point ubicacion = response.ubicacion();
         return new OtApiResponse(
                 response.id() == null ? null : response.id().valor().toString(),
@@ -81,7 +91,7 @@ public record OtApiResponse(
                 response.presupuesto(),
                 ubicacion == null ? null : ubicacion.latitud(),
                 ubicacion == null ? null : ubicacion.longitud(),
-                clienteNombre, tecnicoNombre, response.auxiliaresRequeridos(),
+                clienteNombre, tecnicoNombre, tecnicoTelefono, response.auxiliaresRequeridos(),
                 response.medioPagoVisita(), response.calificacionEstrellas(), response.calificacionComentario(),
                 response.calificacionEn(), response.actaFirmada(), response.actaCodigoVerificacion(),
                 response.actaFirmadaEn(), response.llegadaEn(),

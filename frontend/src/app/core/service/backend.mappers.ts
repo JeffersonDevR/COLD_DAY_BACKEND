@@ -181,6 +181,17 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
       : undefined,
     clienteNombre: dto.clienteNombre ?? undefined,
     tecnicoNombre: dto.tecnicoNombre ?? undefined,
+    // Teléfono del técnico asignado: lo usa el botón "Llamar" del seguimiento.
+    tecnicoTelefono: dto.tecnicoTelefono ?? undefined,
+    // Calificación real de la OT (antes se descartaba y "Ya calificaste" nunca
+    // aparecía ni se podía saber si la orden ya tenía reseña).
+    calificacion: dto.calificacionEstrellas != null
+      ? {
+          estrellas: dto.calificacionEstrellas,
+          comentario: dto.calificacionComentario ?? undefined,
+          fecha: dto.calificacionEn ?? undefined,
+        }
+      : undefined,
     auxiliaresRequeridos: dto.auxiliaresRequeridos,
     visitaPagada: dto.visitaPagada,
     evidenciaUrls: [],
