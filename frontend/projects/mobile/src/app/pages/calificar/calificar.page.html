@@ -40,7 +40,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ot-error">
       <h2 class="cd-alerta__titulo">No pudimos cargar la orden</h2>
       <p class="cd-alerta__texto">{{ errorCarga }}</p>
-      <ion-button size="small" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
+      <ion-button class="cd-cta" data-testid="ot-reintentar" (click)="reintentarCargaOt()">
         <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
         Reintentar
       </ion-button>
@@ -112,21 +112,27 @@
           aria-label="Comentario"
           data-testid="comentario"
         ></ion-textarea>
-
-        <ion-button
-          expand="block"
-          class="cd-cta"
-          [disabled]="!puedeEnviar()"
-          (click)="enviarCalificacion()"
-          data-testid="enviar-calificacion"
-        >
-          @if (enviando()) {
-            <ion-spinner name="dots"></ion-spinner>
-          } @else {
-            Enviar calificación
-          }
-        </ion-button>
       </ion-card-content>
     </ion-card>
   }
 </ion-content>
+
+@if (ot(); as orden) {
+  <ion-footer class="cd-footer">
+    <ion-button
+      expand="block"
+      class="cd-cta"
+      [attr.aria-busy]="enviando()"
+      [disabled]="!puedeEnviar()"
+      (click)="enviarCalificacion()"
+      data-testid="enviar-calificacion"
+    >
+      @if (enviando()) {
+        <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+        <span class="cd-cta__loading">Enviando…</span>
+      } @else {
+        Enviar calificación
+      }
+    </ion-button>
+  </ion-footer>
+}
