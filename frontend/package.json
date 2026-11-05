@@ -44,6 +44,7 @@
     "@capacitor/camera": "^8.2.6",
     "@capacitor/core": "^8.6.0",
     "@capacitor/geolocation": "^8.2.4",
+    "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
     "@google/genai": "^2.4.0",
     "@ionic/angular": "^9.0.10",

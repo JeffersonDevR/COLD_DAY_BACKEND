@@ -1,4 +1,6 @@
 import {bootstrapApplication} from '@angular/platform-browser';
+import {Capacitor} from '@capacitor/core';
+import {hidratarTokenDesdePreferences} from './app/core/token-preferences';
 import {addIcons} from 'ionicons';
 import {
   addCircleOutline,
@@ -21,6 +23,7 @@ import {
   chevronForwardOutline,
   closeCircleOutline,
   closeOutline,
+  cloudOfflineOutline,
   compassOutline,
   construct,
   constructOutline,
@@ -95,6 +98,7 @@ addIcons({
   chevronForwardOutline,
   closeCircleOutline,
   closeOutline,
+  cloudOfflineOutline,
   compassOutline,
   construct,
   constructOutline,
@@ -142,4 +146,13 @@ addIcons({
   videocamOutline,
 });
 
-bootstrapApplication(MobileApp, appConfig).catch((err) => console.error(err));
+async function arrancar(): Promise<void> {
+  // En nativo el token vive también en Preferences: se copia antes de arrancar
+  // para que guards y AuthService lo vean sincrónicamente.
+  if (Capacitor.isNativePlatform()) {
+    await hidratarTokenDesdePreferences();
+  }
+  await bootstrapApplication(MobileApp, appConfig);
+}
+
+void arrancar().catch((err) => console.error(err));

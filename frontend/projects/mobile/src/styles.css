@@ -2567,6 +2567,29 @@ form {
   display: none;
 }
 
+/* Banner global de sin conexión (no bloquea la acción, solo informa). */
+.cd-offline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: calc(env(safe-area-inset-top, 0px) + 0.4rem) 0.75rem 0.4rem;
+  background: #f59e0b;
+  color: #1a1204;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cd-offline ion-icon {
+  font-size: 1rem;
+}
+
 /* A4: tres métricas y filtros deben caber en 360–390 px, nunca empujar el ancho. */
 .cd-metricas {
   grid-template-columns: repeat(3, minmax(0, 1fr));
