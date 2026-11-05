@@ -71,6 +71,21 @@ public class NombresOtResolver {
     }
 
     /**
+     * Phone of the assigned technician, or {@code null} when there is none.
+     * The mobile app uses it for the "Llamar" action instead of inventing a
+     * number or hiding the affordance.
+     */
+    public String telefonoTecnico(TecnicoId tecnicoId) {
+        if (tecnicoId == null) {
+            return null;
+        }
+        return tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
+                .flatMap(tecnico -> usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId())))
+                .map(Usuario::getTelefono)
+                .orElse(null);
+    }
+
+    /**
      * Enriches a whole listing. The resolved names are memoized across the batch,
      * so a list where many orders share a client or a technician resolves that
      * profile once instead of once per row.

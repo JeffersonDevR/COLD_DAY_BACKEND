@@ -29,7 +29,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="solicitudes-error">
       <h2 class="cd-alerta__titulo">No pudimos cargar las solicitudes</h2>
       <p class="cd-alerta__texto">Revisá tu conexión e intentá de nuevo.</p>
-      <ion-button size="small" (click)="cargar()" data-testid="solicitudes-reintentar">
+      <ion-button class="cd-cta" (click)="cargar()" data-testid="solicitudes-reintentar">
         <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
         Reintentar
       </ion-button>
@@ -72,12 +72,14 @@
         <div class="cd-ot__acciones">
           <ion-button
             class="cd-cta"
+            [attr.aria-busy]="accionEnCurso() === oferta.id"
             [disabled]="accionEnCurso() === oferta.id"
             (click)="aceptar(oferta)"
             [attr.data-testid]="'aceptar-' + oferta.id"
           >
             @if (accionEnCurso() === oferta.id) {
-              <ion-spinner name="dots"></ion-spinner>
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Aceptando…</span>
             } @else {
               Aceptar
             }
@@ -99,11 +101,17 @@
           <ion-button
             expand="block"
             class="cd-cta"
+            [attr.aria-busy]="accionEnCurso() === oferta.id"
             [disabled]="accionEnCurso() === oferta.id"
             (click)="entregar(oferta)"
             [attr.data-testid]="'entregar-' + oferta.id"
           >
-            Confirmar entrega
+            @if (accionEnCurso() === oferta.id) {
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Confirmando…</span>
+            } @else {
+              Confirmar entrega
+            }
           </ion-button>
         </div>
       }

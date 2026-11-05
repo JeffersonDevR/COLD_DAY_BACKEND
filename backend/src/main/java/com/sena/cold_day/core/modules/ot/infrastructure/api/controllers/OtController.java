@@ -119,7 +119,7 @@ public class OtController {
      */
     private OtApiResponse conNombres(OtResponse ot) {
         return OtApiResponse.from(ot, nombres.nombreCliente(ot.clienteId()),
-                nombres.nombreTecnico(ot.tecnicoId()));
+                nombres.nombreTecnico(ot.tecnicoId()), nombres.telefonoTecnico(ot.tecnicoId()));
     }
 
     /** The requester is resolved from the principal; all Phase-1 orders are urgent. */

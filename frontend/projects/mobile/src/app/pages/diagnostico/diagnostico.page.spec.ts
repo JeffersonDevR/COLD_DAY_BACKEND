@@ -395,15 +395,13 @@ describe('DiagnosticoPage móvil (A7)', () => {
     );
   });
 
-  it('el banner de chat es "Próximamente" y no interactivo (sin inputs ni botones)', () => {
+  it('no muestra el bloque de chat ni la etiqueta Próximamente', () => {
     const { fixture } = setup({});
 
-    const chat = fixture.nativeElement.querySelector(
-      '[data-testid="chat-proximamente"]',
-    ) as HTMLElement;
-    expect(chat).not.toBeNull();
-    expect(chat.textContent).toContain('Próximamente');
-    expect(chat.querySelector('input, textarea, button, a, ion-button')).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="chat-proximamente"]'),
+    ).toBeNull();
+    expect((fixture.nativeElement.textContent as string)).not.toContain('Próximamente');
   });
 
   it('el CTA inferior vuelve al seguimiento de la OT', () => {

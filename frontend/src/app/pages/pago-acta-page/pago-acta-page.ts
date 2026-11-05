@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal, computed, OnDestroy, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, finalize } from 'rxjs';
 import { OtApi } from '../../core/service/ot-api';
 import { SseService } from '../../core/service/sse.service';
 import { pollVisibleTab } from '../../core/service/visible-tab-polling';
@@ -250,7 +250,10 @@ export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.guardando.set(true);
-    this.otApi.firmarActaGarantia(this.otId(), firmaDataUrl).subscribe({
+    this.otApi
+      .firmarActaGarantia(this.otId(), firmaDataUrl)
+      .pipe(finalize(() => this.guardando.set(false)))
+      .subscribe({
       next: (acta) => {
         // Un 2xx sin código no es prueba de nada: el código es lo que hace
         // verificable el acta. Si faltara, se reporta como error en vez de
@@ -274,7 +277,6 @@ export class PagoActaPage implements OnInit, AfterViewInit, OnDestroy {
         // genérico por status. Un "éxito" acá volvería a mentir.
         avisarErrorAccion(this.toast, 'No pudimos registrar tu acta', err, MENSAJES_ACTA);
       },
-      complete: () => this.guardando.set(false),
     });
   }
 
