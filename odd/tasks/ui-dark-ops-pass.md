@@ -52,19 +52,20 @@ The theme layer is correct (dark cascade fixed in `3f83991`), but the page layer
 - [x] A3 Mi cuenta — microcopy to the 12px floor (mode note/pill, role line). Commit `936ec57`.
 - [x] A4 Panel cliente — hero out of `ion-toolbar`, fixed footer CTA, outline secondary, OT card no longer truncates, filters at 48dp/12px. Commit `42c46b2`.
 - [x] A5 Solicitar servicio — vertical category cards with subtype + 24px check, "Describe la falla o ruido extraño" + real voice dictation, footer CTA "Solicitar técnico" with `aria-busy`, roadmap copy removed, profile CTA promoted. Commit `8e3364e`.
-- [ ] A6 Seguimiento OT.
-- [ ] A7 Diagnóstico / presupuesto.
-- [ ] A8 Pago y acta.
-- [ ] A9 Calificar servicio.
-- [ ] B1 Radar de ofertas.
-- [ ] B2 Mis OTs.
-- [ ] B3 Ejecución de OT.
-- [ ] B4 Perfil técnico.
-- [ ] C1 Solicitudes de insumos.
-- [ ] C2 Documentos del proveedor.
+- [x] A6 Seguimiento OT — una primaria por estado, evidencias fuera, modales con focus trap + Escape. Commit `fcee354`.
+- [x] A7 Diagnóstico — decisión en footer, chat "Próximamente" eliminado. Commit `61592d2`.
+- [x] A8 Pago y acta — CTA en footer con `aria-busy`, hint de firma expuesto a AT. Commit `c4d1aef`.
+- [x] A9 Calificar — CTA en footer, estrellas 48dp. Commit `92626c3`.
+- [x] B1 Radar de ofertas — copy corregido (hablaba al cliente), accept con `aria-busy`. Commit `4037af0`.
+- [x] B2 Mis OTs — acciones a 48dp. Commit `4037af0`.
+- [x] B3 Ejecución de OT — acciones a la receta CTA. Commit `111a5a8`.
+- [x] B4 Perfil técnico — CTA ya en receta; sin cambios de layout. Commit `111a5a8`.
+- [x] C1 Solicitudes de insumos — accept/entrega con `aria-busy`. Commit `111a5a8`.
+- [x] C2 Documentos del proveedor — guardado con `aria-busy`. Commit `111a5a8`.
 
 ## Progress
 - 2026-11-05: worktree created from `main` (`d2acf20`), branch `feat/ui-dark-ops-fidelity`. Worktree audit re-run (the earlier audit read a dirty checkout): `ion-footer` 0, `ion-modal` 0, `cd-dim` declared but unused, 69 sub-12px declarations, 5 truncation rules.
 - 2026-11-05: A1–A5 committed. New shared primitives: `.cd-footer` (fixed thumb-zone CTA with safe-area) and the global `:focus-visible` ring. Suite: login 9/9, registro 17/17, cuenta 5/5, panel 18/18, solicitar 21/21.
 - Pending structural item: A5 is still a single screen. The brief's 3-step flow (Paso 1 ubicación → Paso 2 detalle → Paso 3 confirmación with "Solicitar técnico") needs its own work unit; today's CTA is labelled "Solicitar técnico" because the form emits directly.
+- 2026-11-05 (cierre): A1–C2 completos. Suite mobile **244 tests / 20 archivos, 0 fallos**; `tsc -p projects/mobile/tsconfig.app.json --noEmit` en 0.
 - Known environment noise: vitest/jsdom prints "Could not parse CSS stylesheet" for Ionic styles; pre-existing, does not fail tests.
