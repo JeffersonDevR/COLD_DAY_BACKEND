@@ -66,6 +66,7 @@ The theme layer is correct (dark cascade fixed in `3f83991`), but the page layer
 ## Progress
 - 2026-11-05: worktree created from `main` (`d2acf20`), branch `feat/ui-dark-ops-fidelity`. Worktree audit re-run (the earlier audit read a dirty checkout): `ion-footer` 0, `ion-modal` 0, `cd-dim` declared but unused, 69 sub-12px declarations, 5 truncation rules.
 - 2026-11-05: A1–A5 committed. New shared primitives: `.cd-footer` (fixed thumb-zone CTA with safe-area) and the global `:focus-visible` ring. Suite: login 9/9, registro 17/17, cuenta 5/5, panel 18/18, solicitar 21/21.
-- Pending structural item: A5 is still a single screen. The brief's 3-step flow (Paso 1 ubicación → Paso 2 detalle → Paso 3 confirmación with "Solicitar técnico") needs its own work unit; today's CTA is labelled "Solicitar técnico" because the form emits directly.
-- 2026-11-05 (cierre): A1–C2 completos. Suite mobile **244 tests / 20 archivos, 0 fallos**; `tsc -p projects/mobile/tsconfig.app.json --noEmit` en 0.
+- Pending structural item: A5 is still a single screen. The brief's 3-step flow (Paso 1 ubicación → Paso 2 detalle → Paso 3 confirmación with "Solicitar técnico") needs its own work unit; today's CTA is labelled "Solicitar técnico" because the form emits directly.- 2026-11-05: A5 se convierte en flujo de 3 pasos con unidad de test propia (gating por paso, atrás, resumen y edición por bloque). Suite mobile **249 tests / 20 archivos / 0 fallos**; `tsc` mobile en 0.
+- 2026-11-05: el split de comisión (Comisión COLD DAY / líquido técnico) se quitó de la pantalla de acta del cliente; los tests ahora verifican su ausencia.
+- Tono: se mantiene el voseo actual; la migración a neutro queda para otra decisión.
 - Known environment noise: vitest/jsdom prints "Could not parse CSS stylesheet" for Ionic styles; pre-existing, does not fail tests.
