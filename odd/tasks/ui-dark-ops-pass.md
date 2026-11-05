@@ -47,8 +47,24 @@ The theme layer is correct (dark cascade fixed in `3f83991`), but the page layer
 - Branch `feat/ui-dark-ops-fidelity` in worktree `ui-dark-ops` (from `main`).
 
 ## Tasks
-- [ ] A1 Login: CTA 15px, focus-visible global, `aria-busy` on submit, error banner icon, logo radius token, footer type floor, spec coverage.
-- [ ] A2..C2 in sequence, same checklist.
+- [x] A1 Login — CTA 15px, focus-visible global, `aria-busy` + "Entrando…", error banner icon, logo radius token, footer type floor. Commit `7d270eb`.
+- [x] A2 Registro — same auth patterns + icon-only password toggle with `aria-label`. Commit `7d270eb`.
+- [x] A3 Mi cuenta — microcopy to the 12px floor (mode note/pill, role line). Commit `936ec57`.
+- [x] A4 Panel cliente — hero out of `ion-toolbar`, fixed footer CTA, outline secondary, OT card no longer truncates, filters at 48dp/12px. Commit `42c46b2`.
+- [x] A5 Solicitar servicio — vertical category cards with subtype + 24px check, "Describe la falla o ruido extraño" + real voice dictation, footer CTA "Solicitar técnico" with `aria-busy`, roadmap copy removed, profile CTA promoted. Commit `8e3364e`.
+- [ ] A6 Seguimiento OT.
+- [ ] A7 Diagnóstico / presupuesto.
+- [ ] A8 Pago y acta.
+- [ ] A9 Calificar servicio.
+- [ ] B1 Radar de ofertas.
+- [ ] B2 Mis OTs.
+- [ ] B3 Ejecución de OT.
+- [ ] B4 Perfil técnico.
+- [ ] C1 Solicitudes de insumos.
+- [ ] C2 Documentos del proveedor.
 
 ## Progress
 - 2026-11-05: worktree created from `main` (`d2acf20`), branch `feat/ui-dark-ops-fidelity`. Worktree audit re-run (the earlier audit read a dirty checkout): `ion-footer` 0, `ion-modal` 0, `cd-dim` declared but unused, 69 sub-12px declarations, 5 truncation rules.
+- 2026-11-05: A1–A5 committed. New shared primitives: `.cd-footer` (fixed thumb-zone CTA with safe-area) and the global `:focus-visible` ring. Suite: login 9/9, registro 17/17, cuenta 5/5, panel 18/18, solicitar 21/21.
+- Pending structural item: A5 is still a single screen. The brief's 3-step flow (Paso 1 ubicación → Paso 2 detalle → Paso 3 confirmación with "Solicitar técnico") needs its own work unit; today's CTA is labelled "Solicitar técnico" because the form emits directly.
+- Known environment noise: vitest/jsdom prints "Could not parse CSS stylesheet" for Ionic styles; pre-existing, does not fail tests.
