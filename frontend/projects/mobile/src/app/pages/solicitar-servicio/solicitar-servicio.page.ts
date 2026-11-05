@@ -12,6 +12,7 @@ import {
   IonButton,
   IonButtons,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonInput,
@@ -42,13 +43,66 @@ import { MobileToastService } from '../../core/toast.service';
 const CATEGORIAS: readonly {
   valor: CategoriaServicio;
   etiqueta: string;
+  subtipo: string;
   icono: string;
 }[] = [
-  { valor: 'AIRE_ACONDICIONADO', etiqueta: 'Aire acondicionado', icono: 'snow-outline' },
-  { valor: 'REFRIGERACION', etiqueta: 'Refrigeración', icono: 'thermometer-outline' },
-  { valor: 'ELECTRICIDAD', etiqueta: 'Electricidad', icono: 'flash-outline' },
-  { valor: 'LAVADORAS', etiqueta: 'Lavadoras', icono: 'water-outline' },
+  {
+    valor: 'AIRE_ACONDICIONADO',
+    etiqueta: 'Aire acondicionado',
+    subtipo: 'Split e inverter',
+    icono: 'snow-outline',
+  },
+  {
+    valor: 'REFRIGERACION',
+    etiqueta: 'Refrigeración',
+    subtipo: 'Heladeras y freezers',
+    icono: 'thermometer-outline',
+  },
+  {
+    valor: 'ELECTRICIDAD',
+    etiqueta: 'Electricidad',
+    subtipo: 'Tableros y tomas',
+    icono: 'flash-outline',
+  },
+  {
+    valor: 'LAVADORAS',
+    etiqueta: 'Lavadoras',
+    subtipo: 'Carga frontal y superior',
+    icono: 'water-outline',
+  },
 ];
+
+/** Contrato mínimo de la Web Speech API: solo lo que usa el dictado. */
+interface ResultadoVoz {
+  readonly results: ArrayLike<ArrayLike<{ readonly transcript: string }>>;
+}
+
+interface ReconocimientoVoz {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((evento: ResultadoVoz) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+type ConstructorReconocimientoVoz = new () => ReconocimientoVoz;
+
+function obtenerReconocimientoVoz(): ConstructorReconocimientoVoz | null {
+  if (typeof window === 'undefined') return null;
+  const ventana = window as unknown as {
+    SpeechRecognition?: ConstructorReconocimientoVoz;
+    webkitSpeechRecognition?: ConstructorReconocimientoVoz;
+  };
+  return ventana.SpeechRecognition ?? ventana.webkitSpeechRecognition ?? null;
+}
+
+function extraerTranscripcion(evento: ResultadoVoz): string {
+  const alternativa = evento.results[0]?.[0];
+  return alternativa ? alternativa.transcript.trim() : '';
+}
 
 const TIPOS_CLIENTE: readonly { valor: TipoCliente; etiqueta: string }[] = [
   { valor: 'B2C', etiqueta: 'Persona (B2C)' },
@@ -79,6 +133,7 @@ const MSG_FALTA_UBICACION =
     IonButton,
     IonButtons,
     IonContent,
+    IonFooter,
     IonHeader,
     IonIcon,
     IonInput,
@@ -165,7 +220,10 @@ const MSG_FALTA_UBICACION =
             </ion-list>
 
             @if (errorCrearPerfil(); as mensaje) {
-              <p class="cd-auth__error" role="alert" data-testid="error-crear-perfil">{{ mensaje }}</p>
+              <p class="cd-auth__error" role="alert" data-testid="error-crear-perfil">
+                <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+                <span>{{ mensaje }}</span>
+              </p>
             }
             @if (perfilForm.controls.calle.touched && perfilForm.controls.calle.invalid) {
               <p class="cd-field-error" data-testid="error-perfil-calle">
@@ -208,26 +266,48 @@ const MSG_FALTA_UBICACION =
 
       <form class="cd-solicitud" [formGroup]="solicitudForm" (ngSubmit)="enviar()" novalidate>
         <fieldset class="cd-bloque">
-          <legend class="cd-bloque__titulo">1. Línea de especialidad</legend>
-          <div class="cd-categorias" role="group" aria-label="Línea de especialidad">
+          <legend class="cd-bloque__titulo">1. Selecciona la especialidad</legend>
+          <div class="cd-categorias" role="radiogroup" aria-label="Línea de especialidad">
             @for (cat of categorias; track cat.valor) {
               <button
                 type="button"
+                role="radio"
                 class="cd-categoria"
                 [class.cd-categoria--activa]="categoria() === cat.valor"
-                [attr.aria-pressed]="categoria() === cat.valor"
+                [attr.aria-checked]="categoria() === cat.valor"
                 [attr.data-testid]="'categoria-' + cat.valor.toLowerCase()"
                 (click)="setCategoria(cat.valor)"
               >
-                <ion-icon [name]="cat.icono" aria-hidden="true"></ion-icon>
-                <span>{{ cat.etiqueta }}</span>
+                <span class="cd-categoria__icono" aria-hidden="true">
+                  <ion-icon [name]="cat.icono"></ion-icon>
+                </span>
+                <span class="cd-categoria__marca" aria-hidden="true"></span>
+                <span class="cd-categoria__texto">
+                  <span class="cd-categoria__nombre">{{ cat.etiqueta }}</span>
+                  <span class="cd-categoria__subtipo">{{ cat.subtipo }}</span>
+                </span>
               </button>
             }
           </div>
         </fieldset>
 
         <fieldset class="cd-bloque">
-          <legend class="cd-bloque__titulo">2. Contanos la falla</legend>
+          <legend class="cd-bloque__titulo">2. Describe la falla o ruido extraño</legend>
+
+          <div class="cd-bloque__accion">
+            <ion-button
+              size="small"
+              fill="outline"
+              type="button"
+              data-testid="dictar-falla"
+              [disabled]="!dictadoDisponible()"
+              (click)="dictarFalla()"
+            >
+              <ion-icon slot="start" name="mic-outline" aria-hidden="true"></ion-icon>
+              {{ dictando() ? 'Escuchando…' : 'Dictar por voz' }}
+            </ion-button>
+          </div>
+
           <ion-list lines="none" class="cd-form">
             <ion-item>
               <ion-textarea
@@ -296,7 +376,7 @@ const MSG_FALTA_UBICACION =
 
           <p class="cd-ayuda">
             El técnico necesita el punto exacto: ubicá la dirección o compartí tu ubicación
-            actual. El mapa con pin arrastrable llega en la próxima entrega.
+            actual.
           </p>
 
           @if (coordenadas()) {
@@ -321,23 +401,28 @@ const MSG_FALTA_UBICACION =
           Al confirmar, tu orden pasa a <strong>buscando técnico</strong> y se envía a los
           técnicos cercanos: el primero que acepta la toma.
         </p>
-
-        <ion-button
-          expand="block"
-          type="submit"
-          class="cd-cta"
-          data-testid="enviar"
-          [disabled]="!listoParaEnviar()"
-        >
-          @if (loading()) {
-            <ion-spinner name="dots"></ion-spinner>
-          } @else {
-            <ion-icon slot="start" name="compass-outline" aria-hidden="true"></ion-icon>
-            Emitir solicitud
-          }
-        </ion-button>
       </form>
     </ion-content>
+
+    <ion-footer class="cd-footer">
+      <ion-button
+        expand="block"
+        class="cd-cta"
+        type="button"
+        data-testid="enviar"
+        [attr.aria-busy]="loading()"
+        [disabled]="!listoParaEnviar()"
+        (click)="enviar()"
+      >
+        @if (loading()) {
+          <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+          <span class="cd-cta__loading">Procesando…</span>
+        } @else {
+          <ion-icon slot="start" name="compass-outline" aria-hidden="true"></ion-icon>
+          Solicitar técnico
+        }
+      </ion-button>
+    </ion-footer>
   `,
 })
 export class SolicitarServicioPage {
@@ -361,6 +446,7 @@ export class SolicitarServicioPage {
   protected readonly loading = signal(false);
   protected readonly geocodificando = signal(false);
   protected readonly ubicando = signal(false);
+  protected readonly dictando = signal(false);
 
   /** El backend rechaza la OT porque el usuario todavía no tiene perfil de cliente. */
   protected readonly faltoPerfilCliente = signal(false);
@@ -419,6 +505,44 @@ export class SolicitarServicioPage {
   protected setCategoria(categoria: CategoriaServicio): void {
     this.categoria.set(categoria);
     this.guardarBorrador();
+  }
+
+  /** El dictado usa la Web Speech API del WebView; si no existe, el botón se deshabilita. */
+  protected readonly dictadoDisponible = signal(obtenerReconocimientoVoz() !== null);
+
+  private reconocimiento: ReconocimientoVoz | null = null;
+
+  protected dictarFalla(): void {
+    const Ctor = obtenerReconocimientoVoz();
+    if (!Ctor) return;
+    if (this.dictando()) {
+      this.reconocimiento?.stop();
+      this.dictando.set(false);
+      return;
+    }
+
+    const reconocimiento = new Ctor();
+    reconocimiento.lang = 'es-CO';
+    reconocimiento.interimResults = false;
+    reconocimiento.continuous = false;
+    reconocimiento.onresult = (evento) => {
+      const texto = extraerTranscripcion(evento);
+      if (!texto) return;
+      const actual = this.solicitudForm.controls.descripcionFalla.value;
+      const siguiente = actual ? `${actual.trim()} ${texto}`.trim() : texto;
+      this.solicitudForm.controls.descripcionFalla.setValue(siguiente);
+      this.solicitudForm.controls.descripcionFalla.markAsTouched();
+      this.guardarBorrador();
+    };
+    reconocimiento.onerror = () => {
+      this.dictando.set(false);
+      void this.toast.error('No pudimos dictar', 'Probá de nuevo o escribí la falla.');
+    };
+    reconocimiento.onend = () => this.dictando.set(false);
+
+    this.reconocimiento = reconocimiento;
+    this.dictando.set(true);
+    reconocimiento.start();
   }
 
   protected setTipoCliente(tipo: TipoCliente): void {

@@ -477,4 +477,27 @@ describe('SolicitarServicioPage móvil', () => {
       expect(clientesApi.crearOt).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('el CTA de la solicitud vive en el footer fijo y se anuncia como acción primaria', () => {
+    const { fixture } = setup();
+
+    const footer = fixture.nativeElement.querySelector('ion-footer.cd-footer');
+    expect(footer).not.toBeNull();
+    const enviar = footer.querySelector('[data-testid="enviar"]') as HTMLElement;
+    expect(enviar).not.toBeNull();
+    expect(enviar.textContent).toContain('Solicitar técnico');
+    expect(enviar.getAttribute('aria-busy')).toBe('false');
+  });
+
+  it('el dictado por voz solo se ofrece cuando el WebView soporta el reconocimiento', () => {
+    const { fixture } = setup();
+
+    const dictado = fixture.nativeElement.querySelector(
+      '[data-testid="dictar-falla"]',
+    ) as HTMLButtonElement | null;
+    expect(dictado).not.toBeNull();
+    // jsdom no implementa SpeechRecognition: el botón queda deshabilitado.
+    expect(dictado?.disabled).toBe(true);
+    expect(dictado?.textContent).toContain('Dictar por voz');
+  });
 });
