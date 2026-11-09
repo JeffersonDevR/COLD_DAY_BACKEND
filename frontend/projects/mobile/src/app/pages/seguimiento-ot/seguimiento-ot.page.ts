@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  HostListener,
   OnDestroy,
   OnInit,
   computed,
@@ -12,6 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { A11yModule } from '@angular/cdk/a11y';
 import { catchError, of, startWith, switchMap, Subscription } from 'rxjs';
 import {
   IonBackButton,
@@ -69,6 +71,7 @@ import { OtTimelineComponent } from './ot-timeline.component';
     DatePipe,
     DecimalPipe,
     ReactiveFormsModule,
+    A11yModule,
     IonBackButton,
     IonButton,
     IonButtons,
@@ -444,6 +447,13 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
     this.motivoDisputaControl.setValue('');
     this.motivoDisputaControl.markAsUntouched();
     this.mostrarModalDisputa.set(true);
+  }
+
+  /** Escape cierra el modal abierto: el foco lo devuelve focus-trap del CDK. */
+  @HostListener('document:keydown.escape')
+  protected cerrarModalConEscape(): void {
+    if (this.mostrarModalCancelar()) this.mostrarModalCancelar.set(false);
+    if (this.mostrarModalDisputa()) this.mostrarModalDisputa.set(false);
   }
 
   /** Feedback de los formularios modales sin repetir el copy en cada botón. */

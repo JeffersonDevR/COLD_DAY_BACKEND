@@ -161,12 +161,9 @@ describe('PagoActaPage móvil (A8)', () => {
     const total = fixture.nativeElement.querySelector('[data-testid="costo-total"]')?.textContent;
     expect(total).toContain('350.000');
     expect(total).toContain('COP');
-    expect(fixture.nativeElement.querySelector('[data-testid="comision-plataforma"]')?.textContent).toContain(
-      '52.500',
-    );
-    expect(fixture.nativeElement.querySelector('[data-testid="liquido-tecnico"]')?.textContent).toContain(
-      '297.500',
-    );
+    // El split de comisión es información interna: no se muestra al cliente.
+    expect(fixture.nativeElement.querySelector('[data-testid="comision-plataforma"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="liquido-tecnico"]')).toBeNull();
   });
 
   it('la visita nunca se consulta: la fila muestra "Por confirmar"', () => {
@@ -177,7 +174,7 @@ describe('PagoActaPage móvil (A8)', () => {
     );
   });
 
-  it('si la estimación existe, el total y la comisión la incluyen (sin redondear)', () => {
+  it('si la estimación existe, el total la incluye y no se expone el split interno', () => {
     const { fixture } = setup({});
     const page = fixture.componentInstance;
 
@@ -185,13 +182,11 @@ describe('PagoActaPage móvil (A8)', () => {
     fixture.detectChanges();
 
     expect(page.totalMonto()).toBe(395000);
-    expect(page.comisionMonto()).toBe(59250);
-    expect(page.liquidoTecnicoMonto()).toBe(335750);
-    expect(texto(fixture)).toContain('59.250');
-    expect(texto(fixture)).toContain('335.750');
     expect(fixture.nativeElement.querySelector('[data-testid="costo-total"]')?.textContent).toContain(
       '395.000',
     );
+    expect(texto(fixture)).not.toContain('Comisión');
+    expect(texto(fixture)).not.toContain('líquido');
   });
 
   it('sin presupuesto las filas muestran "Por confirmar" y el aviso honesto', () => {

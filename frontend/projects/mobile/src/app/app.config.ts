@@ -17,7 +17,8 @@ import { routes } from './app.routes';
 import { mobileErrorInterceptor } from './core/mobile-error.interceptor';
 import { provideAvisoSesion } from './core/toast.service';
 import { visibilidadMovil } from './core/app-visibility';
-import { registrarDeepLinks } from './core/deep-links';
+import { TOKEN_PERSISTENCIA } from '@core/service/token-persistencia';
+import { PreferencesTokenPersistence } from './core/token-preferences';
 
 /**
  * Providers de la app móvil.
@@ -39,6 +40,8 @@ export const appConfig: ApplicationConfig = {
     { provide: API_ORIGIN, useValue: MOBILE_API_ORIGIN },
     // En nativo la visibilidad sale del ciclo de vida del sistema, no del WebView.
     { provide: VISIBILITY_SOURCE, useFactory: visibilidadMovil },
+    // Espejo del token en Preferences: la sesión sobrevive a la limpieza del WebView.
+    { provide: TOKEN_PERSISTENCIA, useClass: PreferencesTokenPersistence },
     provideColombianLocale(),
     provideAvisoSesion(),
     // Enlaces profundos: no-op mientras DEEP_LINKS.habilitado sea false (la app

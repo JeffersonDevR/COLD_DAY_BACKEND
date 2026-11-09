@@ -1,4 +1,6 @@
 import {bootstrapApplication} from '@angular/platform-browser';
+import {Capacitor} from '@capacitor/core';
+import {hidratarTokenDesdePreferences} from './app/core/token-preferences';
 import {addIcons} from 'ionicons';
 import {
   addCircleOutline,
@@ -10,6 +12,7 @@ import {
   calendarOutline,
   callOutline,
   carOutline,
+  cameraOutline,
   cardOutline,
   cash,
   cashOutline,
@@ -20,6 +23,7 @@ import {
   chevronForwardOutline,
   closeCircleOutline,
   closeOutline,
+  cloudOfflineOutline,
   compassOutline,
   construct,
   constructOutline,
@@ -43,6 +47,7 @@ import {
   logOutOutline,
   mailOutline,
   mapOutline,
+  micOutline,
   navigateOutline,
   notificationsOutline,
   person,
@@ -84,6 +89,7 @@ addIcons({
   calendarOutline,
   callOutline,
   carOutline,
+  cameraOutline,
   cardOutline,
   cash,
   cashOutline,
@@ -94,6 +100,7 @@ addIcons({
   chevronForwardOutline,
   closeCircleOutline,
   closeOutline,
+  cloudOfflineOutline,
   compassOutline,
   construct,
   constructOutline,
@@ -117,6 +124,7 @@ addIcons({
   logOutOutline,
   mailOutline,
   mapOutline,
+  micOutline,
   navigateOutline,
   notificationsOutline,
   person,
@@ -141,25 +149,13 @@ addIcons({
   videocamOutline,
 });
 
-/**
- * La app móvil NO tiene proxy: si el build se hizo sin `MOBILE_API_ORIGIN`, cada
- * llamada queda relativa contra el propio WebView (`capacitor://localhost/api/…`)
- * y la app no puede hablar con el backend. Antes eso solo dejaba un warning en
- * la consola del build y el APK salía roto. Ahora el arranque lo dice en pantalla.
- */
-function faltaElOrigenDelBackend(): boolean {
-  if (MOBILE_API_ORIGIN) return false;
-  document.body.innerHTML =
-    '<main style="font-family:system-ui,sans-serif;background:#0b1220;color:#e2e8f0;'
-    + 'min-height:100vh;display:grid;place-items:center;padding:2rem;text-align:center">'
-    + '<div><h1 style="font-size:1.25rem;margin:0 0 .5rem">Configuración incompleta</h1>'
-    + '<p style="margin:0;color:#94a3b8;max-width:32rem;line-height:1.5">'
-    + 'Esta compilación no tiene <code>API_ORIGIN</code>, así que no puede conectarse al '
-    + 'backend. Recompilá con <code>API_ORIGIN=https://…</code> definido en <code>.env</code>.'
-    + '</p></div></main>';
-  return true;
+async function arrancar(): Promise<void> {
+  // En nativo el token vive también en Preferences: se copia antes de arrancar
+  // para que guards y AuthService lo vean sincrónicamente.
+  if (Capacitor.isNativePlatform()) {
+    await hidratarTokenDesdePreferences();
+  }
+  await bootstrapApplication(MobileApp, appConfig);
 }
 
-if (!faltaElOrigenDelBackend()) {
-  bootstrapApplication(MobileApp, appConfig).catch((err) => console.error(err));
-}
+void arrancar().catch((err) => console.error(err));

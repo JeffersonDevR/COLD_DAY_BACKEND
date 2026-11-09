@@ -4,7 +4,7 @@
       <p class="cd-eyebrow">Radar de ofertas</p>
       <h1 class="cd-headline">Ofertas cercanas</h1>
       <p class="cd-hero__nota">
-        Tu oferta se envía a los técnicos cercanos; el primero que acepta la toma.
+        Recibís ofertas de clientes cercanos; la primera que aceptás es tuya.
       </p>
     </div>
   </ion-toolbar>
@@ -40,7 +40,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="radar-error">
       <h2 class="cd-alerta__titulo">No pudimos cargar las ofertas</h2>
       <p class="cd-alerta__texto">Revisá tu conexión e intentá de nuevo.</p>
-      <ion-button size="small" (click)="reintentar()" data-testid="radar-reintentar">
+      <ion-button class="cd-cta" (click)="reintentar()" data-testid="radar-reintentar">
         <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
         Reintentar
       </ion-button>
@@ -91,12 +91,14 @@
 
         <ion-button
           class="cd-cta"
+          [attr.aria-busy]="loadingOt() === oferta.ot.id"
           [disabled]="loadingOt() === oferta.ot.id || !validacionAprobada() || bloqueadoPorLiquidacion()"
           (click)="aceptar(oferta)"
           [attr.data-testid]="'aceptar-' + oferta.ot.id"
         >
           @if (loadingOt() === oferta.ot.id) {
-            <ion-spinner name="dots"></ion-spinner>
+            <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+            <span class="cd-cta__loading">Aceptando…</span>
           } @else {
             Aceptar
           }
