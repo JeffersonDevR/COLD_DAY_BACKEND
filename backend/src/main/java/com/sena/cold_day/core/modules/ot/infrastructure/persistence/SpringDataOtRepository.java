@@ -1,6 +1,7 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.persistence;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,6 +15,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 public interface SpringDataOtRepository extends JpaRepository<OtJpaEntity, UUID> {
 
     List<OtJpaEntity> findByEstado(EstadoOt estado);
+
+    List<OtJpaEntity> findByEstadoIn(Collection<EstadoOt> estados);
 
     List<OtJpaEntity> findByClienteId(UUID clienteId);
 
@@ -33,7 +36,11 @@ public interface SpringDataOtRepository extends JpaRepository<OtJpaEntity, UUID>
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE OtJpaEntity o SET o.estado = :destino, o.tecnicoId = :tecnicoId, "
             + "o.asignadaEn = :ahora, o.radioKm = :radioKm, "
-            + "o.auxiliaresRequeridos = :auxiliaresRequeridos "
+            + "o.auxiliaresRequeridos = :auxiliaresRequeridos, "
+            // A9: un UPDATE masivo NO incrementa @Version por si solo. Sin esto, el
+            // agregado que otro hilo cargo antes de la asignacion seguia "vigente" y
+            // su save posterior revertia la asignacion (lost update).
+            + "o.version = o.version + 1 "
             + "WHERE o.id = :id AND o.estado = :origen")
     int asignarSiDisponible(@Param("id") UUID id, @Param("tecnicoId") UUID tecnicoId,
             @Param("ahora") Instant ahora, @Param("radioKm") double radioKm,

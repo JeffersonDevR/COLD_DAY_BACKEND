@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CambioEstado;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtMetrica;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.OtJpaEntity;
 import com.sena.cold_day.core.modules.ot.infrastructure.persistence.SpringDataOtRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
@@ -39,15 +41,17 @@ public class OtRepositoryAdapter implements OtRepository {
      * of ours, so a code edited by hand cannot blow the cast up and, with it, every
      * creation of that year.
      */
-    private static final String ULTIMO_NUMERO_CODIGO = """
-            SELECT COALESCE(MAX(split_part(codigo, '-', 3)::bigint), 0)
-            FROM ot
-            WHERE codigo LIKE CONCAT('OT-', :anio, '-%')
-              AND codigo ~ '^OT-[0-9]{4}-[0-9]{1,12}$'
+    private static final String SIGUIENTE_NUMERO_CODIGO = """
+            INSERT INTO ot_secuencia_anio (anio, ultimo) VALUES (:anio, 1)
+            ON CONFLICT (anio) DO UPDATE SET ultimo = ot_secuencia_anio.ultimo + 1
+            RETURNING ultimo
             """;
 
-    private final SpringDataOtRepository repository;
-    private final OtEstadoHistorialRepository historialRepository;
+    /** Proyeccion minima del tablero: cinco columnas, sin mapear a agregado. */
+    private static final String RESUMEN_METRICAS =
+            "SELECT estado, categoria_servicio, creada_en, asignada_en, finalizada_en FROM ot";
+
+    private final SpringDataOtRepository repository;    private final OtEstadoHistorialRepository historialRepository;
     private final ApplicationEventPublisher events;
     private final EntityManager entityManager;
 
@@ -67,6 +71,14 @@ public class OtRepositoryAdapter implements OtRepository {
                 ? OtJpaEntity.fromDomain(ot)
                 : repository.findById(ot.getId().valor())
                         .map(existing -> {
+                            // A9: si la fila avanzo desde que se cargo el agregado, otro
+                            // proceso ya escribio (p. ej. el barrido escalo la OT o un
+                            // tecnico acepto la oferta). Sobrescribir aqui perdia esa
+                            // escritura: se responde conflicto y el llamador reintenta.
+                            if (existing.getVersion() != null && existing.getVersion() != ot.getVersion()) {
+                                throw new OptimisticLockingFailureException(
+                                        "La orden fue modificada por otra operacion concurrente");
+                            }
                             existing.applyFromDomain(ot);
                             return existing;
                         })
@@ -115,6 +127,15 @@ public class OtRepositoryAdapter implements OtRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Ot> buscarPorEstados(Collection<EstadoOt> estados) {
+        if (estados == null || estados.isEmpty()) {
+            return List.of();
+        }
+        return repository.findByEstadoIn(estados).stream().map(OtJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Ot> buscarPorCliente(ClienteId clienteId) {
         return repository.findByClienteId(clienteId.valor()).stream().map(OtJpaEntity::toDomain).toList();
     }
@@ -129,6 +150,43 @@ public class OtRepositoryAdapter implements OtRepository {
     @Transactional(readOnly = true)
     public List<Ot> listarTodas() {
         return repository.findAll().stream().map(OtJpaEntity::toDomain).toList();
+    }
+
+    /**
+     * Una sola query de proyeccion para el tablero. Native SQL porque el objetivo
+     * es justamente NO pasar por el mapeo a entidad/agregado: se leen cinco columnas
+     * por fila en vez de hidratar la OT completa (JSON incluidos).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<OtMetrica> resumenParaMetricas() {
+        List<Object[]> filas = entityManager.createNativeQuery(RESUMEN_METRICAS).getResultList();
+        return filas.stream()
+                .map(fila -> new OtMetrica(
+                        EstadoOt.valueOf(String.valueOf(fila[0])),
+                        fila[1] == null ? null : com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio
+                                .valueOf(String.valueOf(fila[1])),
+                        aInstant(fila[2]),
+                        aInstant(fila[3]),
+                        aInstant(fila[4])))
+                .toList();
+    }
+
+    /** pgjdbc devuelve timestamptz como Timestamp u OffsetDateTime segun el driver. */
+    private Instant aInstant(Object valor) {
+        if (valor == null) {
+            return null;
+        }
+        if (valor instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toInstant();
+        }
+        if (valor instanceof java.time.OffsetDateTime offset) {
+            return offset.toInstant();
+        }
+        if (valor instanceof Instant instante) {
+            return instante;
+        }
+        throw new IllegalStateException("Tipo de fecha inesperado en la proyeccion: " + valor.getClass());
     }
 
     @Override
@@ -153,17 +211,17 @@ public class OtRepositoryAdapter implements OtRepository {
     }
 
     /**
-     * Native SQL because the number lives inside the code string: splitting the
-     * third dash-separated part and casting it to a number is not expressible in
-     * JPQL without relying on the cast support of one Hibernate version. The
-     * statement joins whatever transaction is open, so a caller that reads it right
-     * before inserting the order that consumes the number sees its own rows.
+     * UPSERT atomico contra {@code ot_secuencia_anio}: la primera OT del año crea
+     * la fila y las siguientes la incrementan. Postgres serializa el conflicto, así
+     * que dos creaciones concurrentes reciben numeros distintos (antes calculaban el
+     * mismo con MAX y la perdedora fallaba contra {@code idx_ot_codigo}).
      */
     @Override
-    public int ultimoNumeroCodigo(int anio) {
-        Number ultimo = (Number) entityManager.createNativeQuery(ULTIMO_NUMERO_CODIGO)
+    @Transactional
+    public int siguienteNumeroCodigo(int anio) {
+        Number numero = (Number) entityManager.createNativeQuery(SIGUIENTE_NUMERO_CODIGO)
                 .setParameter("anio", anio)
                 .getSingleResult();
-        return ultimo == null ? 0 : ultimo.intValue();
+        return numero == null ? 0 : numero.intValue();
     }
 }

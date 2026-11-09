@@ -272,7 +272,7 @@ public class OtJpaEntity {
 
     public Ot toDomain() {
         Point ubicacion = latitud == null || longitud == null ? null : new Point(latitud, longitud);
-        return Ot.reconstituir(OtId.desde(id),
+        Ot ot = Ot.reconstituir(OtId.desde(id),
                 clienteId == null ? null : new ClienteId(clienteId),
                 tecnicoId == null ? null : TecnicoId.desde(tecnicoId),
                 categoriaServicio, descripcionFalla,
@@ -284,5 +284,6 @@ public class OtJpaEntity {
                 calificacionEn, calificacionTecnicoId == null ? null : TecnicoId.desde(calificacionTecnicoId),
                 actaFirmaDataUrl, actaCodigoVerificacion, actaFirmadaEn,
                 codigo == null ? null : CodigoOt.de(codigo));
+        return ot.conVersion(version == null ? 0L : version);
     }
 }
