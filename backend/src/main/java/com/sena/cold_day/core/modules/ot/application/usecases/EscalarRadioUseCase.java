@@ -5,7 +5,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,8 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
  */
 @Service
 public class EscalarRadioUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(EscalarRadioUseCase.class);
 
     /** Maximum dispatch radius before the negative terminal state (RF-F1-09). */
     public static final double RADIO_MAXIMO_KM = 25.0;
@@ -72,13 +77,21 @@ public class EscalarRadioUseCase {
             if (!estaVencida(ot, ahora)) {
                 continue;
             }
-            ofertaRepository.expirarDe(ot.getId(), ahora);
-            if (ot.getRadioKm() < RADIO_MAXIMO_KM) {
-                escalar(ot, ahora);
-            } else {
-                agotar(ot, ahora);
+            try {
+                ofertaRepository.expirarDe(ot.getId(), ahora);
+                if (ot.getRadioKm() < RADIO_MAXIMO_KM) {
+                    escalar(ot, ahora);
+                } else {
+                    agotar(ot, ahora);
+                }
+                procesadas++;
+            } catch (OptimisticLockingFailureException conflicto) {
+                // A9: si un tecnico acepto la oferta mientras el barrido la leia, el
+                // save detecta la version vieja y lanza conflicto. Se ignora ESA orden
+                // y el barrido sigue: antes un conflicto abortaba el lote entero.
+                log.warn("Barrido de escalamiento: la OT {} cambio durante el barrido ({}); "
+                        + "se deja para el proximo tick", ot.getId().valor(), conflicto.getMessage());
             }
-            procesadas++;
         }
         return procesadas;
     }

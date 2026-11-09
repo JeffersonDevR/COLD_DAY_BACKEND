@@ -30,14 +30,12 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
  * {@code BUSCANDO_TECNICO} and broadcasts the first offers (design data flow).
  *
  * <p>This is the single place where the human-readable code
- * ({@link CodigoOt}, {@code OT-YYYY-####}) is allocated: the number is the
- * highest one already issued for the UTC year of the creation instant plus one,
- * read inside the creation transaction ({@link OtRepository#ultimoNumeroCodigo(int)}),
- * and the code is assigned to the aggregate before it is saved. An order
- * therefore reaches the table with a code or not at all. Two creations of the
- * same year can still compute the same number, so the loser fails on
- * {@code idx_ot_codigo} and {@link #crear} retries a bounded number of times,
- * each attempt in its own transaction.
+ * ({@link CodigoOt}, {@code OT-YYYY-####}) is allocated: el numero lo reserva un
+ * contador atomico por año ({@link OtRepository#siguienteNumeroCodigo(int)}),
+ * dentro de la transaccion de creacion, y el codigo se asigna al agregado antes
+ * de guardarlo. Una orden llega a la tabla con codigo o no llega. El reintento
+ * acotado ante colision con {@code idx_ot_codigo} se mantiene como red: si el
+ * contador se desincronizara (codigos editados a mano), la creacion no se pierde.
  */
 @Service
 public class CrearOtUseCase {
@@ -100,7 +98,7 @@ public class CrearOtUseCase {
         // from `ahora`, the instant that also stamps creadaEn, so a code can never
         // disagree with the year of the order it belongs to.
         int anio = Year.from(ahora.atZone(ZoneOffset.UTC)).getValue();
-        ot.asignarCodigo(CodigoOt.formatear(anio, otRepository.ultimoNumeroCodigo(anio) + 1));
+        ot.asignarCodigo(CodigoOt.formatear(anio, otRepository.siguienteNumeroCodigo(anio)));
         Ot saved = iniciarBusqueda.iniciar(ot);
         events.publishEvent(new OtCreada(saved.getId(), cliente.getId()));
         return OtResponse.fromDomain(saved);

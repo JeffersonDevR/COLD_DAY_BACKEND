@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,6 +44,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaEstado;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
@@ -80,6 +82,8 @@ class AceptarOfertaUseCaseTest {
     void setUp() {
         useCase = new AceptarOfertaUseCase(ofertaRepository, otRepository, historialRepository,
                 tecnicoRepository, events, Clock.fixed(AHORA, ZoneOffset.UTC), MAX_AUXILIARES, null);
+        // Por defecto el tecnico gana su puerta atomica; los tests de carrera la cierran.
+        lenient().when(tecnicoRepository.ocuparSiDisponible(any())).thenReturn(1);
     }
 
     @Test
@@ -100,8 +104,10 @@ class AceptarOfertaUseCaseTest {
         assertThat(response.estado()).isEqualTo(EstadoOt.ASIGNADA);
         assertThat(response.tecnicoId()).isEqualTo(tecnicoId);
 
-        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.OCUPADO);
-        verify(tecnicoRepository).save(tecnico);
+        // El paso a OCUPADO ya no se escribe desde el agregado en memoria: lo
+        // decide el UPDATE condicional del repositorio (ver el test de carrera).
+        verify(tecnicoRepository).ocuparSiDisponible(tecnicoId);
+        verify(tecnicoRepository, never()).save(any());
         verify(ofertaRepository).invalidarPendientesDe(otId, OfertaEstado.CANCELADA, AHORA);
 
         ArgumentCaptor<OtEstadoHistorial> historial = ArgumentCaptor.forClass(OtEstadoHistorial.class);
@@ -116,6 +122,32 @@ class AceptarOfertaUseCaseTest {
         ArgumentCaptor<Object> publicado = ArgumentCaptor.forClass(Object.class);
         verify(events).publishEvent(publicado.capture());
         assertThat(publicado.getValue()).isEqualTo(new OtAsignada(otId, tecnicoId, clienteId));
+    }
+
+    /**
+     * A16: el mismo tecnico acepta dos ofertas de OTs distintas en paralelo. La
+     * OT se cierra igual (su UPDATE condicional es por OT), pero la puerta del
+     * tecnico solo la gana uno: el segundo recibe 0 filas y su transaccion
+     * revierte, devolviendo la OT a BUSCANDO_TECNICO en vez de dejarlo en dos.
+     */
+    @Test
+    void unSegundoAcceptDelMismoTecnicoPierdeLaPuertaYNoLeDejaDosOts() {
+        Tecnico tecnico = tecnicoDisponible();
+        OtId otId = OtId.nueva();
+        OfertaOt oferta = ofertaPendiente(otId, tecnico.getId());
+        cuandoElTecnicoSeResuelve(tecnico);
+        cuandoLaOfertaExiste(oferta);
+        when(otRepository.intentarAsignar(otId, tecnico.getId(), AHORA, oferta.getRadioKm(), 0)).thenReturn(1);
+        when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
+        // Otro accept ya ocupo al tecnico.
+        when(tecnicoRepository.ocuparSiDisponible(tecnico.getId())).thenReturn(0);
+
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, oferta.getId()))
+                .isInstanceOf(TecnicoAsignadoException.class);
+
+        verify(tecnicoRepository, never()).save(any());
+        verify(events, never()).publishEvent(any());
+        verify(historialRepository, never()).append(any());
     }
 
     @Test
