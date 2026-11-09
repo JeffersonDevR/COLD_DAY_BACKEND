@@ -19,6 +19,9 @@ public interface ClienteRepository {
 
     Optional<Cliente> buscarPorId(ClienteId id);
 
+    /** Lectura por lote para las vistas que enriquecen una lista de OT. */
+    List<Cliente> buscarPorIds(java.util.Collection<ClienteId> ids);
+
     List<Cliente> findByActivoTrue();
 
     void deleteAll();

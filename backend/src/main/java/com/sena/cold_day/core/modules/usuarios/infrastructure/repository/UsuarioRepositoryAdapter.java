@@ -43,6 +43,19 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Usuario> buscarPorIds(java.util.Collection<UsuarioId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<Long> valores = ids.stream().filter(id -> id != null).map(UsuarioId::valor).toList();
+        if (valores.isEmpty()) {
+            return List.of();
+        }
+        return repository.findAllById(valores).stream().map(UsuarioJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Usuario> buscarPorCorreo(String correo) {
         return repository.findByCorreo(correo).map(UsuarioJpaEntity::toDomain);
     }

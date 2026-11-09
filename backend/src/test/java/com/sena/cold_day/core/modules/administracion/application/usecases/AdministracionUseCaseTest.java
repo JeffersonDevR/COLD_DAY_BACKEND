@@ -56,6 +56,7 @@ import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtMetrica;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
@@ -297,7 +298,8 @@ class AdministracionUseCaseTest {
         when(liquidacionRepository.buscarPorEstado(EstadoLiquidacion.EN_VERIFICACION))
                 .thenReturn(List.of(liquidacion));
         when(liquidacionRepository.listarTodas()).thenReturn(List.of(liquidacion));
-        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        // El enriquecimiento lee las OTs en lote (una sola query), no una por fila.
+        when(otRepository.buscarPorIds(any())).thenReturn(List.of(ot));
         when(tecnicoRepository.findByIdAndActivoTrue(tecnico.getId())).thenReturn(Optional.of(tecnico));
         when(usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId())))
                 .thenReturn(Optional.of(usuario(tecnico.getUsuarioId(), "Ana")));
@@ -318,7 +320,8 @@ class AdministracionUseCaseTest {
         when(usuarioRepository.buscarPorId(PRINCIPAL)).thenReturn(Optional.of(usuario(USUARIO_ID, "Ana")));
         when(liquidacionRepository.buscarPorTecnico(tecnico.getId()))
                 .thenReturn(List.of(liquidacionPendiente(ot.getId(), tecnico.getId())));
-        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        // Las OT de la lista se resuelven en una sola query.
+        when(otRepository.buscarPorIds(any())).thenReturn(List.of(ot));
 
         var response = listarLiquidaciones.listar(PRINCIPAL);
 
@@ -435,7 +438,8 @@ class AdministracionUseCaseTest {
         Disputa disputa = Disputa.abrir(ot.getId(), "motivo", AHORA);
         when(disputaRepository.buscarPorEstado(EstadoDisputa.ABIERTA)).thenReturn(List.of(disputa));
         when(disputaRepository.listarTodas()).thenReturn(List.of(disputa));
-        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        // Idem: la lista de disputas resuelve todas sus OTs en una query.
+        when(otRepository.buscarPorIds(any())).thenReturn(List.of(ot));
         when(clienteRepository.buscarPorId(clienteId))
                 .thenReturn(Optional.of(cliente(clienteId)));
         when(usuarioRepository.buscarPorId(new UsuarioId(cliente(clienteId).getUsuarioId().valor())))
@@ -456,13 +460,11 @@ class AdministracionUseCaseTest {
     void consultarBuildsTheDashboardFromEverySource() {
         Tecnico disponible = tecnicoAprobado(EstadoOperativo.DISPONIBLE);
         Tecnico bloqueado = tecnicoAprobado(EstadoOperativo.BLOQUEADO_POR_LIQUIDACION);
-        Ot enEjecucion = ot(EstadoOt.EN_REPARACION, disponible.getId(), ClienteId.nueva(), AHORA);
-        Ot finalizada = ot(EstadoOt.FINALIZADA, disponible.getId(), ClienteId.nueva(), AHORA);
 
-        when(otRepository.buscarPorEstado(EstadoOt.EN_REPARACION)).thenReturn(List.of(enEjecucion));
-        when(otRepository.buscarPorEstado(any(EstadoOt.class))).thenAnswer(inv ->
-                inv.getArgument(0) == EstadoOt.EN_REPARACION ? List.of(enEjecucion) : List.of());
-        when(otRepository.buscarPorEstado(EstadoOt.FINALIZADA)).thenReturn(List.of(finalizada));
+        // El tablero lee una proyeccion de cinco columnas, no agregados completos.
+        when(otRepository.resumenParaMetricas()).thenReturn(List.of(
+                metrica(EstadoOt.EN_REPARACION, AHORA, null, null),
+                metrica(EstadoOt.FINALIZADA, AHORA, null, null)));
         when(tecnicoRepository.findByActivoTrue()).thenReturn(List.of(disponible, bloqueado));
         when(disputaRepository.buscarPorEstado(EstadoDisputa.ABIERTA))
                 .thenReturn(List.of(Disputa.abrir(OtId.nueva(), "m", AHORA)));
@@ -488,7 +490,7 @@ class AdministracionUseCaseTest {
 
     @Test
     void consultarWithoutDataReturnsZerosAndNullAverage() {
-        when(otRepository.buscarPorEstado(any(EstadoOt.class))).thenReturn(List.of());
+        when(otRepository.resumenParaMetricas()).thenReturn(List.of());
         when(tecnicoRepository.findByActivoTrue()).thenReturn(List.of());
         when(disputaRepository.buscarPorEstado(EstadoDisputa.ABIERTA)).thenReturn(List.of());
         when(liquidacionRepository.buscarPorEstado(EstadoLiquidacion.EN_VERIFICACION)).thenReturn(List.of());
@@ -501,6 +503,10 @@ class AdministracionUseCaseTest {
         assertThat(response.tiempoPromedioAsignacionSegundos()).isNull();
         assertThat(response.totalRecaudoMesCop()).isEqualByComparingTo("0");
         assertThat(response.historicoSemanal()).hasSize(7);
+    }
+
+    private OtMetrica metrica(EstadoOt estado, Instant creadaEn, Instant asignadaEn, Instant finalizadaEn) {
+        return new OtMetrica(estado, CategoriaServicio.REFRIGERACION, creadaEn, asignadaEn, finalizadaEn);
     }
 
     // ------------------------------------------------------------------ fixtures

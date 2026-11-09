@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.administracion.application.usecases;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,7 +41,7 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import java.time.Clock;
 
 /**
- * RF-F1-25 (SRS §5.3): el cliente abre la disputa al rechazar el diagnostico o
+ * RF-F1-25 (SRS Â§5.3): el cliente abre la disputa al rechazar el diagnostico o
  * el trabajo entregado; el administrador media y resuelve con acuerdo
  * (FINALIZADA) o sin acuerdo (CANCELADA sin cobro, motivo auditado).
  */
@@ -124,10 +125,18 @@ public class GestionarDisputaUseCase {
 
     /** Agrega los nombres legibles de cliente y tecnico y el codigo de la OT de la disputa. */
     private List<DisputaResponse> enriquecer(List<Disputa> disputas) {
+        if (disputas.isEmpty()) {
+            return List.of();
+        }
+        // Una sola lectura de OT para todo el lote: antes era una query por disputa.
+        Map<OtId, Ot> ots = otRepository
+                .buscarPorIds(disputas.stream().map(Disputa::getOtId).toList())
+                .stream()
+                .collect(Collectors.toMap(Ot::getId, ot -> ot, (primera, segunda) -> primera));
         Map<UUID, String> nombresClientes = new HashMap<>();
         Map<UUID, String> nombresTecnicos = new HashMap<>();
         return disputas.stream().map(disputa -> {
-            Ot ot = otRepository.buscarPorId(disputa.getOtId()).orElse(null);
+            Ot ot = ots.get(disputa.getOtId());
             String clienteNombre = null;
             String tecnicoNombre = null;
             if (ot != null) {

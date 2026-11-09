@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -94,24 +95,31 @@ public class VerificarComprobanteUseCase {
     }
 
     private List<LiquidacionResponse> enriquecer(List<Liquidacion> liquidaciones) {
+        if (liquidaciones.isEmpty()) {
+            return List.of();
+        }
+        // Una sola lectura de OT para todo el lote (antes: una por liquidacion).
+        Map<OtId, Ot> ots = otRepository
+                .buscarPorIds(liquidaciones.stream().map(Liquidacion::getOtId).toList())
+                .stream()
+                .collect(Collectors.toMap(Ot::getId, ot -> ot, (primera, segunda) -> primera));
         Map<UUID, String> nombres = new HashMap<>();
         return liquidaciones.stream()
                 .map(liquidacion -> LiquidacionResponse.fromDomain(liquidacion).conTecnicoNombre(
                         liquidacion.getTecnicoId() == null ? null
                                 : nombres.computeIfAbsent(liquidacion.getTecnicoId().valor(),
                                         this::nombreTecnico))
-                        .conOtCodigo(codigoDe(liquidacion.getOtId())))
+                        .conOtCodigo(codigoDe(ots, liquidacion.getOtId())))
                 .toList();
     }
 
-    /**
-     * Readable code of the liquidated order for the UI; null when the order is
-     * not found. Only the display needs it, so a missing order never fails here.
-     *
-     * <p>shortcut: one OT lookup per row (no batch), because unlike a technician
-     * a code never repeats inside a list; upgrade to {@code OtRepository#buscarPorIds}
-     * if {@code listarTodas} ever holds enough rows for the extra queries to show.
-     */
+    /** Codigo legible de la OT; null si no existe. Ya resuelto en lote. */
+    private CodigoOt codigoDe(Map<OtId, Ot> ots, OtId otId) {
+        Ot ot = ots.get(otId);
+        return ot == null ? null : ot.getCodigo();
+    }
+
+    /** Igual que arriba pero para una sola liquidacion (aprobar/rechazar). */
     private CodigoOt codigoDe(OtId otId) {
         return otRepository.buscarPorId(otId).map(Ot::getCodigo).orElse(null);
     }

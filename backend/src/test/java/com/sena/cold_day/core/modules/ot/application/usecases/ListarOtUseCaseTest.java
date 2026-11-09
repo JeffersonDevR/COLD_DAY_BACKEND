@@ -67,11 +67,11 @@ class ListarOtUseCaseTest {
         TecnicoId tecnicoId = TecnicoId.nueva();
         Ot ot = ot(clienteId, tecnicoId);
         when(otRepository.listarTodas()).thenReturn(List.of(ot));
-        when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.of(cliente(clienteId, 50L)));
-        when(usuarioRepository.buscarPorId(new UsuarioId(50L))).thenReturn(Optional.of(usuario(50L, "Cliente Ana")));
-        when(tecnicoRepository.findByIdAndActivoTrue(tecnicoId))
-                .thenReturn(Optional.of(tecnico(tecnicoId, 7L)));
-        when(usuarioRepository.buscarPorId(new UsuarioId(7L))).thenReturn(Optional.of(usuario(7L, "Tecnico Luis")));
+        // El enriquecimiento resuelve clientes, tecnicos y usuarios en lote.
+        when(clienteRepository.buscarPorIds(any())).thenReturn(List.of(cliente(clienteId, 50L)));
+        when(tecnicoRepository.buscarPorIds(any())).thenReturn(List.of(tecnico(tecnicoId, 7L)));
+        when(usuarioRepository.buscarPorIds(any()))
+                .thenReturn(List.of(usuario(50L, "Cliente Ana"), usuario(7L, "Tecnico Luis")));
 
         var resumen = useCase.listarTodas();
 

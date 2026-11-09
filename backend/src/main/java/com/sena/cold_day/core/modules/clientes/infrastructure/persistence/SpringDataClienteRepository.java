@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.clientes.infrastructure.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -11,4 +12,6 @@ public interface SpringDataClienteRepository extends JpaRepository<ClienteJpaEnt
     Optional<ClienteJpaEntity> findByUsuarioId(Long usuarioId);
 
     List<ClienteJpaEntity> findByActivoTrue();
+
+    List<ClienteJpaEntity> findByIdIn(Collection<UUID> ids);
 }

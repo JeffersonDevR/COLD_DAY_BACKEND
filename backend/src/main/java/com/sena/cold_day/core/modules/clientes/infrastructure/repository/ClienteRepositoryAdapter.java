@@ -42,6 +42,22 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Cliente> buscarPorIds(java.util.Collection<ClienteId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<java.util.UUID> valores = ids.stream().filter(id -> id != null).map(ClienteId::valor).toList();
+        if (valores.isEmpty()) {
+            return List.of();
+        }
+        // Sin filtro de activo a proposito: preserva la semantica de
+        // `buscarPorId`, que tampoco filtraba (el nombre del cliente de una OT
+        // historica sigue resolviendose aunque el perfil se haya desactivado).
+        return repository.findByIdIn(valores).stream().map(ClienteJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Cliente> findByActivoTrue() {
         return repository.findByActivoTrue().stream().map(ClienteJpaEntity::toDomain).toList();
     }
