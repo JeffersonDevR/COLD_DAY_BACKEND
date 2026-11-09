@@ -157,3 +157,22 @@ jobs:
             exit 1
           fi
           echo "Append-only guard passed."
+
+  # Escaneo de dependencias en PRs: falla si el PR INTRODUCE una dependencia con
+  # vulnerabilidad alta o critica. A diferencia de `npm audit` sobre el arbol
+  # completo (que hoy puede estar rojo por deuda previa y bloquearia todo), este
+  # gate solo mira el diff de los manifiestos/lockfiles.
+  dependency-review:
+    name: dependency-review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
