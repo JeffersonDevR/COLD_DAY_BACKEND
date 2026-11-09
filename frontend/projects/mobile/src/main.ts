@@ -73,6 +73,7 @@ import {
 } from 'ionicons/icons';
 import {MobileApp} from './app/app';
 import {appConfig} from './app/app.config';
+import {MOBILE_API_ORIGIN} from './app/core/environment/mobile-origin';
 
 // Icons are tree-shaken: every icon referenced by a screen must be registered.
 // `-outline` for inactive/default, plain (filled) for active tabs/selected states.

@@ -106,6 +106,27 @@ if (origin) {
 
 const value = origin || DEFAULT_ORIGIN;
 
+// En Vercel no hay proxy: con API_ORIGIN vacia, todas las llamadas salen relativas
+// ('/api/...') contra el propio hosting y el rewrite de vercel.json excluye /api/,
+// asi que el deploy queda "verde" y la app devuelve 404 en cada request. Se corta
+// el build desplegable en vez de publicarlo roto. En CI (github actions) no se
+// exige: ese build no se despliega y no tiene un backend real al que apuntar.
+if (!value && process.env.VERCEL === '1') {
+  console.error(
+    '[api-origin] ERROR: el build de Vercel no tiene API_ORIGIN.\n' +
+      'Sin ella todas las llamadas quedan relativas y devuelven 404 en el hosting.\n' +
+      'Define API_ORIGIN en las variables de entorno del proyecto (ej. https://cold-day-backend.onrender.com).',
+  );
+  process.exit(1);
+}
+
+if (!value) {
+  console.warn(
+    '[api-origin] AVISO: API_ORIGIN vacia; las llamadas quedan relativas (/api/...). ' +
+      'Solo valido para `ng serve` con proxy.conf.json.',
+  );
+}
+
 const escaped = value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
 const target = resolve(root, 'src/app/core/environment/api-origin.ts');
