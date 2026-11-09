@@ -78,11 +78,13 @@ class BypassDesactivadoEnProdTest {
                         "app.jwt.secret=prod-contract-secret-of-at-least-32-bytes",
                         "app.cors.allowed-origins=https://cold-day.onrender.com",
                         "app.seed.enabled=false")
-                // Command-line args outrank the JVM system properties the build sets,
-                // so this is the only way to force the property ON in a prod boot.
-                .run("--app.security.dev-bypass.enabled=true"))
+                // Los argumentos de linea de comandos son lo UNICO que gana sobre el
+                // system property `spring.profiles.active=dev` que inyecta build.gradle
+                // para los tests: `profiles("prod")` es un default y queda por debajo.
+                // Sin el argumento de perfil, este arranque corria en dev y no fallaba.
+                .run("--spring.profiles.active=prod", "--app.security.dev-bypass.enabled=true"))
                 .rootCause()
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("no esta permitido con el perfil prod");
+                .hasMessageContaining("solo esta permitido con el perfil dev");
     }
 }

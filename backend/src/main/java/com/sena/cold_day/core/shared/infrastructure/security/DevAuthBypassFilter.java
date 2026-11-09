@@ -42,8 +42,8 @@ import jakarta.servlet.http.HttpServletResponse;
  * Un JWT valido en {@code Authorization} tiene prioridad y este filtro no interviene.
  * <p>
  * Solo se crea con {@code app.security.dev-bypass.enabled=true} (activo en
- * {@code application-dev.properties}). Si el perfil {@code prod} esta activo, el
- * arranque falla: este bypass jamas debe existir en produccion.
+ * {@code application-dev.properties}). Si el perfil {@code dev} no esta activo,
+ * el arranque falla: este bypass jamas debe existir fuera de desarrollo local.
  */
 @Component
 @ConditionalOnProperty(name = "app.security.dev-bypass.enabled", havingValue = "true")
@@ -60,10 +60,14 @@ public class DevAuthBypassFilter extends OncePerRequestFilter {
     public DevAuthBypassFilter(UsuarioRepository usuarioRepository, RolesDePerfilPort rolesDePerfil,
             Environment environment,
             @Value("${app.security.dev-bypass.correo:admin@coldday.com.co}") String correoPorDefecto) {
-        if (environment.acceptsProfiles(Profiles.of("prod"))) {
+        // Lista blanca, no lista negra: antes esto solo miraba el perfil "prod" y
+        // por eso un perfil intermedio (staging) o la ausencia de perfil dejaban el
+        // bypass activo. Ahora solo se permite con dev activo; cualquier otro caso
+        // (prod, staging, sin perfil) aborta el arranque.
+        if (!environment.acceptsProfiles(Profiles.of("dev"))) {
             throw new IllegalStateException(
-                    "app.security.dev-bypass.enabled=true no esta permitido con el perfil prod: "
-                            + "desactiva la autenticacion solo en desarrollo local.");
+                    "app.security.dev-bypass.enabled=true solo esta permitido con el perfil dev activo: "
+                            + "la autenticacion se desactiva unicamente en desarrollo local.");
         }
         this.usuarioRepository = usuarioRepository;
         this.rolesDePerfil = rolesDePerfil;

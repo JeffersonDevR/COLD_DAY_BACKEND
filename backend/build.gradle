@@ -74,8 +74,19 @@ dependencies {
 	
 }
 
+// Desarrollo local: el perfil dev ya no es el default de application.properties
+// (fail-closed), asi que se inyecta aqui. Un `--args="--spring.profiles.active=prod"`
+// en la linea de comandos sigue teniendo prioridad sobre este system property.
+tasks.named('bootRun') {
+	systemProperty 'spring.profiles.active', 'dev'
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
+	// Mismo motivo que bootRun: la suite arranca con la configuracion local. Los
+	// tests que necesitan otro perfil lo fijan con @ActiveProfiles, que tiene
+	// prioridad sobre este system property.
+	systemProperty 'spring.profiles.active', 'dev'
 	// Los tests crean sus propios datos; el seed de demo solo aplica a ejecución local.
 	systemProperty 'app.seed.enabled', 'false'
 	// Los tests de seguridad esperan la autenticacion real (401/403).
@@ -93,6 +104,11 @@ tasks.named('test') {
 	// the test window keeps stream assertions deterministic.
 	systemProperty 'app.sse.heartbeat-ms', '3600000'
 	systemProperty 'app.sse.purge-ms', '3600000'
+	// El rate limit tambien cubre las altas publicas (clientes/tecnicos/proveedores).
+	// Varios IT crean mas de 10 cuentas desde 127.0.0.1 en la misma ventana de 60 s y
+	// empezarian a recibir 429: se sube el cupo en tests. RateLimitIT fija el suyo
+	// con @SpringBootTest(properties=...), que tiene prioridad sobre este default.
+	systemProperty 'app.rate-limit.auth.max-intentos', '100000'
 	finalizedBy tasks.named('jacocoTestReport')
 }
 
