@@ -39,3 +39,6 @@ out/
 ### Env ###
 .env
 .env.local
+
+### Android SDK local (generado por Gradle/Android, no aporta al build) ###
+local.properties
