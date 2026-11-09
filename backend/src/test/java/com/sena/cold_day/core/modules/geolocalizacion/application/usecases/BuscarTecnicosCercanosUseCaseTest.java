@@ -74,9 +74,9 @@ class BuscarTecnicosCercanosUseCaseTest {
         TecnicoId tecnicoId = TecnicoId.nueva();
         when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any(), any()))
                 .thenReturn(List.of(new TecnicoCercano(tecnicoId, 2.5)));
-        when(tecnicoRepository.findByIdAndActivoTrue(tecnicoId))
-                .thenReturn(Optional.of(tecnico(tecnicoId, 7L)));
-        when(usuarioRepository.buscarPorId(new UsuarioId(7L))).thenReturn(Optional.of(usuario(7L, "Luis")));
+        // El enriquecimiento va por lote: una query de perfiles y otra de usuarios.
+        when(tecnicoRepository.buscarPorIds(any())).thenReturn(List.of(tecnico(tecnicoId, 7L)));
+        when(usuarioRepository.buscarPorIds(any())).thenReturn(List.of(usuario(7L, "Luis")));
 
         var response = useCase.buscar(new Point(7.8, -72.5), 5.0, Set.of(CategoriaServicio.REFRIGERACION));
 
@@ -92,9 +92,8 @@ class BuscarTecnicosCercanosUseCaseTest {
         TecnicoId tecnicoId = TecnicoId.nueva();
         when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any(), any()))
                 .thenReturn(List.of(new TecnicoCercano(tecnicoId, 1.0)));
-        when(tecnicoRepository.findByIdAndActivoTrue(tecnicoId))
-                .thenReturn(Optional.of(tecnico(tecnicoId, 7L)));
-        when(usuarioRepository.buscarPorId(new UsuarioId(7L))).thenReturn(Optional.empty());
+        when(tecnicoRepository.buscarPorIds(any())).thenReturn(List.of(tecnico(tecnicoId, 7L)));
+        when(usuarioRepository.buscarPorIds(any())).thenReturn(List.of());
 
         var response = useCase.buscar(new Point(7.8, -72.5), 5.0, Set.of());
 
@@ -108,7 +107,7 @@ class BuscarTecnicosCercanosUseCaseTest {
         TecnicoId tecnicoId = TecnicoId.nueva();
         when(disponibilidadRepository.buscarDisponiblesEnRadio(any(), anyDouble(), any(), any()))
                 .thenReturn(List.of(new TecnicoCercano(tecnicoId, 1.0)));
-        when(tecnicoRepository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.empty());
+        when(tecnicoRepository.buscarPorIds(any())).thenReturn(List.of());
 
         assertThat(useCase.buscar(new Point(7.8, -72.5), 5.0, Set.of())).isEmpty();
     }

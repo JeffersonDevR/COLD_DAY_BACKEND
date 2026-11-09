@@ -1,11 +1,14 @@
 package com.sena.cold_day.core.modules.administracion.application.usecases;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.administracion.application.dto.LiquidacionResponse;
+import com.sena.cold_day.core.modules.administracion.domain.aggregates.Liquidacion;
 import com.sena.cold_day.core.modules.administracion.domain.repository.LiquidacionRepository;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
@@ -41,17 +44,24 @@ public class ListarLiquidacionesTecnicoUseCase {
         Tecnico tecnico = tecnicoRepository.findByUsuarioIdAndActivoTrue(usuarioId.valor())
                 .orElseThrow(() -> new PerfilTecnicoNoEncontradoException(usuarioId.valor()));
         String nombre = usuarioRepository.buscarPorId(usuarioId).map(Usuario::getNombre).orElse(null);
-        return liquidacionRepository.buscarPorTecnico(tecnico.getId()).stream()
+        var liquidaciones = liquidacionRepository.buscarPorTecnico(tecnico.getId());
+        if (liquidaciones.isEmpty()) {
+            return List.of();
+        }
+        // Una sola lectura de OT para la lista entera: antes era una query por fila.
+        Map<OtId, Ot> ots = otRepository
+                .buscarPorIds(liquidaciones.stream().map(Liquidacion::getOtId).toList())
+                .stream()
+                .collect(Collectors.toMap(Ot::getId, ot -> ot, (primera, segunda) -> primera));
+        return liquidaciones.stream()
                 .map(liquidacion -> LiquidacionResponse.fromDomain(liquidacion)
-                        .conTecnicoNombre(nombre).conOtCodigo(codigoDe(liquidacion.getOtId())))
+                        .conTecnicoNombre(nombre).conOtCodigo(codigoDe(ots, liquidacion.getOtId())))
                 .toList();
     }
 
-    /**
-     * Readable code of the liquidated order for the UI; null when the order is
-     * not found. Only the display needs it, so a missing order never fails here.
-     */
-    private CodigoOt codigoDe(OtId otId) {
-        return otRepository.buscarPorId(otId).map(Ot::getCodigo).orElse(null);
+    /** Codigo legible de la OT; null si no existe. Ya resuelto en lote. */
+    private CodigoOt codigoDe(Map<OtId, Ot> ots, OtId otId) {
+        Ot ot = ots.get(otId);
+        return ot == null ? null : ot.getCodigo();
     }
 }

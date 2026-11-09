@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +56,19 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Tecnico> buscarPorIds(java.util.Collection<TecnicoId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<java.util.UUID> valores = ids.stream().filter(id -> id != null).map(TecnicoId::valor).toList();
+        if (valores.isEmpty()) {
+            return List.of();
+        }
+        return repository.findByIdInAndActivoTrue(valores).stream().map(TecnicoJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Tecnico> findByUsuarioIdAndActivoTrue(Long usuarioId) {
         return repository.findByUsuarioIdAndActivoTrue(usuarioId).map(TecnicoJpaEntity::toDomain);
     }
@@ -62,6 +77,13 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
     @Transactional(readOnly = true)
     public Optional<Tecnico> findByUsuarioId(Long usuarioId) {
         return repository.findByUsuarioId(usuarioId).map(TecnicoJpaEntity::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public int ocuparSiDisponible(TecnicoId id) {
+        return repository.ocuparSiDisponible(id.valor(),
+                EstadoOperativo.OCUPADO, EstadoOperativo.DISPONIBLE, EstadoValidacion.APROBADO);
     }
 
     @Override

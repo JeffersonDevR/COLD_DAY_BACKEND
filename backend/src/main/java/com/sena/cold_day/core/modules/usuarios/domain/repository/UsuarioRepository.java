@@ -15,6 +15,9 @@ public interface UsuarioRepository {
 
     Optional<Usuario> buscarPorCorreo(String correo);
 
+    /** Lectura por lote para las vistas que enriquecen una lista (radar, reportes). */
+    List<Usuario> buscarPorIds(java.util.Collection<UsuarioId> ids);
+
     boolean existeCorreo(String correo);
 
     List<Usuario> listarTodos();
