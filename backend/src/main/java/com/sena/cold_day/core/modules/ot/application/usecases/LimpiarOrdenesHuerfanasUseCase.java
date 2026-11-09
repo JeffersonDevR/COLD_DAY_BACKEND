@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,17 +48,26 @@ public class LimpiarOrdenesHuerfanasUseCase {
     public int ejecutar() {
         Instant ahora = clock.instant();
         int canceladas = 0;
-        for (Ot ot : otRepository.listarTodas()) {
+        // Solo los estados que exigen tecnico: antes se cargaba la tabla `ot`
+        // completa (historico incluido) cada 5 minutos y se filtraba en memoria.
+        for (Ot ot : otRepository.buscarPorEstados(ESTADOS_CON_TECNICO_REQUERIDO)) {
             if (!esHuerfana(ot)) {
                 continue;
             }
-            ot.cancelar(ActorOt.SISTEMA, MotivoCancelacion.LIMPIEZA_SISTEMA,
-                    "Cancelada automaticamente: la OT no tiene un tecnico valido", ahora, null);
-            otRepository.save(ot);
-            ofertaRepository.invalidarPendientesDe(ot.getId(), OfertaEstado.CANCELADA, ahora);
-            liberarTecnico(ot);
-            log.warn("OT huerfana cancelada automaticamente: {}", ot.getId().valor());
-            canceladas++;
+            try {
+                ot.cancelar(ActorOt.SISTEMA, MotivoCancelacion.LIMPIEZA_SISTEMA,
+                        "Cancelada automaticamente: la OT no tiene un tecnico valido", ahora, null);
+                otRepository.save(ot);
+                ofertaRepository.invalidarPendientesDe(ot.getId(), OfertaEstado.CANCELADA, ahora);
+                liberarTecnico(ot);
+                log.warn("OT huerfana cancelada automaticamente: {}", ot.getId().valor());
+                canceladas++;
+            } catch (OptimisticLockingFailureException conflicto) {
+                // La OT cambio desde que se leyo (p. ej. un tecnico la acepto): no se
+                // cancela esta y el barrido sigue con las demas.
+                log.warn("Limpieza de huerfanas: la OT {} cambio durante el barrido; se omite",
+                        ot.getId().valor());
+            }
         }
         return canceladas;
     }

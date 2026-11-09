@@ -98,6 +98,14 @@ public class Ot {
     /** Pending state changes not yet persisted to the append-only history. */
     private final List<CambioEstado> cambiosPendientes = new ArrayList<>();
 
+    /**
+     * Version de persistencia (bloqueo optimista). No es una regla de negocio: la
+     * escribe la rehidratacion y la lee el repositorio para detectar que la fila
+     * cambio desde que se cargo el agregado. Sin ella, `save` re-lee y sobrescribe
+     * sin comparar, que es como se perdian las asignaciones concurrentes.
+     */
+    private long version;
+
     private Ot() {
     }
 
@@ -291,6 +299,21 @@ public class Ot {
         ot.actaFirmadaEn = actaFirmadaEn;
         ot.codigo = codigo;
         return ot;
+    }
+
+    /**
+     * Solo rehidratacion: fija la version de persistencia leida de la fila.
+     * Un agregado nuevo (o de test) se queda en 0 y el repositorio lo trata como
+     * "sin version previa".
+     */
+    public Ot conVersion(long version) {
+        this.version = version;
+        return this;
+    }
+
+    /** Version leida de la fila; el repositorio la compara antes de escribir. */
+    public long getVersion() {
+        return version;
     }
 
     /**

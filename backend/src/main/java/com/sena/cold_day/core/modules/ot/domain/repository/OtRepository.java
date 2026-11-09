@@ -9,6 +9,7 @@ import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtMetrica;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 
 /**
@@ -32,11 +33,25 @@ public interface OtRepository {
 
     List<Ot> buscarPorEstado(EstadoOt estado);
 
+    /**
+     * Batch por varios estados. Los barridos deben usarlo en vez de
+     * {@link #listarTodas()} para no hidratar el historico completo de la
+     * plataforma en cada tick.
+     */
+    List<Ot> buscarPorEstados(Collection<EstadoOt> estados);
+
     List<Ot> buscarPorCliente(ClienteId clienteId);
 
     List<Ot> buscarPorTecnico(TecnicoId tecnicoId);
 
     List<Ot> listarTodas();
+
+    /**
+     * Proyeccion barata para el tablero: una fila por OT con solo estado, categoria
+     * y marcas de tiempo. Sustituye a {@link #buscarPorEstado} en las metricas, que
+     * cargaba agregados completos (y diez veces).
+     */
+    List<OtMetrica> resumenParaMetricas();
 
     /**
      * Conditional UPDATE: exactly one assignment for the searching order. The
@@ -56,13 +71,14 @@ public interface OtRepository {
     List<Ot> buscarVentanasVencidas(Instant ahora);
 
     /**
-     * Highest per-year sequence already issued for {@code anio} among the
-     * {@code OT-YYYY-####} codes, or {@code 0} when the year has none: the seed of
-     * the next code (see
-     * {@link com.sena.cold_day.core.modules.ot.domain.valueobjects.CodigoOt}).
-     * Rows without a code are ignored. Callers read it inside the creation
-     * transaction, before the order that will consume the number is saved.
+     * Reserva y devuelve el numero siguiente para {@code anio} en los codigos
+     * {@code OT-YYYY-####}, con un contador atomico por año.
+     *
+     * <p>Sustituye al {@code MAX(split_part(...))}: aquel escaneaba la tabla en
+     * cada creacion y dos altas concurrentes del mismo año podian calcular el
+     * mismo numero (la perdedora chocaba contra {@code idx_ot_codigo}). El
+     * contador garantiza un numero distinto a cada transaccion; el indice unico
+     * del codigo sigue como red de seguridad.
      */
-    // shortcut: the number is derived from the rows of the year, so two concurrent creations of the same year can compute the same one (the loser fails on idx_ot_codigo) and deleting the highest-numbered OT of a year frees its number, upgrade to a per-year counter row if concurrent creation or OT deletion becomes a real path.
-    int ultimoNumeroCodigo(int anio);
+    int siguienteNumeroCodigo(int anio);
 }
