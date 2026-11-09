@@ -333,6 +333,12 @@ export interface OtApiResponse {
   longitud: number | null;
   clienteNombre: string | null;
   tecnicoNombre: string | null;
+  /** Teléfono del técnico asignado; solo en el detalle de la OT. */
+  tecnicoTelefono?: string | null;
+  /** Calificación que el cliente dejó sobre esta OT (null si todavía no calificó). */
+  calificacionEstrellas?: number | null;
+  calificacionComentario?: string | null;
+  calificacionEn?: string | null;
   /** OT column `auxiliares_requeridos`: always present, 0 for legacy rows. */
   auxiliaresRequeridos: number;
   /**

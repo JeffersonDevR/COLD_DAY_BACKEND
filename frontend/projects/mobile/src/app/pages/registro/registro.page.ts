@@ -275,7 +275,6 @@ interface FormularioAlta {
               [name]="verPassword() ? 'eye-off-outline' : 'eye-outline'"
               aria-hidden="true"
             ></ion-icon>
-            {{ verPassword() ? 'Ocultar contraseñas' : 'Mostrar contraseñas' }}
           </ion-button>
 
           @if (rol() === 'CLIENTE') {
@@ -428,7 +427,10 @@ interface FormularioAlta {
           }
 
           @if (error(); as mensaje) {
-            <p class="cd-auth__error" role="alert" data-testid="error-alta">{{ mensaje }}</p>
+            <p class="cd-auth__error" role="alert" data-testid="error-alta">
+              <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+              <span>{{ mensaje }}</span>
+            </p>
           }
 
           <ion-button
@@ -436,10 +438,12 @@ interface FormularioAlta {
             type="submit"
             class="cd-cta cd-cta--xl"
             data-testid="crear-cuenta"
+            [attr.aria-busy]="loading()"
             [disabled]="loading() || registroForm.invalid || !especialidadesValidas()"
           >
             @if (loading()) {
-              <ion-spinner name="dots"></ion-spinner>
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Creando cuenta…</span>
             } @else {
               Crear cuenta
             }

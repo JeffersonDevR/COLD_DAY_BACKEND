@@ -52,6 +52,7 @@ import {
   SolicitudInsumoResponse,
 } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
+import { FotoLocalComponent } from '../../shared/foto-local/foto-local';
 import { ActivatedRoute } from '@angular/router';
 
 /** Only a 409 proves the client has not paid yet or the order moved elsewhere. */
@@ -80,6 +81,7 @@ const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
     IonSpinner,
     IonTextarea,
     IonToolbar,
+    FotoLocalComponent,
   ],
   templateUrl: './ejecucion-ot.page.html',
 })

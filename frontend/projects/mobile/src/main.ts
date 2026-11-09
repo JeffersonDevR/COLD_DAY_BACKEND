@@ -1,4 +1,6 @@
 import {bootstrapApplication} from '@angular/platform-browser';
+import {Capacitor} from '@capacitor/core';
+import {hidratarTokenDesdePreferences} from './app/core/token-preferences';
 import {addIcons} from 'ionicons';
 import {
   addCircleOutline,
@@ -10,6 +12,7 @@ import {
   calendarOutline,
   callOutline,
   carOutline,
+  cameraOutline,
   cardOutline,
   cash,
   cashOutline,
@@ -20,6 +23,7 @@ import {
   chevronForwardOutline,
   closeCircleOutline,
   closeOutline,
+  cloudOfflineOutline,
   compassOutline,
   construct,
   constructOutline,
@@ -43,6 +47,7 @@ import {
   logOutOutline,
   mailOutline,
   mapOutline,
+  micOutline,
   navigateOutline,
   notificationsOutline,
   person,
@@ -83,6 +88,7 @@ addIcons({
   calendarOutline,
   callOutline,
   carOutline,
+  cameraOutline,
   cardOutline,
   cash,
   cashOutline,
@@ -93,6 +99,7 @@ addIcons({
   chevronForwardOutline,
   closeCircleOutline,
   closeOutline,
+  cloudOfflineOutline,
   compassOutline,
   construct,
   constructOutline,
@@ -116,6 +123,7 @@ addIcons({
   logOutOutline,
   mailOutline,
   mapOutline,
+  micOutline,
   navigateOutline,
   notificationsOutline,
   person,
@@ -140,4 +148,13 @@ addIcons({
   videocamOutline,
 });
 
-bootstrapApplication(MobileApp, appConfig).catch((err) => console.error(err));
+async function arrancar(): Promise<void> {
+  // En nativo el token vive también en Preferences: se copia antes de arrancar
+  // para que guards y AuthService lo vean sincrónicamente.
+  if (Capacitor.isNativePlatform()) {
+    await hidratarTokenDesdePreferences();
+  }
+  await bootstrapApplication(MobileApp, appConfig);
+}
+
+void arrancar().catch((err) => console.error(err));

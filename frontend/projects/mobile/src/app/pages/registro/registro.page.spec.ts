@@ -369,17 +369,18 @@ describe('RegistroPage móvil', () => {
     expect(clientesApi.registrarCliente).not.toHaveBeenCalled();
   });
 
-  it('el toggle de contraseñas afecta a los dos campos', () => {
+  it('el toggle de contraseñas afecta a los dos campos y se anuncia por aria-label', () => {
     const { fixture, page } = setup();
     const toggle = campo(fixture, 'toggle-password') as HTMLButtonElement;
 
-    expect(toggle.textContent).toContain('Mostrar');
+    expect(toggle.getAttribute('aria-label')).toContain('Mostrar');
+    expect(toggle.querySelector('ion-icon')).not.toBeNull();
     toggle.click();
     fixture.detectChanges();
-    expect(toggle.textContent).toContain('Ocultar');
+    expect(toggle.getAttribute('aria-label')).toContain('Ocultar');
     page.alternarPassword();
     fixture.detectChanges();
-    expect(toggle.textContent).toContain('Mostrar');
+    expect(toggle.getAttribute('aria-label')).toContain('Mostrar');
   });
 
   it('ofrece el enlace al login', () => {

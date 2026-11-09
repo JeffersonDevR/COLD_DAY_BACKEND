@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Rol } from '../models/common.models';
+import { TOKEN_PERSISTENCIA } from './token-persistencia';
 
 /**
  * Claims presentes en el JWT emitido por el backend (JwtTokenIssuer.java):
@@ -20,12 +21,15 @@ export interface DecodedToken {
   iat?: number;
 }
 
-const TOKEN_KEY = 'coldday.token';
+export const TOKEN_KEY = 'coldday.token';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenStorageService {
+  /** Espejo opcional en almacenamiento nativo (Preferences); en web es null. */
+  private readonly persistencia = inject(TOKEN_PERSISTENCIA, { optional: true });
+
   private readonly _currentToken = signal<string | null>(this.getRawToken());
   readonly currentToken = this._currentToken.asReadonly();
 
@@ -33,6 +37,7 @@ export class TokenStorageService {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(TOKEN_KEY, token);
     }
+    this.persistencia?.guardar(token);
     this._currentToken.set(token);
   }
 
@@ -47,6 +52,7 @@ export class TokenStorageService {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem(TOKEN_KEY);
     }
+    this.persistencia?.guardar(null);
     this._currentToken.set(null);
   }
 
