@@ -45,6 +45,19 @@ class UsuarioApiRequestTest {
                 .contains("correo");
     }
 
+    @Test
+    void passwordPolicyRequiresEightTo72Bytes() {
+        // Por debajo del minimo y por encima del maximo de BCrypt.
+        assertThat(camposInvalidos(new UsuarioApiRequest("Ana", "ana@example.com", "corto12", null, null, true)))
+                .contains("password");
+        assertThat(camposInvalidos(
+                new UsuarioApiRequest("Ana", "ana@example.com", "x".repeat(73), null, null, true)))
+                .contains("password");
+        // Justo en el borde inferior: valida.
+        assertThat(camposInvalidos(new UsuarioApiRequest("Ana", "ana@example.com", "ocho1234", null, null, true)))
+                .isEmpty();
+    }
+
     private static Set<String> camposInvalidos(UsuarioApiRequest request) {
         return VALIDATOR.validate(request).stream()
                 .map(ConstraintViolation::getPropertyPath)

@@ -9,8 +9,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.sena.cold_day.core.modules.usuarios.domain.services.TokenGeneratorPort;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
@@ -50,8 +52,21 @@ public class SseTicketService {
         this.ttl = Duration.ofMillis(ttlMs);
     }
 
+    /**
+     * Tope de tickets pendientes. Un cliente autenticado podia pedirlos en bucle y
+     * crecer el mapa sin limite entre purgas; este tope acota la memoria.
+     */
+    private static final int MAX_TICKETS = 10_000;
+
     /** Issues a ticket bound to {@code principal} and returns the raw code. */
     public String emitir(AuthenticatedUser principal) {
+        if (tickets.size() >= MAX_TICKETS) {
+            purgarExpirados();
+            if (tickets.size() >= MAX_TICKETS) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                        "Demasiadas sesiones en tiempo real pendientes. Reintente en unos segundos.");
+            }
+        }
         String codigo = tokenGenerator.generar();
         tickets.put(tokenGenerator.hash(codigo),
                 new TicketPendiente(principal.usuarioId(), principal.rol(), principal.roles(),

@@ -232,7 +232,7 @@ class PerfilAcquisitionIT {
 
     private long registrarClientePublico(String correo) throws Exception {
         String body = mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON)
-                        .content(("{\"nombre\":\"Ana\",\"correo\":\"%s\",\"password\":\"secreto\","
+                        .content(("{\"nombre\":\"Ana\",\"correo\":\"%s\",\"password\":\"secreto123\","
                                 + "\"tipoCliente\":\"B2C\",\"calle\":\"Calle 1\",\"ciudad\":\"Bogota\","
                                 + "\"aceptaHabeasData\":true}").formatted(correo)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
@@ -242,7 +242,7 @@ class PerfilAcquisitionIT {
     private long registrarTecnicoPublico(String correo) throws Exception {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
                         .content(("{\"numeroIdentificacion\":\"P-1\",\"nombre\":\"Ana\",\"correo\":\"%s\","
-                                + "\"password\":\"secreto\",\"categoriasServicio\":[\"REFRIGERACION\"],"
+                                + "\"password\":\"secreto123\",\"categoriasServicio\":[\"REFRIGERACION\"],"
                                 + "\"aceptaHabeasData\":true}").formatted(correo)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body).get("usuarioId").asLong();

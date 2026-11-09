@@ -7,7 +7,9 @@ services:
       POSTGRES_USER: cold_day
       POSTGRES_PASSWORD: cold_day
     ports:
-      - "5433:5432"
+      # Solo localhost: el puerto publicado en 0.0.0.0 dejaba la base al alcance
+      # de la red local con la password fija de abajo.
+      - "127.0.0.1:5433:5432"
     volumes:
       - coldday-postgis-data:/var/lib/postgresql/data
     healthcheck:
@@ -39,7 +41,10 @@ services:
       POSTGRES_USER: cold_day
       POSTGRES_PASSWORD: cold_day
     ports:
-      - "8090:8090"
+      # Solo localhost: con 0.0.0.0:8090 y el perfil prod (forward-headers=NATIVE)
+      # cualquiera en la red podia falsificar X-Forwarded-For para esquivar el rate
+      # limit, ademas de forjar JWTs si el JWT_SECRET del .env es el de desarrollo.
+      - "127.0.0.1:8090:8090"
 
 volumes:
   coldday-postgis-data:

@@ -52,7 +52,7 @@ class TecnicosEventIT {
     @Test
     void publishesTecnicoCreadoExactlyOnce() throws Exception {
         String body = mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto\","
+                        .content("{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto123\","
                                 + "\"numeroIdentificacion\":\"123\",\"categoriasServicio\":[\"REFRIGERACION\"],"
                                 + "\"aceptaHabeasData\":true}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

@@ -70,7 +70,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/api/usuarios",
             "/api/usuarios/login",
             "/api/usuarios/recuperar-contrasena",
-            "/api/usuarios/reset-contrasena");
+            "/api/usuarios/reset-contrasena",
+            // Altas publicas: cada una ejecuta bcrypt (coste 12) y crea cuenta +
+            // perfil. Sin cupo, unas decenas de peticiones concurrentes saturan la
+            // CPU de una instancia pequena y ademas permiten crear cuentas en masa.
+            "/api/clientes",
+            "/api/tecnicos",
+            "/api/proveedores");
 
     private static final String METODO_LIMITADO = "POST";
 
