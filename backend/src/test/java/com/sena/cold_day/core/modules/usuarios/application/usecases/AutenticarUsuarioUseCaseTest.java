@@ -93,4 +93,42 @@ class AutenticarUsuarioUseCaseTest {
                 .isInstanceOf(CredencialesInvalidasException.class);
         verify(tokenIssuer, never()).emitir(any(), any(), any(), any(), anyInt());
     }
+
+    /**
+     * Una cuenta desactivada no puede autenticarse aunque la contrasena sea
+     * correcta, y el error es el mismo que con una clave mala (no revela el
+     * estado de la cuenta).
+     */
+    @Test
+    void inactiveAccountNeverIssuesAToken() {
+        Usuario inactivo = Usuario.reconstituir(10L, "Ana", "ana@example.com", "hash", null, null, Rol.TECNICO,
+                Instant.now(), false, false, 0);
+        when(usuarioRepository.buscarPorCorreo("ana@example.com")).thenReturn(Optional.of(inactivo));
+        when(passwordEncoder.matches("secreto", "hash")).thenReturn(true);
+
+        assertThatThrownBy(() -> autenticar.autenticar("ana@example.com", "secreto"))
+                .isInstanceOf(CredencialesInvalidasException.class);
+        verify(tokenIssuer, never()).emitir(any(), any(), any(), any(), anyInt());
+    }
+
+    /**
+     * Diez fallos sobre el mismo correo bloquean la cuenta una ventana, aunque
+     * despues llegue la contrasena correcta. Es el cupo por cuenta que el filtro
+     * por IP no puede dar (se esquiva con proxies).
+     */
+    @Test
+    void diezFallosBloqueanLaCuentaAunqueLuegoLlegueLaClaveCorrecta() {
+        when(usuarioRepository.buscarPorCorreo("ana@example.com")).thenReturn(Optional.of(usuario()));
+        when(passwordEncoder.matches("mal", "hash")).thenReturn(false);
+
+        for (int intento = 1; intento <= 10; intento++) {
+            assertThatThrownBy(() -> autenticar.autenticar("ana@example.com", "mal"))
+                    .isInstanceOf(CredencialesInvalidasException.class);
+        }
+
+        // La clave correcta ya no sirve: la cuenta esta bloqueada.
+        assertThatThrownBy(() -> autenticar.autenticar("ana@example.com", "secreto"))
+                .isInstanceOf(CredencialesInvalidasException.class);
+        verify(tokenIssuer, never()).emitir(any(), any(), any(), any(), anyInt());
+    }
 }

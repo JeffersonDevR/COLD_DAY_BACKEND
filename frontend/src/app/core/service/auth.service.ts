@@ -218,58 +218,6 @@ export class AuthService {
     }
   }
 
-  switchDemoRole(rol: Rol): void {
-    const demoProfiles: Record<string, UsuarioResponse> = {
-      ADMINISTRADOR: {
-        id: 1,
-        nombre: 'Carlos Méndez',
-        correo: 'carlos.admin@coldday.com.co',
-        telefono: '3104567890',
-        rol: 'ADMINISTRADOR',
-        habeasDataAceptado: true,
-        activo: true,
-      },
-      CONTABLE: {
-        id: 2,
-        nombre: 'Ana Martínez',
-        correo: 'ana.contable@coldday.com.co',
-        telefono: '3156789012',
-        rol: 'CONTABLE',
-        habeasDataAceptado: true,
-        activo: true,
-      },
-      CLIENTE: {
-        id: 3,
-        nombre: 'María Gómez',
-        correo: 'maria.gomez@gmail.com',
-        telefono: '3187654321',
-        rol: 'CLIENTE',
-        habeasDataAceptado: true,
-        activo: true,
-      },
-      TECNICO: {
-        id: 6,
-        nombre: 'Juan Pérez',
-        correo: 'juan.tecnico@coldday.com.co',
-        telefono: '3001234567',
-        rol: 'TECNICO',
-        habeasDataAceptado: true,
-        activo: true,
-      },
-      PROVEEDOR: {
-        id: 10,
-        nombre: 'Suministros del Norte S.A.S.',
-        correo: 'proveedor1@coldday.com.co',
-        telefono: '3105550001',
-        rol: 'PROVEEDOR',
-        habeasDataAceptado: true,
-        activo: true,
-      },
-    };
-    const target = demoProfiles[rol] || demoProfiles['CLIENTE'];
-    this.setCurrentUser(target);
-  }
-
   /**
    * Landing tras el login, por rol. NO es el resolutor de paneles: `/panel`,
    * "Mi Panel" y la preferencia del último panel visitado viven en

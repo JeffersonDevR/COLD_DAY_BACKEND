@@ -248,19 +248,6 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
-  it('switchDemoRole cambia el perfil demo', () => {
-    const service = create();
-    service.switchDemoRole('TECNICO');
-    expect(service.currentUser()?.rol).toBe('TECNICO');
-    expect(service.currentUser()?.id).toBe(6);
-  });
-
-  it('switchDemoRole con rol desconocido cae en CLIENTE', () => {
-    const service = create();
-    service.switchDemoRole('DESCONOCIDO' as unknown as Rol);
-    expect(service.currentUser()?.rol).toBe('CLIENTE');
-  });
-
   it('getDashboardRouteForRole resuelve la ruta por rol', () => {
     const service = create();
     expect(service.getDashboardRouteForRole('CLIENTE')).toBe('/panel');

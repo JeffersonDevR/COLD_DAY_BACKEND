@@ -70,7 +70,7 @@ class ClientesApiIT {
 
     @Test
     void acceptsOnboardingWithoutOptionalFields() throws Exception {
-        String body = "{\"nombre\":\"Ana\",\"correo\":\"opcional@example.com\",\"password\":\"secreto\","
+        String body = "{\"nombre\":\"Ana\",\"correo\":\"opcional@example.com\",\"password\":\"secreto123\","
                 + "\"tipoCliente\":\"B2C\",\"calle\":\"Calle 1\",\"ciudad\":\"Bogota\","
                 + "\"aceptaHabeasData\":true}";
 
@@ -105,7 +105,7 @@ class ClientesApiIT {
     }
 
     private String payload(String correo, String barrio) {
-        return ("{\"nombre\":\"Ana\",\"correo\":\"%s\",\"password\":\"secreto\","
+        return ("{\"nombre\":\"Ana\",\"correo\":\"%s\",\"password\":\"secreto123\","
                 + "\"telefono\":\"3001234567\",\"tipoCliente\":\"B2C\",\"calle\":\"Calle 1\","
                 + "\"ciudad\":\"Bogota\",\"barrio\":\"%s\",\"aceptaHabeasData\":true}")
                 .formatted(correo, barrio);

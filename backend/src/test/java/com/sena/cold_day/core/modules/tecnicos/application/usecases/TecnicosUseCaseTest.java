@@ -160,6 +160,28 @@ class TecnicosUseCaseTest {
         verify(repository).save(existing);
     }
 
+    /**
+     * Desactivar el perfil no alcanza: el JWT ya emitido solo se invalida si sube
+     * la version del usuario dueno. Sin esto, el tecnico dado de baja conservaba
+     * ROLE_TECNICO durante la hora de vida del token.
+     */
+    @Test
+    void eliminarRevocaLosTokensDelUsuarioDueno() {
+        TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());
+        Tecnico existing = Tecnico.reconstituir(tecnicoId, 5L, "123", Set.of(), null, EstadoValidacion.PENDIENTE,
+                null, Set.of(), true, null, false, null);
+        Usuario dueno = usuario(5L);
+        when(repository.findByIdAndActivoTrue(tecnicoId)).thenReturn(Optional.of(existing));
+        when(usuarioRepository.buscarPorId(
+                new com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId(5L)))
+                .thenReturn(Optional.of(dueno));
+
+        eliminar.eliminar(tecnicoId);
+
+        assertThat(dueno.getTokenVersion()).isEqualTo(1);
+        verify(usuarioRepository).save(dueno);
+    }
+
     @Test
     void aprobarRequiresVigenteDocuments() {
         TecnicoId tecnicoId = TecnicoId.desde(UUID.randomUUID());

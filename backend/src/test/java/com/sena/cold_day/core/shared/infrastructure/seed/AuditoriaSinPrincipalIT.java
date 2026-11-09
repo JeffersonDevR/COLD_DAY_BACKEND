@@ -70,7 +70,7 @@ class AuditoriaSinPrincipalIT {
     @Test
     void elRegistroPublicoDeClienteGuardaSystemComoAuditor() throws Exception {
         mockMvc.perform(post("/api/clientes").contentType(MediaType.APPLICATION_JSON).content(
-                        "{\"nombre\":\"Ana\",\"correo\":\"auditoria-cliente@example.com\",\"password\":\"secreto\","
+                        "{\"nombre\":\"Ana\",\"correo\":\"auditoria-cliente@example.com\",\"password\":\"secreto123\","
                                 + "\"tipoCliente\":\"B2C\",\"calle\":\"Calle 1\",\"ciudad\":\"Bogota\","
                                 + "\"aceptaHabeasData\":true}"))
                 .andExpect(status().isCreated());
@@ -84,7 +84,7 @@ class AuditoriaSinPrincipalIT {
     void elRegistroPublicoDeTecnicoGuardaSystemComoAuditor() throws Exception {
         mockMvc.perform(post("/api/tecnicos").contentType(MediaType.APPLICATION_JSON).content(
                         "{\"numeroIdentificacion\":\"CC-%s\",\"nombre\":\"Luis\",\"correo\":\"auditoria-tecnico@example.com\","
-                                + "\"password\":\"secreto\",\"categoriasServicio\":[\"REFRIGERACION\"],"
+                                + "\"password\":\"secreto123\",\"categoriasServicio\":[\"REFRIGERACION\"],"
                                 + "\"aceptaHabeasData\":true}".formatted(UUID.randomUUID())))
                 .andExpect(status().isCreated());
 

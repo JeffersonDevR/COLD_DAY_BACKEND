@@ -68,13 +68,13 @@ class InyeccionSqlApiIT {
         // The table is intact and the real account still authenticates.
         assertThat(usuarioRepository.count()).isEqualTo(1);
         mockMvc.perform(post(LOGIN).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"correo\":\"ana@example.com\",\"password\":\"secreto\"}"))
+                .content("{\"correo\":\"ana@example.com\",\"password\":\"secreto123\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty());
     }
 
     private String validPayload() {
-        return "{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto\","
+        return "{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto123\","
                 + "\"telefono\":\"3001234567\",\"aceptaHabeasData\":true}";
     }
 }

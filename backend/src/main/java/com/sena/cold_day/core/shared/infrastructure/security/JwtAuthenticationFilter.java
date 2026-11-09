@@ -103,13 +103,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * The token's {@code ver} claim must match the persisted usuario's monotonic
-     * token version. Decision D7: when the subject does not resolve to a
-     * persisted usuario the check is skipped and prior behaviour is preserved.
+     * El token solo es valido si el usuario sigue existiendo, sigue ACTIVO y su
+     * {@code ver} coincide con la version persistida (revocacion tras reset de
+     * contrasena o segundo perfil, decision D11).
+     *
+     * <p>Cuando el sujeto no resuelve se mantiene la semantica historica
+     * ({@code orElse(true)}): hoy ningun flujo borra filas de {@code usuario}
+     * (las bajas son desactivaciones, que ahora si cortan aqui), y cerrarlo
+     * romperia los fixtures que emiten tokens para ids sinteticos. Queda como
+     * deuda declarada: si aparece un borrado fisico, esto debe pasar a
+     * {@code orElse(false)} junto con esos fixtures.
      */
     private boolean versionVigente(UsuarioId usuarioId, Object verClaim) {
         return usuarioRepository.buscarPorId(usuarioId)
-                .map(usuario -> usuario.getTokenVersion() == asInt(verClaim))
+                .map(usuario -> usuario.isActivo() && usuario.getTokenVersion() == asInt(verClaim))
                 .orElse(true);
     }
 

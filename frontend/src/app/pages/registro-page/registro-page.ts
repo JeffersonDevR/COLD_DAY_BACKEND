@@ -62,7 +62,7 @@ export class RegistroPage {
     nombre: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(3)] }),
     correo: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     telefono: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(7)] }),
-    password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] }),
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }),
     numeroIdentificacion: new FormControl('', { nonNullable: true }),
     razonSocial: new FormControl('', { nonNullable: true }),
     nit: new FormControl('', { nonNullable: true }),

@@ -7,10 +7,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.annotation.PreDestroy;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -30,6 +33,13 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class SseEmitterRegistry {
 
+    /**
+     * Tope de emisores vivos por clave. Sin el, un usuario autenticado puede abrir
+     * streams en bucle (cada ticket es barato) y agotar heap y file descriptors de
+     * una instancia: cada emisor vive hasta {@code app.sse.emitter-timeout-ms}.
+     */
+    static final int MAX_EMISORES_POR_CLAVE = 10;
+
     private final Map<String, Set<SseEmitter>> emisores = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
     private final long emitterTimeoutMs;
@@ -44,13 +54,21 @@ public class SseEmitterRegistry {
      * Creates an emitter, wires the three removal callbacks and registers it
      * under {@code key}. Callers must use this factory (not a bare
      * {@code new SseEmitter()}) so the callbacks are never missing.
+     *
+     * @throws ResponseStatusException 429 when the key already holds
+     *         {@link #MAX_EMISORES_POR_CLAVE} live emitters.
      */
     public SseEmitter crear(String key) {
+        Set<SseEmitter> bucket = emisores.computeIfAbsent(key, ignored -> ConcurrentHashMap.newKeySet());
+        if (bucket.size() >= MAX_EMISORES_POR_CLAVE) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Demasiadas conexiones en tiempo real abiertas para este recurso.");
+        }
         SseEmitter emitter = nuevoEmitter();
         emitter.onCompletion(() -> remover(key, emitter));
         emitter.onTimeout(() -> remover(key, emitter));
         emitter.onError(throwable -> remover(key, emitter));
-        emisores.computeIfAbsent(key, ignored -> ConcurrentHashMap.newKeySet()).add(emitter);
+        bucket.add(emitter);
         return emitter;
     }
 
@@ -90,8 +108,7 @@ public class SseEmitterRegistry {
     }
 
     /** Completes and drops every emitter. Used on shutdown and by tests. */
-    public void limpiar() {
-        for (Set<SseEmitter> bucket : emisores.values()) {
+    public void limpiar() {        for (Set<SseEmitter> bucket : emisores.values()) {
             for (SseEmitter emitter : new ArrayList<>(bucket)) {
                 try {
                     emitter.complete();
@@ -101,6 +118,12 @@ public class SseEmitterRegistry {
             }
         }
         emisores.clear();
+    }
+
+    /** Cierra los stream vivos al apagar la instancia (antes era codigo muerto). */
+    @PreDestroy
+    void apagar() {
+        limpiar();
     }
 
     /** Number of live emitters under {@code key}. */

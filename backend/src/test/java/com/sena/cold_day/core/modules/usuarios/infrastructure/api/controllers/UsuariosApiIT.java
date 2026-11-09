@@ -95,7 +95,7 @@ class UsuariosApiIT {
 
         // login ok -> 200 + token
         mockMvc.perform(post("/api/usuarios/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"correo\":\"ana@example.com\",\"password\":\"secreto\"}"))
+                .content("{\"correo\":\"ana@example.com\",\"password\":\"secreto123\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.rol").value("CLIENTE"));
@@ -144,7 +144,7 @@ class UsuariosApiIT {
 
         // Old password rejected; the new one authenticates.
         mockMvc.perform(post("/api/usuarios/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"correo\":\"ana@example.com\",\"password\":\"secreto\"}"))
+                .content("{\"correo\":\"ana@example.com\",\"password\":\"secreto123\"}"))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/usuarios/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"correo\":\"ana@example.com\",\"password\":\"nueva-clave\"}"))
@@ -158,7 +158,7 @@ class UsuariosApiIT {
                 .andExpect(status().isCreated());
 
         // Token minted before the reset is usable.
-        String preResetToken = loginAndGetToken("secreto");
+        String preResetToken = loginAndGetToken("secreto123");
         assertThat(protectedStatus(preResetToken)).isEqualTo(200);
 
         // Request + consume a recovery token (design D10).
@@ -284,7 +284,7 @@ class UsuariosApiIT {
      * created as CLIENTE. Sending it proves the escalation path is closed.
      */
     private String validPayload(boolean aceptaHabeasData) {
-        return "{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto\","
+        return "{\"nombre\":\"Ana\",\"correo\":\"ana@example.com\",\"password\":\"secreto123\","
                 + "\"telefono\":\"3001234567\",\"rol\":\"TECNICO\",\"aceptaHabeasData\":"
                 + aceptaHabeasData + "}";
     }

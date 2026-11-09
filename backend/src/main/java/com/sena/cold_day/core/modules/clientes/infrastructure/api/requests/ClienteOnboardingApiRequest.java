@@ -7,6 +7,7 @@ import com.sena.cold_day.core.shared.domain.TextoPlano;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * Alta pública de cliente: crea el Usuario (rol CLIENTE) y su perfil en una sola
@@ -17,7 +18,7 @@ import jakarta.validation.constraints.NotNull;
 public record ClienteOnboardingApiRequest(
         @NotBlank String nombre,
         @NotBlank @Email String correo,
-        @NotBlank String password,
+        @NotBlank @Size(min = 8, max = 72) String password,
         String telefono,
         String fotoUrl,
         @NotNull TipoCliente tipoCliente,
