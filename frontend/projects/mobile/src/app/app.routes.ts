@@ -66,6 +66,10 @@ const HOJAS_REALES: Readonly<Record<string, () => Promise<Type<unknown>>>> = {
     import('./pages/ofertas-tecnico/ofertas-tecnico.page').then((m) => m.OfertasTecnicoPage),
   'tecnico/ots': () =>
     import('./pages/panel-tecnico/panel-tecnico.page').then((m) => m.PanelTecnicoPageMobile),
+  'tecnico/liquidaciones': () =>
+    import('./pages/liquidaciones-tecnico/liquidaciones-tecnico.page').then(
+      (m) => m.LiquidacionesTecnicoPage,
+    ),
   'proveedor/insumos': () =>
     import('./pages/solicitudes-proveedor/solicitudes-proveedor.page').then(
       (m) => m.SolicitudesProveedorPage,

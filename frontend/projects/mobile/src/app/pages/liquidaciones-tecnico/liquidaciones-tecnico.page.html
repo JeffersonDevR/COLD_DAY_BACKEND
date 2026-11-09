@@ -1,0 +1,95 @@
+<ion-header class="cd-header">
+  <ion-toolbar>
+    <div class="cd-hero cd-hero--compacto">
+      <p class="cd-eyebrow">Técnico</p>
+      <h1 class="cd-headline">Mis liquidaciones</h1>
+      <p class="cd-hero__nota">Comisión de intermediación de los servicios cobrados en efectivo.</p>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="recargar($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  @if (cargando()) {
+    <div class="cd-cargando" data-testid="liquidaciones-cargando">
+      <ion-spinner name="dots"></ion-spinner>
+      <p class="cd-muted">Cargando tus liquidaciones…</p>
+    </div>
+  }
+
+  @if (fallo() && !cargando()) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="liquidaciones-error">
+      <h2 class="cd-alerta__titulo">No pudimos cargar tus liquidaciones</h2>
+      <p class="cd-alerta__texto">Revisá tu conexión y volvé a intentarlo.</p>
+      <ion-button fill="outline" size="small" (click)="reintentar()" data-testid="reintentar-liquidaciones">
+        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
+  @if (!cargando()) {
+    <section
+      class="cd-alerta cd-alerta--{{ porConsignar() > 0 ? 'aviso' : 'ok' }}"
+      role="status"
+      data-testid="resumen-liquidaciones"
+    >
+      <h2 class="cd-alerta__titulo">Comisión por consignar</h2>
+      <p class="cd-alerta__texto">
+        <strong data-testid="comision-pendiente">$ {{ cop(porConsignar()) }} COP</strong>
+      </p>
+      @if (porConsignar() > 0) {
+        <p class="cd-alerta__texto" data-testid="nota-consignacion">
+          La consignación se registra desde la web. Mientras haya una pendiente no podés tomar
+          servicios nuevos.
+        </p>
+      }
+      <p class="cd-muted" data-testid="conteos-liquidaciones">
+        {{ enVerificacion() }} en verificación · {{ aprobadas() }} aprobadas
+      </p>
+    </section>
+  }
+
+  @if (!cargando() && !fallo() && liquidaciones().length === 0) {
+    <section class="cd-vacio" data-testid="liquidaciones-vacio">
+      <ion-icon name="cash-outline" aria-hidden="true"></ion-icon>
+      <h2 class="cd-vacio__titulo">Todavía no tenés liquidaciones</h2>
+      <p class="cd-vacio__texto">
+        Cada servicio finalizado que cobres en efectivo genera una liquidación con la comisión de
+        la plataforma.
+      </p>
+    </section>
+  }
+
+  @for (liq of liquidaciones(); track liq.id) {
+    <article class="cd-ot" [attr.data-testid]="'liquidacion-' + liq.id">
+      <div class="cd-ot__cabecera">
+        <div class="cd-ot__titulos">
+          <p class="cd-ot__codigo">{{ liq.otCodigo ?? 'Servicio' }}</p>
+          <p class="cd-ot__categoria">
+            {{ fecha(liq.fechaRegistro) }} · {{ etiquetaMedio(liq.medioPago) }}
+          </p>
+        </div>
+        <div class="cd-chips">
+          <span class="cd-chip cd-chip--{{ tonoEstado(liq.estado) }}" [attr.data-testid]="'estado-' + liq.id">
+            {{ etiquetaEstado(liq.estado) }}
+          </span>
+        </div>
+      </div>
+
+      <p class="cd-ot__descripcion">
+        <strong>Comisión a transferir: $ {{ cop(liq.comision) }} COP</strong>
+      </p>
+      <p class="cd-muted">Servicio total: $ {{ cop(liq.montoServicio) }} COP</p>
+
+      @if (liq.motivoRechazo) {
+        <p class="cd-alerta__texto" [attr.data-testid]="'motivo-' + liq.id">
+          Motivo del rechazo: {{ liq.motivoRechazo }}
+        </p>
+      }
+    </article>
+  }
+</ion-content>

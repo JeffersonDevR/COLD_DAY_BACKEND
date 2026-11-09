@@ -7,6 +7,7 @@
 # Config generada en build (nunca se versiona)
 src/app/core/environment/maps-key.ts
 src/app/core/environment/api-origin.ts
+projects/mobile/src/app/core/environment/mobile-origin.ts
 
 # Compiled output
 /dist
