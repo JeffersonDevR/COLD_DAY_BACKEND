@@ -134,13 +134,26 @@ public class Tecnico {
 
     /** Same guard applies before accepting an order (CU-08, step 4). */
     public void aceptarOrden() {
+        validarPuedeAceptarOrden();
+        this.estadoOperativo = EstadoOperativo.OCUPADO;
+    }
+
+    /**
+     * Las mismas reglas que {@link #aceptarOrden()} pero SIN mutar el agregado.
+     *
+     * <p>La aceptacion real la cierra un UPDATE condicional en el repositorio: dos
+     * ofertas de OTs distintas aceptadas en paralelo por el mismo tecnico leen
+     * {@code DISPONIBLE} y ambas lo darian por bueno. Mutar aqui antes del UPDATE
+     * seria peor: el flush automatico escribiria {@code OCUPADO} sin condicion y
+     * la puerta atomica dejaria de existir.
+     */
+    public void validarPuedeAceptarOrden() {
         if (estadoValidacion != EstadoValidacion.APROBADO) {
             throw new TecnicoNoValidadoException(id, estadoValidacion);
         }
         if (estadoOperativo != EstadoOperativo.DISPONIBLE) {
             throw new TecnicoAsignadoException(numeroIdentificacion);
         }
-        this.estadoOperativo = EstadoOperativo.OCUPADO;
     }
 
     /**

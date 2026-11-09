@@ -29,6 +29,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.OfertaOtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoAsignadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
@@ -114,8 +115,15 @@ public class AceptarOfertaUseCase {
         }
         ofertaRepository.invalidarPendientesDe(otId, OfertaEstado.CANCELADA, ahora);
 
-        tecnico.aceptarOrden();
-        tecnicoRepository.save(tecnico);
+        // A16: dos puertas, no una. La OT ya se cerro con un UPDATE condicional,
+        // pero el tecnico no: dos ofertas de OTs distintas aceptadas en paralelo
+        // leian DISPONIBLE y ambas escribian OCUPADO. Se valida en el dominio (para
+        // dar el mensaje correcto) SIN mutar el agregado, y el paso a OCUPADO lo
+        // decide el UPDATE condicional: 0 filas = otro accept gano y todo revierte.
+        tecnico.validarPuedeAceptarOrden();
+        if (tecnicoRepository.ocuparSiDisponible(tecnico.getId()) == 0) {
+            throw new TecnicoAsignadoException(tecnico.getNumeroIdentificacion());
+        }
 
         historialRepository.append(OtEstadoHistorial.registrar(otId,
                 CambioEstado.hacia(EstadoOt.BUSCANDO_TECNICO, EstadoOt.ASIGNADA, ActorOt.TECNICO, ahora)));

@@ -73,7 +73,7 @@ class CrearOtUseCaseTest {
 
     @Test
     void crearAssignsTheNextCodeOfTheYearBeforeSavingTheOrder() {
-        when(otRepository.ultimoNumeroCodigo(2026)).thenReturn(6);
+        when(otRepository.siguienteNumeroCodigo(2026)).thenReturn(7);
 
         var respuesta = useCase(AHORA_2026).crear(request(), PRINCIPAL);
 
@@ -86,12 +86,12 @@ class CrearOtUseCaseTest {
 
     @Test
     void crearRestartsTheSequenceOnTheNewYear() {
-        when(otRepository.ultimoNumeroCodigo(2027)).thenReturn(0);
+        when(otRepository.siguienteNumeroCodigo(2027)).thenReturn(1);
 
         var respuesta = useCase(AHORA_2027).crear(request(), PRINCIPAL);
 
         assertThat(respuesta.codigo()).isEqualTo(CodigoOt.de("OT-2027-0001"));
-        verify(otRepository).ultimoNumeroCodigo(2027);
+        verify(otRepository).siguienteNumeroCodigo(2027);
     }
 
     @Test
@@ -102,7 +102,7 @@ class CrearOtUseCaseTest {
 
     @Test
     void crearReintentaEnTransaccionNuevaCuandoElCodigoColisiona() {
-        when(otRepository.ultimoNumeroCodigo(2026)).thenReturn(6, 7);
+        when(otRepository.siguienteNumeroCodigo(2026)).thenReturn(7, 8);
         when(iniciarBusqueda.iniciar(any()))
                 .thenThrow(new DataIntegrityViolationException("idx_ot_codigo"))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -115,7 +115,7 @@ class CrearOtUseCaseTest {
 
     @Test
     void crearNoReintentaMasDeLosIntentosPermitidos() {
-        when(otRepository.ultimoNumeroCodigo(2026)).thenReturn(6);
+        when(otRepository.siguienteNumeroCodigo(2026)).thenReturn(7);
         when(iniciarBusqueda.iniciar(any()))
                 .thenThrow(new DataIntegrityViolationException("idx_ot_codigo"));
 

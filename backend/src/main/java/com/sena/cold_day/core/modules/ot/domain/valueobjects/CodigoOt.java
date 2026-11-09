@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
  * exists so a client, a technician or an administrator can name an order with
  * something a human can read, write down or say over the phone.
  *
- * <p>Allocation: the application derives the number as the highest one already
- * issued for that year plus one, inside the creation transaction (see
+ * <p>Allocation: el numero lo reserva un contador atomico por año dentro de la
+ * transaccion de creacion (see
  * {@code OtRepository#ultimoNumeroCodigo}), and {@code idx_ot_codigo} makes the
  * code unique in the base. Two consequences are deliberate: the padding never
  * wraps — the 10000th order of a year is {@code OT-2026-10000}, which is why the
