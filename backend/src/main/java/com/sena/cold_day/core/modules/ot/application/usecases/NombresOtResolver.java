@@ -73,6 +73,26 @@ public class NombresOtResolver {
     }
 
     /**
+     * Telefono del tecnico asignado, o {@code null} cuando la OT no tiene tecnico
+     * o su perfil fue desactivado.
+     *
+     * <p>Vive aca, junto a los nombres, porque el detalle y las mutaciones de la OT
+     * lo publican en la misma respuesta: separarlo dejaba al cliente sin el numero
+     * para llamar al tecnico que ya va en camino. Se resuelve contra el usuario
+     * (igual que {@link #nombreTecnico}) para no duplicar la regla de "tecnico
+     * activo".
+     */
+    public String telefonoTecnico(TecnicoId tecnicoId) {
+        if (tecnicoId == null) {
+            return null;
+        }
+        return tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
+                .flatMap(tecnico -> usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId())))
+                .map(Usuario::getTelefono)
+                .orElse(null);
+    }
+
+    /**
      * Enriches a whole listing. Los nombres se resuelven en lote: una query de
      * clientes, una de tecnicos y una de usuarios para toda la lista. Antes era
      * un minimo de dos queries por cliente/tecnico distinto (el memo por id no
