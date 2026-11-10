@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cold Day</string>
+    <string name="title_activity_main">Cold Day</string>
+    <string name="package_name">com.coldday.app</string>
+    <string name="custom_url_scheme">com.coldday.app</string>
+</resources>
