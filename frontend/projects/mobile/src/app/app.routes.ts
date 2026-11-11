@@ -29,10 +29,6 @@ const PANTALLAS: Record<string, Pantalla> = {
     title: 'Mis OTs',
     description: 'Las órdenes asignadas, su estado y el próximo paso de cada una.',
   },
-  liquidaciones: {
-    title: 'Liquidaciones',
-    description: 'Lo que la plataforma te debe y el estado de cada consignación.',
-  },
   insumos: {
     title: 'Insumos',
     description: 'Los requerimientos de insumos de los técnicos que podés cotizar.',
@@ -62,6 +58,8 @@ const cargarCuenta = () => import('./pages/cuenta/cuenta.page').then((m) => m.Cu
 const HOJAS_REALES: Readonly<Record<string, () => Promise<Type<unknown>>>> = {
   'cliente/panel': () =>
     import('./pages/panel-cliente/panel-cliente.page').then((m) => m.PanelClientePage),
+  'cliente/equipos': () =>
+    import('./pages/equipos/equipos.page').then((m) => m.MobileEquiposPage),
   'tecnico/radar': () =>
     import('./pages/ofertas-tecnico/ofertas-tecnico.page').then((m) => m.OfertasTecnicoPage),
   'tecnico/ots': () =>
@@ -158,6 +156,13 @@ const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
       title: 'Mi perfil técnico · Cold Day',
       loadComponent: () =>
         import('./pages/perfil-tecnico/perfil-tecnico.page').then((m) => m.PerfilTecnicoPage),
+    },
+    {
+      // No es tab: se entra por la tarjeta fija del panel de Mis OTs. La plata
+      // no se mira todo el día, pero tampoco puede quedar escondida.
+      path: 'liquidaciones',
+      title: 'Mis liquidaciones · Cold Day',
+      loadComponent: HOJAS_REALES['tecnico/liquidaciones'],
     },
   ],
 };
