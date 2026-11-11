@@ -109,7 +109,7 @@ describe('mobile routes', () => {
   it('el panel del cliente tiene pantalla propia, no el placeholder compartido', () => {
     const cliente = routes.find((item) => item.path === 'cliente');
     const panel = cliente?.children?.find((child) => child.path === 'panel');
-    // Equipos todavía es placeholder: comparten el mismo cargador. El panel no.
+    // Cada leaf tiene su propia pantalla: nadie comparte el placeholder.
     const equipos = cliente?.children?.find((child) => child.path === 'equipos');
 
     expect(panel?.loadComponent).toBeTypeOf('function');
@@ -122,17 +122,22 @@ describe('mobile routes', () => {
     expect(MODOS.TECNICO.home).toBe('/tecnico/radar');
     expect(MODOS.PROVEEDOR.home).toBe('/proveedor/insumos');
     expect(MODOS.CLIENTE.tabs.map((tab) => tab.label)).toEqual(['Panel', 'Equipos', 'Cuenta']);
-    expect(MODOS.TECNICO.tabs.map((tab) => tab.label)).toEqual([
-      'Radar',
-      'Mis OTs',
-      'Liquidaciones',
-      'Cuenta',
-    ]);
+    expect(MODOS.TECNICO.tabs.map((tab) => tab.label)).toEqual(['Radar', 'Mis OTs', 'Cuenta']);
     expect(MODOS.PROVEEDOR.tabs.map((tab) => tab.label)).toEqual([
       'Insumos',
       'Documentos',
       'Cuenta',
     ]);
+  });
+
+  it('liquidaciones no es tab del técnico, pero la ruta sigue existiendo', () => {
+    // Decisión: la plata no ocupa un tab; se entra por la tarjeta del panel.
+    expect(MODOS.TECNICO.tabs.map((tab) => tab.id)).not.toContain('liquidaciones');
+
+    const tecnico = routes.find((route) => route.path === 'tecnico');
+    const liquidaciones = tecnico?.children?.find((child) => child.path === 'liquidaciones');
+
+    expect(liquidaciones?.loadComponent).toBeTypeOf('function');
   });
 
   it('keeps the canonical /cuenta route outside the tabs', () => {

@@ -11,6 +11,7 @@ import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular';
 import { authInterceptor } from '@core/interceptos/auth.interceptor';
 import { API_ORIGIN } from '@core/service/api.config';
 import { MOBILE_API_ORIGIN } from './core/environment/mobile-origin';
+import { registrarDeepLinks } from './core/deep-links';
 import { VISIBILITY_SOURCE } from '@core/service/visible-tab-polling';
 import { provideColombianLocale } from '@core/i18n/locale';
 import { routes } from './app.routes';

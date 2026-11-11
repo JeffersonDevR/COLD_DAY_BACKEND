@@ -203,6 +203,10 @@ export class PanelTecnicoPageMobile implements OnInit {
     void this.router.navigate(['/tecnico/perfil']);
   }
 
+  irALiquidaciones(): void {
+    void this.router.navigate(['/tecnico/liquidaciones']);
+  }
+
   abrirOt(otId: string): void {
     void this.router.navigate(['/tecnico/ejecucion', otId]);
   }

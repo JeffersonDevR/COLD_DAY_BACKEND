@@ -179,6 +179,17 @@ import { MobileToastService } from '../../core/toast.service';
 
         <p class="cd-muted cd-panel__sub" data-testid="panel-subtitulo">{{ textos().subtitulo }}</p>
 
+        <!-- A10 no es un tab: se abre desde acá y se vuelve al panel. -->
+        <ion-button
+          expand="block"
+          fill="clear"
+          data-testid="panel-mis-equipos"
+          (click)="irAMisEquipos()"
+        >
+          <ion-icon slot="start" name="cube-outline" aria-hidden="true"></ion-icon>
+          Mis equipos
+        </ion-button>
+
         @if (serviciosFiltrados().length === 0) {
           <section class="cd-vacio" data-testid="panel-vacio">
             <ion-icon name="file-tray-outline" aria-hidden="true"></ion-icon>
@@ -320,6 +331,11 @@ export class PanelClientePage {
       default:
         return 'build-outline';
     }
+  }
+
+  /** A10 — Mis equipos. Pantalla secundaria: se llega desde el panel. */
+  protected irAMisEquipos(): void {
+    void this.router.navigate(['/cliente/equipos']);
   }
 
   protected cambiarFiltro(evento: SegmentCustomEvent): void {
