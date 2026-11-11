@@ -44,7 +44,6 @@ export const MODOS: Record<ModoApp, ModoConfig> = {
     tabs: [
       { id: 'radar', label: 'Radar', icon: 'radio-outline', iconActive: 'radio' },
       { id: 'ots', label: 'Mis OTs', icon: 'construct-outline', iconActive: 'construct' },
-      { id: 'liquidaciones', label: 'Liquidaciones', icon: 'cash-outline', iconActive: 'cash' },
       { id: 'cuenta', label: 'Cuenta', icon: 'person-outline', iconActive: 'person' },
     ],
   },

@@ -125,6 +125,30 @@
     </ion-card-content>
   </ion-card>
 
+  <!-- Liquidaciones no tiene tab: vive acá para que no haya que buscarla. -->
+  <ion-card class="cd-card" data-testid="acceso-liquidaciones">
+    <ion-card-content>
+      <div class="cd-ot__cabecera">
+        <div>
+          <h2 class="cd-card__titulo">Mis liquidaciones</h2>
+          <p class="cd-muted">Lo que la plataforma te debe y el estado de cada consignación.</p>
+        </div>
+        @if (bloqueadoPorLiquidacion()) {
+          <span class="cd-chip cd-chip--espera" data-testid="liquidaciones-pendientes">Pendiente</span>
+        }
+      </div>
+      <ion-button
+        class="cd-cta"
+        fill="outline"
+        (click)="irALiquidaciones()"
+        data-testid="ir-liquidaciones"
+      >
+        <ion-icon slot="start" name="cash-outline" aria-hidden="true"></ion-icon>
+        Ver mis liquidaciones
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
   <!-- OTs activas -->
   <h2 class="cd-section__titulo">Tus órdenes activas</h2>
 
