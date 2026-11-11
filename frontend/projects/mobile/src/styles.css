@@ -15,21 +15,47 @@
 :root.md,
 :root.ios {
   /* Typography */
-  --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --cd-font-headline: 'Space Grotesk', 'Inter', sans-serif;
-  --cd-font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', monospace;
-  --cd-font-label: 'Public Sans', 'Inter', sans-serif;
+  --ion-font-family: var(--cd-font-body);
 
   /* Surfaces */
   --ion-background-color: #0b1220;
   --ion-background-color-rgb: 11, 18, 32;
   --ion-text-color: #e2e8f0;
   --ion-text-color-rgb: 226, 232, 240;
+
+  /* Tokens del sistema. Fuente única: este bloque. El resto del archivo y las
+     pantallas usan var(--cd-*), nunca un hex suelto; `scripts/check-styles.mjs`
+     lo vigila (declaración única por token y techo de hex). */
+  --cd-canvas: #0b1220;
   --cd-surface: #111b2e;
-  --cd-surface-border: #1e293b;
-  --cd-surface-border-strong: #334155;
-  --cd-muted: #94a3b8;
-  --cd-dim: #64748b;
+  --cd-surface-2: #16223b;
+  --cd-line: #1e293b;
+  --cd-line-strong: #334155;
+  --cd-action: #22d3ee;
+  --cd-action-hover: #06b6d4;
+  --cd-success: #22c55e;
+  --cd-warn: #f59e0b;
+  --cd-parts: #a78bfa;
+  --cd-danger: #f87171;
+  --cd-text-1: #f8fafc;
+  --cd-text-2: #e2e8f0;
+  --cd-text-3: #cbd5e1;
+  --cd-text-4: #94a3b8; /* piso de contraste: 7,3 / 6,7 */
+  --cd-font-head: "Space Grotesk", system-ui, sans-serif;
+  --cd-font-body: "Inter", system-ui, sans-serif;
+  --cd-font-mono: "Space Mono", ui-monospace, monospace;
+  --cd-font-label: "Public Sans", "Inter", sans-serif;
+  --cd-radius: 16px;
+  --cd-radius-sm: 12px;
+  --cd-radius-control: 8px;
+
+  /* Alias: los nombres que ya usa el marcado de las pantallas. Apuntan al
+     token canónico, así que mover el canónico mueve todo. */
+  --cd-font-headline: var(--cd-font-head);
+  --cd-muted: var(--cd-text-4);
+  --cd-surface-border: var(--cd-line);
+  --cd-surface-border-strong: var(--cd-line-strong);
+  --cd-radius-card: var(--cd-radius-sm);
 
   /* On-canvas steps, re-based on #0b1220 -> #f3f3f3 with the Stitch
      hairlines as anchors (step-150 #1e293b, step-250 #334155). */
@@ -123,11 +149,6 @@
   --ion-color-tertiary-shade: #937adc;
   --ion-color-tertiary-tint: #b097fb;
 
-  /* Roundness (Stitch ROUND_EIGHT): controls 8 px, cards 12 px, badges 4 px. */
-  --cd-radius: 8px;
-  --cd-radius-card: 12px;
-  --cd-radius-badge: 4px;
-
   /* Ionic component mapping */
   --ion-toolbar-background: var(--cd-surface);
   --ion-toolbar-color: var(--ion-text-color);
@@ -159,13 +180,13 @@ ion-segment-button:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--ion-color-primary);
   outline-offset: 2px;
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 /* Type floor: functional microcopy never goes below 12 px. */
 
 ion-button {
-  --border-radius: var(--cd-radius);
+  --border-radius: var(--cd-radius-control);
 }
 
 ion-card {
@@ -392,7 +413,7 @@ ion-tab-bar ion-tab-button ion-icon {
   color: #fecaca;
   background: rgba(248, 113, 113, 0.12);
   border: 1px solid rgba(248, 113, 113, 0.35);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-auth__error ion-icon {
@@ -429,7 +450,7 @@ ion-tab-bar ion-tab-button ion-icon {
   padding: 0.25rem;
   background: #0e1828;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-segment__opcion {
@@ -438,7 +459,7 @@ ion-tab-bar ion-tab-button ion-icon {
   padding: 0.55rem 0.3rem;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: calc(var(--cd-radius) - 2px);
+  border-radius: calc(var(--cd-radius-control) - 2px);
   color: var(--cd-muted);
   font: inherit;
   text-align: center;
@@ -652,7 +673,7 @@ ion-tab-bar ion-tab-button ion-icon {
   --background: #0e1828;
   margin-bottom: 0.5rem;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-panel__sub {
@@ -1322,7 +1343,7 @@ ion-tab-bar ion-tab-button ion-icon {
   text-decoration: none;
   background: #16243a;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-boton-superficie:active {
@@ -1350,7 +1371,7 @@ ion-tab-bar ion-tab-button ion-icon {
   height: 2.5rem;
   color: #fcd34d;
   background: rgba(245, 158, 11, 0.15);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-pago__icono ion-icon {
@@ -1387,7 +1408,7 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--cd-muted);
   background: transparent;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-chip-pago--activo {
@@ -1521,7 +1542,7 @@ ion-tab-bar ion-tab-button ion-icon {
   padding: 0.5rem;
   background: rgba(14, 24, 40, 0.6);
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
   font-size: 0.72rem;
 }
 
@@ -1588,7 +1609,7 @@ ion-tab-bar ion-tab-button ion-icon {
   height: 6rem;
   object-fit: cover;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-columnas {
@@ -1632,7 +1653,7 @@ ion-tab-bar ion-tab-button ion-icon {
   font-size: 0.78rem;
   background: rgba(34, 211, 238, 0.08);
   border: 1px solid rgba(34, 211, 238, 0.25);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-nota {
@@ -1645,7 +1666,7 @@ ion-tab-bar ion-tab-button ion-icon {
   color: #fde68a;
   background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-nota p {
@@ -1679,7 +1700,7 @@ ion-tab-bar ion-tab-button ion-icon {
   padding: 1rem;
   background: var(--cd-surface);
   border: 1px solid var(--cd-surface-border);
-  border-radius: calc(var(--cd-radius) + 4px);
+  border-radius: var(--cd-radius-card);
 }
 
 .cd-modal__encabezado {
@@ -1727,7 +1748,7 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--ion-text-color);
   background: #0e1828;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
   resize: vertical;
 }
 
@@ -1775,7 +1796,7 @@ ion-tab-bar ion-tab-button ion-icon {
   height: 2.5rem;
   color: #fcd34d;
   background: rgba(245, 158, 11, 0.15);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-dictamen__icono ion-icon {
@@ -1800,7 +1821,7 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--ion-text-color);
   background: #0e1828;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
   margin-bottom: 0.85rem;
 }
 
@@ -1994,7 +2015,7 @@ ion-tab-bar ion-tab-button ion-icon {
   height: 2.5rem;
   color: var(--cd-muted);
   background: var(--ion-background-color-step-150);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-proximamente__avatar ion-icon {
@@ -2068,7 +2089,7 @@ ion-tab-bar ion-tab-button ion-icon {
   height: 2.5rem;
   color: #67e8f9;
   background: rgba(34, 211, 238, 0.12);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-acta__icono ion-icon {
@@ -2093,7 +2114,7 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--ion-text-color);
   background: #0e1828;
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
   margin-bottom: 0.85rem;
 }
 
@@ -2126,7 +2147,7 @@ ion-tab-bar ion-tab-button ion-icon {
   overflow: hidden;
   background: #0e1828;
   border: 1px dashed var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-firma__canvas {
@@ -2203,7 +2224,7 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--cd-muted);
   background: rgba(17, 28, 46, 0.6);
   border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius);
+  border-radius: var(--cd-radius-control);
 }
 
 .cd-comision__fila {
