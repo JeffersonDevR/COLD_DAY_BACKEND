@@ -1,0 +1,239 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>Cold Day - Pago y Acta de Servicio</title>
+<meta name="color-scheme" content="dark">
+<!-- Material Symbols Google Fonts -->
+<!-- Typography Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "surface-subtle": "#0e1726",
+            "outline-border": "#1e293b",
+            primary: "#22d3ee",
+            "primary-focus": "#06b6d4",
+            amber: {
+              400: "#fbbf24",
+              500: "#f59e0b",
+              950: "#451a03"
+            },
+            violet: {
+              400: "#a78bfa",
+              950: "#2e1065"
+            },
+            emerald: {
+              400: "#4ade80",
+              500: "#22c55e",
+              950: "#052e16"
+            }
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"],
+            label: ["Public Sans", "sans-serif"]
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Safe mobile viewport constraint 390px centered preview */
+    body {
+      background-color: #05080f;
+    }
+    .mobile-frame {
+      max-width: 390px;
+      min-height: 844px;
+      margin: 0 auto;
+      background-color: #0b1220;
+    }
+    /* Remove tap highlighting */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="text-slate-200 antialiased font-body flex justify-center items-start min-h-screen">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs><symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol><symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></symbol><symbol id="i-tool" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 14.5l4-4"/><circle cx="15" cy="9" r="1.6"/></symbol><symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 10v9"/><path d="M9.5 10v9"/><path d="M14.5 10v9"/><path d="M19 10v9"/><path d="M3 21h18"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="17" cy="14.5" r="1" fill="currentColor" stroke="none"/></symbol></defs></svg>
+<div class="mobile-frame w-full relative flex flex-col justify-between overflow-x-hidden border-x border-[#1e293b]/60 shadow-2xl">
+<!-- Top Area & Header -->
+<header class="sticky top-0 z-40 bg-[#0b1220]/95 backdrop-blur-md px-4 pt-10 pb-3 border-b border-[#1e293b]">
+<div class="flex items-center justify-between h-11">
+<!-- Back Navigation Target >= 44px -->
+<button aria-label="Volver" class="w-11 h-11 -ml-2 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-[#111b2e] active:scale-95 transition-all" type="button">
+<svg class="ico ico--22" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>
+</button>
+<!-- Title -->
+<h1 class="font-headline font-bold text-lg tracking-tight text-white">
+          Pago
+        </h1>
+<!-- Trailing OT ID Badge -->
+<div class="inline-flex items-center px-2.5 py-1 rounded bg-[#111b2e] border border-[#1e293b] gap-1.5 shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+<span class="font-mono text-xs font-semibold text-amber-400 tracking-tight">OT #CD-8819</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas (Margins: 16px) -->
+<main class="flex-1 px-4 py-4 space-y-4">
+<!-- Summary Block Card -->
+<section class="bg-[#111b2e] rounded-xl border border-[#1e293b] p-3.5 space-y-3">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="cd-overline">Orden de Trabajo</span>
+<div class="font-headline font-bold text-base text-slate-100 flex items-center gap-1.5">
+<span class="">Reparación Split 3000F</span>
+</div>
+</div>
+<span class="cd-pill cd-pill--success">Finalizado</span>
+</div>
+<div class="pt-2 border-t border-[#1e293b] flex items-center justify-between text-xs">
+<div class="flex items-center gap-2 text-slate-300">
+<svg class="ico ico--20 text-slate-400" aria-hidden="true" focusable="false"><use href="#i-tool"/></svg>
+<span class="">Técnico asignado:</span>
+</div>
+<span class="font-medium text-slate-200">Lucas Vázquez <span class="text-slate-400 font-mono">(Mat. #4829)</span></span>
+</div>
+</section>
+<!-- Amount Breakdown Card -->
+<section class="bg-[#111b2e] rounded-xl border border-[#1e293b] p-4 space-y-3.5">
+<div class="flex items-center justify-between">
+<h2 class="cd-overline">Detalle de liquidación</h2>
+<span class="font-mono text-[12px] text-slate-400">COP</span>
+</div>
+<div class="space-y-2.5 text-sm">
+<!-- Item 1: Subtotal -->
+<div class="flex items-center justify-between">
+<span class="text-slate-300">Subtotal Servicio</span>
+<span class="font-mono text-slate-200 font-medium">$1.267.500</span>
+</div>
+<!-- Item 2: Repuestos -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-slate-300">Repuestos certificados</span>
+<span class="px-1.5 py-0.5 rounded text-[12px] font-mono font-bold tracking-tight bg-violet-950/80 border border-violet-400/30 text-violet-400">
+                REPUESTOS
+              </span>
+</div>
+<span class="font-mono text-slate-200 font-medium">$634.000</span>
+</div>
+<!-- Item 3: Anticipo descontado -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-slate-300">Anticipo visita técnica</span>
+<span class="text-[12px] text-emerald-400">Bonificado / descontado</span>
+</div>
+<span class="font-mono text-emerald-400 font-medium">-$526.500</span>
+</div>
+<!-- Item 4: Comisión e insumos -->
+<div class="flex items-center justify-between">
+<span class="text-slate-300">Comisión de plataforma e insumos</span>
+<span class="font-mono text-slate-200 font-medium">$656.500</span>
+</div>
+</div>
+<!-- Strict Divider -->
+<div class="border-t border-[#1e293b] pt-3 flex items-baseline justify-between">
+<div class="flex flex-col">
+<span class="cd-overline">Total a pagar</span>
+<span class="text-[12px] text-slate-400 font-normal">IVA e impuestos incluidos</span>
+</div>
+<div class="font-headline font-bold text-2xl tracking-tight text-[#22d3ee]">
+            $2.028.000
+          </div>
+</div>
+</section>
+<!-- Payment Method Selector -->
+<section class="space-y-2.5">
+<p class="cd-overline px-0.5" id="metodo-pago-label">
+          Método de pago
+        </p>
+<div aria-labelledby="metodo-pago-label" class="space-y-2" role="radiogroup">
+<!-- Radio Option 1: Selected -->
+<label class="relative flex items-center justify-between p-3.5 rounded-xl bg-[#111b2e] border border-[#22d3ee]/60 cursor-pointer min-h-[52px] select-none transition-colors">
+<div class="flex items-center gap-3">
+<svg class="ico ico--24 text-[#22d3ee]" aria-hidden="true" focusable="false"><use href="#i-bank"/></svg>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-100">Transferencia bancaria</span>
+<span class="text-[12px] text-slate-400">Desde tu banco, con verificación directa</span>
+</div>
+</div>
+<!-- Custom Radio Checked Cyan -->
+<div class="w-5 h-5 rounded-full border-2 border-[#22d3ee] flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-[#22d3ee]"></div>
+</div>
+<input checked="" class="sr-only" name="payment_method" type="radio" value="transferencia">
+</label>
+<!-- Radio Option 2: Unchecked -->
+<label class="relative flex items-center justify-between p-3.5 rounded-xl bg-[#111b2e] border border-[#1e293b] hover:border-slate-700 cursor-pointer min-h-[52px] select-none transition-colors">
+<div class="flex items-center gap-3">
+<svg class="ico ico--24 text-slate-400" aria-hidden="true" focusable="false"><use href="#i-wallet"/></svg>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-300">Nequi / Daviplata</span>
+<span class="text-[12px] text-slate-400">Pago con QR o llave</span>
+</div>
+</div>
+<!-- Custom Radio Unchecked -->
+<div class="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center"></div>
+<input class="sr-only" name="payment_method" type="radio" value="nequi">
+</label>
+</div>
+<!-- Muted Security/Receipt Note -->
+<p class="text-[12px] text-slate-400 px-1 flex items-start gap-1.5 leading-relaxed pt-0.5">
+<svg class="ico ico--16 text-slate-400 mt-0.5" aria-hidden="true" focusable="false"><use href="#i-shield-check"/></svg>
+<span class="">El comprobante fiscal se enviará a tu correo tras confirmar la transacción.</span>
+</p>
+</section>
+</main>
+<!-- Bottom Actions and Collapsed Certificate Card -->
+<footer class="p-4 pt-1 space-y-3 pb-8 bg-[#0b1220]">
+<!-- Primary Action CTA Button: Cyan fill, min touch target 48px -->
+<button class="w-full h-12 bg-[#22d3ee] hover:bg-[#06b6d4] active:scale-[0.98] transition-all rounded-xl font-headline font-bold text-sm tracking-tight text-[#0b1220] flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(34,211,238,0.22)]" type="button">
+<span class="">Pagar y finalizar</span>
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-arrow-right"/></svg>
+</button>
+<!-- Collapsed 'Acta de conformidad y servicio' Card -->
+<div class="bg-[#111b2e] rounded-xl border border-[#1e293b] p-3 flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0 pr-2">
+<div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+<svg class="ico ico--20 text-emerald-500" aria-hidden="true" focusable="false"><use href="#i-check-circle"/></svg>
+</div>
+<p class="text-xs text-slate-300 truncate">
+            Acta digital <span class="font-mono text-slate-200 font-semibold">#8819</span> firmada por Lucas V.
+          </p>
+</div>
+<button class="inline-flex items-center gap-1 font-label text-xs font-semibold text-[#22d3ee] hover:text-cyan-300 py-1.5 px-2 rounded -mr-1 transition-colors shrink-0" type="button">
+<span class="">Ver acta</span>
+<svg class="ico ico--16" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg>
+</button>
+</div>
+</footer>
+</div>
+
+
+</body></html>

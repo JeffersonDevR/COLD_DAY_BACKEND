@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>Cold Day Ops - Ejecución de OT</title>
+<meta name="color-scheme" content="dark">
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "outline-variant": "#1e293b",
+            primary: "#22d3ee",
+            "primary-focus": "#06b6d4",
+            accent: {
+              violet: "#a78bfa",
+              amber: "#f59e0b",
+              success: "#22c55e",
+              danger: "#f87171"
+            },
+            "on-surface": "#f1f5f9",
+            "on-surface-variant": "#94a3b8"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Restrained Cyan Glow */
+    .glow-cyan-action {
+      box-shadow: 0 0 18px -2px rgba(34, 211, 238, 0.35);
+    }
+    /* Hardware acceleration for mobile performance */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="bg-canvas text-on-surface font-body antialiased min-h-screen flex flex-col justify-between selection:bg-primary/20 selection:text-primary">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs><symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.2h.01"/></symbol><symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-5 4V5Z"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></symbol><symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15"/><path d="M5.5 8.25l13 7.5"/><path d="M18.5 8.25l-13 7.5"/></symbol><symbol id="i-stopwatch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="6.5"/><path d="M12 10.5v3l1.8 1.8"/><path d="M9.5 2.5h5"/><path d="M12 2.5V5"/></symbol><symbol id="i-tool" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 14.5l4-4"/><circle cx="15" cy="9" r="1.6"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z"/></symbol></defs></svg>
+<!-- Mobile Viewport Frame (Simulated 390x844 layout container) -->
+<div class="w-full max-w-[390px] mx-auto min-h-screen bg-canvas flex flex-col relative shadow-2xl border-x border-outline-variant/40">
+<!-- TOP HEADER (Technician Task Focused: with Close/Back and OT Code) -->
+<header class="sticky top-0 z-40 bg-surface/95 backdrop-blur-md px-4 pt-3 pb-3 flex items-center justify-between border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<button aria-label="Volver a lista de órdenes" class="touch-target flex items-center justify-center -ml-2 rounded-lg text-on-surface-variant hover:text-primary active:scale-95 transition-all" type="button">
+<svg class="ico ico--22" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>
+</button>
+<div>
+<h1 class="font-headline font-bold text-base text-on-surface tracking-tight">OT #CD-8819</h1>
+</div>
+</div>
+<!-- Status Badge -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent-violet/10 text-accent-violet border border-accent-violet/30 font-label text-[12px] font-semibold tracking-wider uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-violet animate-pulse"></span>
+        EN REPARACIÓN
+      </span>
+</header>
+<!-- MAIN SCROLLABLE CANVAS -->
+<main class="flex-1 px-4 pt-4 pb-36 space-y-4">
+<!-- Summary Mantenimiento Banner -->
+<div class="bg-surface rounded-xl p-3.5 border border-outline-variant shadow-sm space-y-2">
+<div class="flex items-start gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary">
+<svg class="ico ico--18" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>
+</div>
+<div class="min-w-0 flex-1">
+<p class="font-headline font-semibold text-sm text-on-surface truncate">Split 3000F gotea agua interior</p>
+<div class="flex items-center gap-2 text-xs text-on-surface-variant mt-0.5">
+<span class="truncate">Sofía Alemán</span>
+<span class="text-outline-variant">•</span>
+<span class="truncate">Calle 72 #10-34</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Execution Vertical Stepper -->
+<div class="bg-surface rounded-xl p-4 border border-outline-variant space-y-4">
+<div class="flex items-center justify-between border-b border-outline-variant pb-2.5">
+<span class="font-label text-[12px] font-bold text-on-surface-variant tracking-wider uppercase">Fases del servicio</span>
+<span class="font-headline text-xs text-accent-success font-semibold flex items-center gap-1">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-shield-check"/></svg>
+            3/4 Completados
+          </span>
+</div>
+<div class="relative pl-6 space-y-4 text-xs before:absolute before:left-2 before:top-2 before:bottom-3 before:w-[2px] before:bg-outline-variant">
+<!-- Step 1: Completed -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-accent-success/20 border border-accent-success flex items-center justify-center text-accent-success">
+<svg class="ico ico--11 font-bold" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
+</span>
+<div class="flex items-baseline justify-between">
+<span class="font-medium text-on-surface">En camino</span>
+<span class="font-label text-[12px] text-on-surface-variant">14:15</span>
+</div>
+<span class="text-[12px] text-on-surface-variant/80">Llegaste a la zona asignada</span>
+</div>
+<!-- Step 2: Completed -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-accent-success/20 border border-accent-success flex items-center justify-center text-accent-success">
+<svg class="ico ico--11 font-bold" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
+</span>
+<div class="flex items-baseline justify-between">
+<span class="font-medium text-on-surface">En domicilio</span>
+<span class="font-label text-[12px] text-on-surface-variant">14:32</span>
+</div>
+<span class="text-[12px] text-on-surface-variant/80">Recepción confirmada con cliente</span>
+</div>
+<!-- Step 3: Completed -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-accent-success/20 border border-accent-success flex items-center justify-center text-accent-success">
+<svg class="ico ico--11 font-bold" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
+</span>
+<div class="flex items-baseline justify-between">
+<span class="font-medium text-on-surface">Diagnóstico técnico</span>
+<span class="font-label text-[12px] text-on-surface-variant">14:48</span>
+</div>
+<span class="text-[12px] text-accent-success">Presupuesto $2.028.000 aprobado</span>
+</div>
+<!-- Step 4: Active Stage -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-primary/20 border border-primary flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+</span>
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-semibold text-primary text-sm tracking-tight">Reparación en curso</span>
+<span class="font-label text-[12px] text-primary uppercase font-bold tracking-wider">Activo</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Intervención física del equipo y sellado</span>
+</div>
+</div>
+</div>
+<!-- ACTIVE STAGE CARD: Timer & Repuestos -->
+<div class="bg-surface rounded-xl p-4 border border-outline-variant space-y-4">
+<!-- Timer Block -->
+<div class="bg-canvas/80 rounded-lg p-3.5 border border-outline-variant flex items-center justify-between">
+<div>
+<span class="font-label text-[12px] uppercase tracking-wider text-on-surface-variant block">TIEMPO TRANSCURRIDO</span>
+<span class="font-headline font-bold text-2xl text-primary tracking-tight font-mono" id="ot-timer">00:24:15</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-stopwatch"/></svg>
+</div>
+</div>
+<!-- Repuestos Cargados Section -->
+<div class="space-y-2.5 pt-1">
+<div class="flex items-center justify-between">
+<span class="font-label text-[12px] font-bold text-accent-violet tracking-wider uppercase flex items-center gap-1.5">
+<svg class="ico ico--16" aria-hidden="true" focusable="false"><use href="#i-tool"/></svg>
+              REPUESTOS UTILIZADOS
+            </span>
+<span class="font-label text-[12px] text-on-surface-variant">2 ITEMS</span>
+</div>
+<!-- Repuesto Item 1 -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-canvas border border-outline-variant text-xs">
+<div class="min-w-0 pr-2">
+<p class="font-medium text-on-surface truncate">Válvula de expansión 1/4</p>
+<p class="text-[12px] text-on-surface-variant">Cantidad: 1 un.</p>
+</div>
+<span class="px-2 py-0.5 rounded bg-accent-violet/10 text-accent-violet border border-accent-violet/20 font-label font-semibold text-[12px] whitespace-nowrap">
+              $634.000
+            </span>
+</div>
+<!-- Repuesto Item 2 -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-canvas border border-outline-variant text-xs">
+<div class="min-w-0 pr-2">
+<p class="font-medium text-on-surface truncate">Carga refrigerante R410a (500g)</p>
+<p class="text-[12px] text-on-surface-variant">Cantidad: 1 un.</p>
+</div>
+<span class="px-2 py-0.5 rounded bg-accent-violet/10 text-accent-violet border border-accent-violet/20 font-label font-semibold text-[12px] whitespace-nowrap">
+              $127.000
+            </span>
+</div>
+<!-- Ghost Action Button for Parts -->
+<button class="w-full touch-target rounded-lg border border-dashed border-accent-violet/50 text-accent-violet hover:bg-accent-violet/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs font-semibold font-headline" type="button">
+<svg class="ico ico--18" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg>
+            + Agregar repuesto
+          </button>
+</div>
+</div>
+<!-- Quick Contact Row with Client -->
+<div class="bg-surface rounded-xl p-3 border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-outline-variant/60 flex items-center justify-center font-headline font-bold text-sm text-primary border border-outline-variant">
+            SA
+          </div>
+<div>
+<h2 class="text-xs font-semibold text-on-surface">Sofía Alemán</h2>
+<div class="flex items-center gap-1.5 text-[12px] text-accent-success">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+              En domicilio
+            </div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<!-- Call Button (Touch target 44px) -->
+<a aria-label="Llamar a Sofía Alemán" class="touch-target w-11 h-11 rounded-lg bg-canvas border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary/40 active:scale-95 flex items-center justify-center transition-all" href="tel:+573001234567">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>
+</a>
+<!-- Chat Button (Touch target 44px) -->
+<button aria-label="Chat con Sofía Alemán" class="touch-target w-11 h-11 rounded-lg bg-canvas border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary/40 active:scale-95 flex items-center justify-center transition-all" type="button">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-chat"/></svg>
+</button>
+</div>
+</div>
+</main>
+<!-- BOTTOM STICKY ACTION BAR (Single primary cyan CTA + Report problem) -->
+<div class="sticky bottom-0 z-40 bg-surface/95 backdrop-blur-md px-4 pt-3 pb-6 border-t border-outline-variant space-y-2">
+<button class="w-full h-12 rounded-lg bg-primary text-black font-headline font-bold text-sm tracking-wide glow-cyan-action active:scale-[0.98] transition-transform flex items-center justify-center gap-2" type="button">
+<svg class="ico ico--20 font-bold" aria-hidden="true" focusable="false"><use href="#i-check-circle"/></svg>
+        Finalizar reparación
+      </button>
+<button class="w-full py-1.5 text-center text-xs text-accent-danger/80 hover:text-accent-danger font-medium transition-colors touch-target flex items-center justify-center gap-1" type="button">
+<svg class="ico ico--16" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg>
+        Reportar problema o anomalía
+      </button>
+</div>
+</div>
+<!-- Inline Script for Realistic Timer Simulation -->
+<script>
+    (function initTimer() {
+      let seconds = 15;
+      let minutes = 24;
+      let hours = 0;
+      const timerElement = document.getElementById('ot-timer');
+      
+      if (!timerElement) return;
+
+      setInterval(() => {
+        seconds++;
+        if (seconds >= 60) {
+          seconds = 0;
+          minutes++;
+          if (minutes >= 60) {
+            minutes = 0;
+            hours++;
+          }
+        }
+        const format = (num) => String(num).padStart(2, '0');
+        timerElement.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+      }, 1000);
+    })();
+  </script>
+</body></html>

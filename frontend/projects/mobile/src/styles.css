@@ -34,6 +34,7 @@
   --cd-action: #22d3ee;
   --cd-action-hover: #06b6d4;
   --cd-success: #22c55e;
+  --cd-success-ink: #6ee7b7;
   --cd-warn: #f59e0b;
   --cd-parts: #a78bfa;
   --cd-danger: #f87171;
@@ -48,6 +49,12 @@
   --cd-radius: 16px;
   --cd-radius-sm: 12px;
   --cd-radius-control: 8px;
+
+  /* Marco móvil: fluido entre 360 y 430 px; por encima, contenido centrado. */
+  --cd-shell-max: 430px;
+  /* Safe-area unificada: un solo fallback (0) para web, WebView y notch. */
+  --cd-safe-top: calc(env(safe-area-inset-top, 0px) * var(--cd-safe-on, 1));
+  --cd-safe-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Alias: los nombres que ya usa el marcado de las pantallas. Apuntan al
      token canónico, así que mover el canónico mueve todo. */
@@ -213,7 +220,7 @@ ion-tab-bar ion-tab-button ion-label {
   margin-top: 3px;
   margin-bottom: 3px;
   font-family: var(--cd-font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -317,7 +324,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-eyebrow {
   margin: 0 0 0.25rem;
   font-family: var(--cd-font-mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -329,6 +336,28 @@ ion-tab-bar ion-tab-button ion-icon {
   background: var(--cd-surface);
   border: 1px solid var(--cd-surface-border);
   border-radius: var(--cd-radius-card);
+}
+
+/* Cuando la tarjeta es un <ion-card> trae margin: 10px de Ionic: sumado al
+   gutter de 16 px dejaba el borde a 26 px y el contenido a 46 px (medido a
+   360 px). El gutter ya lo da ion-content; la tarjeta solo separa en vertical
+   y usa el padding de 16 px del diseño. */
+ion-card.cd-card {
+  margin: 0 0 0.75rem;
+  padding: 1rem;
+}
+
+/* ion-card-content trae su propio padding de 16 px: sumado al de la tarjeta dejaba
+   32 px por lado (a 320 px "DISPONIBILIDAD" se partía y "Disponible" se
+   recortaba). El padding lo da solo la tarjeta. */
+ion-card.cd-card > ion-card-content {
+  padding: 0;
+}
+
+/* Tarjetas que son <section>, no <ion-card> (Mi cuenta): sin margen quedaban
+   pegadas una con otra. */
+section.cd-card + section.cd-card {
+  margin-top: 0.75rem;
 }
 
 .cd-muted {
@@ -349,8 +378,8 @@ ion-tab-bar ion-tab-button ion-icon {
   max-width: 24.375rem;
   min-height: 100%;
   margin: 0 auto;
-  padding: calc(2rem + env(safe-area-inset-top, 16px)) 1.25rem
-    calc(2rem + env(safe-area-inset-bottom, 12px));
+  padding: calc(2rem + var(--cd-safe-top)) 1.25rem
+    calc(2rem + var(--cd-safe-bottom));
 }
 
 .cd-auth__brand {
@@ -434,6 +463,12 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--ion-color-primary);
   font-weight: 600;
   text-decoration: none;
+  /* Enlace de acceso en pantalla táctil: el área tocable debe llegar a 44 px
+     aunque el texto mida 16 (medido en Chrome a 390/768/1280). */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 0.5rem;
 }
 
 .cd-field-error {
@@ -477,7 +512,7 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-segment__nota {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   line-height: 1.2;
 }
 
@@ -533,10 +568,27 @@ ion-tab-bar ion-tab-button ion-icon {
   font-size: 0.75rem;
 }
 
+/* El texto legal largo desbordaba a 390 px (medido: right 636). Ionic mide el
+   label para colocarlo con left, así que sin wrap explícito la frase completa
+   se corta fuera de la pantalla. */
+.cd-legal {
+  --label-width: 100%;
+  white-space: normal;
+}
+
 .cd-legal::part(label) {
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--cd-muted);
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Hijos del label (incluido el <strong> de la ley): pueden romperse. */
+.cd-legal::part(label) > * {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .cd-form {
@@ -595,10 +647,153 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--cd-muted);
 }
 
+/* A4 — acceso inicial a los servicios más solicitados, alineado al tema móvil. */
+.cd-home-servicios {
+  margin-top: 1rem;
+  /* Sin padding lateral: el gutter lo da ion-content.ion-padding. */
+  padding: 1rem 0 0.5rem;
+}
+
+.cd-home-servicios__cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.cd-home-servicios__cabecera .cd-section__titulo {
+  margin: 0;
+  padding: 0;
+  color: var(--cd-text-1);
+  font-family: var(--cd-font-headline);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.cd-home-servicios__nota {
+  margin: 0 0 0.1rem;
+  color: var(--cd-text-4);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.cd-home-servicios__rejilla {
+  padding: 0.5rem 0 0;
+}
+
+/* Cada ion-col aporta 5 px de padding: la fila los compensa para que las
+   tarjetas queden alineadas con el gutter de 16 px del resto de la pantalla. */
+.cd-home-servicios__rejilla ion-row {
+  margin-inline: -5px;
+}
+
+.cd-home-servicio {
+  --background: var(--cd-surface);
+  --background-hover: var(--cd-surface-2);
+  --background-activated: var(--cd-surface-2);
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--cd-line);
+  --border-radius: var(--cd-radius-card);
+  --padding-start: 0.75rem;
+  --padding-end: 0.5rem;
+  --padding-top: 0.7rem;
+  --padding-bottom: 0.7rem;
+  --box-shadow: none;
+  min-height: 72px;
+  margin: 0;
+  color: var(--cd-text-2);
+  text-align: left;
+}
+
+.cd-home-servicio::part(native) {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  min-height: 72px;
+  text-align: left;
+}
+
+.cd-home-servicio > ion-icon:first-child {
+  flex: 0 0 auto;
+  color: var(--cd-action);
+  font-size: 1.35rem;
+}
+
+.cd-home-servicio__texto {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.2rem;
+  white-space: normal;
+}
+
+.cd-home-servicio__texto strong {
+  color: var(--cd-text-1);
+  /* Título de tarjeta del diseño: Space Grotesk en frase, no mono en mayúsculas
+     (ion-button lo uppercasea y "ACONDICIONADO" se partía a 360 px). */
+  font-family: var(--cd-font-headline);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-transform: none;
+  overflow-wrap: break-word;
+}
+
+/* ≤380 px la flecha le quita 20 px al título: se oculta para que
+   "Aire acondicionado" no se parta ("acondicio-nado") en 360 px. */
+@media (max-width: 380px) {
+  .cd-home-servicio__flecha {
+    display: none;
+  }
+}
+
+.cd-home-servicio__texto small {
+  color: var(--cd-text-4);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.cd-home-servicio__flecha {
+  flex: 0 0 auto;
+  color: var(--cd-text-4);
+  font-size: 1rem;
+}
+
+.cd-home-servicio:focus-visible::part(native) {
+  outline: 2px solid var(--cd-action);
+  outline-offset: 2px;
+}
+
+.cd-home-servicio:active::part(native) {
+  background: var(--cd-surface-2);
+}
+
+@media (min-width: 768px) {
+  .cd-home-servicios {
+    padding: 1.25rem 0 0.75rem;
+  }
+
+  .cd-home-servicio,
+  .cd-home-servicio::part(native) {
+    min-height: 84px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-home-servicio,
+  .cd-home-servicio::part(native) {
+    transition-duration: 0.01ms;
+  }
+}
+
 /* A4/A5 — encabezado de pantalla: título y acción principal sobre el surface. */
 .cd-header ion-toolbar {
   --min-height: 0;
-  --padding-top: calc(0.5rem + env(safe-area-inset-top, 16px));
+  --padding-top: calc(0.5rem + var(--cd-safe-top));
   --padding-bottom: 0.85rem;
   padding: 0 1rem;
 }
@@ -662,7 +857,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-metrica__rotulo {
   font-family: var(--cd-font-label);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   line-height: 1.25;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -693,9 +888,21 @@ ion-tab-bar ion-tab-button ion-icon {
   gap: 0.5rem;
 }
 
+/* El bloque de texto cede ancho y la píldora nunca se recorta (a 320 px
+   "Disponible" quedaba cortada). */
+.cd-ot__cabecera > :first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.cd-ot__cabecera > .cd-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .cd-ot__codigo {
   font-family: var(--cd-font-mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--cd-muted);
 }
@@ -722,7 +929,7 @@ ion-tab-bar ion-tab-button ion-icon {
   margin-top: 0.7rem;
   padding-top: 0.6rem;
   border-top: 1px solid var(--cd-surface-border);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .cd-ot__direccion {
@@ -1028,7 +1235,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-coordenadas {
   margin: 0.25rem 0 0;
   font-family: var(--cd-font-mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
 }
 
@@ -1119,6 +1326,284 @@ ion-tab-bar ion-tab-button ion-icon {
   color: var(--ion-text-color);
 }
 
+/* A6 — Técnicos cercanos durante la búsqueda: mapa, lista accesible y filtros. */
+.cd-busqueda-tecnicos {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.cd-busqueda-tecnicos__cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-busqueda-tecnicos__cabecera h2 {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--cd-text-1);
+}
+
+.cd-busqueda-tecnicos__cabecera p {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--cd-text-4);
+}
+
+.cd-filtros-tecnicos {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: none;
+}
+
+.cd-filtros-tecnicos::-webkit-scrollbar {
+  display: none;
+}
+
+.cd-filtros-tecnicos .cd-chip {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  background: var(--cd-surface);
+  border-color: var(--cd-line);
+  color: var(--cd-text-3);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.cd-tecnicos-cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 96px;
+  font-size: 0.8rem;
+  color: var(--cd-text-3);
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-tecnicos-vacio {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-tecnicos-vacio ion-icon {
+  font-size: 1.6rem;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnicos-vacio p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+}
+
+.cd-tecnicos-vacio__pista {
+  font-size: 0.75rem;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnicos-vacio__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.cd-tecnicos-lista {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+  overflow: hidden;
+}
+
+.cd-tecnicos-lista ion-item {
+  --background: var(--cd-surface);
+  --border-color: var(--cd-line);
+  --padding-start: 0.85rem;
+  --inner-padding-end: 0.85rem;
+  --min-height: 68px;
+  font-size: 0.85rem;
+}
+
+.cd-tecnicos-lista ion-item h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cd-text-1);
+}
+
+.cd-tecnicos-lista ion-item p {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnicos-lista ion-item ion-icon[slot='start'] {
+  margin-right: 0.65rem;
+  color: var(--ion-color-primary);
+  font-size: 1.5rem;
+}
+
+.cd-tecnicos-lista ion-item.cd-tecnico-item--seleccionado {
+  --background: rgba(34, 211, 238, 0.1);
+  box-shadow: inset 0 0 0 1px var(--ion-color-primary);
+}
+
+.cd-tecnico-disponible {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--cd-success-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cd-tecnico-seleccionado {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line-strong);
+  border-radius: var(--cd-radius-card);
+}
+
+/* Esqueleto de carga (shared/ui/skeleton): barras del tema, no Tailwind. */
+.cd-esqueleto {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  background: var(--cd-surface-2);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-sm);
+  animation: cd-esqueleto-pulso 1.6s ease-in-out infinite;
+}
+
+@keyframes cd-esqueleto-pulso {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-esqueleto {
+    animation: none;
+    opacity: 0.75;
+  }
+}
+
+/* Hoja inferior del técnico: 3 alturas, contenido sin ruido. */
+.cd-sheet {
+  --border-radius: var(--cd-radius) var(--cd-radius) 0 0;
+  --box-shadow: 0 -8px 24px rgba(2, 6, 23, 0.5);
+}
+
+.cd-sheet__contenido {
+  --background: var(--cd-surface);
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 0.9rem;
+  --padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.cd-sheet__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-sheet__titulo {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 1.1rem;
+  color: var(--cd-text-1);
+  overflow-wrap: anywhere;
+}
+
+.cd-sheet__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--cd-text-4);
+}
+
+.cd-sheet__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--cd-success-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cd-sheet__estado--ocupado {
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--cd-warn);
+}
+
+.cd-sheet__aclaracion {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+}
+
+.cd-sheet__contenido .cd-boton-superficie {
+  min-height: 44px;
+}
+
+.cd-tecnico-seleccionado > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.cd-tecnico-seleccionado strong {
+  font-size: 0.92rem;
+  color: var(--cd-text-1);
+}
+
+.cd-tecnico-seleccionado span {
+  font-size: 0.78rem;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnico-seleccionado .cd-boton-superficie {
+  justify-self: start;
+  min-height: 44px;
+}
+
+.cd-tecnico-seleccionado p {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+}
+
 /* Mapa de seguimiento (WebView): bloque contenido y sus estados. */
 .cd-mapa-bloque {
   margin-bottom: 0.75rem;
@@ -1135,7 +1620,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-map__titulo {
   margin: 0;
   font-family: var(--cd-font-headline);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1144,7 +1629,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-map__nota {
   margin: 0.1rem 0 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
 }
 
@@ -1154,7 +1639,7 @@ ion-tab-bar ion-tab-button ion-icon {
   gap: 0.3rem;
   flex: 0 0 auto;
   padding: 0.35rem 0.6rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--ion-color-primary);
   background: rgba(34, 211, 238, 0.1);
@@ -1168,9 +1653,85 @@ ion-tab-bar ion-tab-button ion-icon {
   border-color: rgba(110, 231, 183, 0.45);
 }
 
+.cd-map__chip--seleccion {
+  min-height: 44px;
+  padding: 0.4rem 0.75rem;
+  background: var(--cd-surface-2);
+  border-color: var(--cd-line-strong);
+  color: var(--cd-text-1);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Botón flotante sobre el mapa: aparece solo cuando el usuario lo movió. */
+.cd-map__buscar-zona {
+  position: absolute;
+  left: 50%;
+  top: 0.6rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line-strong);
+  border-radius: 999px;
+  color: var(--cd-text-1);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.45);
+  cursor: pointer;
+}
+
+.cd-map__buscar-zona ion-icon {
+  color: var(--ion-color-primary);
+  font-size: 1rem;
+}
+
+.cd-map__buscar-zona:active {
+  background: var(--cd-surface-2);
+}
+
+.cd-map__buscar-zona:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
+/* Control propio de recentrado: 44 px, pulgar, sin tapar el botón de búsqueda. */
+.cd-map__centrar {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line-strong);
+  border-radius: 999px;
+  color: var(--ion-color-primary);
+  font-size: 1.15rem;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.45);
+  cursor: pointer;
+}
+
+.cd-map__centrar:active {
+  background: var(--cd-surface-2);
+}
+
+.cd-map__centrar:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
 .cd-map__lienzo {
   position: relative;
-  height: 240px;
+  height: clamp(200px, 32dvh, 320px);
   overflow: hidden;
   background: #0e1828;
   border: 1px solid var(--cd-surface-border);
@@ -1210,7 +1771,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-map__vacio-texto {
   margin: 0;
   max-width: 19rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.45;
   color: var(--cd-muted);
 }
@@ -1281,7 +1842,7 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-tecnico__sin-rating {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--cd-muted);
   border: 1px dashed var(--cd-surface-border);
@@ -1291,7 +1852,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-tecnico__rol {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
 }
 
@@ -1444,7 +2005,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-timeline__nota {
   margin: 0.15rem 0 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
 }
 
@@ -1488,7 +2049,7 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-timeline__etiqueta {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   line-height: 1.2;
 }
 
@@ -1543,13 +2104,13 @@ ion-tab-bar ion-tab-button ion-icon {
   background: rgba(14, 24, 40, 0.6);
   border: 1px solid var(--cd-surface-border);
   border-radius: var(--cd-radius-control);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .cd-timeline__actor {
   flex: 0 0 auto;
   padding: 0.15rem 0.4rem;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--ion-text-color);
   background: #16243a;
@@ -1565,7 +2126,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-timeline__historial-fecha {
   color: var(--cd-muted);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
 }
 
 .cd-timeline__historial-motivo {
@@ -1577,7 +2138,7 @@ ion-tab-bar ion-tab-button ion-icon {
 /* Detalle y ficha del servicio. */
 .cd-card__titulo {
   margin: 0 0 0.4rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1592,7 +2153,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-detalle__subtitulo {
   margin: 0.75rem 0 0.4rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--cd-muted);
 }
@@ -1661,7 +2222,7 @@ ion-tab-bar ion-tab-button ion-icon {
   gap: 0.5rem;
   align-items: flex-start;
   padding: 0.7rem 0.8rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   color: #fde68a;
   background: rgba(245, 158, 11, 0.1);
@@ -1687,7 +2248,7 @@ ion-tab-bar ion-tab-button ion-icon {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 12px));
+  padding: 1rem 1rem calc(1rem + var(--cd-safe-bottom));
   background: rgba(2, 6, 23, 0.7);
   backdrop-filter: blur(2px);
 }
@@ -1759,7 +2320,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-field-hint {
   margin: -0.2rem 0 0;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
 }
 
@@ -1810,7 +2371,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-dictamen__sub {
   margin: 0.1rem 0 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
 }
 
@@ -1827,7 +2388,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-desglose__titulo {
   margin: 0 0 0.4rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1865,7 +2426,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-desglose__nota {
   margin: 0.15rem 0 0;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   line-height: 1.4;
   color: var(--cd-muted);
 }
@@ -1902,7 +2463,7 @@ ion-tab-bar ion-tab-button ion-icon {
   align-items: flex-start;
   gap: 0.4rem;
   margin: 0.4rem 0 0;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   line-height: 1.45;
   color: var(--cd-muted);
 }
@@ -1936,7 +2497,7 @@ ion-tab-bar ion-tab-button ion-icon {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2037,7 +2598,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-proximamente__badge {
   justify-self: start;
   padding: 0.1rem 0.45rem;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2050,7 +2611,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-proximamente__texto {
   flex: 1 1 100%;
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   color: var(--cd-muted);
 }
@@ -2103,7 +2664,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-acta__nit {
   margin: 0.1rem 0 0;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
 }
 
@@ -2135,7 +2696,7 @@ ion-tab-bar ion-tab-button ion-icon {
 }
 
 .cd-firma__label {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2153,7 +2714,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-firma__canvas {
   display: block;
   width: 100%;
-  height: 140px;
+  height: clamp(120px, 20dvh, 180px);
   touch-action: none;
   cursor: crosshair;
 }
@@ -2191,7 +2752,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-acta__sin-firma {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-align: center;
 }
 
@@ -2220,7 +2781,7 @@ ion-tab-bar ion-tab-button ion-icon {
   gap: 0.35rem;
   margin-top: 0.75rem;
   padding: 0.65rem 0.75rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
   background: rgba(17, 28, 46, 0.6);
   border: 1px solid var(--cd-surface-border);
@@ -2336,7 +2897,7 @@ ion-tab-bar ion-tab-button ion-icon {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: env(safe-area-inset-top, 16px);
+  padding-top: var(--cd-safe-top);
   margin-bottom: 0.75rem;
 }
 
@@ -2349,7 +2910,7 @@ ion-tab-bar ion-tab-button ion-icon {
   background: var(--cd-surface);
   border: 1px solid var(--cd-surface-border);
   font-family: 'Space Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cd-muted);
@@ -2387,11 +2948,21 @@ ion-tab-bar ion-tab-button ion-icon {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  padding: 1rem 0 calc(env(safe-area-inset-bottom, 12px) + 0.5rem);
+  padding: 1rem 0 calc(var(--cd-safe-bottom) + 0.5rem);
   font-family: var(--cd-font-mono);
   font-size: 0.75rem;
   color: var(--cd-muted);
   text-align: center;
+}
+
+/* En mono ancho la frase completa desbordaba a 390 px (medido en Chrome). */
+.cd-auth__footer > * {
+  min-width: 0;
+}
+
+.cd-auth__footer p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .cd-auth__footer ion-icon {
@@ -2443,7 +3014,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-auth__ops-marca {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2452,7 +3023,7 @@ ion-tab-bar ion-tab-button ion-icon {
 
 .cd-auth__ops-fase {
   font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cd-muted);
@@ -2499,7 +3070,7 @@ ion-tab-bar ion-tab-button ion-icon {
 .cd-panel__rol {
   margin: 0;
   font-family: 'Space Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--cd-muted);
@@ -2710,9 +3281,15 @@ ion-header:not(.cd-header) {
   font-size: 0.85rem;
 }
 
+/* La superficie tocable del control debe llegar a 44 px (medido: el input
+   nativo quedaba en 41). El campo en sí sigue teniendo su altura visual. */
+.cd-form .native-input {
+  min-height: 44px;
+}
+
 .cd-form .label-text {
   font-family: 'Space Mono', monospace;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cd-muted);
@@ -2773,7 +3350,7 @@ form {
 
 .cd-foto__nota {
   margin: 0;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   line-height: 1.4;
   color: var(--cd-muted);
 }
@@ -2793,12 +3370,34 @@ form {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: calc(env(safe-area-inset-top, 0px) + 0.4rem) 0.75rem 0.4rem;
+  /* Alto fijo y una sola línea: el outlet se desplaza exactamente esta altura
+     (ver ion-app:has(> .cd-offline)) para que el banner no tape el header. */
+  box-sizing: border-box;
+  height: calc(var(--cd-safe-top) + var(--cd-offline-h));
+  padding: var(--cd-safe-top) 0.75rem 0;
   background: #f59e0b;
   color: #1a1204;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-align: center;
+  white-space: nowrap;
+}
+
+.cd-offline span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Con el banner visible el outlet baja su altura y la safe-area superior ya la
+   cubre el banner: los headers no la suman de nuevo. */
+ion-app:has(> .cd-offline) {
+  --cd-offline-h: 2rem;
+}
+
+ion-app:has(> .cd-offline) > ion-router-outlet {
+  top: calc(var(--cd-safe-top) + var(--cd-offline-h));
+  --cd-safe-on: 0;
 }
 
 .cd-offline ion-icon {
@@ -2846,11 +3445,22 @@ form {
   min-width: 0;
 }
 
-.cd-modo__nombre,
-.cd-modo__nota {
+.cd-modo__nombre {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* La descripción puede ocupar 2 líneas. Con nowrap la pista del grid crecía al
+   ancho del texto y la píldora ("En uso" / "No disponible") se montaba encima
+   de la frase a 360 px. */
+.cd-modo__texto {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cd-modo__nota {
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .cd-modo__pill {
@@ -2907,6 +3517,270 @@ form {
 .cd-ubicacion-confirmada__coords {
   margin: 0;
   font-family: 'Space Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--cd-muted);
+}
+
+/* ==========================================================================
+   Robustez de layout (revision del APK): nada se sale de la pantalla.
+   Un boton con texto largo, un monto grande o un codigo de OT no deben
+   empujar el ancho del contenedor. Las reglas van al final a proposito:
+   misma especificidad, gana la ultima.
+   ========================================================================== */
+
+/* 1. Filas de acciones: envuelven en vez de desbordar. */
+.cd-ot__acciones {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cd-ot__acciones > * {
+  min-width: 0;
+}
+
+/* 2. Ionic pinta el texto del boton con nowrap dentro del shadow DOM: sin esto
+   un CTA largo ("Confirmar llegada al domicilio") se sale del ancho. */
+.cd-cta::part(native),
+.cd-ot__acciones ion-button::part(native) {
+  white-space: normal;
+  height: auto;
+  min-height: 44px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* 3. Rejillas: 1fr tiene min-width:auto y la columna se estira con el texto. */
+.cd-segment {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cd-metricas {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cd-categorias {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cd-fila-insumo {
+  grid-template-columns: minmax(0, 1fr) 5rem auto;
+}
+
+.cd-auth__bar--nav > * {
+  min-width: 0;
+}
+
+/* 4. Texto que puede venir largo desde el backend. */
+.cd-ot__codigo,
+.cd-ot__categoria,
+.cd-ot__descripcion,
+.cd-ot__direccion,
+.cd-ot__titulos,
+.cd-metrica__valor,
+.cd-desglose__nota,
+.cd-desglose__valor,
+.cd-alerta__texto {
+  overflow-wrap: anywhere;
+}
+
+/* 5. Montos: no se parten, pero dejan encogerse a la etiqueta. */
+.cd-desglose__fila > *,
+.cd-comision__fila > *,
+.cd-desglose__total > * {
+  min-width: 0;
+}
+
+/* 6. Tab bar con etiquetas largas en 360 px. */
+.cd-tab-bar ion-tab-button {
+  min-width: 0;
+}
+
+.cd-tab-bar ion-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 7. La tarjeta nunca se sale de su contenedor. */
+.cd-ot,
+.cd-card,
+.cd-alerta,
+.cd-hero {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 8. Revision de impeccable sobre el login (detector con DOM real):
+   - "Sistema activo" media 10.4 px: piso de legibilidad de 11 px.
+   - El punto de 6x6 px pulsaba en bucle sin dato vivo detras. */
+.cd-auth__pill {
+  font-size: 0.75rem;
+}
+
+.cd-auth__dot {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-auth__dot {
+    animation: none;
+  }
+}
+
+/* 9. Navegacion y bloques reportados en el APK (vista del tecnico).
+
+   Tab bar: con mono + mayusculas + letter-spacing 0.12em, "LIQUIDACIONES"
+   medía ~94 px en un hueco de ~90 px (4 tabs en 360 px): el texto se salía del
+   tab y la barra parecía enorme. Sentence case en la tipografia de texto,
+   11.5 px, y alto/icono en la medida Material (56 px, 20 px). */
+ion-tab-bar.cd-tab-bar {
+  /* auto + min-height: sumar el safe-area al height Y al padding lo contaria dos
+     veces y dejaria la barra de ~80 px. */
+  height: auto;
+  min-height: 56px;
+  padding-bottom: var(--cd-safe-bottom);
+}
+
+/* Gutter de pantalla. Las 17 páginas usan `<ion-content class="ion-padding">`,
+   pero el build móvil no incluye css/padding.css de Ionic, así que el contenido
+   quedaba pegado a los bordes (medido a 360 px: hero y métricas en x=0). Se
+   define aquí con el gutter de 16 px del diseño. */
+ion-content.ion-padding {
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 1rem;
+  --padding-bottom: 1rem;
+}
+
+/* Marco fluido: en teléfonos (≤430 px) ocupa todo el ancho; en pantallas más
+   anchas (tablet, escritorio) la app queda centrada con tope de 430 px. */
+@media (min-width: 431px) {
+  ion-app {
+    max-width: var(--cd-shell-max);
+    margin-inline: auto;
+    border-inline: 1px solid var(--cd-line);
+  }
+}
+
+/* Teléfonos estrechos (≤360 px): paddings y títulos algo más compactos, sin
+   bajar del piso de 12 px del diseño. */
+@media (max-width: 360px) {
+  /* Mi cuenta: la píldora ("No disponible") pasa a su propia fila en vez de
+     recortar el nombre del modo. */
+  .cd-modo {
+    flex-wrap: wrap;
+  }
+
+  .cd-modo__texto {
+    flex: 1 1 8rem;
+  }
+
+  .cd-modo__pill {
+    margin-left: auto;
+  }
+
+  .cd-header ion-toolbar {
+    padding: 0 0.75rem;
+  }
+
+  .cd-hero h1 {
+    font-size: 1.2rem;
+  }
+
+  .cd-auth__inner {
+    padding-inline: 1rem;
+  }
+}
+
+ion-tab-bar ion-tab-button ion-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+ion-tab-bar ion-tab-button ion-label {
+  margin: 1px 0 2px;
+  font-family: var(--cd-font-body, inherit);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+ion-tab-bar ion-tab-button.tab-selected ion-label {
+  font-weight: 600;
+}
+
+/* Disponibilidad: Ionic reserva un minimo por boton con etiqueta y las tres
+   opciones no caben en la tarjeta a 360 px. Se deja encoger y el texto se
+   mantiene en una linea legible. */
+.cd-card ion-segment {
+  --background: transparent;
+  width: 100%;
+}
+
+.cd-card ion-segment-button {
+  min-width: 0;
+  --padding-start: 0.15rem;
+  --padding-end: 0.15rem;
+}
+
+.cd-card ion-segment-button ion-label {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* Cerrar sesion: a ancho completo cruzaba toda la pantalla; se limita y centra. */
+.cd-salir {
+  max-width: 18rem;
+  margin-inline: auto;
+}
+
+/* ==========================================================================
+   Accesibilidad (auditoria a11y, severidad media).
+   ========================================================================== */
+
+/* 1. Zona táctil mínima de 44 px (WCAG 2.5.8) en las acciones de pulgar que
+   quedaban por debajo: chips de opción, medios de pago y el enlace de llamada.
+   `a.` limita la regla a la acción de llamar, no a los botones de superficie. */
+.cd-chip--opcion,
+.cd-chip-pago,
+a.cd-boton-superficie {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+ion-toggle,
+ion-back-button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Acciones estándar; los `size="small"` de las listas crecen por dentro para no
+   romper el alto de la fila. */
+ion-button:not([size='small']) {
+  min-height: 44px;
+}
+
+ion-button[size='small']::part(native) {
+  min-height: 44px;
+}
+
+/* 2. Foco visible en shadow parts (WCAG 2.4.7): Ionic pinta el control real en
+   `::part(native)`, asi que el anillo del host no alcanza. La regla global de
+   arriba se conserva. */
+.cd-cta:focus-within::part(native),
+.cd-ot__acciones ion-button:focus-within::part(native),
+ion-back-button:focus-within::part(native) {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
 }

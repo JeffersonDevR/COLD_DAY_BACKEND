@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>A7 Diagnóstico y presupuesto - Cold Day</title>
+<meta name="color-scheme" content="dark">
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;700&amp;family=Space+Grotesk:wght@600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            surface: "#111b2e",
+            background: "#0b1220",
+            primary: "#22d3ee",
+            violetAccent: "#a78bfa",
+            danger: "#f87171",
+            amberBadge: "#f59e0b",
+            darkBorder: "#1e293b",
+            mutedText: "#94a3b8"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"],
+            mono: ["Space Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #0b1220;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="bg-[#0b1220] text-slate-100 flex justify-center min-h-screen select-none antialiased">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs><symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-battery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="18" height="8" rx="2"/><path d="M22 11v2"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/></symbol><symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></symbol><symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9a13 13 0 0 1 17 0"/><path d="M6.5 12.5a9 9 0 0 1 11 0"/><path d="M9.5 16a4.5 4.5 0 0 1 5 0"/><path d="M12 19.5h.01"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 4.7a4.2 4.2 0 0 0-4 7l-6 6 2 2 6-6a4.2 4.2 0 0 0 7-4l-3 3-2-2 3-3Z"/></symbol><symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol><symbol id="i-signal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20v-4"/><path d="M9.5 20v-8"/><path d="M15 20v-12"/><path d="M20.5 20V4"/></symbol><symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15"/><path d="M5.5 8.25l13 7.5"/><path d="M18.5 8.25l-13 7.5"/></symbol><symbol id="i-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h13"/><path d="M13.5 5.5L17 9l-3.5 3.5"/><path d="M20 15H7"/><path d="M10.5 11.5L7 15l3.5 3.5"/></symbol></defs></svg>
+<!-- Mobile Viewport Frame (390px Max Standard) -->
+<div class="relative w-full max-w-[390px] min-h-screen bg-[#0b1220] flex flex-col justify-between overflow-x-hidden border-x border-[#1e293b]/60 shadow-2xl pb-44">
+<!-- Top Safe Area & Top Bar -->
+<header class="sticky top-0 z-30 w-full bg-[#0b1220]/95 backdrop-blur-md px-4 pt-3 pb-2 border-b border-[#1e293b]">
+<!-- Status bar placeholder simulation -->
+<div class="flex justify-between items-center text-[12px] font-mono text-slate-400 mb-2 px-1">
+<span>09:41</span>
+<div class="flex items-center gap-1.5 text-slate-400">
+<svg class="ico ico--13 leading-none" aria-hidden="true" focusable="false"><use href="#i-signal"/></svg>
+<svg class="ico ico--13 leading-none" aria-hidden="true" focusable="false"><use href="#i-wifi"/></svg>
+<svg class="ico ico--13 leading-none" aria-hidden="true" focusable="false"><use href="#i-battery"/></svg>
+</div>
+</div>
+<div class="flex items-center justify-between h-11">
+<button aria-label="Volver" class="w-11 h-11 -ml-2 rounded-lg flex items-center justify-center text-slate-300 hover:text-white active:bg-[#111b2e] transition-colors" type="button">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>
+</button>
+<h1 class="font-headline font-bold text-lg text-slate-100 tracking-tight flex-1 px-2 truncate">
+          Presupuesto
+        </h1>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111b2e] border border-[#1e293b] text-[12px] font-mono text-slate-300 tracking-wide">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+<span>OT #CD-8819</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-4 pt-3 space-y-3.5 custom-scroll">
+<!-- Status Sub-badge -->
+<div class="flex items-center justify-between text-[12px] font-mono px-0.5">
+<span class="text-amber-400 uppercase tracking-wider font-semibold flex items-center gap-1">
+<svg class="ico ico--13" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>
+          DIAGNÓSTICO LISTO
+        </span>
+<span class="text-slate-400">Emitido hoy 14:48</span>
+</div>
+<!-- Equipment & Technician Summary Pill/Card -->
+<section class="bg-[#111b2e] border border-[#1e293b] rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded bg-[#0b1220] border border-[#1e293b] flex items-center justify-center text-slate-300">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>
+</div>
+<div>
+<div class="font-headline text-sm font-semibold text-slate-100 leading-snug">
+              Split 3000F
+            </div>
+<div class="text-[12px] text-slate-400 font-normal">
+              Lucas V. · <span class="font-mono text-slate-300">Mat. #4829</span>
+</div>
+</div>
+</div>
+<div class="px-2 py-0.5 bg-[#0b1220] border border-[#1e293b] rounded text-[12px] font-mono text-slate-400">
+          En domicilio
+        </div>
+</section>
+<!-- Diagnosis Card -->
+<section class="bg-[#111b2e] border border-[#1e293b] rounded-lg p-3.5 space-y-2">
+<div class="flex items-center justify-between">
+<span class="cd-overline flex items-center gap-1.5">
+<svg class="ico ico--16 text-slate-400" aria-hidden="true" focusable="false"><use href="#i-wrench"/></svg>
+            DIAGNÓSTICO TÉCNICO
+          </span>
+<span class="text-[12px] text-slate-400 font-mono">Revisión #1</span>
+</div>
+<p class="text-[13px] text-slate-200 leading-relaxed font-normal line-clamp-2">
+          Falla en válvula de expansión y microfuga en cañería de baja. Requiere presurización y recambio de conector.
+        </p>
+</section>
+<!-- Detailed Breakdown (Presupuesto) Card -->
+<section class="bg-[#111b2e] border border-[#1e293b] rounded-lg p-3.5 space-y-3">
+<div class="flex items-center justify-between pb-1">
+<span class="cd-overline">
+            DESGLOSE DEL SERVICIO
+          </span>
+<span class="text-[12px] font-mono text-slate-400">COP</span>
+</div>
+<!-- Line items -->
+<div class="space-y-2.5 text-[13px]">
+<!-- Row 1 -->
+<div class="flex items-start justify-between gap-2">
+<span class="text-slate-300">Mano de obra especializada</span>
+<span class="font-mono font-medium text-slate-100">$1.267.500</span>
+</div>
+<!-- Row 2 (Violet Repuestos Accent) -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-1.5">
+<span class="text-slate-300">Repuestos certificados</span>
+<span class="px-1.5 py-0.5 rounded text-[12px] font-mono font-bold tracking-tight bg-[#a78bfa]/15 text-[#a78bfa] border border-[#a78bfa]/30">
+                REPUESTOS
+              </span>
+</div>
+<span class="font-mono font-medium text-[#a78bfa]">$634.000</span>
+</div>
+<!-- Row 3 -->
+<div class="flex items-start justify-between gap-2">
+<span class="text-slate-300">Carga gas refrigerante R410a</span>
+<span class="font-mono font-medium text-slate-100">$127.000</span>
+</div>
+<!-- Row 4 (Bonificación) -->
+<div class="flex items-start justify-between gap-2 text-slate-400">
+<span class="text-[12px] flex items-center gap-1">
+<svg class="ico ico--14" aria-hidden="true" focusable="false"><use href="#i-check-circle"/></svg>
+              Descuento visita técnica inicial
+            </span>
+<span class="font-mono text-[12px] text-slate-400">-$526.500</span>
+</div>
+</div>
+<!-- 1px slate divider -->
+<div class="w-full h-px bg-[#1e293b] my-2"></div>
+<!-- Total Row -->
+<div class="flex items-end justify-between pt-1">
+<div>
+<div class="cd-overline">
+              TOTAL A PAGAR
+            </div>
+<div class="text-[12px] text-slate-400">IVA e insumos incluidos</div>
+</div>
+<div class="font-mono font-bold text-2xl text-[#22d3ee] tracking-tight">
+            $2.028.000
+          </div>
+</div>
+<!-- Guarantee badge -->
+<div class="mt-2 pt-2 border-t border-[#1e293b]/70 flex items-center gap-2 text-[12px] text-slate-300">
+<svg class="ico ico--20 text-cyan-400" aria-hidden="true" focusable="false"><use href="#i-shield-check"/></svg>
+<span>Garantía oficial Cold Day 90 días incluida</span>
+</div>
+</section>
+</main>
+<!-- Fixed Bottom Action Container -->
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] z-40 bg-[#0b1220]/95 backdrop-blur-md border-t border-[#1e293b] p-4 space-y-2.5">
+<!-- Primary Cyan Action Button -->
+<button class="cd-cta" id="btn-approve" type="button">
+<svg class="ico ico--20 leading-none" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
+        Aprueba el presupuesto
+      </button>
+<!-- Danger Rejection Outline Action -->
+<button class="w-full h-11 bg-transparent border border-[#f87171] text-[#f87171] rounded-lg font-headline font-medium text-xs tracking-wider flex items-center justify-center gap-1.5 active:bg-[#f87171]/10 transition-colors" id="btn-open-rejection" type="button">
+<svg class="ico ico--20 leading-none" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>
+        Rechazar presupuesto
+      </button>
+</div>
+<!-- Rejection Bottom Sheet Overlay / Drawer -->
+<div class="fixed inset-0 z-50 bg-[#0b1220]/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 flex justify-center items-end" id="rejection-sheet-backdrop">
+<div class="w-full max-w-[390px] bg-[#111b2e] border-t border-x border-[#1e293b] rounded-t-2xl p-4 space-y-4 transform translate-y-full transition-transform duration-200" id="rejection-sheet-content">
+<!-- Drag Handle Indicator -->
+<div class="w-12 h-1 bg-slate-600 rounded-full mx-auto -mt-1 mb-2"></div>
+<!-- Header -->
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline font-bold text-base text-slate-100">
+              Rechazar presupuesto
+            </h2>
+<p class="text-[12px] text-slate-400 mt-0.5 font-body">
+              Cuéntanos el motivo para coordinar el cierre de la orden:
+            </p>
+</div>
+<button class="text-slate-400 hover:text-slate-200 p-1" id="btn-close-sheet-icon" type="button">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-x"/></svg>
+</button>
+</div>
+<!-- Quick selection tags (Reason pills) -->
+<div class="space-y-2" id="rejection-options">
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-[#1e293b] bg-[#0b1220] cursor-pointer hover:border-slate-600 transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-[#22d3ee] bg-[#111b2e] border-slate-600" name="rejection_reason" type="radio" value="costo"/>
+<span class="text-[13px] text-slate-200">Costo elevado</span>
+</div>
+<span class="font-mono text-[12px] text-slate-400">$</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-[#1e293b] bg-[#0b1220] cursor-pointer hover:border-slate-600 transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-[#22d3ee] bg-[#111b2e] border-slate-600" name="rejection_reason" type="radio" value="otro_servicio"/>
+<span class="text-[13px] text-slate-200">Conseguí otro servicio</span>
+</div>
+<svg class="ico ico--16 text-slate-400" aria-hidden="true" focusable="false"><use href="#i-swap"/></svg>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-[#1e293b] bg-[#0b1220] cursor-pointer hover:border-slate-600 transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-[#22d3ee] bg-[#111b2e] border-slate-600" name="rejection_reason" type="radio" value="posponer"/>
+<span class="text-[13px] text-slate-200">No voy a reparar ahora</span>
+</div>
+<svg class="ico ico--16 text-slate-400" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>
+</label>
+</div>
+<!-- Text Observation Input -->
+<div>
+<label class="cd-overline block mb-1.5" for="obs-input">
+            OBSERVACIONES ADICIONALES
+          </label>
+<textarea class="w-full bg-[#0b1220] border border-[#1e293b] rounded-lg p-2.5 text-[13px] text-slate-200 placeholder-slate-500 focus:border-[#22d3ee] resize-none" id="obs-input" placeholder="Escribe una observación (opcional)..." rows="2"></textarea>
+</div>
+<!-- Sheet Action Buttons -->
+<div class="grid grid-cols-2 gap-2.5 pt-1 pb-2">
+<button class="h-11 border border-[#1e293b] text-slate-300 rounded-lg text-xs font-headline font-semibold tracking-wider hover:bg-slate-800 transition-colors" id="btn-cancel-sheet" type="button">
+            Cancelar
+          </button>
+<button class="h-11 bg-[#f87171] text-[#0b1220] font-headline font-bold text-xs tracking-wider rounded-lg active:scale-95 transition-all" id="btn-confirm-rejection" type="button">
+            Confirmar rechazo
+          </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+    // Micro-interactions for bottom sheet
+    const openBtn = document.getElementById('btn-open-rejection');
+    const closeBtn = document.getElementById('btn-cancel-sheet');
+    const closeIcon = document.getElementById('btn-close-sheet-icon');
+    const backdrop = document.getElementById('rejection-sheet-backdrop');
+    const sheetContent = document.getElementById('rejection-sheet-content');
+    const confirmBtn = document.getElementById('btn-confirm-rejection');
+    const approveBtn = document.getElementById('btn-approve');
+
+    function openRejectionDrawer() {
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+      backdrop.classList.add('opacity-100', 'pointer-events-auto');
+      sheetContent.classList.remove('translate-y-full');
+      sheetContent.classList.add('translate-y-0');
+    }
+
+    function closeRejectionDrawer() {
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+      backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+      sheetContent.classList.add('translate-y-full');
+      sheetContent.classList.remove('translate-y-0');
+    }
+
+    openBtn.addEventListener('click', openRejectionDrawer);
+    closeBtn.addEventListener('click', closeRejectionDrawer);
+    closeIcon.addEventListener('click', closeRejectionDrawer);
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) {
+        closeRejectionDrawer();
+      }
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      confirmBtn.innerText = "Rechazando...";
+      setTimeout(() => {
+        closeRejectionDrawer();
+        confirmBtn.innerText = "Confirmar rechazo";
+        alert("Orden rechazada. Un coordinador se pondrá en contacto.");
+      }, 500);
+    });
+
+    approveBtn.addEventListener('click', () => {
+      approveBtn.innerText = "Confirmando...";
+      setTimeout(() => {
+        approveBtn.innerText = "¡Presupuesto Aprobado!";
+        approveBtn.classList.remove('bg-[#22d3ee]');
+        approveBtn.classList.add('bg-emerald-400');
+      }, 400);
+    });
+  </script>
+</body></html>

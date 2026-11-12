@@ -34,6 +34,10 @@ jobs:
         run: npm ci
       - name: Generate build config (maps key + api origin)
         run: npm run gen:config
+      # Reglas de diseño (DESIGN.md §10): los techos solo bajan. Un PR que
+      # reintroduce texto <12px, voseo, grises prohibidos, etc. queda en rojo.
+      - name: UI rules (DESIGN.md)
+        run: npm run ui:check
       - name: Build web (production)
         run: npx ng build
       # angular.json enables coverage by default; @vitest/coverage-v8 is a
@@ -71,5 +75,7 @@ jobs:
       # Los specs del móvil YA corren en `build-and-test` (ng test sin --project
       # ejecuta todos los proyectos). Lo que ningún comando cubría era el BUILD
       # del proyecto móvil: un error de template ahí dejaba el PR en verde.
+      - name: UI rules (DESIGN.md)
+        run: npm run ui:check
       - name: Build mobile (production)
         run: npx ng build mobile --configuration production

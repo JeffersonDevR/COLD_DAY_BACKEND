@@ -1,0 +1,52 @@
+{
+  "UI-T1": {
+    "mobile": 0,
+    "web": 122
+  },
+  "UI-T2": {
+    "mobile": 0,
+    "web": 74
+  },
+  "UI-C1": {
+    "mobile": 0,
+    "web": 244
+  },
+  "UI-A1": {
+    "mobile": 0,
+    "web": 0
+  },
+  "UI-A2": {
+    "mobile": 0,
+    "web": 28
+  },
+  "UI-A3": {
+    "mobile": 0,
+    "web": 0
+  },
+  "UI-D1": {
+    "mobile": 1,
+    "web": 18
+  },
+  "UI-D2": {
+    "mobile": 4,
+    "web": 0
+  },
+  "UI-D3": {
+    "mobile": 1,
+    "web": 6
+  },
+  "UI-D4": {
+    "web": 660
+  },
+  "UI-S1": {
+    "mobile": 4
+  },
+  "UI-L1": {
+    "mobile": 38,
+    "web": 19
+  },
+  "UI-L2": {
+    "mobile": 0,
+    "web": 0
+  }
+}

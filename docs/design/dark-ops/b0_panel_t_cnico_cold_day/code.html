@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<meta name="color-scheme" content="dark">
+<title>Cold Day Ops · Panel Técnico</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220", surface: "#111b2e", "surface-2": "#16223b",
+            line: "#1e293b", primary: "#22d3ee", amber: "#f59e0b",
+            violet: "#a78bfa", success: "#22c55e", danger: "#f87171"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#0b1220] min-h-screen flex justify-center items-start text-slate-200 font-body">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+<defs>
+<symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9Z"/><path d="M9.6 19a2.5 2.5 0 0 0 4.8 0"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+<symbol id="i-fridge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 10h12"/><path d="M9 6.5v1.5"/><path d="M9 13.5v2"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15"/><path d="M5.5 8.25l13 7.5"/><path d="M18.5 8.25l-13 7.5"/></symbol>
+<symbol id="i-washer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="14" r="4"/><circle cx="9" cy="7" r="1" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+<symbol id="i-radar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3.5h6V5"/><path d="M9 11h6"/><path d="M9 15h4"/></symbol>
+<symbol id="i-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+</defs>
+</svg>
+
+<div class="w-full max-w-[390px] min-h-screen bg-[#0b1220] flex flex-col relative shadow-2xl border-x border-line/40">
+
+<!-- ============ AppBar ============ -->
+<header class="cd-appbar">
+  <div class="flex items-center gap-3 min-w-0">
+    <span class="w-9 h-9 rounded-lg bg-surface border border-line flex items-center justify-center text-primary shrink-0">
+      <svg class="ico ico--22" aria-hidden="true"><use href="#i-radar"/></svg>
+    </span>
+    <div class="min-w-0">
+      <h1 class="cd-appbar__title">Lucas V.</h1>
+      <p class="cd-appbar__meta">Técnico · Mat. #4829</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 shrink-0">
+    <span class="cd-pill cd-pill--success">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]" aria-hidden="true"></span>
+      En guardia
+    </span>
+    <button aria-label="Notificaciones" class="relative w-11 h-11 rounded-lg border border-line bg-surface hover:bg-surface-2 active:scale-95 transition-all flex items-center justify-center text-slate-300" type="button">
+      <svg class="ico ico--22" aria-hidden="true"><use href="#i-bell"/></svg>
+      <span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-amber ring-2 ring-surface" aria-hidden="true"></span>
+    </button>
+  </div>
+</header>
+
+<main class="flex-1 px-4 pt-4 pb-28 space-y-6 overflow-y-auto">
+
+  <!-- ============ Disponibilidad: control real, con nombre accesible ============ -->
+  <section class="bg-surface border border-line rounded-xl px-3.5 py-3 flex items-center justify-between gap-3">
+    <div class="min-w-0">
+      <p class="text-[14px] font-semibold text-slate-100">Recibiendo ofertas</p>
+      <p class="cd-micro text-slate-400">Radio de 5 km · Chapinero y norte</p>
+    </div>
+    <label class="relative inline-flex items-center shrink-0 cursor-pointer" for="disp">
+      <input checked="" id="disp" type="checkbox" role="switch" aria-checked="true" aria-labelledby="disp-label" class="sr-only peer"/>
+      <span id="disp-label" class="sr-only">Recibir ofertas en el radar</span>
+      <span class="inline-block w-11 h-6 rounded-full bg-[#1e293b] peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-focus-visible:ring-2 peer-focus-visible:ring-primary/70 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[#111b2e]" aria-hidden="true"></span>
+    </label>
+  </section>
+
+  <!-- ============ AHORA: la próxima OT es el trabajo del día ============ -->
+  <section aria-labelledby="ahora">
+    <div class="flex items-baseline justify-between mb-2">
+      <h2 id="ahora" class="cd-overline">Ahora</h2>
+      <span class="cd-micro text-slate-400 tnum">10:30 · en 25 min</span>
+    </div>
+
+    <article class="bg-surface border border-primary/40 rounded-2xl p-4 space-y-3.5">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-10 h-10 rounded-lg bg-[#22d3ee]/10 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+            <svg class="ico ico--22" aria-hidden="true"><use href="#i-fridge"/></svg>
+          </span>
+          <div class="min-w-0">
+            <h3 class="font-headline font-bold text-[17px] leading-tight text-slate-100">Nevera no enfría</h3>
+            <p class="cd-card__meta mt-0.5">#CD-8842 · Martín G.</p>
+          </div>
+        </div>
+      </div>
+
+      <dl class="grid grid-cols-2 gap-2 text-[13px]">
+        <div class="rounded-lg bg-canvas/70 border border-line px-3 py-2">
+          <dt class="cd-micro text-slate-400">Dónde</dt>
+          <dd class="text-slate-200 mt-0.5">Chapinero · 3,2 km</dd>
+        </div>
+        <div class="rounded-lg bg-canvas/70 border border-line px-3 py-2">
+          <dt class="cd-micro text-slate-400">Cobro estimado</dt>
+          <dd class="text-slate-200 mt-0.5 tnum">$185.000</dd>
+        </div>
+      </dl>
+
+      <a href="#ejecucion" class="cd-cta">
+        Abrir ejecución
+        <svg class="ico ico--18" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+      </a>
+    </article>
+  </section>
+
+  <!-- ============ DESPUÉS: sólo lo que sigue, sin tarjetas ============ -->
+  <section aria-labelledby="despues">
+    <h2 id="despues" class="cd-overline mb-1.5">Después</h2>
+    <ul class="divide-y divide-line/70">
+      <li>
+        <a href="#ot-8819" class="flex items-center gap-3 py-2.5">
+          <span class="cd-card__meta w-11 shrink-0 tnum">14:30</span>
+          <svg class="ico ico--16 text-slate-400 shrink-0" aria-hidden="true"><use href="#i-snow"/></svg>
+          <span class="min-w-0 flex-1 text-[14px] text-slate-200 truncate">Mantenimiento split · Usaquén</span>
+          <span class="cd-micro text-slate-400 shrink-0 tnum">4,1 km</span>
+        </a>
+      </li>
+      <li>
+        <a href="#ot-8730" class="flex items-center gap-3 py-2.5">
+          <span class="cd-card__meta w-11 shrink-0 tnum">16:00</span>
+          <svg class="ico ico--16 text-slate-400 shrink-0" aria-hidden="true"><use href="#i-washer"/></svg>
+          <span class="min-w-0 flex-1 text-[14px] text-slate-200 truncate">Lavadora no centrifuga · Cedritos</span>
+          <span class="cd-micro text-slate-400 shrink-0 tnum">7,8 km</span>
+        </a>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ============ RADAR: ofertas con plazo y con banda de tarifa ============ -->
+  <section aria-labelledby="radar">
+    <div class="flex items-baseline justify-between mb-2">
+      <h2 id="radar" class="cd-overline">Ofertas cerca</h2>
+      <span class="cd-micro text-slate-400 tnum">1 activa</span>
+    </div>
+
+    <article class="cd-card space-y-3 border-amber/40">
+      <div class="flex items-center justify-between gap-2">
+        <span class="cd-pill cd-pill--warn">
+          <svg class="ico ico--14" aria-hidden="true"><use href="#i-clock"/></svg>
+          Expira en 00:42
+        </span>
+        <span class="cd-micro text-slate-400 tnum">hace 4 min</span>
+      </div>
+
+      <div class="min-w-0">
+        <h3 class="cd-card__title">Split 3000F gotea agua interior</h3>
+        <p class="cd-micro text-slate-400 mt-1 flex items-center gap-1.5">
+          <svg class="ico ico--14" aria-hidden="true"><use href="#i-pin"/></svg>
+          Chapinero · a 1,8 km
+        </p>
+      </div>
+
+      <div class="rounded-lg bg-canvas/70 border border-line px-3 py-2">
+        <p class="cd-micro text-slate-400">Tarifa estimada</p>
+        <p class="text-[15px] text-slate-100 tnum">$230.000 – $280.000</p>
+        <p class="cd-micro text-slate-400 mt-0.5">Se confirma con el diagnóstico</p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button type="button" class="cd-cta cd-cta--ghost flex-1">Aceptar</button>
+        <a href="#oferta" class="cd-micro text-primary hover:underline px-3 py-3">Ver detalle</a>
+      </div>
+    </article>
+
+    <!-- Estado que el prototipo no cubría: oferta real, fuera del radio -->
+    <div class="cd-card mt-2 flex items-center gap-3 opacity-70">
+      <span class="w-9 h-9 rounded-lg bg-canvas border border-line flex items-center justify-center text-slate-400 shrink-0">
+        <svg class="ico ico--18" aria-hidden="true"><use href="#i-washer"/></svg>
+      </span>
+      <span class="min-w-0 flex-1">
+        <span class="block text-[14px] text-slate-200 truncate">Lavadora no centrifuga</span>
+        <span class="cd-card__meta">Fuera de tu radio · 8,4 km</span>
+      </span>
+      <span class="cd-pill cd-pill--neutral shrink-0">No elegible</span>
+    </div>
+  </section>
+</main>
+
+<!-- ============ TabBar ============ -->
+<nav aria-label="Navegación principal" class="cd-tabbar">
+  <a href="#radar" aria-current="page" class="cd-tab">
+    <svg class="ico ico--22" aria-hidden="true"><use href="#i-radar"/></svg>
+    <span>Radar</span>
+  </a>
+  <a href="#ots" class="cd-tab">
+    <svg class="ico ico--22" aria-hidden="true"><use href="#i-clipboard"/></svg>
+    <span>Mis OTs</span>
+  </a>
+  <a href="#perfil" class="cd-tab">
+    <svg class="ico ico--22" aria-hidden="true"><use href="#i-person"/></svg>
+    <span>Perfil</span>
+  </a>
+</nav>
+</div>
+<script>
+  (function () {
+    var sw = document.getElementById('disp');
+    if (sw) sw.addEventListener('change', function () {
+      sw.setAttribute('aria-checked', String(sw.checked));
+    });
+  })();
+</script>
+</body></html>

@@ -1,0 +1,22 @@
+#!/bin/sh
+# Hook de pre-commit (activar una vez: git config core.hooksPath .githooks)
+# Corre las reglas ejecutables solo de las áreas que toca el commit.
+# No uses --no-verify: el CI ejecuta lo mismo y bloquea el merge.
+cambios=$(git diff --cached --name-only)
+
+if echo "$cambios" | grep -qE '^(frontend/|DESIGN\.md)'; then
+  echo "[pre-commit] reglas de diseño (npm run ui:check)…"
+  (cd frontend && npm run --silent ui:check) || {
+    echo "[pre-commit] ui:check falló: corrige el código (no subas techos)." >&2
+    exit 1
+  }
+fi
+
+if echo "$cambios" | grep -qE '^backend/'; then
+  echo "[pre-commit] reglas del backend (check-backend-rules)…"
+  node backend/scripts/check-backend-rules.mjs || {
+    echo "[pre-commit] backend-rules falló: corrige el código (no subas techos)." >&2
+    exit 1
+  }
+fi
+exit 0
