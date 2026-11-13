@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cold Day · antes / después del piso de 12px</title>
+<style>
+  :root {
+    --canvas: #0b1220; --surface: #111b2e; --line: #1e293b;
+    --text: #e2e8f0; --dim: #94a3b8; --action: #22d3ee; --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--canvas); color: var(--text);
+    font: 400 15px/1.5 Inter, system-ui, sans-serif;
+  }
+  header { padding: 24px 24px 0; max-width: 900px; }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  p { margin: 0 0 12px; color: var(--dim); font-size: 14px; }
+  code {
+    font-family: "Space Mono", ui-monospace, monospace; font-size: 12.5px;
+    background: var(--surface); border: 1px solid var(--line);
+    padding: 1px 5px; border-radius: 5px; color: var(--text);
+  }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    padding: 16px 24px; margin: 16px 0; border-block: 1px solid var(--line);
+    background: var(--surface); position: sticky; top: 0; z-index: 10;
+  }
+  select {
+    background: var(--canvas); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 12px; font: 500 14px Inter, sans-serif; min-height: 44px;
+  }
+  select:focus-visible, a:focus-visible {
+    outline: 2px solid var(--action); outline-offset: 2px;
+  }
+  .hint { font-size: 12px; color: var(--dim); }
+  .cols {
+    display: flex; gap: 20px; padding: 0 24px 32px; overflow-x: auto;
+    align-items: flex-start;
+  }
+  .col { flex: 0 0 auto; }
+  .col h2 {
+    font: 600 12px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase;
+    margin: 0 0 8px; color: var(--dim);
+  }
+  .col--after h2 { color: var(--action); }
+  iframe {
+    width: 390px; height: 820px; border: 1px solid var(--line);
+    border-radius: 14px; background: var(--canvas); display: block;
+  }
+  .note {
+    max-width: 900px; padding: 0 24px 40px; font-size: 13px; color: var(--dim);
+  }
+  .note strong { color: var(--warn); font-weight: 600; }
+  ul { margin: 8px 0 0; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Antes / después del piso de 12px</h1>
+  <p>
+    Izquierda: el prototipo original (<code>dark-ops.bak-20261110</code>). Derecha: el migrado.
+    Todo lo que estaba en 9, 10 u 11 px ahora mide 12 px como mínimo.
+  </p>
+</header>
+
+<div class="controls">
+  <label for="pantalla" class="hint">Pantalla</label>
+  <select id="pantalla"></select>
+  <span class="hint" id="conteo"></span>
+</div>
+
+<div class="cols">
+  <div class="col col--before">
+    <h2>Antes</h2>
+    <iframe id="antes" title="Versión original"></iframe>
+  </div>
+  <div class="col col--after">
+    <h2>Después</h2>
+    <iframe id="despues" title="Versión migrada"></iframe>
+  </div>
+</div>
+
+<div class="note">
+  <p>
+    <strong>Si las dos columnas se ven sin estilos</strong>, el navegador no llegó a
+    <code>cdn.tailwindcss.com</code>: los prototipos siguen dependiendo del CDN hasta la Ola 4.
+    Con red, se ven igual que siempre.
+  </p>
+  <p><strong>Dónde se nota más</strong> (cantidad de declaraciones que subieron a 12px):</p>
+  <ul>
+    <li><code>a4</code> panel cliente — 26: etiquetas del nav, «3 de 8 totales», badges de estado.</li>
+    <li><code>c0</code> panel proveedor — 25: los tres subtítulos de KPI («Solicitudes pendientes», «Despachadas este mes», «Facturado Octubre»).</li>
+    <li><code>b4</code> perfil técnico — 21 y <code>b3</code> ejecución — 21: chips de matrícula y fases.</li>
+    <li><code>c2</code> documentos — 20: chips de estado y la línea de fecha.</li>
+    <li><code>a6</code> seguimiento — 18: la línea de tiempo de la OT.</li>
+    <li><code>b0</code> panel técnico — 16: ACTIVO / HOY / TOTAL, donde el riesgo de desborde es mayor.</li>
+  </ul>
+  <p>
+    El punto más frágil es <code>b0</code> y <code>c0</code>: tres columnas de KPI en 390 px.
+    Si algo se rompió, se rompió ahí.
+  </p>
+</div>
+
+<script>
+  var PANTALLAS = [
+    ["b0_panel_t_cnico_cold_day", "b0 · panel técnico"],
+    ["c0_panel_proveedor_cold_day", "c0 · panel proveedor"],
+    ["a4_panel_cliente_cold_day", "a4 · panel cliente"],
+    ["c2_documentos_del_proveedor_cold_day", "c2 · documentos"],
+    ["c1_solicitudes_de_insumos_cold_day", "c1 · insumos"],
+    ["b1_radar_de_ofertas_cold_day", "b1 · radar"],
+    ["b2_mis_ots_cold_day", "b2 · mis OTs"],
+    ["b3_ejecuci_n_de_ot_cold_day", "b3 · ejecución"],
+    ["b4_perfil_t_cnico_y_matr_culas_cold_day", "b4 · perfil técnico"],
+    ["a10_mis_equipos_cold_day", "a10 · mis equipos"],
+    ["a3_mi_cuenta_y_cambiar_rol_cold_day", "a3 · cuenta y rol"],
+    ["a3.1_completar_perfil_cliente_cold_day", "a3.1 · perfil cliente"],
+    ["a6_seguimiento_de_ot_cold_day", "a6 · seguimiento"],
+    ["a7_diagn_stico_y_presupuesto_cold_day", "a7 · diagnóstico"],
+    ["a8_pago_y_acta_de_servicio_cold_day", "a8 · pago y acta"],
+    ["a5_solicitar_servicio_paso_1", "a5 · solicitar servicio"],
+    ["a2_registro_cold_day", "a2 · registro"],
+    ["a1_login_cold_day", "a1 · login"]
+  ];
+
+  var sel = document.getElementById("pantalla");
+  PANTALLAS.forEach(function (p, i) {
+    var o = document.createElement("option");
+    o.value = p[0];
+    o.textContent = p[1];
+    if (i === 0) o.selected = true;
+    sel.appendChild(o);
+  });
+
+  function pintar() {
+    var d = sel.value;
+    document.getElementById("antes").src = "../dark-ops.bak-20261110/" + d + "/code.html";
+    document.getElementById("despues").src = "./" + d + "/code.html";
+  }
+  sel.addEventListener("change", pintar);
+  pintar();
+</script>
+</body>
+</html>

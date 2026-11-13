@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>Cold Day Ops - Radar</title>
+<meta name="color-scheme" content="dark">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "outline-variant": "#1e293b",
+            primary: "#22d3ee",
+            "on-surface": "#f1f5f9",
+            "on-surface-variant": "#94a3b8",
+            amber: {
+              DEFAULT: "#f59e0b",
+              400: "#fbbf24",
+              500: "#f59e0b"
+            },
+            violet: {
+              DEFAULT: "#a78bfa",
+              400: "#a78bfa"
+            },
+            success: "#22c55e",
+            danger: "#f87171"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"],
+            mono: ["Space Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* iOS safe-area utilities & reset constraints */
+    body {
+      background-color: #0b1220;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 24px);
+    }
+    
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 48px);
+    }
+
+
+    @keyframes pulse-ring {
+      0% {
+        box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.45);
+      }
+      70% {
+        box-shadow: 0 0 0 8px rgba(34, 211, 238, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+      }
+    }
+
+    .cta-glow {
+      box-shadow: 0 0 16px -2px rgba(34, 211, 238, 0.35);
+    }
+  </style>
+<!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="bg-canvas min-h-screen flex justify-center selection:bg-primary/20 selection:text-primary">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs><symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3.5h6V5"/><path d="M9 11h6"/><path d="M9 15h4"/></symbol><symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></symbol><symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="M14 5l4 4"/></symbol><symbol id="i-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol><symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></symbol><symbol id="i-radar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h7"/><path d="M15 7h5"/><path d="M4 17h5"/><path d="M13 17h7"/><circle cx="13" cy="7" r="2"/><circle cx="11" cy="17" r="2"/></symbol><symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15"/><path d="M5.5 8.25l13 7.5"/><path d="M18.5 8.25l-13 7.5"/></symbol><symbol id="i-washer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="14" r="4"/><circle cx="9" cy="7" r="1" fill="currentColor" stroke="none"/></symbol></defs></svg>
+<!-- Mobile screen container (390x844 strict feel) -->
+<div class="w-full max-w-[420px] min-h-screen bg-canvas flex flex-col relative overflow-x-hidden border-x border-outline-variant/40 shadow-2xl">
+<!-- Top Status / Fixed Ionic-native Header -->
+<header class="sticky top-0 z-40 bg-surface/95 backdrop-blur-md px-4 pt-safe pb-3.5 border-b border-outline-variant">
+<!-- Row 1: Brand Logo + Brand Title + Disponibilidad Toggle -->
+<div class="flex justify-between items-center h-11">
+<div class="flex items-center space-x-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface border border-outline-variant flex items-center justify-center overflow-hidden flex-shrink-0">
+<img alt="Cold Day Ops Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XiO-AxEHuaOTB8N9UX504Q9uGpTJw4XkUs1SjDl5C910wV7SQOxq_LmviLK76OnC1eQ7Qjo59Jz3DdEXhRZcvGui584K_4QL-Iv__fRFftYOqTY6jA1MCEDhruBs_UIP6pZ9nw6Z0doPNzIZPMF17oM4AieErgzqjeio4AWRwP9hpn1xsz-cmikj29jlAnwyu5fegdqYon6PmL34FpaTR69918zjmuViLU7_Ztz5G5x2SlPr0grWUxlJ4"/>
+</div>
+<div class="flex flex-col">
+<h1 class="font-headline font-bold text-lg text-on-surface tracking-tight leading-tight">Radar</h1>
+</div>
+</div>
+<!-- Availability Toggle Switch -->
+<button aria-label="Cambiar disponibilidad" aria-pressed="true" class="flex items-center space-x-2 bg-canvas/80 border border-outline-variant px-3 py-1.5 rounded-full active:scale-95 transition-all" id="toggle-disponible" type="button">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+</span>
+<span class="font-label text-xs uppercase tracking-wider text-on-surface font-semibold">Disponible</span>
+<div class="w-8 h-5 bg-success/20 rounded-full border border-success/40 flex items-center p-0.5 justify-end">
+<div class="w-3.5 h-3.5 bg-success rounded-full shadow-sm"></div>
+</div>
+</button>
+</div>
+<!-- Row 2: Radar Pulse indicator & Radius filter control -->
+<div class="mt-2.5 flex items-center justify-between pt-1">
+<div class="flex items-center space-x-2">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<p class="font-body text-[13px] text-on-surface-variant truncate">
+<span class="text-on-surface font-medium" id="offers-count">3 ofertas</span> cerca tuyo
+          </p>
+</div>
+<button aria-label="Ajustar radio de búsqueda" class="inline-flex items-center space-x-1.5 px-2.5 py-2.5 min-h-[44px] rounded bg-canvas border border-outline-variant/80 active:scale-95 transition-transform" type="button">
+<span class="cd-overline text-on-surface-variant">Radio: 5 km</span>
+<svg class="ico ico--14 text-primary" aria-hidden="true" focusable="false"><use href="#i-edit"/></svg>
+</button>
+</div>
+</header>
+<!-- Content Scroll Canvas -->
+<main class="flex-1 px-4 py-4 pb-28 space-y-3.5 overflow-y-auto">
+<!-- Card 1: Urgent - Nevera -->
+<article class="bg-surface rounded-xl border border-outline-variant p-3.5 transition-all relative overflow-hidden">
+<!-- Tarjeta urgente: la urgencia va en la píldora, no en una barra lateral -->
+<!-- Top row category + tag + timestamp -->
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center space-x-2">
+<span class="w-7 h-7 rounded bg-canvas border border-outline-variant flex items-center justify-center text-primary" title="Refrigeración">
+<svg class="ico ico--18" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>
+</span>
+<span class="cd-overline inline-flex items-center px-2 py-0.5 rounded bg-amber/15 text-amber border border-amber/30">
+              URGENTE
+            </span>
+</div>
+<span class="cd-overline text-on-surface-variant">hace 4 min</span>
+</div>
+<!-- Fault description title (truncated) -->
+<h2 class="font-headline font-semibold text-sm text-on-surface leading-snug line-clamp-2">
+          Nevera no enfría freezer ni motor arranca
+        </h2>
+<!-- Location row -->
+<div class="flex items-center space-x-1.5 text-on-surface-variant text-[13px] font-body mt-1.5">
+<svg class="ico ico--16 text-primary shrink-0" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>
+<p class="truncate text-on-surface-variant">Chapinero · <span class="text-on-surface">a 1,4 km</span> (Carrera 11 #85-20)</p>
+</div>
+<!-- Payout block -->
+<div class="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="cd-overline text-on-surface-variant">Tarifa estimada</span>
+<span class="font-headline font-bold text-base text-slate-100 tracking-tight tnum">$1.400.000 – $1.800.000</span>
+</div>
+<div class="flex items-center space-x-2">
+<button aria-label="Ver detalle Nevera" class="h-11 px-3 rounded-lg text-on-surface-variant hover:text-on-surface text-[13px] font-body font-medium active:scale-95 transition-transform">
+              Ver detalle
+            </button>
+<button aria-label="Aceptar servicio" class="h-11 px-5 rounded-lg bg-primary text-[#0b1220] font-headline font-bold text-[13px] tracking-wide active:scale-95 transition-transform cta-glow flex items-center justify-center">
+              Aceptar
+            </button>
+</div>
+</div>
+</article>
+<!-- Card 2: Standard Air Conditioner -->
+<article class="bg-surface rounded-xl border border-outline-variant p-3.5 transition-all">
+<!-- Top row category + tag + timestamp -->
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center space-x-2">
+<span class="w-7 h-7 rounded bg-canvas border border-outline-variant flex items-center justify-center text-primary" title="Climatización">
+<svg class="ico ico--18" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>
+</span>
+<span class="cd-overline inline-flex items-center px-2 py-0.5 rounded bg-canvas border border-outline-variant text-on-surface-variant">
+              Revisión + gas
+            </span>
+</div>
+<span class="cd-overline text-on-surface-variant">hace 11 min</span>
+</div>
+<!-- Fault description title -->
+<h2 class="font-headline font-semibold text-sm text-on-surface leading-snug line-clamp-2">
+          Split 3000F gotea agua interior y no enfría
+        </h2>
+<!-- Location row -->
+<div class="flex items-center space-x-1.5 text-on-surface-variant text-[13px] font-body mt-1.5">
+<svg class="ico ico--16 text-primary shrink-0" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>
+<p class="truncate text-on-surface-variant">Usaquén · <span class="text-on-surface">a 2,8 km</span> (Calle 72 #10-34)</p>
+</div>
+<!-- Payout block -->
+<div class="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="cd-overline text-on-surface-variant">Tarifa estimada</span>
+<span class="font-headline font-bold text-base text-slate-100 tracking-tight tnum">$1.600.000 – $2.000.000</span>
+</div>
+<div class="flex items-center space-x-2">
+<button aria-label="Ver detalle Split" class="h-11 px-3 rounded-lg text-on-surface-variant hover:text-on-surface text-[13px] font-body font-medium active:scale-95 transition-transform">
+              Ver detalle
+            </button>
+<button aria-label="Aceptar servicio" class="h-11 px-4 rounded-lg border border-outline-variant text-on-surface bg-canvas hover:border-primary/50 text-[13px] font-body font-medium active:scale-95 transition-transform flex items-center justify-center">
+              Aceptar
+            </button>
+</div>
+</div>
+</article>
+<!-- Card 3: Washing Machine -->
+<article class="bg-surface rounded-xl border border-outline-variant p-3.5 transition-all">
+<!-- Top row category + tag + timestamp -->
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center space-x-2">
+<span class="w-7 h-7 rounded bg-canvas border border-outline-variant flex items-center justify-center text-primary" title="Lavadora">
+<svg class="ico ico--18" aria-hidden="true" focusable="false"><use href="#i-washer"/></svg>
+</span>
+<span class="cd-overline inline-flex items-center px-2 py-0.5 rounded bg-canvas border border-outline-variant text-violet">
+              Repuesto E3
+            </span>
+</div>
+<span class="cd-overline text-on-surface-variant">hace 26 min</span>
+</div>
+<!-- Fault description title -->
+<h2 class="font-headline font-semibold text-sm text-on-surface leading-snug line-clamp-2">
+          Lavadora carga superior no centrifuga (error E3)
+        </h2>
+<!-- Location row -->
+<div class="flex items-center space-x-1.5 text-on-surface-variant text-[13px] font-body mt-1.5">
+<svg class="ico ico--16 text-primary shrink-0" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>
+<p class="truncate text-on-surface-variant">Cedritos · <span class="text-on-surface">a 3,5 km</span> (Calle 140 #12-45)</p>
+</div>
+<!-- Payout block -->
+<div class="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="cd-overline text-on-surface-variant">Tarifa estimada</span>
+<span class="font-headline font-bold text-base text-slate-100 tracking-tight tnum">$1.100.000 – $1.400.000</span>
+</div>
+<div class="flex items-center space-x-2">
+<button aria-label="Ver detalle Lavadora" class="h-11 px-3 rounded-lg text-on-surface-variant hover:text-on-surface text-[13px] font-body font-medium active:scale-95 transition-transform">
+              Ver detalle
+            </button>
+<button aria-label="Aceptar servicio" class="h-11 px-4 rounded-lg border border-outline-variant text-on-surface bg-canvas hover:border-primary/50 text-[13px] font-body font-medium active:scale-95 transition-transform flex items-center justify-center">
+              Aceptar
+            </button>
+</div>
+</div>
+</article>
+</main>
+<!-- Bottom Navigation Bar (Predicted Component: BottomNavBar) -->
+<!-- Matches Shared Component specification: label_texts ["Radar", "Mis OTs", "Perfil"], icons ["radar", "assignment", "person"] -->
+<nav class="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[390px] z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface dark:bg-surface border-t border-outline-variant dark:border-outline-variant">
+<!-- Tab 1: Radar (Active state via style_active_navigation) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-primary dark:text-primary font-semibold py-1 active:scale-95 transition-transform duration-100 flex-1" href="#">
+<svg class="ico ico--22 mb-0.5" aria-hidden="true" focusable="false"><use href="#i-radar"/></svg>
+<span class="font-label text-xs uppercase tracking-wider">Radar</span>
+</a>
+<!-- Tab 2: Mis OTs (Inactive state via style_inactive_navigation) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 hover:text-primary transition-colors duration-150 active:scale-95 transition-transform duration-100 flex-1" href="#">
+<svg class="ico ico--22 mb-0.5" aria-hidden="true" focusable="false"><use href="#i-clipboard"/></svg>
+<span class="font-label text-xs uppercase tracking-wider">Mis OTs</span>
+</a>
+<!-- Tab 3: Perfil (Inactive state via style_inactive_navigation) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant py-1 hover:text-primary transition-colors duration-150 active:scale-95 transition-transform duration-100 flex-1" href="#">
+<svg class="ico ico--22 mb-0.5" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>
+<span class="font-label text-xs uppercase tracking-wider">Perfil</span>
+</a>
+</nav>
+</div>
+<!-- Inline interaction logic -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('toggle-disponible');
+      let isAvailable = true;
+
+      toggle.addEventListener('click', () => {
+        isAvailable = !isAvailable;
+        const textSpan = toggle.querySelector('span.font-label');
+        const dotPing = toggle.querySelector('span.animate-ping');
+        const dotMain = toggle.querySelector('span.relative.inline-flex');
+        const pillBg = toggle.querySelector('div.w-8');
+        const innerCircle = pillBg.querySelector('div');
+
+        if (isAvailable) {
+          textSpan.textContent = 'Disponible';
+          textSpan.className = 'font-label text-xs uppercase tracking-wider text-on-surface font-semibold';
+          dotPing.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75';
+          dotMain.className = 'relative inline-flex rounded-full h-2 w-2 bg-success';
+          pillBg.className = 'w-8 h-5 bg-success/20 rounded-full border border-success/40 flex items-center p-0.5 justify-end';
+          innerCircle.className = 'w-3.5 h-3.5 bg-success rounded-full shadow-sm';
+        } else {
+          textSpan.textContent = 'En pausa';
+          textSpan.className = 'font-label text-xs uppercase tracking-wider text-on-surface-variant font-medium';
+          dotPing.className = 'hidden';
+          dotMain.className = 'relative inline-flex rounded-full h-2 w-2 bg-on-surface-variant';
+          pillBg.className = 'w-8 h-5 bg-outline-variant rounded-full border border-outline-variant flex items-center p-0.5 justify-start';
+          innerCircle.className = 'w-3.5 h-3.5 bg-on-surface-variant rounded-full shadow-sm';
+        }
+      });
+    });
+  </script>
+<script>
+  // Disponibilidad: el estado visible también se anuncia.
+  (function () {
+    var b = document.getElementById('toggle-disponible');
+    if (b) b.addEventListener('click', function () {
+      b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    });
+  })();
+</script>
+</body></html>

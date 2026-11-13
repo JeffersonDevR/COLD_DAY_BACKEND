@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+  <title>A5.3 · Confirmación de Solicitud (Paso 3 de 3 · Dark Ops)</title>
+<meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            canvas: '#0b1220',
+            surface: '#111b2e',
+            'surface-elevated': '#162238',
+            border: '#1e293b',
+            'border-light': '#334155',
+            cyan: { DEFAULT: '#22d3ee', hover: '#06b6d4', glow: 'rgba(34, 211, 238, 0.25)' },
+            amber: '#f59e0b',
+            violet: '#a78bfa',
+            success: '#22c55e',
+            danger: '#f87171',
+            slate: {
+              secondary: '#94a3b8',
+              label: '#cbd5e1',
+              content: '#e2e8f0',
+              pure: '#ffffff'
+            }
+          },
+          fontFamily: {
+            headings: ['"Space Grotesk"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #0b1220;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      touch-action: manipulation;
+    }
+    .safe-top { padding-top: env(safe-area-inset-top, 44px); }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 34px); }
+    .touch-target { min-height: 48px; min-width: 48px; }
+  </style>
+<!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="bg-canvas text-slate-content min-h-screen flex flex-col justify-between items-center selection:bg-cyan selection:text-canvas">
+
+  <div class="w-full max-w-[390px] min-h-screen bg-canvas flex flex-col justify-between relative shadow-2xl border-x border-border/40">
+
+    <header class="w-full bg-canvas/95 backdrop-blur-md sticky top-0 z-40 border-b border-border">
+      <div class="safe-top px-6 pt-3 pb-1 flex justify-between items-center text-[13px] font-medium text-slate-secondary">
+        <span class="font-semibold tracking-tight text-slate-content">09:41</span>
+        <div class="flex items-center gap-1.5">
+          <span class="inline-block w-2 h-2 rounded-full bg-success"></span>
+          <span class="text-[12px] font-medium text-slate-secondary uppercase tracking-wider">EN LÍNEA</span>
+          <svg class="w-3.5 h-3.5 text-slate-secondary ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="px-4 py-2.5 flex items-center justify-between">
+        <button type="button" aria-label="Volver al paso anterior" class="touch-target flex items-center justify-center -ml-2 text-cyan hover:text-cyan-hover active:scale-95 transition-all">
+          <svg class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <div class="text-center">
+          <h1 class="font-headings font-bold text-[17px] text-white tracking-tight">Nueva solicitud</h1>
+        </div>
+
+        <div class="flex flex-col items-end justify-center min-w-[70px]">
+          <span class="text-[12px] font-semibold text-slate-label tracking-wide">Paso 3 de 3</span>
+          <div class="flex items-center gap-1.5 mt-1" aria-label="Progreso: paso 3 de 3">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan/40"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan/40"></span>
+            <span class="w-4 h-1.5 rounded-full bg-cyan transition-all"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 pb-2 pt-0.5 flex items-center gap-1.5 text-[12px] font-medium text-slate-secondary">
+        <svg class="w-3.5 h-3.5 stroke-[2] text-slate-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Desliza para volver</span>
+      </div>
+    </header>
+
+    <main class="flex-1 w-full px-4 pt-4 pb-32 flex flex-col gap-4 overflow-y-auto">
+
+      <section class="space-y-1">
+        <h2 class="font-headings text-[22px] font-bold text-white tracking-tight leading-snug">
+          Revisa tu solicitud
+        </h2>
+        <p class="text-[13px] text-slate-secondary font-normal leading-relaxed">
+          Todo listo para buscar un técnico cerca tuyo.
+        </p>
+      </section>
+
+      <article class="w-full bg-surface border border-border rounded-xl p-4 transition-colors hover:border-border-light shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 space-y-1.5">
+            <span class="block text-[12px] font-semibold uppercase tracking-wider text-slate-secondary">
+              ESPECIALIDAD
+            </span>
+            <p class="text-[15px] font-semibold text-slate-content leading-normal break-words">
+              Refrigeración · Neveras y freezers
+            </p>
+          </div>
+          <button type="button" aria-label="Editar especialidad" class="touch-target flex items-center justify-center px-2 text-[14px] font-semibold text-cyan hover:text-cyan-hover active:opacity-75 transition-all self-center -mr-2">
+            Editar
+          </button>
+        </div>
+      </article>
+
+      <article class="w-full bg-surface border border-border rounded-xl p-4 transition-colors hover:border-border-light shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 space-y-1.5">
+            <span class="block text-[12px] font-semibold uppercase tracking-wider text-slate-secondary">
+              DESCRIPCIÓN
+            </span>
+            <p class="text-[15px] font-normal text-slate-content leading-relaxed break-words">
+              La nevera hace un ruido fuerte y no enfría desde ayer.
+            </p>
+          </div>
+          <button type="button" aria-label="Editar descripción del problema" class="touch-target flex items-center justify-center px-2 text-[14px] font-semibold text-cyan hover:text-cyan-hover active:opacity-75 transition-all self-center -mr-2">
+            Editar
+          </button>
+        </div>
+      </article>
+
+      <article class="w-full bg-surface border border-border rounded-xl p-4 transition-colors hover:border-border-light shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 space-y-1.5">
+            <span class="block text-[12px] font-semibold uppercase tracking-wider text-slate-secondary">
+              UBICACIÓN
+            </span>
+            <p class="text-[15px] font-medium text-slate-content leading-normal break-words">
+              Av. Corrientes 1234, piso 3, Bogotá
+            </p>
+            <p class="text-[12px] font-medium text-slate-secondary pt-0.5 leading-tight break-words">
+              Lat -34.6037 · Lng -58.3816 · Solo lectura
+            </p>
+          </div>
+          <button type="button" aria-label="Editar ubicación" class="touch-target flex items-center justify-center px-2 text-[14px] font-semibold text-cyan hover:text-cyan-hover active:opacity-75 transition-all self-center -mr-2">
+            Editar
+          </button>
+        </div>
+      </article>
+
+      <div class="w-full bg-surface/60 border border-border/80 rounded-lg p-3.5 flex items-start gap-2.5 mt-1">
+        <svg class="w-4 h-4 text-cyan shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <p class="text-[12px] font-medium text-slate-label leading-normal">
+          Asignación con técnicos verificados y matriculados oficiales bajo garantía de servicio COLD DAY.
+        </p>
+      </div>
+
+    </main>
+
+    <footer class="w-full bg-canvas/95 backdrop-blur-lg border-t border-border px-4 pt-3 safe-bottom fixed inset-x-0 bottom-0 mx-auto max-w-[390px] z-50">
+      <div class="flex flex-col gap-2.5 pb-2">
+        <p class="text-[12px] font-medium text-slate-secondary text-center leading-normal">
+          Al enviar, buscaremos al técnico disponible más cercano.
+        </p>
+
+        <button type="button" class="w-full h-[52px] min-h-[52px] bg-cyan hover:bg-cyan-hover active:scale-[0.98] text-canvas font-headings font-bold text-[16px] tracking-tight rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(34,211,238,0.25)] transition-all duration-150">
+          <span>Solicitar técnico</span>
+          <svg class="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+        </button>
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>

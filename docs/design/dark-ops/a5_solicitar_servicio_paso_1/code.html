@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>COLD DAY - Confirmar Ubicación</title>
+<meta name="color-scheme" content="dark">
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode:"class",
+      theme: {
+        extend: {
+          colors: {
+            canvas:"#0b1220",
+            surface:"#111b2e",
+            borderMuted:"#1e293b",
+            primaryCyan:"#22d3ee",
+            accentAmber:"#f59e0b",
+            accentViolet:"#a78bfa",
+            accentSuccess:"#22c55e",
+            accentDanger:"#f87171"
+          },
+          borderRadius: {
+            DEFAULT:"0.25rem",
+            lg:"0.5rem",
+            xl:"0.75rem","2xl":"1.25rem",
+            full:"9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk","sans-serif"],
+            display: ["Space Grotesk","sans-serif"],
+            body: ["Inter","sans-serif"],
+            label: ["Space Mono","monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Mobile-first lock */
+    body {
+      background-color: #0b1220;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      touch-action: pan-y;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .pulse-ring {
+      animation: pulse-out 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-out {
+      0% {
+        transform: scale(0.6);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(2.4);
+        opacity: 0;
+      }
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="flex justify-center bg-black min-h-screen sm:py-6 overflow-hidden select-none">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs><symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol><symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-9Z"/></symbol><symbol id="i-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4L4 11l7 2 2 7 7-16Z"/></symbol><symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></symbol><symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol><symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15"/><path d="M5.5 8.25l13 7.5"/><path d="M18.5 8.25l-13 7.5"/></symbol><symbol id="i-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V7l2-3h12l2 3v2"/><path d="M4 9h16"/><path d="M5 9v10h14V9"/><path d="M10 19v-5h4v5"/></symbol><symbol id="i-crosshair" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><path d="M12 2v3.5"/><path d="M12 18.5V22"/><path d="M2 12h3.5"/><path d="M18.5 12H22"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol><symbol id="i-more" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></symbol></defs></svg>
+<!-- Mobile Viewport Frame (390 x 844 pt) -->
+<h1 class="sr-only">Solicitar servicio · confirmar ubicación</h1>
+<main class="relative w-full max-w-[390px] h-[844px] bg-canvas overflow-hidden flex flex-col justify-between border border-borderMuted shadow-2xl sm:rounded-[36px]">
+<!-- ========================================================= -->
+<!-- 1. FULL-SCREEN MAP CANVAS LAYER                           -->
+<!-- ========================================================= -->
+<div class="absolute inset-0 z-0 bg-[#0b1220] overflow-hidden" data-location="Buenos Aires" style="">
+<!-- Dark stylized vector map layout (Chapinero / Chicó grid simulation) -->
+<svg class="w-full h-full object-cover opacity-90" viewbox="0 0 390 844" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<radialgradient cx="50%" cy="45%" id="mapVignette" r="65%">
+<stop offset="0%" stop-color="#111b2e" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#0b1220" stop-opacity="0.95"></stop>
+</radialgradient>
+</defs>
+<!-- Base Background -->
+<rect fill="#0b1220" height="844" width="390"></rect>
+<!-- Water body: Río de la Plata section (top-right) -->
+<path d="M 230 -10 C 270 90, 310 180, 400 240 L 400 0 Z" fill="#0d1b2f"></path>
+<path d="M 235 -5 C 275 92, 314 182, 405 242" fill="none" opacity="0.6" stroke="#1e293b" stroke-width="1.5"></path>
+<!-- Urban Blocks & Green Spaces -->
+<path d="M 40 80 L 160 50 L 180 130 L 60 160 Z" fill="#0e1726"></path>
+<path d="M 200 70 L 310 40 L 325 100 L 215 130 Z" fill="#0e1726"></path>
+<path d="M 50 190 L 170 160 L 190 270 L 70 300 Z" fill="#0e1726"></path>
+<path d="M 205 160 L 350 120 L 370 240 L 225 280 Z" fill="#0f192b"></path>
+<!-- Parque Las Heras / Chapinero green tint -->
+<path d="M 215 190 L 290 170 L 305 240 L 230 260 Z" fill="#12232a" stroke="#16383b" stroke-width="0.8"></path>
+<path d="M 60 330 L 180 300 L 195 440 L 75 470 Z" fill="#0e1726"></path>
+<path d="M 210 310 L 370 270 L 385 430 L 225 470 Z" fill="#0e1726"></path>
+<path d="M 80 500 L 190 470 L 205 600 L 95 630 Z" fill="#0e1726"></path>
+<path d="M 220 490 L 360 455 L 375 580 L 235 615 Z" fill="#0e1726"></path>
+<!-- Minor Street Grid lines -->
+<g opacity="0.8" stroke="#182338" stroke-width="2.5">
+<line x1="-20" x2="420" y1="200" y2="100"></line>
+<line x1="-20" x2="420" y1="280" y2="180"></line>
+<line x1="-20" x2="420" y1="360" y2="260"></line>
+<line x1="-20" x2="420" y1="440" y2="340"></line>
+<line x1="-20" x2="420" y1="520" y2="420"></line>
+<line x1="-20" x2="420" y1="600" y2="500"></line>
+<line x1="80" x2="160" y1="-20" y2="700"></line>
+<line x1="150" x2="230" y1="-20" y2="700"></line>
+<line x1="220" x2="300" y1="-20" y2="700"></line>
+<line x1="290" x2="370" y1="-20" y2="700"></line>
+</g>
+<!-- Main Avenues (Cabildo / Santa Fe / Libertador) -->
+<g stroke="#24344d" stroke-linecap="round" stroke-width="5">
+<!-- Av. Cabildo (Main diag) -->
+<line x1="-20" x2="420" y1="480" y2="330"></line>
+<!-- Av. Juramento (Cross avenue) -->
+<line stroke="#24344d" stroke-width="4.5" x1="170" x2="260" y1="40" y2="680"></line>
+<!-- Av. Federico Lacroze -->
+<line stroke="#202e44" stroke-width="3.5" x1="-10" x2="410" y1="320" y2="170"></line>
+</g>
+<!-- Street Labels (Space Mono - ultra calm) -->
+<text fill="#475569" font-family="'Space Mono', monospace" font-size="8" letter-spacing="1" transform="rotate(-19, 260, 325)" x="260" y="325">AV. CABILDO</text>
+<text fill="#334155" font-family="'Space Mono', monospace" font-size="7.5" letter-spacing="0.8" transform="rotate(82, 180, 240)" x="180" y="240">JURAMENTO</text>
+<text fill="#334155" font-family="'Space Mono', monospace" font-size="7" letter-spacing="0.5" transform="rotate(-19, 50, 270)" x="50" y="270">MENDOZA</text>
+<text fill="#1e3a47" font-family="'Space Mono', monospace" font-size="7.5" letter-spacing="0.5" x="270" y="200">BARRANCAS DE USAQUÉN</text>
+<!-- Central Vignette Overlay -->
+<rect fill="url(#mapVignette)" height="844" width="390"></rect>
+</svg>
+<!-- Center Targeting Crosshairs & Animated Primary Pin -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none pb-28">
+<div class="relative flex items-center justify-center">
+<!-- Outer Pulsing Radar Ring -->
+<div class="absolute w-28 h-28 rounded-full border border-primaryCyan/40 bg-primaryCyan/5 pulse-ring"></div>
+<!-- Crosshair Reticle Minimal Lines -->
+<div class="absolute w-12 h-[1px] bg-primaryCyan/40"></div>
+<div class="absolute h-12 w-[1px] bg-primaryCyan/40"></div>
+<div class="absolute w-7 h-7 rounded-full border border-dashed border-primaryCyan/50"></div>
+<!-- Main Map Pin -->
+<div class="relative -translate-y-5 flex flex-col items-center drop-shadow-[0_8px_16px_rgba(34,211,238,0.35)]">
+<div class="w-10 h-10 rounded-full bg-surface border-2 border-primaryCyan flex items-center justify-center text-primaryCyan shadow-lg">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>
+</div>
+<!-- Pin Pointer Tail -->
+<div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-primaryCyan -mt-[1px]"></div>
+<div class="w-2 h-1 bg-primaryCyan/80 rounded-full blur-[1px] mt-0.5"></div>
+</div>
+</div>
+</div>
+<!-- Recenter /"Mi Ubicación" Floating Action Button -->
+<!-- Positioned comfortably above docked bottom sheet (bottom ~310px) -->
+<div class="absolute right-4 bottom-[330px] z-10">
+<button aria-label="Centrar en mi ubicación" class="w-12 h-12 rounded-full bg-surface/90 backdrop-blur-md border border-borderMuted text-slate-200 flex items-center justify-center active:scale-95 transition-all duration-150 shadow-lg hover:border-slate-600 focus:ring-1 focus:ring-primaryCyan" type="button">
+<svg class="ico ico--22" aria-hidden="true" focusable="false"><use href="#i-crosshair"/></svg>
+</button>
+</div>
+</div>
+<!-- ========================================================= -->
+<!-- 2. FIXED TOP FLOATING HEADER / SEARCH BAR                 -->
+<!-- Safe Area notch padding (~48px)                           -->
+<!-- ========================================================= -->
+<header class="relative z-20 pt-12 px-4 pb-2 space-y-2.5 pointer-events-auto">
+<!-- Top Utility Row: Back Arrow + Status Badge -->
+<div class="flex items-center justify-between">
+<!-- Back Button (Touch target >= 44px) -->
+<button aria-label="Volver al menú de servicios" class="w-11 h-11 rounded-xl bg-surface/90 backdrop-blur-md border border-borderMuted text-slate-200 flex items-center justify-center active:scale-95 transition-transform duration-100 hover:text-white" type="button">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>
+</button>
+<!-- Calm Step Badge -->
+<div class="h-8 px-3 rounded-full bg-surface/90 backdrop-blur-md border border-borderMuted flex items-center gap-1.5 shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primaryCyan"></span>
+<span class="font-label text-[12px] text-slate-300 font-bold tracking-wider">PASO 1 / 3</span>
+</div>
+</div>
+<!-- Floating Dark Ops Search Input Pill -->
+<div class="relative flex items-center h-12 w-full rounded-xl bg-surface/95 backdrop-blur-md border border-borderMuted px-3.5 shadow-xl group focus-within:border-primaryCyan/70 transition-colors">
+<svg class="ico ico--20 text-slate-400 mr-2.5" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+<input class="w-full bg-transparent border-0 p-0 text-[13.5px] font-body text-slate-100 placeholder-slate-500" placeholder="Busca tu dirección o esquina..." type="text" value="Calle 72 #10-34, Bogotá"/>
+<!-- Current Location Trigger -->
+<button class="w-8 h-8 rounded-lg text-slate-400 hover:text-primaryCyan flex items-center justify-center transition-colors ml-1 active:scale-95" title="Detectar por GPS" type="button">
+<svg class="ico ico--19" aria-hidden="true" focusable="false"><use href="#i-nav-arrow"/></svg>
+</button>
+</div>
+</header>
+<!-- Spacer to keep layout balanced -->
+<div class="flex-1"></div>
+<!-- ========================================================= -->
+<!-- 3. DOCKED BOTTOM SHEET (Dark Ops Ionic Architecture)      -->
+<!-- Rounded top, anchored to viewport bottom                  -->
+<!-- ========================================================= -->
+<section class="relative z-30 w-full bg-surface border-t border-borderMuted rounded-t-2xl shadow-[0_-12px_32px_rgba(0,0,0,0.6)] px-5 pt-3 pb-8">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center mb-3">
+<div class="w-10 h-1 rounded-full bg-slate-700/80"></div>
+</div>
+<!-- Step Headline & Mantenimiento Descriptor -->
+<div class="flex items-center justify-between mb-3">
+<p class="font-label text-[12px] uppercase tracking-wider text-slate-400 font-bold">
+          PASO 1 DE 3 · UBICACIÓN DEL EQUIPO
+        </p>
+<span class="inline-flex items-center text-[12px] font-label text-slate-400 bg-canvas px-2 py-0.5 rounded border border-borderMuted">
+          CLIMATIZACIÓN
+        </span>
+</div>
+<!-- Detected Address Card Row -->
+<div class="bg-canvas/80 border border-borderMuted rounded-xl p-3.5 flex items-center justify-between gap-3 mb-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface border border-borderMuted flex-shrink-0 flex items-center justify-center text-primaryCyan">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>
+</div>
+<div class="min-w-0">
+<p class="font-headline font-bold text-sm text-slate-100 truncate tracking-tight">
+              Calle 72 #10-34, 4° B, Usaquén, Bogotá
+            </p>
+<p class="font-body text-xs text-slate-400 truncate mt-0.5">
+              Punto de referencia detectado en mapa
+            </p>
+</div>
+</div>
+<button class="font-body text-xs font-semibold text-primaryCyan hover:underline px-2 py-1.5 -mr-1 flex-shrink-0 active:opacity-75" type="button">
+          Editar
+        </button>
+</div>
+<!-- Address Type Selector Chips (Calm Ops Pills) -->
+<div class="flex items-center gap-2 mb-3.5">
+<button class="h-8 px-3 rounded-lg text-xs font-body font-medium bg-canvas border border-primaryCyan/70 text-primaryCyan flex items-center gap-1.5 transition-colors" type="button">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-home"/></svg>
+<span>Mi casa</span>
+</button>
+<button class="h-8 px-3 rounded-lg text-xs font-body font-medium bg-canvas border border-borderMuted text-slate-300 hover:border-slate-600 flex items-center gap-1.5 transition-colors active:scale-95" type="button">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-store"/></svg>
+<span>Comercio / Local</span>
+</button>
+<button class="h-8 px-3 rounded-lg text-xs font-body font-medium bg-canvas border border-borderMuted text-slate-300 hover:border-slate-600 flex items-center gap-1.5 transition-colors active:scale-95" type="button">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-more"/></svg>
+<span>Otro</span>
+</button>
+</div>
+<!-- Calm Helper Copy (Inter >=13px) -->
+<p class="font-body text-[13px] text-slate-400 leading-snug mb-5">
+        El técnico asignado acudirá a este domicilio para la inspección inicial del equipo. Podrás coordinar detalles específicos luego.
+      </p>
+<!-- Single Primary Action CTA Button (Height 48px, reserved primary cyan, subtle glow) -->
+<button class="w-full h-12 rounded-xl bg-primaryCyan text-slate-950 font-headline font-bold text-sm tracking-wide flex items-center justify-center gap-2  hover:bg-[#38e1fa] active:scale-[0.99] transition-all duration-150" type="button">
+<span>Confirmar ubicación</span>
+<svg class="ico ico--18 font-bold" aria-hidden="true" focusable="false"><use href="#i-arrow-right"/></svg>
+</button>
+<!-- Safe Area Home Indicator Bar (iOS style padding) -->
+<div class="w-full flex justify-center pt-4">
+<div class="w-32 h-1 rounded-full bg-slate-700/60"></div>
+</div>
+</section>
+</main>
+</body></html>

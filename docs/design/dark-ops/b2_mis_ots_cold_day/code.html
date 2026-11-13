@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<meta name="color-scheme" content="dark">
+<title>Cold Day Ops · Mis OTs</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220", surface: "#111b2e", "surface-2": "#16223b",
+            line: "#1e293b", primary: "#22d3ee", amber: "#f59e0b",
+            violet: "#a78bfa", success: "#22c55e", danger: "#f87171"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#0b1220] min-h-screen flex justify-center items-start text-slate-200 font-body">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+<defs>
+<symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13 6 9Z"/><path d="M9.6 19a2.5 2.5 0 0 0 4.8 0"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-stopwatch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13.5" r="6.5"/><path d="M12 10.5v3l1.8 1.8"/><path d="M9.5 2.5h5"/><path d="M12 2.5V5"/></symbol>
+<symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15"/><path d="M5.5 8.25l13 7.5"/><path d="M18.5 8.25l-13 7.5"/></symbol>
+<symbol id="i-washer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="14" r="4"/><circle cx="9" cy="7" r="1" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+<symbol id="i-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4L4 11l7 2 2 7 7-16Z"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+<symbol id="i-radar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 5V3.5h6V5"/><path d="M9 11h6"/><path d="M9 15h4"/></symbol>
+<symbol id="i-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol>
+</defs>
+</svg>
+
+<div class="w-full max-w-[390px] min-h-screen bg-[#0b1220] flex flex-col relative shadow-2xl border-x border-line/40">
+
+<!-- ============ AppBar ============ -->
+<header class="cd-appbar">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-9 h-9 rounded-lg overflow-hidden border border-line bg-canvas flex items-center justify-center shrink-0">
+      <img alt="Cold Day" class="w-7 h-7 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XiO-AxEHuaOTB8N9UX504Q9uGpTJw4XkUs1SjDl5C910wV7SQOxq_LmviLK76OnC1eQ7Qjo59Jz3DdEXhRZcvGui584K_4QL-Iv__fRFftYOqTY6jA1MCEDhruBs_UIP6pZ9nw6Z0doPNzIZPMF17oM4AieErgzqjeio4AWRwP9hpn1xsz-cmikj29jlAnwyu5fegdqYon6PmL34FpaTR69918zjmuViLU7_Ztz5G5x2SlPr0grWUxlJ4"/>
+    </div>
+    <div class="min-w-0">
+      <h1 class="cd-appbar__title">Mis OTs</h1>
+      <p class="cd-appbar__meta tnum">2 activas · 14 cerradas</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 shrink-0">
+    <span class="cd-pill cd-pill--success">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#22c55e]" aria-hidden="true"></span>
+      En guardia
+    </span>
+    <button aria-label="Notificaciones" class="relative w-11 h-11 rounded-lg border border-line bg-surface hover:bg-surface-2 active:scale-95 transition-all flex items-center justify-center text-slate-300" type="button">
+      <svg class="ico ico--20" aria-hidden="true"><use href="#i-bell"/></svg>
+      <span class="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface" aria-hidden="true"></span>
+    </button>
+  </div>
+</header>
+
+<main class="flex-1 px-4 pt-4 pb-28 space-y-4 overflow-y-auto">
+
+  <!-- ============ Resumen del turno: una línea, no tres tarjetas ============ -->
+  <section class="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface/70 px-3.5 py-2.5">
+    <span class="flex items-center gap-2 text-[13px] text-slate-300">
+      <svg class="ico ico--18 text-primary" aria-hidden="true"><use href="#i-clock"/></svg>
+      Hoy · <strong class="text-slate-100 font-semibold tnum">2 servicios</strong>
+    </span>
+    <span class="text-[13px] text-slate-400">
+      <span class="font-mono font-semibold text-slate-200 tnum">$559.000</span> estimado
+    </span>
+  </section>
+
+  <!-- ============ Filtros ============ -->
+  <div class="flex items-center gap-2" role="group" aria-label="Filtrar órdenes">
+    <button type="button" class="chip" data-chip aria-pressed="true">
+      Activas <span class="ml-1 font-mono tnum">2</span>
+    </button>
+    <button type="button" class="chip" data-chip aria-pressed="false">
+      Historial <span class="ml-1 font-mono tnum">14</span>
+    </button>
+  </div>
+
+  <!-- ============ Cola de trabajo ============ -->
+  <section aria-labelledby="activas" class="space-y-2.5">
+    <h2 id="activas" class="cd-overline">Activas</h2>
+
+    <!-- En camino: la única con CTA relleno -->
+    <article class="bg-surface border border-line rounded-2xl p-4 space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-10 h-10 rounded-lg bg-[#22d3ee]/10 border border-primary/30 flex items-center justify-center text-primary shrink-0">
+            <svg class="ico ico--22" aria-hidden="true"><use href="#i-snow"/></svg>
+          </span>
+          <div class="min-w-0">
+            <h3 class="font-headline font-bold text-[16px] leading-tight text-slate-100">Split 3000F gotea agua</h3>
+            <p class="cd-card__meta mt-0.5">Sofía Alemán · OT #CD-8819</p>
+          </div>
+        </div>
+        <span class="cd-pill cd-pill--action shrink-0" aria-live="polite" aria-atomic="true">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" aria-hidden="true"></span>
+          En camino
+        </span>
+      </div>
+
+      <dl class="space-y-1.5 text-[13px] border-t border-line pt-2.5">
+        <div class="flex items-center gap-2 text-slate-300">
+          <svg class="ico ico--16 text-slate-400 shrink-0" aria-hidden="true"><use href="#i-pin"/></svg>
+          <span class="truncate">Calle 72 #10-34, Usaquén</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-400">
+          <svg class="ico ico--16 text-amber shrink-0" aria-hidden="true"><use href="#i-stopwatch"/></svg>
+          <span>Franja <strong class="text-slate-200 tnum">14:30 – 15:30</strong>
+            <span class="text-primary font-medium">· en 20 min</span>
+          </span>
+        </div>
+      </dl>
+
+      <div class="flex items-end justify-between gap-3 border-t border-line pt-3">
+        <div>
+          <p class="cd-micro text-slate-400">Monto de cierre</p>
+          <p class="font-mono font-bold text-[15px] text-slate-100 tnum">$276.000</p>
+        </div>
+        <button type="button" class="cd-cta w-auto px-5 shrink-0">
+          Continuar ruta
+          <svg class="ico ico--18" aria-hidden="true"><use href="#i-nav-arrow"/></svg>
+        </button>
+      </div>
+    </article>
+
+    <!-- En reparación: seguimiento, sin segundo CTA relleno -->
+    <a href="#ot-8730" class="cd-card space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-10 h-10 rounded-lg bg-[#a78bfa]/10 border border-violet/30 flex items-center justify-center text-violet shrink-0">
+            <svg class="ico ico--22" aria-hidden="true"><use href="#i-washer"/></svg>
+          </span>
+          <div class="min-w-0">
+            <h3 class="font-headline font-bold text-[16px] leading-tight text-slate-100">Carga superior error E3</h3>
+            <p class="cd-card__meta mt-0.5">Gonzalo Méndez · OT #CD-8730</p>
+          </div>
+        </div>
+        <span class="cd-pill cd-pill--parts shrink-0">En reparación</span>
+      </div>
+
+      <dl class="space-y-1.5 text-[13px] border-t border-line pt-2.5">
+        <div class="flex items-center gap-2 text-slate-300">
+          <svg class="ico ico--16 text-slate-400 shrink-0" aria-hidden="true"><use href="#i-pin"/></svg>
+          <span class="truncate">Calle 140 #12-45, Cedritos</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-400">
+          <svg class="ico ico--16 text-slate-400 shrink-0" aria-hidden="true"><use href="#i-clock"/></svg>
+          <span>Franja <strong class="text-slate-200 tnum">16:30 – 17:30</strong></span>
+        </div>
+      </dl>
+
+      <div class="flex items-center justify-between gap-3 border-t border-line pt-3">
+        <div>
+          <p class="cd-micro text-slate-400">Monto de cierre</p>
+          <p class="font-mono font-bold text-[15px] text-slate-200 tnum">$283.000</p>
+        </div>
+        <span class="cd-micro text-primary flex items-center gap-0.5">
+          Ver detalle
+          <svg class="ico ico--14" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+        </span>
+      </div>
+    </a>
+  </section>
+
+  <p class="cd-micro text-center text-slate-400">Actualizado hace un momento</p>
+</main>
+
+<!-- ============ TabBar ============ -->
+<nav aria-label="Navegación principal" class="cd-tabbar">
+  <a href="#radar" class="cd-tab">
+    <svg class="ico ico--22" aria-hidden="true"><use href="#i-radar"/></svg>
+    <span>Radar</span>
+  </a>
+  <a href="#ots" aria-current="page" class="cd-tab">
+    <svg class="ico ico--22" aria-hidden="true"><use href="#i-clipboard"/></svg>
+    <span>Mis OTs</span>
+  </a>
+  <a href="#perfil" class="cd-tab">
+    <svg class="ico ico--22" aria-hidden="true"><use href="#i-person"/></svg>
+    <span>Perfil</span>
+  </a>
+</nav>
+</div>
+<script>
+  document.querySelectorAll('[data-chip]').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      var group = chip.parentElement;
+      group.querySelectorAll('[data-chip]').forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === chip));
+      });
+    });
+  });
+</script>
+</body></html>

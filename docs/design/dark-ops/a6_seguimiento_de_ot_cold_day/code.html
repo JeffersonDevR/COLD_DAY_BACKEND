@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>A6 Seguimiento de OT · Cold Day</title>
+<meta name="color-scheme" content="dark">
+<!-- Material Symbols Outlined -->
+<!-- Fonts: Space Grotesk, Inter, Space Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "surface-variant": "#16233b",
+            "outline-variant": "#1e293b",
+            primary: "#22d3ee",
+            "on-primary": "#083344",
+            amber: {
+              DEFAULT: "#f59e0b",
+              400: "#fbbf24",
+              500: "#f59e0b"
+            },
+            violet: {
+              DEFAULT: "#a78bfa"
+            },
+            success: {
+              DEFAULT: "#22c55e"
+            },
+            danger: {
+              DEFAULT: "#f87171"
+            },
+            "on-surface": "#f1f5f9",
+            "on-surface-variant": "#94a3b8"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"],
+            label: ["Space Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #0b1220;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="bg-canvas text-on-surface flex justify-center min-h-screen">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs><symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></symbol><symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol><symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-9Z"/></symbol><symbol id="i-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4L4 11l7 2 2 7 7-16Z"/></symbol><symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 4.7a4.2 4.2 0 0 0-4 7l-6 6 2 2 6-6a4.2 4.2 0 0 0 7-4l-3 3-2-2 3-3Z"/></symbol><symbol id="i-moto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="2.5"/><circle cx="18.5" cy="17" r="2.5"/><path d="M8 17h7l-2-6H9l1.5-3H14l3.5 9"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z"/></symbol><symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 10l5.9-.9L12 3.8Z"/></symbol></defs></svg>
+<!-- Mobile Simulator Screen Frame (390x844 strict feel) -->
+<div class="w-full max-w-[390px] min-h-[844px] bg-canvas flex flex-col relative pb-32 border-x border-[#1e293b]/40">
+<!-- Top System Safe Area Buffer -->
+<div class="h-4 w-full bg-canvas shrink-0"></div>
+<!-- Fixed Header -->
+<header class="sticky top-0 z-40 bg-canvas/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-outline-variant">
+<div class="flex items-center gap-3">
+<button aria-label="Volver" class="w-11 h-11 flex items-center justify-center rounded-lg bg-surface border border-outline-variant text-on-surface hover:text-primary active:scale-95 transition-all" type="button">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>
+</button>
+<div class="flex flex-col">
+<h1 class="font-headline font-bold text-base text-on-surface tracking-tight leading-tight">Seguimiento</h1>
+<span class="cd-overline text-on-surface-variant">OT #CD-8819 · Split 3000F</span>
+</div>
+</div>
+<!-- Trailing Status Chip -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/30 rounded-full">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="cd-overline text-primary">EN CAMINO</span>
+</div>
+</header>
+<!-- Main Scrollable Content -->
+<main class="px-4 pt-3 flex flex-col gap-3">
+<!-- ETA Banner -->
+<section class="bg-surface border border-outline-variant rounded-xl p-3.5 flex items-center justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 mt-0.5">
+<svg class="ico ico--20" aria-hidden="true" focusable="false"><use href="#i-moto"/></svg>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-sm text-on-surface tracking-tight">Tu técnico llega en 12 min</span>
+</div>
+<p class="text-[13px] text-on-surface-variant font-body">Lucas V. · A 1,8 km de tu domicilio</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="relative flex h-2.5 w-2.5">
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+</div>
+</section>
+<!-- Tactical Map Card Mockup -->
+<section class="bg-surface border border-outline-variant rounded-xl overflow-hidden relative h-[210px] flex flex-col">
+<!-- Map Canvas SVG Mockup -->
+<div class="absolute inset-0 w-full h-full bg-[#0b1220]">
+<!-- Grid Background & Roads -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 358 210" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="24" id="tacticalGrid" patternunits="userSpaceOnUse" width="24">
+<path d="M 24 0 L 0 0 0 24" fill="none" opacity="0.6" stroke="#16233b" stroke-width="0.8"></path>
+</pattern>
+</defs>
+<rect fill="#0b1220" height="100%" width="100%"></rect>
+<rect fill="url(#tacticalGrid)" height="100%" width="100%"></rect>
+<!-- Avenue & Street Lines (Dark Ops Mockup) -->
+<path d="M-20,160 L380,60" fill="none" stroke="#1e293b" stroke-width="12"></path>
+<path d="M60,-20 L160,230" fill="none" stroke="#1e293b" stroke-width="9"></path>
+<path d="M220,-20 L270,230" fill="none" stroke="#1e293b" stroke-width="6"></path>
+<path d="M-10,40 L380,110" fill="none" stroke="#16233b" stroke-width="5"></path>
+<path d="M120,180 L320,130" fill="none" stroke="#16233b" stroke-width="4"></path>
+<!-- Route Track Dashed in Cyan -->
+<path d="M 85,134 Q 150,115 175,75 T 260,52" fill="none" stroke="#22d3ee" stroke-dasharray="6,4" stroke-linecap="round" stroke-width="3"></path>
+<!-- Technique Marker Point (Start of dashed) -->
+<circle cx="85" cy="134" fill="#22d3ee" fill-opacity="0.15" r="16"></circle>
+<circle cx="85" cy="134" fill="#0b1220" r="9" stroke="#22d3ee" stroke-width="2"></circle>
+<!-- Destination Point (Calle 72) -->
+<circle cx="260" cy="52" fill="#f87171" fill-opacity="0.12" r="16"></circle>
+<circle cx="260" cy="52" fill="#0b1220" r="9" stroke="#f87171" stroke-width="2"></circle>
+</svg>
+</div>
+<!-- Overlaid Visual Elements: Vehicle and Destination -->
+<div class="absolute left-[73px] top-[122px] pointer-events-none flex items-center justify-center w-6 h-6 text-primary">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-moto"/></svg>
+</div>
+<div class="absolute right-[86px] top-[40px] pointer-events-none flex items-center justify-center w-6 h-6 text-danger">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>
+</div>
+<!-- Map Floating Pills -->
+<!-- Destination label -->
+<div class="absolute top-3 left-3 bg-surface/90 backdrop-blur-md border border-outline-variant rounded-lg px-2.5 py-1.5 flex items-center gap-2">
+<svg class="ico ico--16 text-danger" aria-hidden="true" focusable="false"><use href="#i-home"/></svg>
+<div class="flex flex-col">
+<span class="cd-overline text-on-surface-variant leading-none">DESTINO</span>
+<span class="text-[12px] font-semibold text-on-surface leading-tight">Calle 72 #10-34</span>
+</div>
+</div>
+<!-- Metric ETA pill -->
+<div class="absolute bottom-3 right-3 bg-surface/95 backdrop-blur-md border border-outline-variant rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+<svg class="ico ico--15 text-primary" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>
+<span class="font-mono text-[12px] font-bold text-primary">1,8 km · 12 min</span>
+</div>
+<!-- GPS Calibrate hint -->
+<div class="absolute bottom-3 left-3 bg-surface/80 border border-outline-variant/60 rounded px-1.5 py-0.5">
+<span class="cd-overline text-on-surface-variant">Ubicación en vivo</span>
+</div>
+</section>
+<!-- Horizontal Event Timeline (4 steps) -->
+<section class="bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-2">
+<div class="flex items-center justify-between pb-1">
+<span class="cd-overline text-on-surface-variant">ESTADO DEL SERVICIO</span>
+<span class="cd-overline text-primary">PASO 3 DE 4</span>
+</div>
+<!-- Stepper pill row -->
+<div class="grid grid-cols-4 gap-1.5">
+<!-- 1. Solicitada (Completed) -->
+<div class="bg-canvas border border-outline-variant rounded-lg p-2 flex flex-col items-center text-center">
+<div class="w-5 h-5 rounded-full bg-success/15 text-success flex items-center justify-center mb-1">
+<svg class="ico ico--13" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
+</div>
+<span class="text-[12px] font-medium text-on-surface leading-none">Solicitada</span>
+<span class="font-mono text-[12px] text-on-surface-variant mt-1">14:10</span>
+</div>
+<!-- 2. Asignada (Completed) -->
+<div class="bg-canvas border border-outline-variant rounded-lg p-2 flex flex-col items-center text-center">
+<div class="w-5 h-5 rounded-full bg-success/15 text-success flex items-center justify-center mb-1">
+<svg class="ico ico--13" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
+</div>
+<span class="text-[12px] font-medium text-on-surface leading-none">Asignada</span>
+<span class="font-mono text-[12px] text-on-surface-variant mt-1">14:18</span>
+</div>
+<!-- 3. En camino (Active) -->
+<div class="bg-primary/10 border border-primary/40 rounded-lg p-2 flex flex-col items-center text-center relative">
+<div class="w-5 h-5 rounded-full bg-primary text-canvas flex items-center justify-center mb-1">
+<svg class="ico ico--13 font-bold" aria-hidden="true" focusable="false"><use href="#i-nav-arrow"/></svg>
+</div>
+<span class="text-[12px] font-bold text-primary leading-none">En camino</span>
+<span class="font-mono text-[12px] text-primary/90 mt-1">14:32</span>
+</div>
+<!-- 4. En diagnóstico (Pending) -->
+<div class="bg-canvas/50 border border-outline-variant/60 rounded-lg p-2 flex flex-col items-center text-center opacity-60">
+<div class="w-5 h-5 rounded-full bg-surface border border-outline-variant text-on-surface-variant flex items-center justify-center mb-1">
+<svg class="ico ico--12" aria-hidden="true" focusable="false"><use href="#i-wrench"/></svg>
+</div>
+<span class="text-[12px] font-normal text-on-surface-variant leading-none">Diagnóstico</span>
+<span class="font-mono text-[12px] text-on-surface-variant mt-1">Pendiente</span>
+</div>
+</div>
+</section>
+<!-- Assigned Technician Card -->
+<section class="bg-surface border border-outline-variant rounded-xl p-3.5 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<!-- Avatar LV with online indicator -->
+<div class="relative shrink-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant border border-outline-variant flex items-center justify-center font-headline font-bold text-base text-primary">
+              LV
+            </div>
+<span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-success border-2 border-surface rounded-full"></span>
+</div>
+<!-- Info -->
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-headline font-semibold text-sm text-on-surface">Lucas Vázquez</span>
+<svg class="ico ico--15 text-primary" aria-hidden="true" focusable="false"><use href="#i-shield-check"/></svg>
+</div>
+<span class="font-mono text-[12px] text-on-surface-variant tracking-tight">MAT #4829 · Especialista Clima</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="text-amber flex items-center"><svg class="ico ico--14" aria-hidden="true"><use href="#i-star"/></svg></span>
+<span class="text-[12px] font-medium text-on-surface">4.9</span>
+<span class="text-[12px] text-on-surface-variant">(124 servicios)</span>
+</div>
+</div>
+</div>
+<!-- Call Button (touch target >= 44px) -->
+<a aria-label="Llamar al técnico Lucas Vázquez" class="min-w-[44px] min-h-[44px] px-3 rounded-lg border border-outline-variant bg-surface hover:bg-surface-variant active:scale-95 transition-all flex items-center justify-center gap-1.5 text-on-surface hover:text-primary" href="tel:+573001234567">
+<svg class="ico ico--18 text-primary" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>
+<span class="text-[13px] font-medium font-body">Llamar</span>
+</a>
+</section>
+<!-- Budget Card (Collapsed) -->
+<section class="bg-surface border border-outline-variant rounded-xl p-3.5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="cd-overline text-on-surface-variant">PRESUPUESTO APROBADO</span>
+<div class="flex items-baseline gap-2 mt-0.5">
+<span class="font-headline font-bold text-xl text-on-surface tracking-tight">$2.028.000</span>
+<span class="text-[12px] text-on-surface-variant font-body">Reparación split + carga</span>
+</div>
+</div>
+<button class="min-h-[44px] px-2 flex items-center gap-1 text-primary hover:text-primary/80 transition-colors" type="button">
+<span class="text-[13px] font-medium">Ver detalle</span>
+<svg class="ico ico--16" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg>
+</button>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/60">
+<div class="flex items-center gap-1.5">
+<svg class="ico ico--16 text-violet" aria-hidden="true" focusable="false"><use href="#i-shield-check"/></svg>
+<span class="text-[12px] text-on-surface-variant font-body">Garantía oficial Cold Day 90 días</span>
+</div>
+<div class="cd-overline px-2 py-0.5 rounded bg-violet/10 border border-violet/20 text-violet">
+            REPUESTOS OK
+          </div>
+</div>
+</section>
+</main>
+<!-- Fixed Bottom Primary Action & Safe Area -->
+<div class="fixed bottom-0 max-w-[390px] w-full bg-canvas/95 backdrop-blur-md px-4 pt-3 pb-6 border-t border-outline-variant z-50">
+<div class="flex flex-col gap-2">
+<button class="cd-cta" type="button">
+<svg class="ico ico--18" aria-hidden="true" focusable="false"><use href="#i-card"/></svg>
+<span>Pagar visita · $526.500</span>
+</button>
+<p class="text-center font-body text-[12px] text-on-surface-variant leading-tight">
+          El monto se descuenta del presupuesto final aprobado.
+        </p>
+</div>
+</div>
+</div>
+</body></html>

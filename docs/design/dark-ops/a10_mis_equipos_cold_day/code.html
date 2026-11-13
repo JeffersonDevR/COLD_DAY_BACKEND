@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<title>COLD DAY · Dark Ops - Mis Equipos</title>
+<meta name="color-scheme" content="dark">
+<!-- Google Fonts: Space Grotesk, Inter, Public Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Public+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              bg: "#0b1220",
+              card: "#111a2e",
+              border: "#1e293b",
+              cyan: "#22d3ee",
+              amber: "#f59e0b",
+              violet: "#a78bfa",
+              emerald: "#10b981",
+            },
+            surface: "#0b1220",
+            primary: "#22d3ee",
+            "outline-variant": "#1e293b",
+            "on-surface-variant": "#94a3b8",
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Hide scrollbar for clean chip rail */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  <!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="bg-brand-bg text-slate-100 font-body antialiased flex justify-center items-start min-h-screen selection:bg-brand-cyan/20 selection:text-brand-cyan">
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden"><defs><symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-battery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="18" height="8" rx="2"/><path d="M22 11v2"/></symbol><symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8Z"/><path d="M3 8h18"/><path d="M9 12h6"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></symbol><symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol><symbol id="i-fridge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 10h12"/><path d="M9 6.5v1.5"/><path d="M9 13.5v2"/></symbol><symbol id="i-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></symbol><symbol id="i-signal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20v-4"/><path d="M9.5 20v-8"/><path d="M15 20v-12"/><path d="M20.5 20V4"/></symbol><symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15"/><path d="M5.5 8.25l13 7.5"/><path d="M18.5 8.25l-13 7.5"/></symbol><symbol id="i-washer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="14" r="4"/><circle cx="9" cy="7" r="1" fill="currentColor" stroke="none"/></symbol><symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9a13 13 0 0 1 17 0"/><path d="M6.5 12.5a9 9 0 0 1 11 0"/><path d="M9.5 16a4.5 4.5 0 0 1 5 0"/><path d="M12 19.5h.01"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 4.7a4.2 4.2 0 0 0-4 7l-6 6 2 2 6-6a4.2 4.2 0 0 0 7-4l-3 3-2-2 3-3Z"/></symbol><symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol><symbol id="i-plus-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></symbol></defs></svg>
+<!-- Mobile Viewport Container 390x844 strict aesthetic ratio -->
+<div class="relative w-full max-w-[390px] min-h-[844px] bg-brand-bg flex flex-col overflow-hidden pb-24 shadow-2xl border-x border-brand-border/40">
+<!-- 1. iOS Status Bar Clean (390px spec) -->
+<header class="w-full pt-3 px-6 pb-2 flex justify-between items-center z-40 select-none text-xs text-slate-300 font-semibold tracking-tight">
+<span class="font-headline font-medium text-[13px] tracking-normal text-slate-200">09:41</span>
+<div class="flex items-center gap-1.5 text-slate-300">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-signal"/></svg>
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-wifi"/></svg>
+<svg class="ico ico--17 -rotate-90 fill-1" aria-hidden="true" focusable="false"><use href="#i-battery"/></svg>
+</div>
+</header>
+<!-- 2. Header: Back button, Title & Subtitle, Trailing action -->
+<div class="px-5 pt-2 pb-4 flex items-start justify-between gap-3">
+<div class="flex items-start gap-3">
+<button aria-label="Volver" class="mt-0.5 w-11 h-11 rounded-lg bg-brand-card border border-brand-border flex items-center justify-center text-slate-300 active:scale-95 transition-transform hover:text-brand-cyan hover:border-brand-cyan/40" type="button">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-back"/></svg>
+</button>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-[12px] uppercase font-label tracking-widest font-semibold px-1.5 py-0.5 rounded bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20">DARK OPS</span>
+</div>
+<h1 class="font-headline font-bold text-2xl text-white tracking-tight mt-1">Mis equipos</h1>
+<p class="text-xs text-slate-400 font-normal mt-0.5">Tus servicios y pedidos, agrupados por equipo</p>
+</div>
+</div>
+<button aria-label="Agregar equipo o soporte" class="w-11 h-11 rounded-lg bg-brand-card border border-brand-border flex items-center justify-center text-slate-300 hover:text-brand-cyan hover:border-brand-cyan/40 active:scale-95 transition-all relative" type="button">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-plus-circle"/></svg>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-cyan ring-2 ring-brand-bg"></span>
+</button>
+</div>
+<!-- 3. Horizontal Scrollable Chips Rail -->
+<div class="px-5 pb-3">
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-1 px-1">
+<!-- Chip 1: Activo -->
+<button class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-label bg-brand-cyan/15 border border-brand-cyan text-cyan-300 shadow-sm shadow-brand-cyan/10 transition-colors">
+<span>Todos (2)</span>
+</button>
+<!-- Chip 2: Inactivo -->
+<button class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-label bg-brand-card border border-brand-border text-slate-400 hover:text-slate-200 transition-colors">
+<span>Aires acondicionados (1)</span>
+</button>
+<!-- Chip 3: Inactivo -->
+<button class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-label bg-brand-card border border-brand-border text-slate-400 hover:text-slate-200 transition-colors">
+<span>Neveras (1)</span>
+</button>
+<!-- Chip 4: Inactivo -->
+<button class="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-label bg-brand-card border border-brand-border text-slate-400 hover:text-slate-200 transition-colors">
+<span>Lavadora (0)</span>
+</button>
+</div>
+</div>
+<!-- Main Content Area: Equipment cards & empty state demonstration -->
+<main class="flex-1 px-5 space-y-4 pt-1">
+<!-- 4.1 Tarjeta 1 (Aire acondicionado) -->
+<article class="bg-brand-card border border-brand-border rounded-lg p-4 transition-all duration-200 hover:border-brand-cyan/30 group">
+<!-- Header de Tarjeta -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan shrink-0">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-snow"/></svg>
+</div>
+<div>
+<h2 class="font-headline font-bold text-base text-white tracking-tight leading-snug">Aires acondicionados</h2>
+<p class="text-xs text-slate-400 mt-0.5 font-label">Split 3000F · última OT <span class="font-mono text-slate-300 font-semibold">#CD-8819</span></p>
+</div>
+</div>
+<!-- Badge EN CAMINO with pulsating dot -->
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-brand-amber text-[12px] font-bold font-label uppercase tracking-wider">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-amber opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-brand-amber"></span>
+</span>
+<span>EN CAMINO</span>
+</div>
+</div>
+<!-- Info Operativa -->
+<div class="mt-3.5 pt-3 border-t border-brand-border/60 flex items-center justify-between gap-3">
+<div class="flex items-center gap-2 text-xs">
+<div class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-brand-cyan">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>
+</div>
+<div class="leading-tight">
+<p class="text-slate-200 font-medium">Técnico Lucas V. · <span class="text-brand-cyan font-semibold">Llega en 15 min</span></p>
+<span class="text-[12px] text-slate-400 font-label">Usaquén · Bogotá</span>
+</div>
+</div>
+<svg class="ico ico--20 text-slate-400 group-hover:text-brand-cyan transition-colors" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg>
+</div>
+</article>
+<!-- 4.2 Tarjeta 2 (Nevera) -->
+<article class="bg-brand-card border border-brand-border rounded-lg p-4 transition-all duration-200 hover:border-brand-violet/30 group">
+<!-- Header de Tarjeta -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-brand-violet/10 border border-brand-violet/20 flex items-center justify-center text-brand-violet shrink-0">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-fridge"/></svg>
+</div>
+<div>
+<h2 class="font-headline font-bold text-base text-white tracking-tight leading-snug">Neveras</h2>
+<p class="text-xs text-slate-400 mt-0.5 font-label">Nevera no enfría · OT <span class="font-mono text-slate-300 font-semibold">#CD-8842</span></p>
+</div>
+</div>
+<!-- Badge FINALIZADA -->
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-brand-emerald text-[12px] font-bold font-label uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-brand-emerald"></span>
+<span>FINALIZADA</span>
+</div>
+</div>
+<!-- Info Operativa -->
+<div class="mt-3.5 pt-3 border-t border-brand-border/60 flex items-center justify-between gap-3">
+<div class="flex items-center gap-2 text-xs">
+<div class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-brand-emerald">
+<svg class="ico ico--15" aria-hidden="true" focusable="false"><use href="#i-shield-check"/></svg>
+</div>
+<div class="leading-tight">
+<p class="text-slate-300 font-medium">12 Oct · <span class="font-mono text-white font-semibold">$229.000</span></p>
+<span class="text-[12px] text-emerald-400/90 font-label flex items-center gap-1">Garantía 90 días activa</span>
+</div>
+</div>
+<svg class="ico ico--20 text-slate-400 group-hover:text-brand-violet transition-colors" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg>
+</div>
+</article>
+<!-- 5. Sección de Estado Vacío (demostrativa para Lavadora) -->
+<section class="border border-dashed border-brand-border bg-brand-card/40 rounded-lg p-5 flex flex-col items-center text-center relative overflow-hidden">
+<!-- Glow halo effect -->
+<div class="absolute -top-10 w-28 h-28 bg-brand-cyan/5 blur-2xl rounded-full pointer-events-none"></div>
+<div class="w-12 h-12 rounded-full bg-brand-card border border-brand-border shadow-inner flex items-center justify-center text-slate-400 mb-3 relative">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-washer"/></svg>
+</div>
+<h3 class="font-headline font-semibold text-sm text-slate-200">No tienes servicios en este equipo</h3>
+<p class="text-xs text-slate-400 max-w-[240px] mt-1 font-body">Registra tu lavadora o pide una revisión técnica preventiva.</p>
+<button class="mt-4 bg-brand-cyan text-slate-950 font-bold font-label text-xs py-2.5 px-4 rounded-lg flex items-center gap-1.5 shadow-md shadow-brand-cyan/20 active:scale-95 transition-all hover:bg-cyan-300" type="button">
+<svg class="ico ico--20 font-bold" aria-hidden="true" focusable="false"><use href="#i-wrench"/></svg>
+<span>Pedir un servicio</span>
+</button>
+</section>
+</main>
+<!-- 6. Bottom Navigation Bar Cliente Fija -->
+<nav aria-label="Navegación principal" class="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[390px] z-50 flex justify-around items-center h-16 px-4 bg-brand-bg/95 backdrop-blur-md shadow-lg border-t border-brand-border">
+<!-- Panel (Inactivo) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant font-normal gap-1 py-1 hover:text-brand-cyan transition-colors duration-150 active:scale-95 transition-transform duration-100" href="#">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-grid"/></svg>
+<span class="font-label text-[12px] tracking-wider uppercase">Panel</span>
+</a>
+<!-- Equipos / Servicios (ACTIVO: cyan #22d3ee) -->
+<a class="flex flex-col items-center justify-center text-primary font-semibold gap-1 py-1 active:scale-95 transition-transform duration-100 relative" href="#">
+<svg class="ico ico--24 fill-1" aria-hidden="true" focusable="false"><use href="#i-box"/></svg>
+<span class="font-label text-[12px] tracking-wider uppercase text-brand-cyan">Equipos</span>
+<span class="w-1 h-1 rounded-full bg-brand-cyan absolute -bottom-0.5"></span>
+</a>
+<!-- Cuenta / Perfil (Inactivo) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant font-normal gap-1 py-1 hover:text-brand-cyan transition-colors duration-150 active:scale-95 transition-transform duration-100" href="#">
+<svg class="ico ico--24" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>
+<span class="font-label text-[12px] tracking-wider uppercase">Cuenta</span>
+</a>
+</nav>
+</div>
+</body></html>

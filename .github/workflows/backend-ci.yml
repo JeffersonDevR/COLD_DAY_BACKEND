@@ -176,3 +176,17 @@ jobs:
         with:
           fail-on-severity: high
           comment-summary-in-pr: on-failure
+
+  # Reglas del backend con techos que solo bajan (docs/backend/GUIA-BACKEND.md).
+  # Atrapa lo que los tests no ven: lecturas sin paginar, getMessage() hacia el
+  # cliente, @Scheduled sin bloqueo, secretos literales, CORS abierto, ddl-auto.
+  backend-rules:
+    name: backend-rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend rules
+        run: node backend/scripts/check-backend-rules.mjs

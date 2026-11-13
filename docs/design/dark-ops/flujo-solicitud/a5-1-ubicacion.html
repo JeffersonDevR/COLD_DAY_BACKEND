@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+  <title>Paso 1 de 3 · Ubicación (Dark Ops)</title>
+<meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            canvas: '#0b1220',
+            surface: '#111b2e',
+            'surface-elevated': '#172338',
+            'border-base': '#1e293b',
+            cyan: { 400: '#22d3ee', 500: '#06b6d4' },
+            amber: { 500: '#f59e0b' },
+            violet: { 400: '#a78bfa' },
+            success: '#22c55e',
+            danger: '#f87171',
+            slate: {
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+              400: '#94a3b8',
+              700: '#334155',
+              800: '#1e293b',
+              900: '#0f172a'
+            }
+          },
+          fontFamily: {
+            heading: ['Space Grotesk', 'sans-serif'],
+            body: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #0b1220;
+      color: #cbd5e1;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .map-grid {
+      background-color: #0d1527;
+      background-image:
+        radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.08) 0%, transparent 65%),
+        linear-gradient(to right, rgba(30, 41, 59, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.45) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+    }
+    .pulse-ring { animation: pulse-ring 2.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.65); opacity: 0.9; }
+      50% { transform: scale(1.6); opacity: 0.25; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+  </style>
+<!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+</head>
+<body class="flex justify-center items-center min-h-screen bg-slate-950 p-0 sm:p-4 text-slate-300">
+
+  <main class="w-[390px] h-[844px] bg-canvas flex flex-col relative overflow-hidden shadow-2xl border border-border-base sm:rounded-[36px]">
+
+    <header class="w-full pt-3 px-6 pb-2 flex justify-between items-center text-[12px] font-medium text-slate-400 bg-canvas z-30 select-none">
+      <span class="tracking-tight font-semibold text-slate-200">09:41</span>
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-cyan-400"></span>
+        <span class="text-[12px] font-semibold text-cyan-400 tracking-wide uppercase">GPS ACTIVO</span>
+        <svg class="w-4 h-4 ml-1 text-slate-300 inline" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.25A.75.75 0 0 0 5 19.5h14a.75.75 0 0 0 .65-1.12l-.62-.64C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9zm0 2c3.87 0 7 3.13 7 7 0 1.63-.56 3.13-1.5 4.34l-.4.43H6.9l-.4-.43C5.56 15.13 5 13.63 5 12c0-3.87 3.13-7 7-7z"/>
+        </svg>
+      </div>
+    </header>
+
+    <section class="px-5 pt-1 pb-3 bg-canvas border-b border-border-base z-30 flex flex-col gap-1.5">
+      <div class="flex items-center justify-between min-h-[48px]">
+        <button type="button" aria-label="Volver a la pantalla anterior" class="w-12 h-12 -ml-2 flex items-center justify-center rounded-xl text-slate-200 hover:text-white hover:bg-surface active:bg-surface-elevated transition-colors">
+          <svg class="w-6 h-6 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+
+        <h1 class="font-heading font-bold text-[18px] text-slate-100 tracking-tight text-center">
+          Nueva solicitud
+        </h1>
+
+        <div class="flex flex-col items-end justify-center min-w-[76px]">
+          <span class="text-[12px] font-semibold text-slate-300">Paso 1 de 3</span>
+          <div class="flex items-center gap-1.5 mt-1" aria-label="Progreso: Paso 1 activo de 3">
+            <span class="w-5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 text-[12px] font-medium text-slate-400 pl-0.5">
+        <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        <span>Desliza para volver</span>
+      </div>
+    </section>
+
+    <div class="flex-1 flex flex-col overflow-y-auto relative pb-28">
+
+      <section class="relative w-full h-[320px] map-grid overflow-hidden border-b border-border-base flex items-center justify-center">
+
+        <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-45" viewBox="0 0 390 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M-20 60 L410 110" stroke="#334155" stroke-width="7" stroke-linecap="round"/>
+          <path d="M-20 220 L410 180" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+          <path d="M120 -20 L90 340" stroke="#334155" stroke-width="8" stroke-linecap="round"/>
+          <path d="M290 -20 L310 340" stroke="#334155" stroke-width="5" stroke-linecap="round"/>
+          <path d="M-10 150 Q180 160 400 130" stroke="#1e293b" stroke-width="4"/>
+          <path d="M195 -10 L195 330" stroke="#1e293b" stroke-width="4"/>
+          <path d="M30 0 L360 320" stroke="#1e293b" stroke-width="3"/>
+          <path d="M0 270 L390 270" stroke="#1e293b" stroke-width="3"/>
+          <path d="M40 80 L350 90" stroke="#1e293b" stroke-width="2"/>
+        </svg>
+
+        <div class="absolute top-4 inset-x-4 z-20 flex flex-col gap-1.5">
+          <div class="relative w-full h-12 bg-surface/95 backdrop-blur-md rounded-xl border border-border-base shadow-xl flex items-center px-3.5 gap-3 focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400 transition-all">
+            <svg class="w-5 h-5 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input
+              type="text"
+              value="Carrera 11 #85-20"
+              placeholder="Buscar dirección"
+              class="w-full bg-transparent text-[15px] font-medium text-slate-100 placeholder-slate-400"
+              aria-label="Buscar dirección"
+            />
+            <button type="button" aria-label="Limpiar búsqueda" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:text-white">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="w-full bg-surface border border-border-base rounded-xl shadow-2xl overflow-hidden divide-y divide-border-base">
+            <button type="button" class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center gap-3 text-left hover:bg-surface-elevated active:bg-slate-800 transition-colors">
+              <span class="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center text-cyan-400 flex-shrink-0">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                </svg>
+              </span>
+              <div class="flex-1 text-left">
+                <div class="text-[14px] font-semibold text-slate-100 leading-snug">Carrera 11 #85-20, Chapinero</div>
+                <div class="text-[12px] font-medium text-slate-400 leading-normal">Ciudad Autónoma de Buenos Aires</div>
+              </div>
+            </button>
+
+            <button type="button" class="w-full min-h-[48px] px-3.5 py-2.5 flex items-center gap-3 text-left hover:bg-surface-elevated active:bg-slate-800 transition-colors">
+              <span class="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center text-slate-400 flex-shrink-0">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                </svg>
+              </span>
+              <div class="flex-1 text-left">
+                <div class="text-[14px] font-semibold text-slate-200 leading-snug">Carrera 11 #85-20, Chicó</div>
+                <div class="text-[12px] font-medium text-slate-400 leading-normal">Ciudad Autónoma de Buenos Aires</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="relative z-10 flex flex-col items-center pointer-events-none mt-16">
+          <div class="absolute -inset-4 w-16 h-16 rounded-full bg-cyan-400/20 pulse-ring"></div>
+
+          <div class="relative flex items-center justify-center w-11 h-11 rounded-full bg-cyan-400 text-canvas  border-2 border-white">
+            <svg class="w-6 h-6 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <div class="w-2.5 h-2.5 bg-cyan-400 rotate-45 -mt-1.5 shadow-md"></div>
+          <div class="w-7 h-2 rounded-full bg-cyan-400/40 blur-[2px] mt-1"></div>
+        </div>
+
+        <div class="absolute bottom-3 right-3 z-10 flex flex-col gap-2">
+          <button type="button" aria-label="Centrar en mi ubicación actual" class="w-11 h-11 rounded-xl bg-surface/90 border border-border-base text-cyan-400 flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="p-4 flex flex-col gap-3">
+
+        <div class="flex items-center justify-between px-1">
+          <span class="text-[12px] font-semibold uppercase tracking-wider text-slate-300">
+            Punto de asistencia
+          </span>
+          <span class="text-[12px] font-semibold text-cyan-400">
+            Confirmada
+          </span>
+        </div>
+
+        <article class="w-full min-h-[64px] p-3.5 rounded-2xl bg-surface border-[1.5px] border-cyan-400 ring-4 ring-cyan-400/10 shadow-[0_4px_20px_rgba(0,0,0,0.35)] flex items-center gap-3.5 cursor-pointer transition-all hover:bg-surface-elevated">
+
+          <div class="w-11 h-11 rounded-xl bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center text-cyan-400 flex-shrink-0">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+
+          <div class="flex-1 min-w-0 flex flex-col py-0.5">
+            <div class="flex items-center gap-2">
+              <h2 class="font-heading font-semibold text-[16px] text-slate-200 leading-snug">
+                Ubicación guardada
+              </h2>
+              <span class="px-2 py-0.5 rounded-md bg-cyan-400/20 text-cyan-400 text-[12px] font-semibold uppercase tracking-tight">
+                Predeterminada
+              </span>
+            </div>
+            <p class="text-[13px] font-normal text-slate-400 leading-relaxed mt-1 break-words">
+              Usar la dirección guardada en tu perfil: Carrera 11 #85-20, Oficina 402, Chapinero
+            </p>
+          </div>
+
+          <div class="w-6 h-6 flex items-center justify-center text-slate-400 flex-shrink-0">
+            <svg class="w-5 h-5 stroke-[2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </article>
+
+        <div class="w-full px-3.5 py-2.5 rounded-xl bg-surface/60 border border-border-base flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 text-slate-400">
+            <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <span class="text-[12px] font-medium text-slate-400 tracking-tight">
+              Lat -34.6037 · Lng -58.3816
+            </span>
+          </div>
+
+          <span class="text-[12px] font-semibold text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60 flex-shrink-0">
+            Solo lectura
+          </span>
+        </div>
+
+        <div class="w-full px-3.5 py-2.5 rounded-xl bg-surface-elevated/40 border border-border-base flex items-start gap-2.5 mt-0.5">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 mt-1.5 flex-shrink-0"></span>
+          <p class="text-[12px] font-medium text-slate-300 leading-relaxed">
+            Área de cobertura con guardias técnicas oficiales disponibles las 24 horas en tu cuadrante.
+          </p>
+        </div>
+
+      </section>
+    </div>
+
+    <footer class="absolute bottom-0 inset-x-0 bg-surface border-t border-border-base p-4 pb-6 z-30 flex flex-col gap-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.5)]">
+
+      <p class="text-center text-[12px] font-medium text-slate-400 leading-tight">
+        Podrás revisar todos los datos antes de emitir la solicitud.
+      </p>
+
+      <button
+        type="button"
+        class="w-full h-[52px] bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 text-canvas font-heading font-bold text-[16px] rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(34,211,238,0.35)] active:scale-[0.99] transition-all cursor-pointer"
+      >
+        <span>Continuar</span>
+        <svg class="w-5 h-5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+        </svg>
+      </button>
+
+      <div class="w-32 h-1 bg-slate-700/60 rounded-full mx-auto mt-1"></div>
+    </footer>
+
+  </main>
+
+</body>
+</html>

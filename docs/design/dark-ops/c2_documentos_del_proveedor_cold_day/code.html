@@ -1,0 +1,286 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport">
+<meta name="color-scheme" content="dark">
+<title>COLD DAY Ops - Documentos del Proveedor</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<!-- Cold Day design layer (tokens, foco, tipografía, iconos) -->
+<link href="../assets/coldops.css" rel="stylesheet">
+<link href="../assets/components.css" rel="stylesheet">
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "outline-variant": "#1e293b",
+            primary: "#22d3ee",
+            "primary-container": "rgba(34, 211, 238, 0.12)",
+            "on-primary": "#0b1220",
+            "on-surface-variant": "#94a3b8",
+            status: {
+              approved: "#22c55e",
+              pending: "#f59e0b",
+              rejected: "#f87171",
+              category: "#a78bfa"
+            }
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 16px);
+    }
+    /* Touch target guarantee */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0b1220] text-slate-100 font-body antialiased min-h-screen flex justify-center">
+<!-- ============================================================
+     Iconos: SVG autorados, 1.75 de trazo, aria-hidden siempre.
+     Si la red falla, siguen siendo iconos y no palabras.
+     ============================================================ -->
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+<defs>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M4 10h16"/></symbol>
+<symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6"/><path d="M15 9l-6 6"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.2h.01"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8Z"/><path d="M3 8h18"/><path d="M9 12h6"/></symbol>
+<symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></symbol>
+<symbol id="i-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V7l2-3h12l2 3v2"/><path d="M4 9h16"/><path d="M5 9v10h14V9"/><path d="M10 19v-5h4v5"/></symbol>
+</defs>
+</svg>
+<!-- Mobile Viewport Shell (390px x 844px context) -->
+<div class="w-full max-w-[390px] min-h-screen bg-[#0b1220] flex flex-col relative pb-[84px] shadow-2xl overflow-x-hidden border-x border-[#1e293b]/40">
+<!-- Top Status Bar Simulation & Safe Area -->
+<div class="pt-safe w-full bg-[#111b2e]/95 backdrop-blur-md sticky top-0 z-40">
+<!-- TopAppBar from Shared Spec -->
+<header class="flex justify-between items-center gap-2 w-full px-4 py-3 bg-[#111b2e] border-b border-[#1e293b]">
+<!-- Leading: Profile Avatar / Info -->
+<div class="flex items-center gap-3 min-w-0">
+<div class="relative w-9 h-9 rounded-full overflow-hidden ring-1 ring-cyan-500/40 bg-slate-800 flex-shrink-0 flex items-center justify-center">
+<img class="w-full h-full object-cover" alt="Distribuidora Repuestos" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCc_E__aIDwR8nfiil9Xbw1fwMXJjnxiKJMsTQFNRnE7chw9BuWrS362d0GkIAN2CCLL5oP74TA1zqnT-YIjVBNfH2Rz2VF1ErkTjhrichuc4VQU1YEVBhC-AB7vDs25ixuuPkqmLzxgKIWh3ofYjx88zp9GzbwCVsdi_3NRhCl7MNx8tVemWQ2WRJwWSe1cFgsRInGha6LbnDXdBZXtUUENwberlAqKYEM5t0DQaOlA97gPAAyQiiSMOY8LZvFeAl-KfEq_p9c36c">
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline font-bold text-xs tracking-wider uppercase text-cyan-400">Cold Day Ops</span>
+<span class="cd-micro text-slate-400 truncate"><span class="font-mono tnum">PROV-ID #AR-882</span> · Distribuidora Repuestos</span>
+</div>
+</div>
+<!-- Trailing Action: system state -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 shrink-0 whitespace-nowrap">
+<span class="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" aria-hidden="true"></span>
+<span class="cd-micro font-bold text-[#22c55e] tracking-wider uppercase">Proveedor activo</span>
+</div>
+</header>
+<!-- Screen Title Cluster & Status Pill -->
+<div class="px-4 pt-3 pb-3 border-b border-[#1e293b]/60 flex items-start justify-between gap-3">
+<div class="min-w-0">
+<h1 class="font-headline font-bold text-xl text-white tracking-tight">
+            Documentos
+          </h1>
+<p class="text-xs text-slate-400 font-body mt-0.5 leading-snug">
+            Tu validación la revisa el equipo de Cold Day.
+          </p>
+</div>
+<!-- Compact Summary Pill -->
+<div class="flex-shrink-0 mt-0.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#111b2e] border border-[#1e293b] text-slate-300" aria-live="polite" aria-atomic="true">
+<span class="w-2 h-2 rounded-full bg-[#f59e0b]" aria-hidden="true"></span>
+<span class="font-mono cd-micro font-bold text-slate-200 tnum">2/3</span>
+<span class="cd-micro text-slate-400 font-medium">validados</span>
+</div>
+</div>
+</div>
+<!-- Main Content Container (16px screen margins) -->
+<main class="flex-1 px-4 py-4 flex flex-col gap-3.5">
+<!-- Category context subhead -->
+<div class="flex items-center justify-between gap-2 px-1">
+<span class="cd-overline flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#a78bfa]" aria-hidden="true"></span>
+          Legal &amp; impositivo
+        </span>
+<span class="cd-micro text-slate-400 font-body whitespace-nowrap">Revisión en 48 h</span>
+</div>
+<!-- DOCUMENT CARDS LIST -->
+<section class="flex flex-col gap-3.5" aria-label="Documentos legales e impositivos">
+<!-- Row 1: RUT / NIT (APROBADO) -->
+<article class="bg-[#111b2e] rounded-xl border border-[#1e293b] p-3.5 flex flex-col gap-2.5 transition-all">
+<div class="flex items-start justify-between gap-3">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="cd-overline px-1.5 py-0.5 rounded cd-micro bg-[#a78bfa]/15 text-[#a78bfa] border border-[#a78bfa]/20">RUT / NIT</span>
+<span class="font-mono cd-micro text-slate-400">PDF · 1.4 MB</span>
+</div>
+<h2 class="font-headline font-bold text-[15px] text-slate-100 mt-1 truncate">
+              Constancia de NIT / RUT
+            </h2>
+<p class="font-mono cd-micro text-slate-400 truncate mt-0.5">
+              nit_proveedor_dian_2024.pdf
+            </p>
+</div>
+<!-- Ghost Action: Ver -->
+<button aria-label="Ver Constancia de NIT" class="touch-target h-11 w-11 flex items-center justify-center rounded-lg bg-slate-800/60 border border-[#1e293b] text-slate-300 hover:text-cyan-400 hover:border-cyan-500/40 active:scale-95 transition-all flex-shrink-0" type="button">
+<svg class="ico ico--18" aria-hidden="true"><use href="#i-eye"/></svg>
+</button>
+</div>
+<div class="flex items-center justify-between gap-2 pt-2 border-t border-[#1e293b]/70">
+<span class="cd-micro text-slate-400 flex items-center gap-1">
+<svg class="ico ico--14 text-slate-400" aria-hidden="true"><use href="#i-calendar"/></svg>
+            Subido el 14 Oct 2024
+          </span>
+<!-- Status Chip: APROBADO -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[#22c55e]">
+<svg class="ico ico--14" aria-hidden="true"><use href="#i-check-circle"/></svg>
+<span class="cd-overline cd-micro">Aprobado</span>
+</span>
+</div>
+</article>
+<!-- Row 2: Cámara de Comercio / Estatuto (PENDIENTE) -->
+<article class="bg-[#111b2e] rounded-xl border border-[#1e293b] p-3.5 flex flex-col gap-2.5 transition-all">
+<div class="flex items-start justify-between gap-3">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="cd-overline px-1.5 py-0.5 rounded cd-micro bg-[#a78bfa]/15 text-[#a78bfa] border border-[#a78bfa]/20">SOCIETARIO</span>
+<span class="font-mono cd-micro text-slate-400">PDF · 3.8 MB</span>
+</div>
+<h2 class="font-headline font-bold text-[15px] text-slate-100 mt-1 truncate">
+              Cámara de comercio / Estatuto
+            </h2>
+<p class="font-mono cd-micro text-slate-400 truncate mt-0.5">
+              estatuto_social_cert_vigente.pdf
+            </p>
+</div>
+<!-- Ghost Action: Ver -->
+<button aria-label="Ver Cámara de comercio" class="touch-target h-11 w-11 flex items-center justify-center rounded-lg bg-slate-800/60 border border-[#1e293b] text-slate-300 hover:text-cyan-400 hover:border-cyan-500/40 active:scale-95 transition-all flex-shrink-0" type="button">
+<svg class="ico ico--18" aria-hidden="true"><use href="#i-eye"/></svg>
+</button>
+</div>
+<div class="flex items-center justify-between gap-2 pt-2 border-t border-[#1e293b]/70">
+<span class="cd-micro text-slate-400 flex items-center gap-1">
+<svg class="ico ico--14 text-slate-400" aria-hidden="true"><use href="#i-calendar"/></svg>
+            Subido el 18 Oct 2024
+          </span>
+<!-- Status Chip: PENDIENTE -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[#f59e0b]">
+<svg class="ico ico--14" aria-hidden="true"><use href="#i-clock"/></svg>
+<span class="cd-overline cd-micro">Pendiente</span>
+</span>
+</div>
+</article>
+<!-- Row 3: Certificación bancaria (RECHAZADO) -->
+<article class="bg-[#111b2e] rounded-xl border border-red-500/30 p-3.5 flex flex-col gap-2.5 transition-all">
+<div class="flex items-start justify-between gap-3">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="cd-overline px-1.5 py-0.5 rounded cd-micro bg-[#a78bfa]/15 text-[#a78bfa] border border-[#a78bfa]/20">FINANZAS</span>
+<span class="font-mono cd-micro text-slate-400">PDF · 820 KB</span>
+</div>
+<h2 class="font-headline font-bold text-[15px] text-slate-100 mt-1 truncate">
+              Certificación bancaria (Cuenta bancaria)
+            </h2>
+<p class="font-mono cd-micro text-slate-400 truncate mt-0.5">
+              extracto_banco_sep.pdf
+            </p>
+</div>
+<!-- Ghost Action: Ver -->
+<button aria-label="Ver Certificación bancaria" class="touch-target h-11 w-11 flex items-center justify-center rounded-lg bg-slate-800/60 border border-[#1e293b] text-slate-300 hover:text-cyan-400 hover:border-cyan-500/40 active:scale-95 transition-all flex-shrink-0" type="button">
+<svg class="ico ico--18" aria-hidden="true"><use href="#i-eye"/></svg>
+</button>
+</div>
+<div class="flex items-center justify-between gap-2 pt-2 border-t border-[#1e293b]/70">
+<span class="cd-micro text-slate-400 flex items-center gap-1">
+<svg class="ico ico--14 text-slate-400" aria-hidden="true"><use href="#i-calendar"/></svg>
+            Subido el 10 Oct 2024
+          </span>
+<!-- Status Chip: RECHAZADO -->
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-[#f87171]">
+<svg class="ico ico--14" aria-hidden="true"><use href="#i-x-circle"/></svg>
+<span class="cd-overline cd-micro">Rechazado</span>
+</span>
+</div>
+<!-- Danger inline callout block -->
+<div class="mt-1 bg-red-500/10 border border-red-500/30 rounded-lg p-2.5 flex items-start gap-2.5">
+<svg class="ico ico--18 text-[#f87171] mt-0.5 flex-shrink-0" aria-hidden="true"><use href="#i-alert"/></svg>
+<div class="flex-1 leading-relaxed">
+<p class="font-medium cd-micro text-red-300">
+              El documento está vencido. Sube una versión vigente.
+            </p>
+<p class="text-[12px] text-red-400/80 mt-0.5">
+              La fecha de emisión no debe superar los 30 días corridos.
+            </p>
+</div>
+</div>
+</article>
+</section>
+<!-- Primary Action Section -->
+<section class="mt-auto pt-3 flex flex-col gap-2.5">
+<p class="text-slate-400 text-xs text-center font-body">
+          La validación puede demorar hasta 48 horas.
+        </p>
+<!-- Primary CTA -->
+<button class="w-full min-h-[52px] h-12 rounded-xl bg-[#22d3ee] text-[#0b1220] font-headline font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-[#38e1fa] active:scale-[0.98] transition-all touch-target" type="button">
+<svg class="ico ico--20" aria-hidden="true"><use href="#i-upload"/></svg>
+<span>Subir documento</span>
+</button>
+<p class="cd-micro text-slate-400 text-center font-mono">
+          Formatos válidos: PDF, JPG o PNG hasta 10 MB
+        </p>
+</section>
+</main>
+<!-- Bottom Tab Bar (Supplier Navigation: Solicitudes | Documentos | Perfil) -->
+<nav aria-label="Navegación principal" class="fixed inset-x-0 bottom-0 mx-auto w-full max-w-[390px] z-50 flex justify-around items-center px-4 py-2 pb-safe bg-[#111b2e] border-t border-[#1e293b]">
+<!-- Tab 1: Solicitudes (Inactive) -->
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-cyan-400 py-1 touch-target transition-colors duration-150 active:scale-95 group" href="#solicitudes">
+<svg class="ico ico--22" aria-hidden="true"><use href="#i-box"/></svg>
+<span class="cd-micro uppercase tracking-wider mt-1">Solicitudes</span>
+</a>
+<!-- Tab 2: Documentos (Active) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-[#22d3ee] font-semibold py-1 touch-target active:scale-95 transition-transform" href="#documentos">
+<svg class="ico ico--22" aria-hidden="true"><use href="#i-shield-check"/></svg>
+<span class="cd-micro uppercase tracking-wider mt-1 font-bold">Documentos</span>
+</a>
+<!-- Tab 3: Perfil (Inactive) -->
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-cyan-400 py-1 touch-target transition-colors duration-150 active:scale-95 group" href="#perfil">
+<svg class="ico ico--22" aria-hidden="true"><use href="#i-store"/></svg>
+<span class="cd-micro uppercase tracking-wider mt-1">Perfil</span>
+</a>
+</nav>
+</div>
+
+
+</body></html>

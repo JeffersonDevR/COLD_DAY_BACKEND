@@ -1,0 +1,155 @@
+/* ============================================================
+   Cold Day · capa de tokens + accesibilidad  —  Ola 0
+   Aditiva: convive con Tailwind. Lo crítico no depende del CDN.
+   ============================================================ */
+
+:root {
+  /* superficies */
+  --cd-canvas: #0b1220;
+  --cd-surface: #111b2e;
+  --cd-surface-2: #16223b;
+  --cd-line: #1e293b;
+  --cd-line-strong: #334155;
+
+  /* roles semánticos de color — un rol, un significado */
+  --cd-action: #22d3ee;
+  --cd-action-hover: #06b6d4;
+  --cd-success: #22c55e;
+  --cd-warn: #f59e0b;
+  --cd-parts: #a78bfa;
+  --cd-danger: #f87171;
+
+  /* texto: 4 pasos, todos AA sobre canvas y surface */
+  --cd-text-1: #f8fafc; /* 17.9 / 16.5 */
+  --cd-text-2: #e2e8f0; /* 15.2 / 14.0 */
+  --cd-text-3: #cbd5e1; /* 12.6 / 11.6 */
+  --cd-text-4: #94a3b8; /*  7.3 /  6.7  — mínimo permitido */
+  /* prohibidos en texto: #64748b (3.6) y #475569 (2.3) */
+
+  --cd-font-head: "Space Grotesk", system-ui, sans-serif;
+  --cd-font-body: "Inter", system-ui, sans-serif;
+  --cd-font-mono: "Space Mono", ui-monospace, monospace;
+
+  --cd-radius: 16px;
+  --cd-radius-sm: 12px;
+}
+
+/* Pintado base: si el CDN de Tailwind no llega, la pantalla
+   degrada a algo legible en vez de quedar en blanco. */
+html {
+  background: var(--cd-canvas);
+  color-scheme: dark;
+}
+body {
+  background: var(--cd-canvas);
+  color: var(--cd-text-2);
+  font-family: var(--cd-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Selección de texto con la paleta del producto (no la del navegador) */
+::selection {
+  background: rgb(34 211 238 / 0.22);
+  color: var(--cd-text-1);
+}
+
+/* ---------- Foco visible, garantizado ---------- */
+/* !important a propósito: hay marcado heredado con focus:outline-none
+   que gana por especificidad y dejaría el foco invisible. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible,
+.focus-ring:focus-visible {
+  outline: 2px solid var(--cd-action) !important;
+  outline-offset: 2px;
+}
+
+/* ---------- Iconos: SVG con currentColor ---------- */
+.ico {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+  color: inherit;
+}
+.ico--14 { width: 14px; height: 14px; }
+.ico--16 { width: 16px; height: 16px; }
+.ico--18 { width: 18px; height: 18px; }
+.ico--20 { width: 20px; height: 20px; }
+.ico--22 { width: 22px; height: 22px; }
+.ico--24 { width: 24px; height: 24px; }
+
+/* ---------- Tipografía ---------- */
+/* Piso de 12px: por debajo no hay densidad, hay ruido. */
+.cd-micro {
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.cd-overline {
+  font-family: var(--cd-font-body);
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-text-4);
+}
+/* Cifras alineadas en columna: montos, contadores, horarios */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------- Carrusel horizontal con señal de continuidad ---------- */
+.cd-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  mask-image: linear-gradient(to right, #000 0, #000 92%, transparent 100%);
+}
+.cd-scroll-x::-webkit-scrollbar { display: none; }
+.cd-scroll-x > * { scroll-snap-align: start; }
+
+/* ---------- Chip / filtro ---------- */
+/* Estado en aria-pressed, no en una clase que el JS tenga que reescribir. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--cd-line);
+  background: var(--cd-surface);
+  color: var(--cd-text-4);
+  font: 600 12px/1 var(--cd-font-body);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.chip:hover { color: var(--cd-text-2); }
+.chip[aria-pressed="true"] {
+  color: var(--cd-action);
+  border-color: rgb(34 211 238 / 0.5);
+  background: rgb(34 211 238 / 0.12);
+  font-weight: 700;
+}
+
+/* ---------- Movimiento: un solo indicador "live" ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
