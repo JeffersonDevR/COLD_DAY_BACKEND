@@ -77,7 +77,7 @@ The mechanism a generic marketplace listing cannot copy: **the work order is the
 2. **Honest states beat optimistic ones.** "Buscando técnico" means nobody has accepted yet, and the interface says exactly that. No fake progress, no invented ETA, no placeholder metric.
 3. **The technician is a user, not a resource.** Roughly half the design surface exists so a technician can work one-handed, in the sun, and still get paid correctly.
 4. **Money is never ambiguous.** Commission, parts, labor, and settlement are always broken out; an amount on screen can always be traced to its components.
-5. **One identity, several roles.** A person is not a "client account" or a "technician account"; they are one person who may hold both.
+5. **One identity, several roles.** A person is not a "client account" or a "technician account"; they are one person who may hold both. Only users who registered as technicians can self-adopt the client profile. Other profile activations are requested from the administrator and take effect only after approval; the request is explicit, traceable, and never a debug affordance.
 
 ## Accessibility & Inclusion
 
