@@ -22,6 +22,8 @@ import {
 import { ProveedorRegistroService } from '@core/service/proveedor-registro.service';
 import { ProveedoresApi } from '@core/service/proveedores-api';
 import { MobileToastService } from '../../core/toast.service';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /** C2 — Provider documents: metadata only (no upload exists in the backend). */
 @Component({
@@ -40,6 +42,8 @@ import { MobileToastService } from '../../core/toast.service';
     IonSelectOption,
     IonSpinner,
     IonToolbar,
+    SkeletonComponent,
+    EmptyStateComponent,
   ],
   templateUrl: './documentos-proveedor.page.html',
 })

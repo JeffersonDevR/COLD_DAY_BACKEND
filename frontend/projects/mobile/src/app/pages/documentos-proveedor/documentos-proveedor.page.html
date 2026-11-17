@@ -21,19 +21,15 @@
   </section>
 
   @if (cargando()) {
-    <div class="cd-cargando" data-testid="documentos-cargando">
-      <ion-spinner name="dots"></ion-spinner>
-      <p class="cd-muted">Cargando documentos…</p>
-    </div>
+    <cd-skeleton label="Cargando documentos" testId="documentos-cargando" />
   }
 
   @if (!cargando() && documentos().length === 0) {
-    <section class="cd-vacio" data-testid="documentos-vacio">
-      <h2 class="cd-vacio__titulo">Todavía no declaraste documentos</h2>
-      <p class="cd-vacio__texto">
-        Declará al menos el RUT para que un administrador pueda validar tu cuenta.
-      </p>
-    </section>
+    <cd-empty-state
+      titulo="Todavía no declaraste documentos"
+      texto="Declara al menos el RUT para que un administrador pueda validar tu cuenta."
+      testId="documentos-vacio"
+    />
   }
 
   @for (documento of documentos(); track documento.id) {
