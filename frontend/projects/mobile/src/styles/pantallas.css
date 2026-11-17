@@ -569,6 +569,7 @@ button.cd-ot .cd-ot__direccion {
   margin: 0;
   font-family: var(--cd-font-mono);
   font-size: 1.25rem;
+  line-height: 1.25;
 }
 
 .cd-acciones {
@@ -1670,6 +1671,11 @@ button.cd-ot .cd-ot__direccion {
   border-radius: var(--cd-radius-control);
 }
 
+.cd-acciones-oferta ion-select::part(text) {
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
 /* A7 - Diagnostico y presupuesto: dictamen, desglose y decision. */
 .cd-dictamen {
   margin-bottom: 0.75rem;
@@ -1998,6 +2004,7 @@ button.cd-ot .cd-ot__direccion {
 .cd-acta__nit {
   margin: 0.1rem 0 0;
   font-size: 0.75rem;
+  overflow-wrap: anywhere;
   color: var(--cd-muted);
 }
 
@@ -2029,11 +2036,19 @@ button.cd-ot .cd-ot__direccion {
 }
 
 .cd-firma__label {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  white-space: normal;
   text-transform: uppercase;
   color: var(--cd-muted);
+}
+
+.cd-firma__cabecera ion-button {
+  flex: 0 0 auto;
 }
 
 .cd-firma__lienzo {
@@ -2623,7 +2638,10 @@ ion-header:not(.cd-header) {
 .cd-form .label-text {
   font-family: 'Space Mono', monospace;
   font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
+  line-height: 1.35;
+  white-space: normal;
+  text-overflow: clip;
   text-transform: uppercase;
   color: var(--cd-muted);
 }

@@ -142,7 +142,19 @@ ion-tab-bar ion-tab-button ion-icon {
 /* Estado de presencia: en su propia línea, para que la acción de la tarjeta no
    comparta renglón con la píldora. */
 .cd-ubicacion__estado {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
   margin: 0.35rem 0 0;
+}
+
+/* Ionic md reserva 52 px para el track: a 320 px ese extra desbordaba la
+   tarjeta. El target sigue siendo el minimo de 44 px (DESIGN §2.4). */
+.cd-ot__cabecera ion-toggle {
+  flex: 0 0 44px;
+  width: 44px;
+  max-width: 44px;
+  --width: 44px;
 }
 
 /* Acción secundaria dentro de tarjeta: frase, sin el uppercase mono que Ionic
