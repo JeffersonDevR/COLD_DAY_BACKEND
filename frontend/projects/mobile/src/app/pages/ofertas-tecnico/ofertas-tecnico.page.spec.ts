@@ -102,6 +102,16 @@ describe('OfertasTecnicoPage (B1)', () => {
     expect(texto(fixture)).toContain('Expira en 42s');
   });
 
+  it('no inventa distancia cuando el backend todavía no la expone', () => {
+    const { fixture } = setup({
+      ofertasApi: {
+        getOfertasParaTecnico: vi.fn(() => of([oferta({ distanciaKm: 0 })])),
+      },
+    });
+    expect(texto(fixture)).toContain('Dentro de tu radio');
+    expect(texto(fixture)).not.toContain('A 0 km');
+  });
+
   it('acepta con 0 auxiliares por defecto y navega al panel', () => {
     const { fixture, api, navigate } = setup();
     fixture.componentInstance.aceptar(oferta());
@@ -141,6 +151,16 @@ describe('OfertasTecnicoPage (B1)', () => {
   it('muestra el estado vacío cuando no hay ofertas', () => {
     const { fixture } = setup({ ofertasApi: { getOfertasParaTecnico: vi.fn(() => of([])) } });
     expect(fixture.nativeElement.querySelector('[data-testid="radar-vacio"]')).toBeTruthy();
+  });
+
+  it('el estado vacío ofrece volver al panel', () => {
+    const { fixture, navigate } = setup({
+      ofertasApi: { getOfertasParaTecnico: vi.fn(() => of([])) },
+    });
+    const cta = fixture.nativeElement.querySelector('[data-testid="radar-ir-panel"]') as HTMLButtonElement;
+    expect(cta).toBeTruthy();
+    cta.click();
+    expect(navigate).toHaveBeenCalledWith(['/tecnico/ots']);
   });
 
   it('muestra error con reintentar', () => {
