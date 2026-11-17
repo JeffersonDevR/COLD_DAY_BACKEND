@@ -10,10 +10,7 @@
 
 <ion-content class="ion-padding">
   @if (cargando()) {
-    <div class="cd-cargando" data-testid="solicitudes-cargando">
-      <ion-spinner name="dots"></ion-spinner>
-      <p class="cd-muted">Cargando solicitudes…</p>
-    </div>
+    <cd-skeleton label="Cargando solicitudes" testId="solicitudes-cargando" />
   }
 
   @if (validacionBloquea()) {
@@ -26,23 +23,21 @@
   }
 
   @if (errorCarga() && !validacionBloquea()) {
-    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="solicitudes-error">
-      <h2 class="cd-alerta__titulo">No pudimos cargar las solicitudes</h2>
-      <p class="cd-alerta__texto">Revisá tu conexión e intentá de nuevo.</p>
-      <ion-button class="cd-cta" (click)="cargar()" data-testid="solicitudes-reintentar">
-        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
-        Reintentar
-      </ion-button>
-    </section>
+    <cd-error-alert
+      titulo="No pudimos cargar las solicitudes"
+      texto="Revisa tu conexión e intenta de nuevo."
+      testId="solicitudes-error"
+      accionTestId="solicitudes-reintentar"
+      (reintentar)="cargar()"
+    />
   }
 
   @if (!cargando() && !errorCarga() && ofertas().length === 0) {
-    <section class="cd-vacio" data-testid="solicitudes-vacio">
-      <h2 class="cd-vacio__titulo">No tenés solicitudes</h2>
-      <p class="cd-vacio__texto">
-        Cuando un técnico pida repuestos cerca de tu zona, la solicitud aparece acá.
-      </p>
-    </section>
+    <cd-empty-state
+      titulo="No tienes solicitudes"
+      texto="Cuando un técnico pida repuestos cerca de tu zona, la solicitud aparece acá."
+      testId="solicitudes-vacio"
+    />
   }
 
   @for (oferta of ofertas(); track oferta.id) {

@@ -16,12 +16,25 @@ import {
 } from '@core/models/common.models';
 import { ProveedoresApi } from '@core/service/proveedores-api';
 import { MobileToastService } from '../../core/toast.service';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /** C1 — Provider portal: insumos requests with accept/reject/deliver. */
 @Component({
   selector: 'app-solicitudes-proveedor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonButton, IonContent, IonHeader, IonIcon, IonSpinner, IonToolbar],
+  imports: [
+    IonButton,
+    IonContent,
+    IonHeader,
+    IonIcon,
+    IonSpinner,
+    IonToolbar,
+    SkeletonComponent,
+    ErrorAlertComponent,
+    EmptyStateComponent,
+  ],
   templateUrl: './solicitudes-proveedor.page.html',
 })
 export class SolicitudesProveedorPage implements OnInit {
