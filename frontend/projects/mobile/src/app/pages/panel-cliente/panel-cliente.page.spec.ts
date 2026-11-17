@@ -121,6 +121,25 @@ describe('PanelClientePage móvil', () => {
     expect(texto(fixture)).toContain('Sin código');
   });
 
+  it('cada tarjeta muestra el chip de prioridad real, con Media por defecto', () => {
+    const { fixture } = setup(
+      vi.fn(() =>
+        of([
+          ot({ id: 'alta', estado: 'EN_CAMINO', tecnicoId: 't', prioridad: 'ALTA' }),
+          ot({ id: 'sin-dato', estado: 'EN_CAMINO', tecnicoId: 't' }),
+        ]),
+      ),
+    );
+
+    const chips = Array.from(
+      fixture.nativeElement.querySelectorAll('[data-testid="prioridad-chip"]'),
+    ) as HTMLElement[];
+    expect(chips).toHaveLength(2);
+    expect(chips.map((chip) => chip.textContent?.trim())).toEqual(['Alta', 'Media']);
+    expect(chips[0].classList).toContain('cd-chip--cerrada');
+    expect(chips[1].classList).toContain('cd-chip--curso');
+  });
+
   it('los contadores resumen toda la lista y no dependen del filtro', () => {
     const { page } = setup(vi.fn(() => of(otsDeEjemplo())));
 

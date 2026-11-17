@@ -19,6 +19,7 @@ import { ClientesApi } from '@core/service/clientes-api';
 import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
@@ -50,6 +51,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    PriorityChipComponent,
   ],
   template: `
     <ion-header class="ion-no-border">
@@ -98,8 +100,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
                   <span class="cd-ot__codigo">{{ equipo.codigoOt }}</span>
                   <h2 class="cd-ot__categoria">{{ equipo.etiqueta }}</h2>
                 </div>
-                <!-- Hueco reservado para el chip de prioridad (T3). -->
-                <span class="cd-ot__prioridad" aria-hidden="true"></span>
+                <app-priority-chip
+                  class="cd-ot__prioridad"
+                  [prioridad]="equipo.prioridad ?? 'MEDIA'"
+                />
                 <span [class]="'cd-chip cd-chip--' + tono(equipo.estado)">
                   {{ etiqueta(equipo.estado) }}
                 </span>

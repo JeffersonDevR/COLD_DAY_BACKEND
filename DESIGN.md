@@ -136,11 +136,14 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 | Tab bar | `ion-tab-bar.cd-tab-bar` | ≥44 px por tab, etiqueta en frase 12 px, `aria-current` |
 | Tarjeta | `.cd-card` | padding 16; ver trampas de Ionic (§8) |
 | Píldora de estado | `.cd-chip`, `status-badge` | 12 px, tinta sobre tinte, texto siempre |
+| Chip de prioridad | `.cd-chip`, `shared/ui/priority-chip` | 12 px, tinta sobre tinte y texto siempre: `Alta` (rojo/`cerrada`), `Media` (cian/`curso`), `Baja` (verde/`ok`); valor por defecto `Media` |
 | CTA | `.cd-cta` | ≥48 px (obj. 52), frase, nunca mayúsculas |
 | Campo | `.cd-form ion-item` | etiqueta visible, ≥48 px, error con `aria-describedby` |
 | Vacío / carga / error | `shared/ui`: `empty-state`, `skeleton`, `loading`, `error-alert` | **obligatorios** en toda lista (UI-X6) |
 | Timeline | `shared/ui/service-timeline` | nodos con etiqueta |
 | Modal | `.cd-modal*` | foco atrapado, Escape cierra |
+
+**Regla de tarjeta de orden:** toda tarjeta de orden (panel de cliente y mis órdenes) debe mostrar el chip de prioridad en el hueco `.cd-ot__prioridad` de la cabecera, con el dato real del backend o `Media` cuando no venga (`?? 'MEDIA'`). El color nunca va solo: siempre lleva su etiqueta.
 
 **Pendiente de crear (ver `docs/design/TAREAS-UI.md`):** un único `<cd-page>` (header + contenido + footer) para que los 34 headers y 14 footers escritos a mano dejen de divergir; y partir `styles.css` por capas.
 

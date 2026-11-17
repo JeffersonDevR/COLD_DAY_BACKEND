@@ -37,6 +37,7 @@ import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
@@ -71,6 +72,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    PriorityChipComponent,
   ],
   template: `
     <ion-header class="cd-header">
@@ -199,8 +201,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
                     </span>
                     <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
                   </div>
-                  <!-- Hueco reservado para el chip de prioridad (T3). -->
-                  <span class="cd-ot__prioridad" aria-hidden="true"></span>
+                  <app-priority-chip
+                    class="cd-ot__prioridad"
+                    [prioridad]="ot.prioridad ?? 'MEDIA'"
+                  />
                   <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{ etiqueta(ot.estado) }}</span>
                 </div>
                 <p class="cd-ot__descripcion">{{ ot.descripcionFalla }}</p>

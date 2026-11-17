@@ -1,4 +1,4 @@
-import type { CategoriaServicio, EstadoOt, OtResponse } from '../models/common.models';
+import type { CategoriaServicio, EstadoOt, OtResponse, Prioridad } from '../models/common.models';
 
 /**
  * Un "equipo" del cliente: la categoría de servicio que ya fue intervenida,
@@ -22,6 +22,8 @@ export interface EquipoCliente {
   codigoOt: string;
   descripcionFalla: string;
   estado: EstadoOt;
+  /** Prioridad de la última OT; opcional para no romper datos heredados. */
+  prioridad?: Prioridad;
   /** Fecha de la última OT ya formateada en es-CO. */
   fecha: string;
 }
@@ -66,6 +68,7 @@ export function agruparEquipos(ots: readonly OtResponse[]): EquipoCliente[] {
         codigoOt: ultima.codigo ?? 'Sin código',
         descripcionFalla: ultima.descripcionFalla,
         estado: ultima.estado,
+        prioridad: ultima.prioridad,
         fecha: formatear(ultima.fechaCreacion),
       };
 
