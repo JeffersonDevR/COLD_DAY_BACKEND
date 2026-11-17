@@ -9,6 +9,7 @@
     "design:diff": "node scripts/design-diff.mjs",
     "ui:check": "node scripts/check-styles.mjs && node scripts/check-ui-rules.mjs && node scripts/auditar-contraste.mjs --strict",
     "contrast:check": "node scripts/auditar-contraste.mjs --strict",
+    "ui:update": "node scripts/check-ui-rules.mjs --update",
     "ui:audit": "node scripts/ui-audit.mjs",
     "gen:config": "npm run maps-key && npm run api-origin && npm run mobile-origin",
     "postinstall": "npm run gen:config",
