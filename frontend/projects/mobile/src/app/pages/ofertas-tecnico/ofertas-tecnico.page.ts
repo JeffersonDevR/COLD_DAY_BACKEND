@@ -28,6 +28,9 @@ import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { MobileToastService } from '../../core/toast.service';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /** Only a 409 proves another technician took the order first. */
 const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
@@ -47,6 +50,9 @@ const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
     IonSelectOption,
     IonSpinner,
     IonToolbar,
+    SkeletonComponent,
+    ErrorAlertComponent,
+    EmptyStateComponent,
   ],
   templateUrl: './ofertas-tecnico.page.html',
 })
@@ -161,14 +167,14 @@ export class OfertasTecnicoPage implements OnInit {
     if (!this.validacionAprobada()) {
       void this.toast.error(
         'Cuenta no habilitada',
-        'Tu documentación todavía no está aprobada: no podés tomar servicios.',
+        'Tu documentación todavía no está aprobada: no puedes tomar servicios.',
       );
       return;
     }
     if (this.bloqueadoPorLiquidacion()) {
       void this.toast.error(
         'Operación bloqueada',
-        'Debés legalizar tus liquidaciones pendientes para tomar servicios.',
+        'Debes legalizar tus liquidaciones pendientes para tomar servicios.',
       );
       return;
     }
@@ -177,7 +183,7 @@ export class OfertasTecnicoPage implements OnInit {
     if (!Number.isInteger(auxiliares) || auxiliares < 0 || auxiliares > AUXILIARES_MAX) {
       void this.toast.error(
         'Auxiliares inválidos',
-        `Indicá un número entero entre 0 y ${AUXILIARES_MAX}. Usá 0 si no necesitás ayudantes.`,
+        `Indica un número entero entre 0 y ${AUXILIARES_MAX}. Usa 0 si no necesitas ayudantes.`,
       );
       return;
     }
@@ -189,7 +195,7 @@ export class OfertasTecnicoPage implements OnInit {
         const detalle = auxiliares > 0 ? ` con ${auxiliares} auxiliar(es)` : '';
         void this.toast.success(
           '¡Servicio asignado!',
-          `Tomaste la orden ${oferta.ot.codigo || 'sin código'}${detalle}. Desplazate al domicilio.`,
+          `Tomaste la orden ${oferta.ot.codigo || 'sin código'}${detalle}. Desplázate al domicilio.`,
         );
         // B3 (ejecución) ya existe: se abre directo en la OT tomada.
         void this.router.navigate(['/tecnico/ejecucion', oferta.ot.id]);
@@ -209,6 +215,22 @@ export class OfertasTecnicoPage implements OnInit {
 
   distancia(km: number): string {
     return `${km.toLocaleString('es-CO', { maximumFractionDigits: 1 })} km`;
+  }
+
+  /**
+   * `distanciaKm` llega en 0 mientras el backend no exponga la distancia real
+   * (ver aOfertaTecnico). Mostrar "A 0 km" sería inventar una métrica: en ese
+   * caso solo se afirma el radio difundido, que sí es un dato del DTO.
+   */
+  distanciaLinea(oferta: OfertaTecnicoResponse): string {
+    const radio = `radio de ${this.distancia(oferta.radioVigenteKm)}`;
+    return oferta.distanciaKm > 0
+      ? `A ${this.distancia(oferta.distanciaKm)} · ${radio}`
+      : `Dentro de tu radio · ${radio}`;
+  }
+
+  irAPanel(): void {
+    void this.router.navigate(['/tecnico/ots']);
   }
 
   expira(segundos: number): string {

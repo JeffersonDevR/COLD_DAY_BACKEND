@@ -19,7 +19,6 @@ import {
   IonLabel,
   IonSegment,
   IonSegmentButton,
-  IonSpinner,
   IonToggle,
   IonToolbar,
 } from '@ionic/angular';
@@ -32,13 +31,16 @@ import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { EstadoOperativo, EstadoOt, OtResponse, TecnicoResponse } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
  * The backend answers 409 on `PUT /tecnicos/me/estado` when there is an active
  * order (RF-F1-05): retrying cannot work until it is finished or cancelled.
  */
 const MENSAJES_ESTADO_OPERATIVO: Record<number, string> = {
-  409: 'Tenés una orden en curso. No podés cambiar tu disponibilidad hasta finalizarla o cancelarla.',
+  409: 'Tienes una orden en curso. No puedes cambiar tu disponibilidad hasta finalizarla o cancelarla.',
 };
 
 /** B2 — Technician panel: availability, presence and active orders. */
@@ -55,9 +57,11 @@ const MENSAJES_ESTADO_OPERATIVO: Record<number, string> = {
     IonLabel,
     IonSegment,
     IonSegmentButton,
-    IonSpinner,
     IonToggle,
     IonToolbar,
+    SkeletonComponent,
+    ErrorAlertComponent,
+    EmptyStateComponent,
   ],
   templateUrl: './panel-tecnico.page.html',
 })

@@ -1,0 +1,21 @@
+{
+  "_nota": "Paleta clara PROPUESTA (el repo hoy es solo oscuro). El gate la audita para que el dia que se implemente no se cuele un par ilegible.",
+  "canvas": "#f4f7fb",
+  "surface": "#ffffff",
+  "surface-2": "#eef3fa",
+  "text-1": "#0b1220",
+  "text-2": "#1f2b3d",
+  "text-3": "#43536d",
+  "text-4": "#52627d",
+  "action": "#0b6b84",
+  "success": "#15803d",
+  "warn": "#c97d0a",
+  "success-ink": "#0f7351",
+  "warn-ink": "#8a5a00",
+  "line-strong": "#7c8ca4",
+  "on-action": "#ffffff",
+  "on-warn": "#1a1204",
+  "tint-action": 0.09,
+  "tint-success": 0.1,
+  "tint-warn": 0.12
+}

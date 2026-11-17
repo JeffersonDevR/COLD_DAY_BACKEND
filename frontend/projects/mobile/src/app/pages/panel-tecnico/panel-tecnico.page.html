@@ -1,7 +1,6 @@
 <ion-header class="cd-header">
   <ion-toolbar>
     <div class="cd-hero cd-hero--compacto">
-      <p class="cd-eyebrow">Panel técnico</p>
       <h1 class="cd-headline" data-testid="tecnico-nombre">
         {{ tecnico()?.nombre || 'Tu panel de técnico' }}
       </h1>
@@ -21,14 +20,14 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="validacion-rechazada">
       <h2 class="cd-alerta__titulo">Tu cuenta no está habilitada</h2>
       <p class="cd-alerta__texto">
-        {{ tecnico()?.motivoRechazoValidacion || 'Revisá tu documentación desde la web para volver a postularte.' }}
+        {{ tecnico()?.motivoRechazoValidacion || 'Revisa tu documentación desde la web para volver a postularte.' }}
       </p>
     </section>
   } @else if (tecnico() && !validacionAprobada()) {
     <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="validacion-pendiente">
       <h2 class="cd-alerta__titulo">Validación en curso</h2>
       <p class="cd-alerta__texto">
-        Cuando el equipo apruebe tus documentos vas a poder aceptar ofertas. Mientras tanto podés completar tu perfil.
+        Cuando el equipo apruebe tus documentos vas a poder aceptar ofertas. Mientras tanto puedes completar tu perfil.
       </p>
     </section>
   }
@@ -64,12 +63,14 @@
 
       @if (switchBloqueado()) {
         <p class="cd-ayuda" data-testid="switch-bloqueado">
-          Se mantiene activo mientras tenés una OT en curso.
+          Se mantiene activo mientras tienes una OT en curso.
         </p>
       }
 
       @if (radarVisible()) {
-        <span class="cd-chip cd-chip--ok" data-testid="radar-visible">Visible en el radar</span>
+        <p class="cd-ubicacion__estado">
+          <span class="cd-chip cd-chip--ok" role="status" data-testid="radar-visible">Visible en el radar</span>
+        </p>
       }
 
       @if (ubicacionMotivo(); as motivo) {
@@ -84,6 +85,7 @@
 
       <ion-button
         fill="clear"
+        class="cd-accion"
         (click)="irAPerfil()"
         data-testid="ir-perfil"
       >
@@ -101,7 +103,7 @@
         <section class="cd-alerta cd-alerta--error" role="alert" data-testid="bloqueado-liquidacion">
           <h2 class="cd-alerta__titulo">Operación bloqueada</h2>
           <p class="cd-alerta__texto">
-            Tenés liquidaciones pendientes. Regularizalas desde la web para volver a tomar servicios.
+            Tienes liquidaciones pendientes. Regularízalas desde la web para volver a tomar servicios.
           </p>
         </section>
       } @else {
@@ -120,7 +122,7 @@
             <ion-label>Fuera</ion-label>
           </ion-segment-button>
         </ion-segment>
-        <p class="cd-ayuda">Con una OT en curso no podés cambiar la disponibilidad.</p>
+        <p class="cd-ayuda">Con una OT en curso no puedes cambiar la disponibilidad.</p>
       }
     </ion-card-content>
   </ion-card>
@@ -138,7 +140,7 @@
         }
       </div>
       <ion-button
-        class="cd-cta"
+        class="cd-cta cd-cta--secundaria"
         fill="outline"
         (click)="irALiquidaciones()"
         data-testid="ir-liquidaciones"
@@ -150,59 +152,56 @@
   </ion-card>
 
   <!-- OTs activas -->
-  <h2 class="cd-section__titulo">Tus órdenes activas</h2>
+  <h2 class="cd-section__titulo cd-section__titulo--bloque">Tus órdenes activas</h2>
 
   @if (cargando()) {
-    <div class="cd-cargando" data-testid="ots-cargando">
-      <ion-spinner name="dots"></ion-spinner>
-      <p class="cd-muted">Cargando tus órdenes…</p>
-    </div>
+    <cd-skeleton label="Cargando tus órdenes" testId="ots-cargando" />
   }
 
   @if (otsError()) {
-    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ots-error">
-      <h2 class="cd-alerta__titulo">No pudimos cargar tus órdenes</h2>
-      <p class="cd-alerta__texto">Revisá tu conexión e intentá de nuevo.</p>
-      <ion-button size="small" (click)="reintentarOts()" data-testid="ots-reintentar">
-        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
-        Reintentar
-      </ion-button>
-    </section>
+    <cd-error-alert
+      titulo="No pudimos cargar tus órdenes"
+      texto="Revisa tu conexión e intenta de nuevo."
+      testId="ots-error"
+      accionTestId="ots-reintentar"
+      (reintentar)="reintentarOts()"
+    />
   }
 
   @if (!cargando() && !otsError() && misOts().length === 0) {
-    <section class="cd-vacio" data-testid="ots-vacio">
-      <h2 class="cd-vacio__titulo">No tenés órdenes en curso</h2>
-      <p class="cd-vacio__texto">Cuando aceptes una oferta, la vas a ver acá con su estado y dirección.</p>
+    <cd-empty-state
+      titulo="No tienes órdenes en curso"
+      texto="Cuando aceptes una oferta, la vas a ver acá con su estado y dirección."
+      icono="clipboard-outline"
+      testId="ots-vacio"
+    >
       <ion-button class="cd-cta" (click)="irARadar()" data-testid="ir-radar">
         <ion-icon slot="start" name="radio-outline" aria-hidden="true"></ion-icon>
         Ver ofertas cercanas
       </ion-button>
-    </section>
+    </cd-empty-state>
   }
 
   @for (orden of misOts(); track orden.id) {
-    <article
+    <button
+      type="button"
       class="cd-ot"
-      role="button"
-      tabindex="0"
       [attr.data-testid]="'ot-' + orden.id"
       (click)="abrirOt(orden.id)"
-      (keydown.enter)="abrirOt(orden.id)"
     >
-      <div class="cd-ot__cabecera">
-        <div>
-          <p class="cd-ot__codigo">{{ orden.codigo || 'Orden de trabajo' }}</p>
-          <p class="cd-ot__categoria">{{ orden.categoriaServicio.replace('_', ' ') }}</p>
-        </div>
+      <span class="cd-ot__cabecera">
+        <span>
+          <span class="cd-ot__codigo">{{ orden.codigo || 'Orden de trabajo' }}</span>
+          <span class="cd-ot__categoria">{{ orden.categoriaServicio.replace('_', ' ') }}</span>
+        </span>
         <span class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}">{{ etiquetaEstado(orden.estado) }}</span>
-      </div>
-      <p class="cd-ot__descripcion">{{ orden.descripcionFalla }}</p>
-      <p class="cd-ot__direccion">
+      </span>
+      <span class="cd-ot__descripcion">{{ orden.descripcionFalla }}</span>
+      <span class="cd-ot__direccion">
         <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
         {{ orden.direccion }}
-      </p>
-      <p class="cd-ayuda">Tocá para abrir la ejecución</p>
-    </article>
+      </span>
+      <span class="cd-ayuda">Toca para abrir la ejecución</span>
+    </button>
   }
 </ion-content>

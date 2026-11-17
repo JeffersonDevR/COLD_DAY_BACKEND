@@ -1,0 +1,486 @@
+/* Shared primitives for the P0 placeholder screens. */
+.cd-headline {
+  font-family: var(--cd-font-headline);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.cd-eyebrow {
+  margin: 0 0 0.25rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+}
+
+.cd-card {
+  padding: 1.25rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+/* Cuando la tarjeta es un <ion-card> trae margin: 10px de Ionic: sumado al
+   gutter de 16 px dejaba el borde a 26 px y el contenido a 46 px (medido a
+   360 px). El gutter ya lo da ion-content; la tarjeta solo separa en vertical
+   y usa el padding de 16 px del diseño. */
+ion-card.cd-card {
+  margin: 0 0 0.75rem;
+  padding: 1rem;
+}
+
+/* ion-card-content trae su propio padding de 16 px: sumado al de la tarjeta dejaba
+   32 px por lado (a 320 px "DISPONIBILIDAD" se partía y "Disponible" se
+   recortaba). El padding lo da solo la tarjeta. */
+ion-card.cd-card > ion-card-content {
+  padding: 0;
+}
+
+/* Tarjetas que son <section>, no <ion-card> (Mi cuenta): sin margen quedaban
+   pegadas una con otra. */
+section.cd-card + section.cd-card {
+  margin-top: 0.75rem;
+}
+
+.cd-muted {
+  color: var(--cd-muted);
+}
+
+/* A1/A2 — Auth (Stitch): pantalla completa, marca centrada y formulario. */
+.cd-auth {
+  --background: var(--ion-background-color);
+}
+
+.cd-auth__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 24.375rem;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: calc(2rem + var(--cd-safe-top)) 1.25rem
+    calc(2rem + var(--cd-safe-bottom));
+}
+
+.cd-auth__brand {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.cd-logo {
+  width: 64px;
+  height: 64px;
+  padding: 12px;
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  box-shadow: 0 0 32px rgba(34, 211, 238, 0.18);
+}
+
+.cd-wordmark {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ion-text-color);
+}
+
+.cd-tagline {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--cd-muted);
+}
+
+.cd-auth__form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cd-auth__toggle {
+  justify-self: end;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ion-color-primary);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.cd-auth__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--cd-danger-soft);
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-auth__error ion-icon {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  font-size: 1rem;
+  color: var(--cd-danger);
+}
+
+.cd-auth__link {
+  margin: 0;
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--cd-muted);
+}
+
+.cd-auth__link a {
+  color: var(--ion-color-primary);
+  font-weight: 600;
+  text-decoration: none;
+  /* Enlace de acceso en pantalla táctil: el área tocable debe llegar a 44 px
+     aunque el texto mida 16 (medido en Chrome a 390/768/1280). */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 0.5rem;
+}
+
+.cd-field-error {
+  margin: 0.15rem 0 0.1rem;
+  font-size: 0.78rem;
+  color: var(--cd-danger-ink);
+}
+
+/* A2 — selector de rol: tres opciones con su explicación, estilo segmento. */
+.cd-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  padding: 0.25rem;
+  background: var(--cd-well);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-segment__opcion {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 0.3rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--cd-radius-control) - 2px);
+  color: var(--cd-muted);
+  font: inherit;
+  text-align: center;
+}
+
+.cd-segment__opcion--activa {
+  color: var(--ion-text-color);
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.45);
+}
+
+.cd-segment__titulo {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cd-segment__nota {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+/* A2 — bloque por rol (datos de cliente, perfil técnico, datos comerciales). */
+.cd-section {
+  margin: 0.25rem 0 0;
+  padding: 0.75rem 0.9rem 0.9rem;
+  background: rgba(17, 28, 46, 0.6);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-section__titulo {
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+}
+
+/* Título de bloque dentro del contenido (no es el título de pantalla). Se lee
+   como overline de 3 palabras: tinta secundaria, nunca cian; el cian queda
+   reservado a lo que se toca (UI-C2). */
+.cd-section__titulo--bloque {
+  margin: 1rem 0 0.5rem;
+  padding: 0;
+  color: var(--cd-text-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.cd-chip {
+  padding: 0.45rem 0.7rem;
+  background: transparent;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: 999px;
+  color: var(--cd-muted);
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.cd-chip--activo {
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.1);
+  border-color: var(--ion-color-primary);
+}
+
+.cd-ayuda {
+  margin: 0.35rem 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-legal {
+  --checkbox-background: transparent;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+}
+
+/* El texto legal largo desbordaba a 390 px (medido: right 636). Ionic mide el
+   label para colocarlo con left, así que sin wrap explícito la frase completa
+   se corta fuera de la pantalla. */
+.cd-legal {
+  --label-width: 100%;
+  white-space: normal;
+}
+
+.cd-legal::part(label) {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Hijos del label (incluido el <strong> de la ley): pueden romperse. */
+.cd-legal::part(label) > * {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.cd-form ion-item {
+  --background: transparent;
+  --border-color: var(--cd-surface-border);
+  --inner-padding-end: 0;
+}
+
+/* A3 — Selector de modo (B15): fila completa, con estado activo y explicación. */
+.cd-modos {
+  margin: 1rem 0;
+}
+
+.cd-modo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  margin-top: 0.5rem;
+  background: var(--cd-well);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  color: var(--ion-text-color);
+  font: inherit;
+  text-align: left;
+}
+
+.cd-modo:not(:disabled):active {
+  background: var(--cd-surface-3);
+}
+
+.cd-modo--activo {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
+}
+
+.cd-modo:disabled {
+  color: var(--cd-muted);
+  opacity: 0.65;
+}
+
+.cd-modo__nombre {
+  font-weight: 600;
+}
+
+.cd-modo__nota {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--cd-muted);
+}
+
+/* A4 — acceso inicial a los servicios más solicitados, alineado al tema móvil. */
+.cd-home-servicios {
+  margin-top: 1rem;
+  /* Sin padding lateral: el gutter lo da ion-content.ion-padding. */
+  padding: 1rem 0 0.5rem;
+}
+
+.cd-home-servicios__cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.cd-home-servicios__cabecera .cd-section__titulo {
+  margin: 0;
+  padding: 0;
+  color: var(--cd-text-1);
+  font-family: var(--cd-font-headline);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.cd-home-servicios__nota {
+  margin: 0 0 0.1rem;
+  color: var(--cd-text-4);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.cd-home-servicios__rejilla {
+  padding: 0.5rem 0 0;
+}
+
+/* Cada ion-col aporta 5 px de padding: la fila los compensa para que las
+   tarjetas queden alineadas con el gutter de 16 px del resto de la pantalla. */
+.cd-home-servicios__rejilla ion-row {
+  margin-inline: -5px;
+}
+
+.cd-home-servicio {
+  --background: var(--cd-surface);
+  --background-hover: var(--cd-surface-2);
+  --background-activated: var(--cd-surface-2);
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--cd-line);
+  --border-radius: var(--cd-radius-card);
+  --padding-start: 0.75rem;
+  --padding-end: 0.5rem;
+  --padding-top: 0.7rem;
+  --padding-bottom: 0.7rem;
+  --box-shadow: none;
+  min-height: 72px;
+  margin: 0;
+  color: var(--cd-text-2);
+  text-align: left;
+}
+
+.cd-home-servicio::part(native) {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  min-height: 72px;
+  text-align: left;
+}
+
+.cd-home-servicio > ion-icon:first-child {
+  flex: 0 0 auto;
+  color: var(--cd-action);
+  font-size: 1.35rem;
+}
+
+.cd-home-servicio__texto {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.2rem;
+  white-space: normal;
+}
+
+.cd-home-servicio__texto strong {
+  color: var(--cd-text-1);
+  /* Título de tarjeta del diseño: Space Grotesk en frase, no mono en mayúsculas
+     (ion-button lo uppercasea y "ACONDICIONADO" se partía a 360 px). */
+  font-family: var(--cd-font-headline);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-transform: none;
+  overflow-wrap: break-word;
+}
+
+/* ≤380 px la flecha le quita 20 px al título: se oculta para que
+   "Aire acondicionado" no se parta ("acondicio-nado") en 360 px. */
+@media (max-width: 380px) {
+  .cd-home-servicio__flecha {
+    display: none;
+  }
+}
+
+.cd-home-servicio__texto small {
+  color: var(--cd-text-4);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.cd-home-servicio__flecha {
+  flex: 0 0 auto;
+  color: var(--cd-text-4);
+  font-size: 1rem;
+}
+
+.cd-home-servicio:focus-visible::part(native) {
+  outline: 2px solid var(--cd-action);
+  outline-offset: 2px;
+}
+
+.cd-home-servicio:active::part(native) {
+  background: var(--cd-surface-2);
+}
+
+@media (min-width: 768px) {
+  .cd-home-servicios {
+    padding: 1.25rem 0 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-home-servicio,
+  .cd-home-servicio::part(native) {
+min-height: 84px;
+transition-duration: 0.01ms;
+}
+}
+
+/* A4/A5 — encabezado de pantalla: título y acción principal sobre el surface. */
+.cd-header ion-toolbar {
+  --min-height: 0;
+  --padding-top: calc(0.5rem + var(--cd-safe-top));
+  --padding-bottom: 0.85rem;
+  padding: 0 1rem;
+}
+
