@@ -1,0 +1,3120 @@
+/* A4 — Panel del cliente: saludo, métricas y lista de OTs. */
+.cd-hero {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cd-hero h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.cd-hero__nota {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-hero__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+.cd-cargando {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 0;
+  font-size: 0.85rem;
+}
+
+/* Panel técnico: la cola de OTs tiene forma predecible, así que se carga con
+   esqueletos con la forma de la lista en vez de un spinner genérico. Sin
+   animación: no compite con el único indicador "live" de la pantalla. */
+.cd-lista-cargando {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.cd-esqueleto {
+  height: 5.5rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-metricas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.cd-metrica {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.6rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  text-align: center;
+}
+
+.cd-metrica__valor {
+  font-family: var(--cd-font-headline);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+}
+
+.cd-metrica__rotulo {
+  font-family: var(--cd-font-label);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-filtros {
+  --background: #0e1828;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-panel__sub {
+  margin: 0.5rem 0 1rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* A4 — resumen compacto. DESIGN §4 prohíbe tres KPIs de colores como estructura
+   de página: el dato se conserva, sin tarjetas de métrica que compitan. */
+.cd-panel__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--cd-text-3);
+}
+
+.cd-panel__resumen span {
+  white-space: nowrap;
+}
+
+.cd-panel__resumen b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cd-text-1);
+}
+
+/* A4 — cuatro filtros en frase a 12 px: caben a 390 px sin recortar el primero
+   ni el último (TU-06), sin degradados decorativos. */
+.cd-filtros.cd-filtros--cliente ion-segment-button {
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: none;
+  --padding-start: 0.25rem;
+  --padding-end: 0.25rem;
+  min-width: 0;
+}
+
+.cd-filtros.cd-filtros--cliente ion-segment-button ion-label {
+  max-width: none;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-overflow: clip;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.cd-ot.cd-panel-ot .cd-ot__categoria {
+  font-size: 0.8125rem;
+}
+
+.cd-ot.cd-panel-ot .cd-ot__codigo {
+  white-space: nowrap;
+}
+
+/* El chip de estado va en su propia fila: a 320-390 px el código y la categoría
+   necesitan todo el ancho que queda después del ícono. */
+.cd-ot.cd-panel-ot .cd-panel__estado {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.25rem 0 0.5rem;
+}
+
+/* El footer fijo no debe tapar la última tarjeta al llegar al final del scroll. */
+ion-content.cd-panel-content.ion-padding {
+  --padding-bottom: calc(5.5rem + var(--cd-safe-bottom));
+}
+
+.cd-ot {
+  margin: 0 0 0.75rem;
+}
+
+/* La OT navega: es un <button> real (foco y teclado gratis), no un contenedor
+   con role/tabindex. Visualmente idéntica a la fila anterior. */
+button.cd-ot {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--cd-radius-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.cd-ot .cd-ot__codigo,
+button.cd-ot .cd-ot__categoria,
+button.cd-ot .cd-ot__descripcion,
+button.cd-ot .cd-ayuda {
+  display: block;
+}
+
+button.cd-ot .cd-ot__direccion {
+  display: flex;
+  margin-top: 0.35rem;
+}
+
+.cd-ot__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* El bloque de texto cede ancho y la píldora nunca se recorta (a 320 px
+   "Disponible" quedaba cortada). */
+.cd-ot__cabecera > :first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.cd-ot__cabecera > .cd-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.cd-ot__codigo {
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cd-muted);
+}
+
+.cd-ot__categoria {
+  margin: 0.35rem 0 0.2rem;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.cd-ot__descripcion {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--cd-muted);
+  overflow-wrap: anywhere;
+}
+
+.cd-ot__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--cd-surface-border);
+  font-size: 0.75rem;
+}
+
+.cd-ot__direccion {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+  color: var(--cd-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Chips: el estado de la OT se lee de un color, no de un icono. */
+.cd-chip--ok {
+  color: var(--cd-success-ink);
+  border-color: rgba(110, 231, 183, 0.5);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.cd-chip--curso {
+  color: var(--ion-color-primary);
+  border-color: rgba(34, 211, 238, 0.5);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.cd-chip--espera {
+  color: var(--cd-warn-ink);
+  border-color: rgba(252, 211, 77, 0.5);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.cd-chip--cerrada {
+  color: var(--cd-danger-ink);
+  border-color: rgba(252, 165, 165, 0.45);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.cd-vacio {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 2rem 1rem;
+  background: rgba(17, 28, 46, 0.6);
+  border: 1px dashed var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  text-align: center;
+}
+
+.cd-vacio ion-icon {
+  font-size: 1.8rem;
+  color: var(--cd-muted);
+}
+
+.cd-vacio__titulo {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cd-vacio__texto {
+  margin: 0 0 0.5rem;
+  max-width: 22rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+/* Aviso honesto: el fallo se explica en la pantalla, no con un toast genérico. */
+.cd-alerta {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-alerta--error {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.cd-alerta--aviso {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.cd-alerta__titulo {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cd-alerta__texto {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+/* A5 — Solicitar servicio: bloques del formulario y alta rápida del perfil. */
+.cd-solicitud__intro {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.cd-solicitud__intro h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.cd-solicitud__intro p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.cd-bloque {
+  margin: 0 0 1rem;
+  padding: 0.85rem 0.9rem 1rem;
+  background: rgba(17, 28, 46, 0.6);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-bloque__titulo {
+  padding: 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-categorias {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+}
+
+.cd-categoria {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-height: 96px;
+  padding: 0.85rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  color: var(--cd-muted);
+  font: inherit;
+  text-align: left;
+}
+
+.cd-categoria--activa {
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.08);
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12);
+}
+
+.cd-categoria__icono {
+  font-size: 1.5rem;
+}
+
+.cd-categoria__marca {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--cd-surface-border-strong);
+  border-radius: 999px;
+}
+
+.cd-categoria--activa .cd-categoria__marca {
+  background: var(--ion-color-primary);
+  border-color: var(--ion-color-primary);
+}
+
+.cd-categoria--activa .cd-categoria__marca::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  border-right: 2px solid var(--cd-action-on);
+  border-bottom: 2px solid var(--cd-action-on);
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.cd-categoria__texto {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.cd-categoria__nombre {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ion-text-color);
+  overflow-wrap: anywhere;
+}
+
+.cd-categoria__subtipo {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--cd-muted);
+  overflow-wrap: anywhere;
+}
+
+.cd-bloque__accion {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.35rem;
+}
+
+/* A5 — indicador de pasos y resumen de la revisión. */
+.cd-paso__contador {
+  padding-right: 0.35rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--cd-muted);
+}
+
+.cd-paso__pista {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0 1rem 0.6rem;
+}
+
+.cd-paso__punto {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--cd-surface-border-strong);
+}
+
+.cd-paso__punto--activo {
+  background: var(--ion-color-primary);
+}
+
+.cd-resumen {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cd-resumen__fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cd-resumen__rotulo {
+  display: block;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-resumen__valor {
+  margin: 0.15rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ion-text-color);
+  overflow-wrap: anywhere;
+}
+
+.cd-resumen__coords {
+  margin: 0.1rem 0 0;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-resumen__editar {
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 0.5rem;
+  background: none;
+  border: 0;
+  color: var(--ion-color-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cd-ubicacion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.cd-coordenadas {
+  margin: 0.25rem 0 0;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-perfil-rapido {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+
+
+/* A6 — Seguimiento de la OT: mapa, técnico, tiempo, modales. */
+.cd-hero--compacto {
+  gap: 0.15rem;
+  padding-bottom: 0.15rem;
+}
+
+.cd-ot-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cd-ot-head__codigo {
+  margin: 0;
+  font-family: var(--cd-font-mono);
+  font-size: 1.25rem;
+}
+
+.cd-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Búsqueda de técnico (sin radar): estado honesto mientras nadie acepta. */
+.cd-buscando {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.cd-buscando__cuerpo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cd-buscando__icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  color: var(--cd-warn-ink);
+  background: rgba(245, 158, 11, 0.15);
+  animation: cd-buscando-pulso 1.6s ease-in-out infinite;
+}
+
+.cd-buscando__icono ion-icon {
+  font-size: 1.35rem;
+}
+
+@keyframes cd-buscando-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-buscando__icono { animation: none; }
+}
+
+.cd-buscando__titulo {
+  margin: 0 0 0.25rem;
+  font-size: 0.98rem;
+}
+
+.cd-buscando__texto {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--cd-muted);
+}
+
+.cd-buscando__texto strong {
+  color: var(--ion-text-color);
+}
+
+/* A6 — Técnicos cercanos durante la búsqueda: mapa, lista accesible y filtros. */
+.cd-busqueda-tecnicos {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.cd-busqueda-tecnicos__cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-busqueda-tecnicos__cabecera h2 {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--cd-text-1);
+}
+
+.cd-busqueda-tecnicos__cabecera p {
+  margin: 0.1rem 0 0;
+  font-size: 0.78rem;
+  color: var(--cd-text-4);
+}
+
+.cd-filtros-tecnicos {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: none;
+}
+
+.cd-filtros-tecnicos::-webkit-scrollbar {
+  display: none;
+}
+
+.cd-filtros-tecnicos .cd-chip {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  background: var(--cd-surface);
+  border-color: var(--cd-line);
+  color: var(--cd-text-3);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.cd-tecnicos-cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 96px;
+  font-size: 0.8rem;
+  color: var(--cd-text-3);
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-tecnicos-vacio {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-tecnicos-vacio ion-icon {
+  font-size: 1.6rem;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnicos-vacio p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+}
+
+.cd-tecnicos-vacio__pista {
+  font-size: 0.75rem;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnicos-vacio__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.cd-tecnicos-lista {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+  overflow: hidden;
+}
+
+.cd-tecnicos-lista ion-item {
+  --background: var(--cd-surface);
+  --border-color: var(--cd-line);
+  --padding-start: 0.85rem;
+  --inner-padding-end: 0.85rem;
+  --min-height: 68px;
+  font-size: 0.85rem;
+}
+
+.cd-tecnicos-lista ion-item h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cd-text-1);
+}
+
+.cd-tecnicos-lista ion-item p {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnicos-lista ion-item ion-icon[slot='start'] {
+  margin-right: 0.65rem;
+  color: var(--ion-color-primary);
+  font-size: 1.5rem;
+}
+
+.cd-tecnicos-lista ion-item.cd-tecnico-item--seleccionado {
+  --background: rgba(34, 211, 238, 0.1);
+  box-shadow: inset 0 0 0 1px var(--ion-color-primary);
+}
+
+.cd-tecnico-disponible {
+  flex: 0 0 auto;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--cd-success-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cd-tecnico-seleccionado {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line-strong);
+  border-radius: var(--cd-radius-card);
+}
+
+/* Esqueleto de carga (shared/ui/skeleton): barras del tema, no Tailwind. */
+.cd-esqueleto {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  background: var(--cd-surface-2);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-sm);
+  animation: cd-esqueleto-pulso 1.6s ease-in-out infinite;
+}
+
+@keyframes cd-esqueleto-pulso {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-esqueleto {
+    animation: none;
+    opacity: 0.75;
+  }
+}
+
+/* Hoja inferior del técnico: 3 alturas, contenido sin ruido. */
+.cd-sheet {
+  --border-radius: var(--cd-radius) var(--cd-radius) 0 0;
+  --box-shadow: 0 -8px 24px rgba(2, 6, 23, 0.5);
+}
+
+.cd-sheet__contenido {
+  --background: var(--cd-surface);
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 0.9rem;
+  --padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.cd-sheet__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-sheet__titulo {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 1.1rem;
+  color: var(--cd-text-1);
+  overflow-wrap: anywhere;
+}
+
+.cd-sheet__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--cd-text-4);
+}
+
+.cd-sheet__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--cd-success-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cd-sheet__estado--ocupado {
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--cd-warn);
+}
+
+.cd-sheet__aclaracion {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+}
+
+.cd-sheet__contenido .cd-boton-superficie {
+  min-height: 44px;
+}
+
+.cd-tecnico-seleccionado > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.cd-tecnico-seleccionado strong {
+  font-size: 0.92rem;
+  color: var(--cd-text-1);
+}
+
+.cd-tecnico-seleccionado span {
+  font-size: 0.78rem;
+  color: var(--cd-text-4);
+}
+
+.cd-tecnico-seleccionado .cd-boton-superficie {
+  justify-self: start;
+  min-height: 44px;
+}
+
+.cd-tecnico-seleccionado p {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+}
+
+/* Mapa de seguimiento (WebView): bloque contenido y sus estados. */
+.cd-mapa-bloque {
+  margin-bottom: 0.75rem;
+}
+
+.cd-map__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.cd-map__titulo {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+}
+
+.cd-map__nota {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-map__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 999px;
+}
+
+.cd-map__chip--llegada {
+  color: var(--cd-success-ink);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(110, 231, 183, 0.45);
+}
+
+.cd-map__chip--seleccion {
+  min-height: 44px;
+  padding: 0.4rem 0.75rem;
+  background: var(--cd-surface-2);
+  border-color: var(--cd-line-strong);
+  color: var(--cd-text-1);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Botón flotante sobre el mapa: aparece solo cuando el usuario lo movió. */
+.cd-map__buscar-zona {
+  position: absolute;
+  left: 50%;
+  top: 0.6rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line-strong);
+  border-radius: 999px;
+  color: var(--cd-text-1);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.45);
+  cursor: pointer;
+}
+
+.cd-map__buscar-zona ion-icon {
+  color: var(--ion-color-primary);
+  font-size: 1rem;
+}
+
+.cd-map__buscar-zona:active {
+  background: var(--cd-surface-2);
+}
+
+.cd-map__buscar-zona:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
+/* Control propio de recentrado: 44 px, pulgar, sin tapar el botón de búsqueda. */
+.cd-map__centrar {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line-strong);
+  border-radius: 999px;
+  color: var(--ion-color-primary);
+  font-size: 1.15rem;
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.45);
+  cursor: pointer;
+}
+
+.cd-map__centrar:active {
+  background: var(--cd-surface-2);
+}
+
+.cd-map__centrar:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
+.cd-map__lienzo {
+  position: relative;
+  height: clamp(200px, 32dvh, 320px);
+  overflow: hidden;
+  background: var(--cd-well);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-map__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.cd-map__vacio,
+.cd-map__cargando,
+.cd-map__fallback {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.35rem;
+  height: 100%;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.cd-map__vacio ion-icon,
+.cd-map__fallback ion-icon {
+  font-size: 1.6rem;
+  color: var(--cd-muted);
+}
+
+.cd-map__vacio-titulo,
+.cd-map__fallback-titulo {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cd-map__vacio-texto {
+  margin: 0;
+  max-width: 19rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-map__resumen {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ion-text-color);
+}
+
+/* Tarjeta del técnico asignado. */
+.cd-tecnico {
+  margin-bottom: 0.75rem;
+}
+
+.cd-tecnico__fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cd-tecnico__avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 3.25rem;
+  height: 3.25rem;
+  font-family: var(--cd-font-headline);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  text-transform: uppercase;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 12px;
+}
+
+.cd-tecnico__datos {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cd-tecnico__nombre-fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cd-tecnico__nombre {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.cd-tecnico__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--cd-warn-ink);
+}
+
+.cd-tecnico__rating ion-icon {
+  font-size: 0.9rem;
+}
+
+.cd-tecnico__sin-rating {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+  border: 1px dashed var(--cd-surface-border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.cd-tecnico__rol {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-tecnico__estado {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cd-tecnico__icono {
+  font-size: 1rem;
+}
+
+.cd-tecnico__icono--ok {
+  color: var(--cd-success-strong);
+}
+
+.cd-tecnico__icono--camino {
+  color: var(--ion-color-primary);
+}
+
+.cd-tecnico__llego {
+  color: var(--cd-success-ink);
+}
+
+.cd-tecnico__camino {
+  color: var(--ion-color-primary);
+}
+
+.cd-tecnico__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.cd-boton-superficie {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+  text-decoration: none;
+  background: var(--cd-surface-3);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-boton-superficie:active {
+  background: var(--cd-surface-4);
+}
+
+/* Panel de pago de la visita (RF-F1-26). */
+.cd-pago {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.cd-pago__encabezado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.cd-pago__icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--cd-warn-ink);
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-pago__icono ion-icon {
+  font-size: 1.25rem;
+}
+
+.cd-pago__titulo {
+  margin: 0 0 0.2rem;
+  font-size: 0.92rem;
+}
+
+.cd-pago__texto {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-pago__medios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.cd-chip-pago {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+  background: transparent;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-chip-pago--activo {
+  color: var(--cd-warn-on);
+  background: var(--ion-color-secondary);
+  border-color: var(--ion-color-secondary);
+}
+
+/* Timeline del ciclo operativo (regla compartida; piel móvil). */
+.cd-timeline {
+  padding: 0.9rem;
+  margin-bottom: 0.75rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-timeline__encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.cd-timeline__titulo {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cd-timeline__nota {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-timeline__pasos {
+  display: flex;
+  gap: 0.15rem;
+  overflow-x: auto;
+  margin: 0;
+  padding: 0.25rem 0 0.35rem;
+  list-style: none;
+  scrollbar-width: none;
+}
+
+.cd-timeline__pasos::-webkit-scrollbar {
+  display: none;
+}
+
+.cd-timeline__paso {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  min-width: 4rem;
+  padding: 0.2rem 0.1rem;
+  color: var(--cd-muted);
+  text-align: center;
+}
+
+.cd-timeline__nodo {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 2px solid var(--cd-surface-border);
+  border-radius: 999px;
+  color: var(--cd-muted);
+  background: var(--cd-well);
+}
+
+.cd-timeline__nodo ion-icon {
+  font-size: 1rem;
+}
+
+.cd-timeline__etiqueta {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.cd-timeline__paso.is-completed .cd-timeline__nodo {
+  color: var(--cd-action-deep);
+  background: var(--cd-success-strong);
+  border-color: var(--cd-success-strong);
+}
+
+.cd-timeline__paso.is-completed .cd-timeline__etiqueta {
+  color: var(--cd-success-soft-3);
+}
+
+.cd-timeline__paso.is-current .cd-timeline__nodo {
+  color: var(--cd-action-deep);
+  background: var(--ion-color-primary);
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.2);
+}
+
+.cd-timeline__paso.is-current .cd-timeline__etiqueta {
+  color: var(--ion-color-primary);
+  font-weight: 700;
+}
+
+.cd-timeline__historial {
+  margin-top: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--cd-surface-border);
+}
+
+.cd-timeline__historial-toggle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+  cursor: pointer;
+}
+
+.cd-timeline__historial-lista {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cd-timeline__historial-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.5rem;
+  background: rgba(14, 24, 40, 0.6);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+  font-size: 0.75rem;
+}
+
+.cd-timeline__actor {
+  flex: 0 0 auto;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  background: var(--cd-surface-3);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: 6px;
+}
+
+.cd-timeline__historial-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-timeline__historial-fecha {
+  color: var(--cd-muted);
+  font-size: 0.75rem;
+}
+
+.cd-timeline__historial-motivo {
+  margin: 0.2rem 0 0;
+  color: var(--cd-muted);
+  line-height: 1.4;
+}
+
+/* Detalle y ficha del servicio. Título de tarjeta (DESIGN §3, UI-T3): Space
+   Grotesk en frase a 15 px. Antes era mono en mayúsculas, con tracking ancho y
+   gris apagado; competía con el dato y se leía como etiqueta. */
+.cd-card__titulo {
+  margin: 0 0 0.5rem;
+  font-family: var(--cd-font-head);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cd-text-2);
+}
+
+.cd-detalle__texto {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.cd-detalle__subtitulo {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cd-muted);
+}
+
+.cd-evidencias {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.cd-evidencia {
+  width: 8rem;
+  height: 6rem;
+  object-fit: cover;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-columnas {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cd-ficha__fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--cd-surface-border);
+}
+
+.cd-ficha__fila span {
+  color: var(--cd-muted);
+}
+
+.cd-ficha__derecha {
+  text-align: right;
+}
+
+.cd-ficha__eta {
+  color: var(--ion-color-primary);
+}
+
+.cd-ficha__garantia {
+  color: var(--cd-success-ink);
+}
+
+.cd-ficha__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.78rem;
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-nota {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--cd-warn-soft);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-nota p {
+  margin: 0;
+}
+
+.cd-nota ion-icon {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  color: var(--cd-warn-ink);
+}
+
+/* Modales de acción (cancelar / disputar). */
+.cd-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem 1rem calc(1rem + var(--cd-safe-bottom));
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(2px);
+}
+
+.cd-modal {
+  width: 100%;
+  max-width: 26rem;
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-modal__encabezado {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cd-modal__encabezado h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.cd-modal__encabezado ion-icon {
+  font-size: 1.35rem;
+}
+
+.cd-modal__encabezado--peligro {
+  color: var(--cd-danger-ink);
+}
+
+.cd-modal__encabezado--disputa {
+  color: var(--cd-parts-ink);
+}
+
+.cd-modal__texto {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--cd-muted);
+}
+
+.cd-modal__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.cd-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ion-text-color);
+  background: var(--cd-well);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+  resize: vertical;
+}
+
+.cd-textarea:focus {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 1px;
+}
+
+.cd-field-hint {
+  margin: -0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-modal__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* Pie de tarjeta OT en el panel: acceso al seguimiento. */
+.cd-ot__acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+}
+
+/* B1 — Ofertas: selector compacto y CTA en la misma fila. El select de Ionic
+   ocupaba todo el ancho y empujaba el botón a la línea siguiente. */
+.cd-oferta .cd-ot__categoria {
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.cd-acciones-oferta {
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cd-acciones-oferta ion-select {
+  flex: 0 1 9rem;
+  min-width: 7rem;
+  min-height: 48px;
+  --padding-start: 0.75rem;
+  --padding-end: 0.5rem;
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-control);
+}
+
+/* A7 - Diagnostico y presupuesto: dictamen, desglose y decision. */
+.cd-dictamen {
+  margin-bottom: 0.75rem;
+}
+
+.cd-dictamen__encabezado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.6rem;
+}
+
+.cd-dictamen__icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--cd-warn-ink);
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-dictamen__icono ion-icon {
+  font-size: 1.25rem;
+}
+
+.cd-dictamen__titulo {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.cd-dictamen__sub {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-dictamen__cuerpo {
+  padding: 0.7rem 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--ion-text-color);
+  background: var(--cd-well);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+  margin-bottom: 0.85rem;
+}
+
+.cd-desglose__titulo {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-desglose {
+  overflow: hidden;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-desglose__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--cd-well);
+  border-bottom: 1px solid var(--cd-surface-border);
+}
+
+.cd-desglose__fila--visita {
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.cd-desglose__detalle {
+  min-width: 0;
+}
+
+.cd-desglose__nombre {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.cd-desglose__nota {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--cd-muted);
+}
+
+.cd-desglose__nota--aviso {
+  color: var(--cd-warn-ink);
+}
+
+.cd-desglose__valor {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cd-desglose__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--ion-color-primary);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.cd-desglose__total strong {
+  font-family: var(--cd-font-headline);
+  font-size: 0.95rem;
+}
+
+.cd-desglose__legal {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-desglose__legal ion-icon {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+  font-size: 0.95rem;
+  color: var(--cd-warn-ink);
+}
+
+/* Decision row: reject (outline) + approve (primary CTA). */
+.cd-decision {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Reject panel: mediation reason, mirrors the web dispute split. */
+.cd-rechazo {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  padding: 0.85rem;
+  background: rgba(248, 113, 113, 0.07);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-rechazo__encabezado {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-danger-ink);
+}
+
+.cd-rechazo__encabezado ion-icon {
+  font-size: 1.05rem;
+}
+
+.cd-rechazo__texto {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--cd-muted);
+}
+
+.cd-rechazo__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cd-rechazo__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+/* Managed-budget banner: green, informational only. */
+.cd-gestionado {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--cd-success-soft);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-gestionado p {
+  margin: 0;
+}
+
+.cd-gestionado ion-icon {
+  flex: 0 0 auto;
+  font-size: 1.35rem;
+  color: var(--cd-success-bright);
+}
+
+.cd-gestionado strong {
+  color: var(--cd-success-soft-2);
+}
+
+/* Chat teaser: strictly non-interactive, no inputs nor actions. */
+.cd-proximamente {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(17, 27, 46, 0.6);
+  border: 1px dashed var(--cd-surface-border-strong);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-proximamente__avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--cd-muted);
+  background: var(--ion-background-color-step-150);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-proximamente__avatar ion-icon {
+  font-size: 1.2rem;
+}
+
+.cd-proximamente__datos {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cd-proximamente__titulo {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cd-proximamente__badge {
+  justify-self: start;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cd-parts-ink);
+  background: rgba(167, 139, 250, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  border-radius: 999px;
+}
+
+.cd-proximamente__texto {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--cd-muted);
+}
+
+.cd-volver {
+  margin: 0.25rem 0 calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* A8 - Pago y acta: documento, firma digital y liquidaci�n. */
+.cd-acta {
+  margin-bottom: 0.75rem;
+}
+
+.cd-acta__encabezado {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--cd-surface-border);
+}
+
+.cd-acta__marca {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.cd-acta__icono {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--cd-action-soft);
+  background: rgba(34, 211, 238, 0.12);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-acta__icono ion-icon {
+  font-size: 1.3rem;
+}
+
+.cd-acta__empresa {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.cd-acta__nit {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-acta__clausula {
+  padding: 0.7rem 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--ion-text-color);
+  background: var(--cd-well);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+  margin-bottom: 0.85rem;
+}
+
+.cd-acta__clausula p {
+  margin: 0 0 0.5rem;
+}
+
+.cd-acta__clausula p:last-child {
+  margin-bottom: 0;
+}
+
+.cd-firma__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.cd-firma__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-firma__lienzo {
+  position: relative;
+  overflow: hidden;
+  background: var(--cd-well);
+  border: 1px dashed var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-firma__canvas {
+  display: block;
+  width: 100%;
+  height: clamp(120px, 20dvh, 180px);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.cd-firma__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  color: rgba(226, 232, 240, 0.28);
+  pointer-events: none;
+}
+
+.cd-acta__acciones {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.cd-acta__codigo {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--cd-success-soft);
+}
+
+.cd-acta__codigo strong {
+  color: var(--cd-success-soft-2);
+  word-break: break-all;
+}
+
+.cd-acta__sin-firma {
+  margin: 0;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.cd-liquidacion {
+  margin-bottom: 0.75rem;
+}
+
+.cd-visita-linea {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--cd-well);
+  border-top: 1px solid var(--cd-surface-border);
+  border-bottom: 1px solid var(--cd-surface-border);
+}
+
+.cd-desglose__nota--ok {
+  color: var(--cd-success-soft);
+}
+
+.cd-presupuesto-nota {
+  margin-top: 0.5rem;
+}
+
+.cd-comision {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+  background: rgba(17, 28, 46, 0.6);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+}
+
+.cd-comision__fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 600;
+}
+
+.cd-comision__fila span:last-child {
+  white-space: nowrap;
+  color: var(--ion-text-color);
+}
+
+/* A9 — Calificar servicio: estrellas, aspectos y avisos de estado. */
+.cd-calificar__subtitulo {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.9rem;
+}
+
+.cd-estrellas {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.cd-estrella {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--cd-muted);
+  font-size: 1.9rem;
+  cursor: pointer;
+  transition: color 120ms ease, transform 120ms ease;
+}
+
+.cd-estrella ion-icon {
+  font-size: 1.9rem;
+}
+
+.cd-estrella--activa {
+  color: var(--cd-warn);
+}
+
+.cd-estrella:active {
+  transform: scale(0.92);
+}
+
+.cd-estrellas__valor {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--cd-muted);
+}
+
+.cd-chip--opcion {
+  cursor: pointer;
+}
+
+.cd-alerta--info {
+  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(34, 211, 238, 0.35);
+}
+
+.cd-alerta--ok {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+/* B3 — Ejecución: una línea de insumo (descripción + cantidad + quitar). */
+.cd-fila-insumo {
+  display: grid;
+  grid-template-columns: 1fr 5rem auto;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* B4 — Perfil técnico: pares dato/valor. */
+.cd-perfil-datos {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+}
+
+.cd-perfil-datos > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.82rem;
+}
+
+.cd-perfil-datos dt {
+  color: var(--cd-muted);
+}
+
+.cd-perfil-datos dd {
+  margin: 0;
+  text-align: right;
+  color: var(--ion-text-color);
+}
+
+/* A1 — chrome del login (píldora SISTEMA ACTIVO, escudo, footer cifrado). */
+.cd-auth__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--cd-safe-top);
+  margin-bottom: 0.75rem;
+}
+
+.cd-auth__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-auth__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ion-color-primary);
+  animation: cd-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cd-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.cd-auth__shield {
+  font-size: 1.1rem;
+  color: var(--cd-muted);
+}
+
+.cd-auth__ojo {
+  --padding-start: 0;
+  --padding-end: 0;
+  --min-height: 48px;
+  min-height: 48px;
+  width: 48px;
+  margin: 0 -0.4rem 0 0;
+}
+
+.cd-auth__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem 0 calc(var(--cd-safe-bottom) + 0.5rem);
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+  text-align: center;
+}
+
+/* En mono ancho la frase completa desbordaba a 390 px (medido en Chrome). */
+.cd-auth__footer > * {
+  min-width: 0;
+}
+
+.cd-auth__footer p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-auth__footer ion-icon {
+  font-size: 0.9rem;
+}
+
+.cd-auth__form.cd-card {
+  padding: 1.1rem;
+}
+
+/* A2 — barra de navegación del registro y fila de fase. */
+.cd-auth__bar--nav {
+  display: grid;
+  grid-template-columns: 2.75rem 1fr 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cd-auth__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 8px;
+  color: var(--cd-muted);
+  text-decoration: none;
+}
+
+.cd-auth__back ion-icon {
+  font-size: 1.25rem;
+}
+
+.cd-auth__bar-titulo {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  text-align: center;
+  color: var(--ion-text-color);
+}
+
+.cd-auth__ops {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.cd-auth__ops-marca {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-auth__ops-fase {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+}
+
+/* A4 — barra de identidad, tiles de OT, métrica amber y filtros tipo píldora. */
+.cd-panel__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cd-panel__identidad {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.cd-panel__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 8px;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  color: var(--ion-color-primary);
+}
+
+.cd-panel__marca {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.cd-panel__rol {
+  margin: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-metrica--aviso .cd-metrica__valor {
+  color: var(--ion-color-warning);
+}
+
+.cd-ot__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  background: var(--cd-surface-alt);
+  border: 1px solid var(--cd-surface-border);
+  color: var(--ion-color-primary);
+  flex: 0 0 auto;
+}
+
+.cd-ot__icono ion-icon {
+  font-size: 1.15rem;
+}
+
+.cd-ot__titulos {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.cd-filtros {
+  --background: transparent;
+  margin-bottom: 0.5rem;
+}
+
+.cd-filtros ion-segment-button {
+  --background: var(--cd-surface);
+  --background-checked: rgba(34, 211, 238, 0.12);
+  --color: var(--cd-muted);
+  --color-checked: var(--ion-color-primary);
+  --indicator-color: transparent;
+  --border-radius: 8px;
+  min-height: 48px;
+  margin-right: 0.3rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* A3 — Mi cuenta: identidad, aviso de modos y tarjetas de modo con ícono. */
+.cd-cuenta__identidad {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.cd-cuenta__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: linear-gradient(140deg, var(--ion-color-primary), var(--cd-line));
+  color: var(--cd-action-on);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+}
+
+.cd-cuenta__datos {
+  min-width: 0;
+}
+
+.cd-cuenta__nombre {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.05rem;
+}
+
+.cd-cuenta__rol {
+  margin: 0.15rem 0;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+}
+
+.cd-cuenta__aviso {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.cd-cuenta__aviso ion-icon {
+  color: var(--ion-color-primary);
+  font-size: 1rem;
+  margin-top: 0.15rem;
+}
+
+.cd-cuenta__aviso p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--cd-muted);
+}
+
+.cd-modo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.7rem;
+  margin-top: 0.5rem;
+  text-align: left;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  color: inherit;
+}
+
+.cd-modo--activo {
+  border-width: 2px;
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.18);
+}
+
+.cd-modo__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 8px;
+  background: var(--cd-canvas);
+  border: 1px solid var(--cd-surface-border);
+  color: var(--ion-color-primary);
+  flex: 0 0 auto;
+}
+
+.cd-modo__texto {
+  display: grid;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.cd-modo__nombre {
+  font-weight: 700;
+}
+
+.cd-modo__nota {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--cd-muted);
+}
+
+.cd-modo__pill {
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cd-action-on);
+  background: var(--ion-color-primary);
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
+}
+
+.cd-modo__pill--off {
+  background: transparent;
+  color: var(--cd-muted);
+  border: 1px solid var(--cd-surface-border);
+}
+
+/* Cierre de fidelidad: safe-area en headers planos, foco/invalid de inputs y
+   card de ubicación confirmada de A5. */
+ion-header:not(.cd-header) {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Campos con cuerpo (Stitch): fondo canvas, borde, radio 8 y altura táctil. */
+.cd-form ion-item {
+  --background: #0b1220;
+  --min-height: 48px;
+  --padding-start: 0.75rem;
+  --inner-padding-end: 0.5rem;
+  --padding-top: 0.3rem;
+  --padding-bottom: 0.3rem;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: 8px;
+  margin-bottom: 0.55rem;
+  overflow: hidden;
+}
+
+.cd-form ion-item ion-icon[slot='start'] {
+  color: var(--cd-muted);
+  font-size: 1.1rem;
+  margin-inline-end: 0.5rem;
+}
+
+.cd-form ion-input,
+.cd-form ion-select,
+.cd-form ion-textarea {
+  font-size: 0.85rem;
+}
+
+/* La superficie tocable del control debe llegar a 44 px (medido: el input
+   nativo quedaba en 41). El campo en sí sigue teniendo su altura visual. */
+.cd-form .native-input {
+  min-height: 44px;
+}
+
+.cd-form .label-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+
+.cd-form ion-item ion-button[slot='end'] {
+  margin-inline-end: -0.35rem;
+}
+
+/* Responsive: ningún control de Ionic puede forzar min-content más ancho que
+   la pantalla (grid items con min-width:auto desbordaban a 1317 px en registro). */
+ion-list,
+ion-item,
+ion-input,
+ion-textarea,
+ion-select,
+ion-card,
+ion-card-content,
+form {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cd-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.cd-auth__form > * {
+  min-width: 0;
+}
+
+/* Foto local (cámara sin envío de evidencias). */
+.cd-foto {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cd-foto__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-foto__titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cd-foto__preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--cd-surface-border);
+}
+
+.cd-foto__nota {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--cd-muted);
+}
+
+.cd-foto__input {
+  display: none;
+}
+
+/* Banner global de sin conexión (no bloquea la acción, solo informa). */
+.cd-offline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  /* Alto fijo y una sola línea: el outlet se desplaza exactamente esta altura
+     (ver ion-app:has(> .cd-offline)) para que el banner no tape el header. */
+  box-sizing: border-box;
+  height: calc(var(--cd-safe-top) + var(--cd-offline-h));
+  padding: var(--cd-safe-top) 0.75rem 0;
+  background: var(--cd-warn);
+  color: var(--cd-warn-on);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cd-offline span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Con el banner visible el outlet baja su altura y la safe-area superior ya la
+   cubre el banner: los headers no la suman de nuevo. */
+ion-app:has(> .cd-offline) {
+  --cd-offline-h: 2rem;
+}
+
+ion-app:has(> .cd-offline) > ion-router-outlet {
+  top: calc(var(--cd-safe-top) + var(--cd-offline-h));
+  --cd-safe-on: 0;
+}
+
+.cd-offline ion-icon {
+  font-size: 1rem;
+}
+
+/* A4: tres métricas y filtros deben caber en 360–390 px, nunca empujar el ancho. */
+.cd-metricas {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cd-metrica {
+  min-width: 0;
+}
+
+.cd-filtros {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.cd-filtros ion-segment-button {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+/* El CTA usa las variables de Ionic, no solo `background` en el host. */
+.cd-cta {
+  --background: var(--ion-color-primary);
+  --color: #042f2e;
+  --box-shadow: none;
+}
+
+/* A2/A3: la barra de navegación no debe comprimir el chip de estado. */
+.cd-auth__bar--nav {
+  grid-template-columns: auto 1fr auto;
+}
+
+/* A3: tarjetas de modo con contenido que puede encogerse. */
+.cd-modo {
+  min-width: 0;
+}
+
+.cd-modo__texto {
+  min-width: 0;
+}
+
+.cd-modo__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La descripción puede ocupar 2 líneas. Con nowrap la pista del grid crecía al
+   ancho del texto y la píldora ("En uso" / "No disponible") se montaba encima
+   de la frase a 360 px. */
+.cd-modo__texto {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cd-modo__nota {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.cd-modo__pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.cd-form ion-item.item-has-focus {
+  --border-color: var(--ion-color-primary);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ion-color-primary);
+}
+
+.cd-form ion-item.ion-invalid.ion-touched {
+  --border-color: var(--ion-color-danger);
+  border-radius: 8px;
+}
+
+.cd-ubicacion-confirmada {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-ubicacion-confirmada ion-icon {
+  color: var(--cd-success);
+  font-size: 1.1rem;
+  margin-top: 0.1rem;
+}
+
+.cd-ubicacion-confirmada__datos {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.cd-ubicacion-confirmada__titulo {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.cd-ubicacion-confirmada__texto {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.cd-ubicacion-confirmada__coords {
+  margin: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+/* ==========================================================================
+   Robustez de layout (revision del APK): nada se sale de la pantalla.
+   Un boton con texto largo, un monto grande o un codigo de OT no deben
+   empujar el ancho del contenedor. Las reglas van al final a proposito:
+   misma especificidad, gana la ultima.
+   ========================================================================== */
+
+/* 1. Filas de acciones: envuelven en vez de desbordar. */
+.cd-ot__acciones {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cd-ot__acciones > * {
+  min-width: 0;
+}
+
+/* 2. Ionic pinta el texto del boton con nowrap dentro del shadow DOM: sin esto
+   un CTA largo ("Confirmar llegada al domicilio") se sale del ancho. */
+.cd-cta::part(native),
+.cd-ot__acciones ion-button::part(native) {
+  white-space: normal;
+  height: auto;
+  min-height: 44px;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* 3. Rejillas: 1fr tiene min-width:auto y la columna se estira con el texto. */
+.cd-segment {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cd-metricas {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cd-categorias {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cd-fila-insumo {
+  grid-template-columns: minmax(0, 1fr) 5rem auto;
+}
+
+.cd-auth__bar--nav > * {
+  min-width: 0;
+}
+
+/* 4. Texto que puede venir largo desde el backend. */
+.cd-ot__codigo,
+.cd-ot__categoria,
+.cd-ot__descripcion,
+.cd-ot__direccion,
+.cd-ot__titulos,
+.cd-metrica__valor,
+.cd-desglose__nota,
+.cd-desglose__valor,
+.cd-alerta__texto {
+  overflow-wrap: anywhere;
+}
+
+/* 5. Montos: no se parten, pero dejan encogerse a la etiqueta. */
+.cd-desglose__fila > *,
+.cd-comision__fila > *,
+.cd-desglose__total > * {
+  min-width: 0;
+}
+
+/* 6. Tab bar con etiquetas largas en 360 px. */
+.cd-tab-bar ion-tab-button {
+  min-width: 0;
+}
+
+.cd-tab-bar ion-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 7. La tarjeta nunca se sale de su contenedor. */
+.cd-ot,
+.cd-card,
+.cd-alerta,
+.cd-hero {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 8. Revision de impeccable sobre el login (detector con DOM real):
+   - "Sistema activo" media 10.4 px: piso de legibilidad de 11 px.
+   - El punto de 6x6 px pulsaba en bucle sin dato vivo detras. */
+.cd-auth__pill {
+  font-size: 0.75rem;
+}
+
+.cd-auth__dot {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-auth__dot {
+    animation: none;
+  }
+}
+
+/* 9. Navegacion y bloques reportados en el APK (vista del tecnico).
+
+   Tab bar: con mono + mayusculas + letter-spacing 0.12em, "LIQUIDACIONES"
+   medía ~94 px en un hueco de ~90 px (4 tabs en 360 px): el texto se salía del
+   tab y la barra parecía enorme. Sentence case en la tipografia de texto,
+   11.5 px, y alto/icono en la medida Material (56 px, 20 px). */
+ion-tab-bar.cd-tab-bar {
+  /* auto + min-height: sumar el safe-area al height Y al padding lo contaria dos
+     veces y dejaria la barra de ~80 px. */
+  height: auto;
+  min-height: 56px;
+  padding-bottom: var(--cd-safe-bottom);
+}
+
+/* Gutter de pantalla. Las 17 páginas usan `<ion-content class="ion-padding">`,
+   pero el build móvil no incluye css/padding.css de Ionic, así que el contenido
+   quedaba pegado a los bordes (medido a 360 px: hero y métricas en x=0). Se
+   define aquí con el gutter de 16 px del diseño. */
+ion-content.ion-padding {
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 1rem;
+  --padding-bottom: 1rem;
+}
+
+/* Marco fluido: en teléfonos (≤430 px) ocupa todo el ancho; en pantallas más
+   anchas (tablet, escritorio) la app queda centrada con tope de 430 px. */
+@media (min-width: 431px) {
+  ion-app {
+    max-width: var(--cd-shell-max);
+    margin-inline: auto;
+    border-inline: 1px solid var(--cd-line);
+  }
+}
+
+/* Teléfonos estrechos (≤360 px): paddings y títulos algo más compactos, sin
+   bajar del piso de 12 px del diseño. */
+@media (max-width: 360px) {
+  /* Mi cuenta: la píldora ("No disponible") pasa a su propia fila en vez de
+     recortar el nombre del modo. */
+  .cd-modo {
+    flex-wrap: wrap;
+  }
+
+  .cd-modo__texto {
+    flex: 1 1 8rem;
+  }
+
+  .cd-modo__pill {
+    margin-left: auto;
+  }
+
+  .cd-header ion-toolbar {
+    padding: 0 0.75rem;
+  }
+
+  .cd-hero h1 {
+    font-size: 1.2rem;
+  }
+
+  .cd-auth__inner {
+    padding-inline: 1rem;
+  }
+}
+
+ion-tab-bar ion-tab-button ion-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+ion-tab-bar ion-tab-button ion-label {
+  margin: 1px 0 2px;
+  font-family: var(--cd-font-body, inherit);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+ion-tab-bar ion-tab-button.tab-selected ion-label {
+  font-weight: 600;
+}
+
+/* Disponibilidad: Ionic reserva un minimo por boton con etiqueta y las tres
+   opciones no caben en la tarjeta a 360 px. Se deja encoger y el texto se
+   mantiene en una linea legible. */
+.cd-card ion-segment {
+  --background: transparent;
+  width: 100%;
+}
+
+.cd-card ion-segment-button {
+  min-width: 0;
+  --padding-start: 0.15rem;
+  --padding-end: 0.15rem;
+}
+
+.cd-card ion-segment-button ion-label {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* Cerrar sesion: a ancho completo cruzaba toda la pantalla; se limita y centra. */
+.cd-salir {
+  max-width: 18rem;
+  margin-inline: auto;
+}
+
+/* ==========================================================================
+   Accesibilidad (auditoria a11y, severidad media).
+   ========================================================================== */
+
+/* 1. Zona táctil mínima de 44 px (WCAG 2.5.8) en las acciones de pulgar que
+   quedaban por debajo: chips de opción, medios de pago y el enlace de llamada.
+   `a.` limita la regla a la acción de llamar, no a los botones de superficie. */
+.cd-chip--opcion,
+.cd-chip-pago,
+a.cd-boton-superficie {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+ion-toggle,
+ion-back-button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Acciones estándar; los `size="small"` de las listas crecen por dentro para no
+   romper el alto de la fila. */
+ion-button:not([size='small']) {
+  min-height: 44px;
+}
+
+ion-button[size='small']::part(native) {
+  min-height: 44px;
+}
+
+/* 2. Foco visible en shadow parts (WCAG 2.4.7): Ionic pinta el control real en
+   `::part(native)`, asi que el anillo del host no alcanza. La regla global de
+   arriba se conserva. */
+.cd-cta:focus-within::part(native),
+.cd-ot__acciones ion-button:focus-within::part(native),
+ion-back-button:focus-within::part(native) {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+

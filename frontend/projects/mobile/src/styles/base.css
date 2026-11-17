@@ -1,0 +1,175 @@
+/* Focus visible (WCAG 2.4.7): one ring for every interactive element.
+   Ionic resets focus in several shadow parts, so this sits on the host. */
+a:focus-visible,
+button:focus-visible,
+ion-button:focus-visible,
+ion-item:focus-visible,
+ion-input:focus-visible,
+ion-textarea:focus-visible,
+ion-select:focus-visible,
+ion-chip:focus-visible,
+ion-segment-button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+  border-radius: var(--cd-radius-control);
+}
+
+/* Type floor: functional microcopy never goes below 12 px. */
+
+ion-button {
+  --border-radius: var(--cd-radius-control);
+}
+
+ion-card {
+  --border-radius: var(--cd-radius-card);
+}
+
+ion-card {
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  box-shadow: none;
+}
+
+ion-tab-bar {
+  --background: var(--ion-toolbar-background);
+  --border: 1px solid var(--cd-surface-border);
+}
+
+ion-tab-bar.cd-tab-bar {
+  height: 64px;
+  min-height: 64px;
+}
+
+ion-tab-bar ion-tab-button ion-label {
+  margin-top: 3px;
+  margin-bottom: 3px;
+  font-family: var(--cd-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+ion-tab-bar ion-tab-button.tab-selected ion-label {
+  font-weight: 700;
+}
+
+ion-tab-bar ion-tab-button ion-icon {
+  font-size: 22px;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.2);
+}
+
+/* Icon sizing standard: 20 px inline, 24 px emphasis. */
+.cd-icon {
+  font-size: 20px;
+}
+
+.cd-icon--lg {
+  font-size: 24px;
+}
+
+/* Primary CTA (Stitch): 48 px, headline 700, normal case, cyan glow, no Material elevation. */
+.cd-cta {
+  --background: var(--ion-color-primary);
+  --background-hover: var(--ion-color-primary-tint);
+  --background-activated: var(--ion-color-primary-shade);
+  --color: #042f2e;
+  --border-radius: 8px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+  --min-height: 48px;
+  min-height: 48px;
+  height: 48px;
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.cd-cta.button-solid,
+.cd-cta.button-solid.ion-activated {
+  --box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+}
+
+.cd-cta:active {
+  transform: scale(0.99);
+}
+
+/* Loading state: spinner + explicit verb, never an empty button. */
+.cd-cta__loading {
+  margin-left: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Amber CTA for money actions: dark label keeps AA contrast on var(--cd-warn). */
+.cd-cta--amber {
+  --background: var(--ion-color-secondary);
+  --background-hover: var(--ion-color-secondary-tint);
+  --background-activated: var(--ion-color-secondary-shade);
+  --color: #1f1300;
+  --box-shadow: none;
+}
+
+.cd-cta--xl {
+  --border-radius: 12px;
+  border-radius: 12px;
+}
+
+/* CTA secundaria: misma altura y radio, pero outline. En una cola de trabajo la
+   acción rellena es la OT; el acceso al dinero es contexto (DESIGN §4).
+   Doble clase: `styles.css` declara `.cd-cta` dos veces (deuda TU-02) y la
+   última gana; con más especificidad la variante no depende del orden. */
+.cd-cta.cd-cta--secundaria {
+  --background: transparent;
+  --background-hover: rgba(34, 211, 238, 0.08);
+  --background-activated: rgba(34, 211, 238, 0.12);
+  --color: var(--cd-action);
+  --border-width: 1px;
+  --border-style: solid;
+  --border-color: var(--cd-line-strong);
+  --box-shadow: none;
+}
+
+/* Estado de presencia: en su propia línea, para que la acción de la tarjeta no
+   comparta renglón con la píldora. */
+.cd-ubicacion__estado {
+  margin: 0.35rem 0 0;
+}
+
+/* Acción secundaria dentro de tarjeta: frase, sin el uppercase mono que Ionic
+   aplica a ion-button (trampa §8.4). A 320 px la etiqueta no debe partirse. */
+.cd-accion {
+  --padding-start: 0;
+  --padding-end: 0;
+  --min-height: 44px;
+  text-transform: none;
+  font-family: var(--cd-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Fixed bottom CTA bar (thumb zone) shared by transactional screens. */
+.cd-footer {  background: var(--cd-surface);
+  border-top: 1px solid var(--cd-surface-border);
+}
+
+.cd-footer ion-toolbar {
+  --background: var(--cd-surface);
+  --min-height: 0;
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+  --padding-top: 0.75rem;
+  --padding-bottom: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+

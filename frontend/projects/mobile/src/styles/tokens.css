@@ -1,0 +1,195 @@
+/*
+ * COLD DAY mobile theme.
+ * Tokens come from the Stitch "COLD DAY Dark ops app" design (project
+ * 1546876662301161963). Scoped to the Ionic mobile project: the web app keeps
+ * its own Tailwind/PrimeNG theme untouched.
+ *
+ * The Ionic base/CSS is loaded from angular.json (styles) before this file.
+ * dark.always.css declares its dark palette under `:root.md` / `:root.ios`
+ * (specificity 0,2,0), which beats a plain `:root` (0,1,0) no matter what the
+ * load order is. All app overrides below are therefore scoped to
+ * `:root, :root.md, :root.ios` (same specificity; this file loads later).
+ */
+
+:root,
+:root.md,
+:root.ios {
+  /* Typography */
+  --ion-font-family: var(--cd-font-body);
+
+  /* Surfaces */
+  --ion-background-color: #0b1220;
+  --ion-background-color-rgb: 11, 18, 32;
+  --ion-text-color: #e2e8f0;
+  --ion-text-color-rgb: 226, 232, 240;
+
+  /* Tokens del sistema. Fuente única: este bloque. El resto del archivo y las
+     pantallas usan var(--cd-*), nunca un hex suelto; `scripts/check-styles.mjs`
+     lo vigila (declaración única por token y techo de hex). */
+  --cd-canvas: #0b1220;
+  --cd-surface: #111b2e;
+  --cd-surface-2: #16223b;
+  --cd-line: #1e293b;
+  --cd-line-strong: #5a6a83; /* 3,13:1 sobre surface: cumple WCAG 1.4.11 (bordes) */
+  --cd-action: #22d3ee;
+  --cd-action-hover: #06b6d4;
+  --cd-success: #22c55e;
+  --cd-success-ink: #6ee7b7;
+  --cd-warn: #f59e0b;
+  --cd-parts: #a78bfa;
+  --cd-danger: #f87171;
+  --cd-text-1: #f8fafc;
+  --cd-text-2: #e2e8f0;
+  --cd-text-3: #cbd5e1;
+  --cd-text-4: #94a3b8; /* piso de contraste: 7,3 / 6,7 */
+  --cd-font-head: "Space Grotesk", system-ui, sans-serif;
+  --cd-font-body: "Inter", system-ui, sans-serif;
+  --cd-font-mono: "Space Mono", ui-monospace, monospace;
+  --cd-font-label: "Public Sans", "Inter", sans-serif;
+  --cd-radius: 16px;
+  --cd-radius-sm: 12px;
+  --cd-radius-control: 8px;
+
+  /* Colores semánticos migrados desde literales (plan paso 1). */
+  --cd-action-deep: #04121a;
+  --cd-action-on: #042f2e;
+  --cd-action-soft: #67e8f9;
+  --cd-danger-ink: #fca5a5;
+  --cd-danger-soft: #fecaca;
+  --cd-parts-ink: #c4b5fd;
+  --cd-success-soft: #86efac;
+  --cd-success-soft-2: #bbf7d0;
+  --cd-success-soft-3: #a7f3d0;
+  --cd-success-strong: #34d399;
+  --cd-success-bright: #4ade80;
+  --cd-surface-3: #16243a;
+  --cd-surface-4: #1c2f4d;
+  --cd-surface-alt: #162238;
+  --cd-warn-ink: #fcd34d;
+  --cd-warn-on: #1a1204;
+  --cd-warn-soft: #fde68a;
+  --cd-well: #0e1828;
+
+  /* Marco móvil: fluido entre 360 y 430 px; por encima, contenido centrado. */
+  --cd-shell-max: 430px;
+  /* Safe-area unificada: un solo fallback (0) para web, WebView y notch. */
+  --cd-safe-top: calc(env(safe-area-inset-top, 0px) * var(--cd-safe-on, 1));
+  --cd-safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Alias: los nombres que ya usa el marcado de las pantallas. Apuntan al
+     token canónico, así que mover el canónico mueve todo. */
+  --cd-font-headline: var(--cd-font-head);
+  --cd-muted: var(--cd-text-4);
+  --cd-surface-border: var(--cd-line);
+  --cd-surface-border-strong: var(--cd-line-strong);
+  --cd-radius-card: var(--cd-radius-sm);
+
+  /* On-canvas steps, re-based on var(--cd-canvas) → token de paso 950 con los
+     hairlines de Stitch como anclas (step-150 var(--cd-line), step-250 --cd-line-strong). */
+  --ion-background-color-step-50: #111a29;
+  --ion-background-color-step-100: #182132;
+  --ion-background-color-step-150: #1e293b;
+  --ion-background-color-step-200: #283548;
+  --ion-background-color-step-250: #334155;
+  --ion-background-color-step-300: #414e60;
+  --ion-background-color-step-350: #4e5a6c;
+  --ion-background-color-step-400: #5c6777;
+  --ion-background-color-step-450: #6a7482;
+  --ion-background-color-step-500: #78818d;
+  --ion-background-color-step-550: #858d99;
+  --ion-background-color-step-600: #939aa4;
+  --ion-background-color-step-650: #a1a7af;
+  --ion-background-color-step-700: #aeb3bb;
+  --ion-background-color-step-750: #bcc0c6;
+  --ion-background-color-step-800: #cacdd1;
+  --ion-background-color-step-850: #d8dadc;
+  --ion-background-color-step-900: #e5e6e8;
+  --ion-background-color-step-950: #f3f3f3;
+  --ion-text-color-step-50: #d7dde6;
+  --ion-text-color-step-100: #ccd2dc;
+  --ion-text-color-step-150: #c1c8d1;
+  --ion-text-color-step-200: #b6bdc7;
+  --ion-text-color-step-250: #abb2bd;
+  --ion-text-color-step-300: #a0a7b3;
+  --ion-text-color-step-350: #959ca9;
+  --ion-text-color-step-400: #8a929e;
+  --ion-text-color-step-450: #7f8794;
+  --ion-text-color-step-500: #747c8a;
+  --ion-text-color-step-550: #697180;
+  --ion-text-color-step-600: #5e6775;
+  --ion-text-color-step-650: #535c6b;
+  --ion-text-color-step-700: #485161;
+  --ion-text-color-step-750: #3d4657;
+  --ion-text-color-step-800: #323b4d;
+  --ion-text-color-step-850: #273142;
+  --ion-text-color-step-900: #1c2638;
+  --ion-text-color-step-950: #111b2e;
+
+  /* Semantic hues: replace Ionic's traffic-light defaults. */
+  --ion-color-danger: #f87171;
+  --ion-color-danger-rgb: 248, 113, 113;
+  --ion-color-danger-contrast: #2a0a0a;
+  --ion-color-danger-contrast-rgb: 42, 10, 10;
+  --ion-color-danger-shade: #da6363;
+  --ion-color-danger-tint: #f97f7f;
+
+  --ion-color-success: #22c55e;
+  --ion-color-success-rgb: 34, 197, 94;
+  --ion-color-success-contrast: #052e16;
+  --ion-color-success-contrast-rgb: 5, 46, 22;
+  --ion-color-success-shade: #1ead53;
+  --ion-color-success-tint: #38cb6e;
+
+  --ion-color-warning: #f59e0b;
+  --ion-color-warning-rgb: 245, 158, 11;
+  --ion-color-warning-contrast: #1a1204;
+  --ion-color-warning-contrast-rgb: 26, 18, 4;
+  --ion-color-warning-shade: #d88b0a;
+  --ion-color-warning-tint: #f7a821;
+
+  --ion-color-medium: #94a3b8;
+  --ion-color-medium-rgb: 148, 163, 184;
+  --ion-color-medium-contrast: #0b1220;
+  --ion-color-medium-contrast-rgb: 11, 18, 32;
+  --ion-color-medium-shade: #828fa2;
+  --ion-color-medium-tint: #9facbf;
+
+  /* Brand */
+  --ion-color-primary: #22d3ee;
+  --ion-color-primary-rgb: 34, 211, 238;
+  --ion-color-primary-contrast: #04121a;
+  --ion-color-primary-contrast-rgb: 4, 18, 26;
+  --ion-color-primary-shade: #1ebad1;
+  --ion-color-primary-tint: #38d7f0;
+
+  --ion-color-secondary: #f59e0b;
+  --ion-color-secondary-rgb: 245, 158, 11;
+  --ion-color-secondary-contrast: #1a1204;
+  --ion-color-secondary-contrast-rgb: 26, 18, 4;
+  --ion-color-secondary-shade: #d88b0a;
+  --ion-color-secondary-tint: #f6a823;
+
+  --ion-color-tertiary: #a78bfa;
+  --ion-color-tertiary-rgb: 167, 139, 250;
+  --ion-color-tertiary-contrast: #0e0a1a;
+  --ion-color-tertiary-contrast-rgb: 14, 10, 26;
+  --ion-color-tertiary-shade: #937adc;
+  --ion-color-tertiary-tint: #b097fb;
+
+  /* Ionic component mapping */
+  --ion-toolbar-background: var(--cd-surface);
+  --ion-toolbar-color: var(--ion-text-color);
+  --ion-item-background: var(--cd-surface);
+  --ion-card-background: var(--cd-surface);
+  --ion-tab-bar-background: var(--cd-surface);
+  --ion-tab-bar-background-focused: #16243a;
+  --ion-tab-bar-color: var(--cd-muted);
+  --ion-tab-bar-color-selected: var(--ion-color-primary);
+}
+
+html,
+body {
+  background: var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+

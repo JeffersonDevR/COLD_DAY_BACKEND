@@ -18,13 +18,16 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const archivo = resolve(here, '..', 'projects', 'mobile', 'src', 'styles.css');
+const src = resolve(here, '..', 'projects', 'mobile', 'src');
+// Las capas se leen en el mismo orden en que el bundler las concatena
+// (styles.css es solo el indice con @import).
+const CAPAS = ['tokens.css', 'base.css', 'componentes.css', 'pantallas.css'];
 
 // Hex literales permitidos fuera de las declaraciones de token (deuda actual:
 // colores dentro de reglas .cd-* que todavía no usan var()). Baja, no sube.
-const TECHO_HEX = 63;
+const TECHO_HEX = 0;
 
-const css = readFileSync(archivo, 'utf8');
+const css = CAPAS.map((nombre) => readFileSync(resolve(src, 'styles', nombre), 'utf8')).join('\n');
 const lineas = css.split(/\r?\n/);
 
 const DECL = /^\s*(--[a-z0-9-]+)\s*:\s*([^;]+);/;

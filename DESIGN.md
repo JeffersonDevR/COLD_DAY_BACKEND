@@ -44,7 +44,7 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 | `--cd-surface-2` | `#16223b` | hover, fila elevada | surface-elevated (`#16243a`) |
 | (pozo) | `#0e1828` | inputs y bloques hundidos | surface-well |
 | `--cd-line` | `#1e293b` | borde por defecto | border |
-| `--cd-line-strong` | `#334155` | borde que debe verse | border-strong |
+| `--cd-line-strong` | `#5a6a83` | borde que debe verse (3,13:1 sobre surface, WCAG 1.4.11) | border-strong |
 | `--cd-text-1` | `#f8fafc` | solo títulos | text-primary |
 | `--cd-text-2` | `#e2e8f0` | texto base | text-body |
 | `--cd-text-3` | `#cbd5e1` | etiquetas, metadatos | text-label |
