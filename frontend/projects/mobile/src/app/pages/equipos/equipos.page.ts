@@ -4,7 +4,6 @@ import {
   IonButton,
   IonCard,
   IonCardContent,
-  IonContent,
   IonFooter,
   IonHeader,
   IonIcon,
@@ -19,6 +18,7 @@ import { ClientesApi } from '@core/service/clientes-api';
 import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { PageComponent } from '../../shared/ui/page/page';
 import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
@@ -34,6 +34,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
  *
  * Se diferencia de la web en que un fallo de carga se puede reintentar en vez
  * de mostrar una lista vacía que miente sobre la causa.
+ *
+ * Organización: el mismo `<cd-page>` que las otras pantallas principales; el
+ * título vive en la cabecera, el contenido arranca con el eyebrow de conteo y
+ * termina en el CTA del pie.
  */
 @Component({
   selector: 'app-mobile-equipos',
@@ -42,25 +46,25 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     IonButton,
     IonCard,
     IonCardContent,
-    IonContent,
     IonFooter,
     IonHeader,
     IonIcon,
     IonTitle,
     IonToolbar,
+    PageComponent,
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
     PriorityChipComponent,
   ],
   template: `
-    <ion-header class="ion-no-border">
-      <ion-toolbar>
-        <ion-title>Mis órdenes</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <cd-page>
+      <ion-header class="ion-no-border" cdHeader>
+        <ion-toolbar>
+          <ion-title>Mis órdenes</ion-title>
+        </ion-toolbar>
+      </ion-header>
 
-    <ion-content class="ion-padding">
       @if (cargando()) {
         <cd-skeleton label="Cargando tus equipos" testId="equipos-cargando" />
       } @else if (sinPerfilCliente()) {
@@ -129,19 +133,19 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           </ion-card>
         }
       }
-    </ion-content>
 
-    <ion-footer class="cd-footer">
-      <ion-button
-        expand="block"
-        class="cd-cta"
-        data-testid="equipos-solicitar"
-        (click)="irASolicitar()"
-      >
-        <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
-        Registrar otro equipo
-      </ion-button>
-    </ion-footer>
+      <ion-footer class="cd-footer" cdFooter>
+        <ion-button
+          expand="block"
+          class="cd-cta"
+          data-testid="equipos-solicitar"
+          (click)="irASolicitar()"
+        >
+          <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
+          Registrar otro equipo
+        </ion-button>
+      </ion-footer>
+    </cd-page>
   `,
 })
 export class MobileEquiposPage implements OnInit {

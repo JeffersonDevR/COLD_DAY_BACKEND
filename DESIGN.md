@@ -131,6 +131,7 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 
 | Componente | Clase / archivo | Regla |
 |---|---|---|
+| Contenedor de página | `cd-page`, `shared/ui/page` | shell único de las pantallas principales: `[cdHeader]`, héroe por `titulo`/`subtitulo` + `[cdHeroAcciones]`, `[cdFooter]`; `display:contents` para no romper el flex de `.ion-page` |
 | AppBar / header | `.cd-header` | sticky, ≥56 px, safe-area arriba |
 | Footer con CTA | `.cd-footer` | fijo, zona del pulgar, safe-area abajo, helper 12 px encima |
 | Tab bar | `ion-tab-bar.cd-tab-bar` | ≥44 px por tab, etiqueta en frase 12 px, `aria-current` |
@@ -143,9 +144,11 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 | Timeline | `shared/ui/service-timeline` | nodos con etiqueta |
 | Modal | `.cd-modal*` | foco atrapado, Escape cierra |
 
+**Regla de organización única:** todas las pantallas principales (panel de cliente, mis órdenes, mi cuenta) usan `cd-page` con esta jerarquía: **eyebrow → título → resumen → filtros → cards → CTA**, adaptada al contenido (UI-T5: el título de pantalla no lleva eyebrow encima; los eyebrows son de sección). Mi cuenta no tiene CTA de pie: sus acciones siguen junto a su sección, sin inventar un footer.
+
 **Regla de tarjeta de orden:** toda tarjeta de orden (panel de cliente y mis órdenes) debe mostrar el chip de prioridad en el hueco `.cd-ot__prioridad` de la cabecera, con el dato real del backend o `Media` cuando no venga (`?? 'MEDIA'`). El color nunca va solo: siempre lleva su etiqueta.
 
-**Pendiente de crear (ver `docs/design/TAREAS-UI.md`):** un único `<cd-page>` (header + contenido + footer) para que los 34 headers y 14 footers escritos a mano dejen de divergir; y partir `styles.css` por capas.
+**Ya implementado:** el `<cd-page>` (header + contenido + footer) es el shell de las tres pantallas principales, y `styles.css` carga las capas `styles/{tokens,base,componentes,pantallas}.css` (ver tabla y TAREAS-UI TU-01/TU-02).
 
 ### Estados (UI-X6)
 Toda pantalla con datos remotos implementa los 8 estados: default, hover, `focus-visible`, active, disabled (`opacity .4`), **cargando** (skeleton o spinner 20 px + "Procesando…", bloqueo de doble envío), **vacío** (una línea + una acción) y **error** (qué falló + reintentar al lado). Hoy faltan cargas en la mayoría: es deuda registrada (TU-04).
@@ -269,5 +272,5 @@ Paridad web↔móvil y qué es solo-web (admin/contable): `docs/mobile-paridad.m
 ## 13. Estado conocido (2026-11-12)
 
 - Hecho y medido con Playwright (13 pantallas × 5 anchos, sin desbordes): base global, gutter, tarjetas, fuentes ≥12 px, Mi cuenta, tarjetas de servicio, banner offline.
-- Deuda abierta con dueño en `docs/design/TAREAS-UI.md`: `<cd-page>`, partir `styles.css`, estados de carga/vacío/error, migración a tuteo, títulos mono→Grotesk, señal de scroll en filtros, teclado virtual, prueba en Android real, pantallas sin datos de seed, Public Sans, Tailwind CDN en prototipos.
+- Deuda abierta con dueño en `docs/design/TAREAS-UI.md`: estados de carga/vacío/error, migración a tuteo, títulos mono→Grotesk, señal de scroll en filtros, teclado virtual, prueba en Android real, pantallas sin datos de seed, Public Sans, Tailwind CDN en prototipos. (`<cd-page>` y el split de `styles.css` ya están hechos: TU-01/TU-02.)
 - Historial de decisiones y auditorías anteriores: `docs/design/_archivo/` y `odd/tasks/ui-dark-ops-pass.md`, `odd/tasks/ionic-stitch-fidelity.md`.

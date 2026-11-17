@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   IonButton,
-  IonContent,
   IonHeader,
   IonIcon,
   IonItem,
@@ -17,6 +16,7 @@ import { SolicitudesPerfilApi } from '@core/service/solicitudes-perfil-api';
 import { ModoApp, ORDEN_MODOS } from '../../modo/modo';
 import { ModoService } from '../../modo/modo.service';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { PageComponent } from '../../shared/ui/page/page';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 const ETIQUETA_MODO: Record<ModoApp, string> = {
@@ -36,13 +36,17 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
  * deshabilitados con la explicación, en vez de esconderse sin contexto. Según la
  * regla del backend, solo quien se registró como técnico puede adoptar un perfil
  * por su cuenta; los demás lo piden al administrador desde el formulario.
+ *
+ * Organización: el mismo `<cd-page>` de las otras pantallas principales. El
+ * título vive en la cabecera y las secciones siguen el orden
+ * identidad → modo → solicitud → cerrar sesión. No hay CTA de pie propio: las
+ * acciones siguen junto a su sección, sin inventar un footer nuevo.
  */
 @Component({
   selector: 'app-mobile-cuenta',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     IonButton,
-    IonContent,
     IonHeader,
     IonIcon,
     IonItem,
@@ -51,20 +55,22 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
     IonSelectOption,
     IonTextarea,
     IonToolbar,
+    PageComponent,
     SkeletonComponent,
     ErrorAlertComponent,
   ],
   template: `
-    <ion-header class="cd-header">
-      <ion-toolbar>
-        <div class="cd-auth__bar cd-auth__bar--nav">
-          <span aria-hidden="true"></span>
-          <h1 class="cd-auth__bar-titulo">Mi cuenta</h1>
-          <span class="cd-chip cd-chip--ok" data-testid="cuenta-verificado">Verificado</span>
-        </div>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content class="ion-padding">
+    <cd-page>
+      <ion-header class="cd-header" cdHeader>
+        <ion-toolbar>
+          <div class="cd-auth__bar cd-auth__bar--nav">
+            <span aria-hidden="true"></span>
+            <h1 class="cd-auth__bar-titulo">Mi cuenta</h1>
+            <span class="cd-chip cd-chip--ok" data-testid="cuenta-verificado">Verificado</span>
+          </div>
+        </ion-toolbar>
+      </ion-header>
+
       <section class="cd-card cd-cuenta__identidad">
         <span class="cd-cuenta__avatar" aria-hidden="true">{{ inicial() }}</span>
         <div class="cd-cuenta__datos">
@@ -213,7 +219,7 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
         <ion-icon slot="start" name="log-out-outline" aria-hidden="true"></ion-icon>
         Cerrar sesión
       </ion-button>
-    </ion-content>
+    </cd-page>
   `,
 })
 export class CuentaPage {
