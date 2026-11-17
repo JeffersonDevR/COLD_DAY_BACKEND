@@ -14,21 +14,17 @@
   </ion-refresher>
 
   @if (cargando()) {
-    <div class="cd-cargando" data-testid="liquidaciones-cargando">
-      <ion-spinner name="dots"></ion-spinner>
-      <p class="cd-muted">Cargando tus liquidaciones…</p>
-    </div>
+    <cd-skeleton label="Cargando tus liquidaciones" testId="liquidaciones-cargando" />
   }
 
   @if (fallo() && !cargando()) {
-    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="liquidaciones-error">
-      <h2 class="cd-alerta__titulo">No pudimos cargar tus liquidaciones</h2>
-      <p class="cd-alerta__texto">Revisá tu conexión y volvé a intentarlo.</p>
-      <ion-button fill="outline" size="small" (click)="reintentar()" data-testid="reintentar-liquidaciones">
-        <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
-        Reintentar
-      </ion-button>
-    </section>
+    <cd-error-alert
+      titulo="No pudimos cargar tus liquidaciones"
+      texto="Revisá tu conexión y vuelve a intentarlo."
+      testId="liquidaciones-error"
+      accionTestId="reintentar-liquidaciones"
+      (reintentar)="reintentar()"
+    />
   }
 
   @if (!cargando()) {
@@ -54,14 +50,12 @@
   }
 
   @if (!cargando() && !fallo() && liquidaciones().length === 0) {
-    <section class="cd-vacio" data-testid="liquidaciones-vacio">
-      <ion-icon name="cash-outline" aria-hidden="true"></ion-icon>
-      <h2 class="cd-vacio__titulo">Todavía no tenés liquidaciones</h2>
-      <p class="cd-vacio__texto">
-        Cada servicio finalizado que cobres en efectivo genera una liquidación con la comisión de
-        la plataforma.
-      </p>
-    </section>
+    <cd-empty-state
+      titulo="Todavía no tienes liquidaciones"
+      texto="Cada servicio finalizado que cobres en efectivo genera una liquidación con la comisión de la plataforma."
+      icono="cash-outline"
+      testId="liquidaciones-vacio"
+    />
   }
 
   @for (liq of liquidaciones(); track liq.id) {

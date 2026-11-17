@@ -6,7 +6,6 @@ import {
   IonIcon,
   IonRefresher,
   IonRefresherContent,
-  IonSpinner,
   IonToolbar,
 } from '@ionic/angular';
 import { LiquidacionResponse } from '@core/models/common.models';
@@ -14,6 +13,9 @@ import { LiquidacionApi } from '@core/service/liquidacion-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { estadoLiquidacionLabel, medioPagoLabel } from '@core/ui/labels';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
  * B5 — Liquidaciones del técnico.
@@ -36,8 +38,10 @@ import { estadoLiquidacionLabel, medioPagoLabel } from '@core/ui/labels';
     IonIcon,
     IonRefresher,
     IonRefresherContent,
-    IonSpinner,
     IonToolbar,
+    SkeletonComponent,
+    ErrorAlertComponent,
+    EmptyStateComponent,
   ],
   templateUrl: './liquidaciones-tecnico.page.html',
 })
