@@ -34,7 +34,7 @@ export const MODOS: Record<ModoApp, ModoConfig> = {
     home: '/cliente/panel',
     tabs: [
       { id: 'panel', label: 'Panel', icon: 'home-outline', iconActive: 'home' },
-      { id: 'equipos', label: 'Equipos', icon: 'cube-outline', iconActive: 'cube' },
+      { id: 'equipos', label: 'Mis órdenes', icon: 'cube-outline', iconActive: 'cube' },
       { id: 'cuenta', label: 'Cuenta', icon: 'person-outline', iconActive: 'person' },
     ],
   },

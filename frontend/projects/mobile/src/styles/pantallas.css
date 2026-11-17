@@ -83,24 +83,29 @@
   color: var(--cd-text-1);
 }
 
-/* A4 — cuatro filtros en frase a 12 px: caben a 390 px sin recortar el primero
-   ni el último (TU-06), sin degradados decorativos. */
+/* A4 — cuatro filtros en frase a 12 px. Padding real desde la escala de espacio
+   del sistema (cd-*: 8/12 px, DESIGN §2.4) para que el texto no toque el borde
+   del rectángulo; a 320 px la etiqueta se parte en vez de desbordar (TU-06). */
 .cd-filtros.cd-filtros--cliente ion-segment-button {
   flex: 0 0 auto;
-  width: max-content;
-  max-width: none;
-  --padding-start: 0.1rem;
-  --padding-end: 0.1rem;
+  width: auto;
+  max-width: 100%;
+  --padding-start: 0.75rem;
+  --padding-end: 0.75rem;
+  --padding-top: 0.5rem;
+  --padding-bottom: 0.5rem;
   min-width: 0;
 }
 
 .cd-filtros.cd-filtros--cliente ion-segment-button ion-label {
-  max-width: none;
+  max-width: 100%;
   font-size: 0.75rem;
+  line-height: 1.2;
   letter-spacing: 0;
-  text-overflow: clip;
+  text-overflow: ellipsis;
   text-transform: none;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .cd-ot.cd-panel-ot .cd-ot__categoria {
@@ -111,14 +116,6 @@
   white-space: nowrap;
 }
 
-/* El chip de estado va en su propia fila: a 320-390 px el código y la categoría
-   necesitan todo el ancho que queda después del ícono. */
-.cd-ot.cd-panel-ot .cd-panel__estado {
-  display: flex;
-  justify-content: flex-end;
-  margin: 0.25rem 0 0.5rem;
-}
-
 /* El footer fijo no debe tapar la última tarjeta al llegar al final del scroll. */
 ion-content.cd-panel-content.ion-padding {
   --padding-bottom: calc(5.5rem + var(--cd-safe-bottom));
@@ -126,6 +123,16 @@ ion-content.cd-panel-content.ion-padding {
 
 .cd-ot {
   margin: 0 0 0.75rem;
+}
+
+/* T1.3 — Las tarjetas de orden usan el mismo padding que .cd-card (DESIGN §8.2):
+   1rem en el ion-card y 0 en ion-card-content para no duplicar (trampa §8.2). */
+ion-card.cd-ot--orden {
+  padding: 1rem;
+}
+
+ion-card.cd-ot--orden > ion-card-content {
+  padding: 0;
 }
 
 /* La OT navega: es un <button> real (foco y teclado gratis), no un contenedor
@@ -172,6 +179,13 @@ button.cd-ot .cd-ot__direccion {
 .cd-ot__cabecera > .cd-chip {
   flex: 0 0 auto;
   white-space: nowrap;
+}
+
+/* T1.3 — Hueco reservado para el chip de prioridad (T3): hoy no muestra dato,
+   pero ya aparta sitio para que la cabecera no se rearm cuando llegue. */
+.cd-ot__prioridad {
+  flex: 0 0 auto;
+  min-width: 2.75rem;
 }
 
 .cd-ot__codigo {
@@ -2386,23 +2400,6 @@ animation: none;
   color: var(--ion-color-warning);
 }
 
-.cd-ot__icono {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 8px;
-  background: var(--cd-surface-alt);
-  border: 1px solid var(--cd-surface-border);
-  color: var(--ion-color-primary);
-  flex: 0 0 auto;
-}
-
-.cd-ot__icono ion-icon {
-  font-size: 1.15rem;
-}
-
 .cd-ot__titulos {
   display: grid;
   gap: 0.1rem;
@@ -2448,24 +2445,6 @@ animation: none;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ion-color-primary);
-}
-
-.cd-cuenta__aviso {
-  display: flex;
-  gap: 0.6rem;
-  align-items: flex-start;
-}
-
-.cd-cuenta__aviso ion-icon {
-  color: var(--ion-color-primary);
-  font-size: 1rem;
-  margin-top: 0.15rem;
-}
-
-.cd-cuenta__aviso p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--cd-muted);
 }
 
 .cd-modo {

@@ -18,7 +18,7 @@ const PANTALLAS: Record<string, Pantalla> = {
     description: 'Tus servicios activos, el seguimiento de cada OT y el acceso rápido a pedir ayuda.',
   },
   equipos: {
-    title: 'Equipos',
+    title: 'Mis órdenes',
     description: 'El historial de tus equipos y los servicios que les hicimos.',
   },
   radar: {

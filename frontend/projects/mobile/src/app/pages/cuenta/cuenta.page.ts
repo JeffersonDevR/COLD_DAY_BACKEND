@@ -47,14 +47,9 @@ const ETIQUETA_MODO: Record<ModoApp, string> = {
         </div>
       </section>
 
-      <section class="cd-card cd-cuenta__aviso">
-        <ion-icon name="swap-horizontal-outline" aria-hidden="true"></ion-icon>
-        <p>El mismo usuario puede actuar como cliente y como técnico; elegí con qué modo abrir la app.</p>
-      </section>
-
       <section class="cd-card cd-modos">
         <p class="cd-eyebrow">Modo de la app</p>
-        <p class="cd-muted">Elegí con qué perfil querés usar Cold Day. Podés cambiarlo cuando quieras.</p>
+        <p class="cd-muted">Elige con qué perfil quieres usar Cold Day. Puedes cambiarlo cuando quieras.</p>
 
         @for (modo of todos; track modo) {
           <button
@@ -152,11 +147,11 @@ export class CuentaPage {
   protected descripcion(modo: ModoApp): string {
     switch (modo) {
       case 'CLIENTE':
-        return 'Pedí reparaciones y seguí tus órdenes';
+        return 'Pide reparaciones y sigue tus órdenes';
       case 'TECNICO':
-        return 'Recibí ofertas y ejecutá servicios';
+        return 'Recibe ofertas y ejecuta servicios';
       case 'PROVEEDOR':
-        return 'Vendé insumos a técnicos certificados';
+        return 'Vende insumos a técnicos certificados';
     }
   }
 

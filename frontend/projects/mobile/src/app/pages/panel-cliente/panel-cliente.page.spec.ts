@@ -244,7 +244,7 @@ describe('PanelClientePage móvil', () => {
     expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
   });
 
-  it('el CTA del panel lleva a la solicitud; Historial filtra y Mis equipos navega', () => {
+  it('el CTA del panel lleva a la solicitud; Historial filtra y Mis órdenes navega', () => {
     const { fixture, navigate } = setup(vi.fn(() => of([])));
 
     (fixture.nativeElement.querySelector('[data-testid="panel-solicitar"]') as HTMLElement).click();

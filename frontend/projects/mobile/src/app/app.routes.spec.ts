@@ -121,7 +121,7 @@ describe('mobile routes', () => {
     expect(MODOS.CLIENTE.home).toBe('/cliente/panel');
     expect(MODOS.TECNICO.home).toBe('/tecnico/radar');
     expect(MODOS.PROVEEDOR.home).toBe('/proveedor/insumos');
-    expect(MODOS.CLIENTE.tabs.map((tab) => tab.label)).toEqual(['Panel', 'Equipos', 'Cuenta']);
+    expect(MODOS.CLIENTE.tabs.map((tab) => tab.label)).toEqual(['Panel', 'Mis órdenes', 'Cuenta']);
     expect(MODOS.TECNICO.tabs.map((tab) => tab.label)).toEqual(['Radar', 'Mis OTs', 'Cuenta']);
     expect(MODOS.PROVEEDOR.tabs.map((tab) => tab.label)).toEqual([
       'Insumos',

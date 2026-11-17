@@ -178,7 +178,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           (click)="irAMisEquipos()"
         >
           <ion-icon slot="start" name="cube-outline" aria-hidden="true"></ion-icon>
-          Mis equipos
+          Mis órdenes
         </ion-button>
 
         @if (serviciosFiltrados().length === 0) {
@@ -190,23 +190,18 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           />
         } @else {
           @for (ot of serviciosFiltrados(); track ot.id) {
-            <ion-card class="cd-ot cd-panel-ot" data-testid="panel-ot">
+            <ion-card class="cd-ot cd-panel-ot cd-ot--orden" data-testid="panel-ot">
               <ion-card-content>
                 <div class="cd-ot__cabecera">
-                  <span class="cd-ot__icono" aria-hidden="true">
-                    <ion-icon [name]="iconoCategoria(ot)"></ion-icon>
-                  </span>
                   <div class="cd-ot__titulos">
                     <span class="cd-ot__codigo" data-testid="panel-ot-codigo">
                       {{ ot.codigo || 'Sin código' }}
                     </span>
                     <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
                   </div>
-                </div>
-                <div class="cd-panel__estado">
-                  <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{
-                    etiqueta(ot.estado)
-                  }}</span>
+                  <!-- Hueco reservado para el chip de prioridad (T3). -->
+                  <span class="cd-ot__prioridad" aria-hidden="true"></span>
+                  <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{ etiqueta(ot.estado) }}</span>
                 </div>
                 <p class="cd-ot__descripcion">{{ ot.descripcionFalla }}</p>
                 <div class="cd-ot__pie">
@@ -310,25 +305,7 @@ export class PanelClientePage {
     return ot.categoriaServicio.replaceAll('_', ' ');
   }
 
-  /** Ícono del tile por categoría (ionicons ya registrados en main.ts). */
-  protected iconoCategoria(ot: OtResponse): string {
-    switch (ot.categoriaServicio) {
-      case 'AIRE_ACONDICIONADO':
-        return 'snow-outline';
-      case 'REFRIGERACION':
-        return 'thermometer-outline';
-      case 'LAVADORAS':
-        return 'water-outline';
-      case 'ELECTRICIDAD':
-        return 'flash-outline';
-      case 'CAMARAS_VIGILANCIA':
-        return 'videocam-outline';
-      default:
-        return 'build-outline';
-    }
-  }
-
-  /** A10 — Mis equipos. Pantalla secundaria: se llega desde el panel. */
+  /** A10 — Mis órdenes. Pantalla secundaria: se llega desde el panel. */
   protected irAMisEquipos(): void {
     void this.router.navigateByUrl('/cliente/equipos');
   }
@@ -352,7 +329,7 @@ export class PanelClientePage {
 
   /**
    * "Historial" filtra las órdenes concluidas. Antes navegaba a `/cliente/equipos`,
-   * el mismo destino que "Mis equipos" en la misma pantalla (DESIGN §4: un botón,
+   * el mismo destino que "Mis órdenes" en la misma pantalla (DESIGN §4: un botón,
    * una ruta).
    */
   protected verHistorial(): void {
