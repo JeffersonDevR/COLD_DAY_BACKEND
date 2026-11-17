@@ -286,11 +286,6 @@ section.cd-card + section.cd-card {
   overflow-wrap: anywhere;
 }
 
-.cd-form {
-  margin: 1rem 0;
-  background: transparent;
-}
-
 .cd-form ion-item {
   --background: transparent;
   --border-color: var(--cd-surface-border);
@@ -471,18 +466,14 @@ section.cd-card + section.cd-card {
   .cd-home-servicios {
     padding: 1.25rem 0 0.75rem;
   }
-
-  .cd-home-servicio,
-  .cd-home-servicio::part(native) {
-    min-height: 84px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cd-home-servicio,
   .cd-home-servicio::part(native) {
-    transition-duration: 0.01ms;
-  }
+min-height: 84px;
+transition-duration: 0.01ms;
+}
 }
 
 /* A4/A5 — encabezado de pantalla: título y acción principal sobre el surface. */

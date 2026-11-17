@@ -22,11 +22,8 @@ ion-button {
 }
 
 ion-card {
-  --border-radius: var(--cd-radius-card);
-}
-
-ion-card {
-  border: 1px solid var(--cd-surface-border);
+--border-radius: var(--cd-radius-card);
+border: 1px solid var(--cd-surface-border);
   border-radius: var(--cd-radius-card);
   box-shadow: none;
 }
@@ -39,24 +36,6 @@ ion-tab-bar {
 ion-tab-bar.cd-tab-bar {
   height: 64px;
   min-height: 64px;
-}
-
-ion-tab-bar ion-tab-button ion-label {
-  margin-top: 3px;
-  margin-bottom: 3px;
-  font-family: var(--cd-font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-ion-tab-bar ion-tab-button.tab-selected ion-label {
-  font-weight: 700;
-}
-
-ion-tab-bar ion-tab-button ion-icon {
-  font-size: 22px;
 }
 
 ::selection {

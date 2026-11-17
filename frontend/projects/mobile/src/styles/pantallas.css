@@ -39,30 +39,6 @@
   gap: 0.75rem;
 }
 
-.cd-esqueleto {
-  height: 5.5rem;
-  background: var(--cd-surface);
-  border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius-card);
-}
-
-.cd-metricas {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.cd-metrica {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.75rem 0.6rem;
-  background: var(--cd-surface);
-  border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius-card);
-  text-align: center;
-}
-
 .cd-metrica__valor {
   font-family: var(--cd-font-headline);
   font-size: 1.15rem;
@@ -77,13 +53,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cd-muted);
-}
-
-.cd-filtros {
-  --background: #0e1828;
-  margin-bottom: 0.5rem;
-  border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius-control);
 }
 
 .cd-panel__sub {
@@ -368,12 +337,6 @@ button.cd-ot .cd-ot__direccion {
   color: var(--cd-muted);
 }
 
-.cd-categorias {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.45rem;
-}
-
 .cd-categoria {
   position: relative;
   display: flex;
@@ -591,18 +554,6 @@ button.cd-ot .cd-ot__direccion {
   gap: 0.75rem;
 }
 
-.cd-buscando__icono {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 999px;
-  color: var(--cd-warn-ink);
-  background: rgba(245, 158, 11, 0.15);
-  animation: cd-buscando-pulso 1.6s ease-in-out infinite;
-}
-
 .cd-buscando__icono ion-icon {
   font-size: 1.35rem;
 }
@@ -613,7 +564,18 @@ button.cd-ot .cd-ot__direccion {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cd-buscando__icono { animation: none; }
+  .cd-buscando__icono {
+display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  color: var(--cd-warn-ink);
+  background: rgba(245, 158, 11, 0.15);
+  animation: cd-buscando-pulso 1.6s ease-in-out infinite;
+animation: none;
+}
 }
 
 .cd-buscando__titulo {
@@ -814,9 +776,13 @@ button.cd-ot .cd-ot__direccion {
 
 @media (prefers-reduced-motion: reduce) {
   .cd-esqueleto {
-    animation: none;
+height: 5.5rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+animation: none;
     opacity: 0.75;
-  }
+}
 }
 
 /* Hoja inferior del técnico: 3 alturas, contenido sin ruido. */
@@ -2264,14 +2230,6 @@ button.cd-ot .cd-ot__direccion {
   color: var(--cd-muted);
 }
 
-.cd-auth__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ion-color-primary);
-  animation: cd-pulse 1.8s ease-in-out infinite;
-}
-
 @keyframes cd-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
@@ -2450,26 +2408,6 @@ button.cd-ot .cd-ot__direccion {
   gap: 0.1rem;
   min-width: 0;
   flex: 1;
-}
-
-.cd-filtros {
-  --background: transparent;
-  margin-bottom: 0.5rem;
-}
-
-.cd-filtros ion-segment-button {
-  --background: var(--cd-surface);
-  --background-checked: rgba(34, 211, 238, 0.12);
-  --color: var(--cd-muted);
-  --color-checked: var(--ion-color-primary);
-  --indicator-color: transparent;
-  --border-radius: 8px;
-  min-height: 48px;
-  margin-right: 0.3rem;
-  font-family: var(--cd-font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 /* A3 — Mi cuenta: identidad, aviso de modos y tarjetas de modo con ícono. */
@@ -2665,7 +2603,9 @@ form {
 }
 
 .cd-form {
-  width: 100%;
+margin: 1rem 0;
+  background: transparent;
+width: 100%;
   min-width: 0;
 }
 
@@ -2761,17 +2701,42 @@ ion-app:has(> .cd-offline) > ion-router-outlet {
 }
 
 .cd-metrica {
-  min-width: 0;
+display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.6rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  text-align: center;
+min-width: 0;
 }
 
 .cd-filtros {
-  width: 100%;
+--background: #0e1828;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+--background: transparent;
+  margin-bottom: 0.5rem;
+width: 100%;
   min-width: 0;
   overflow-x: auto;
 }
 
 .cd-filtros ion-segment-button {
-  flex: 0 0 auto;
+--background: var(--cd-surface);
+  --background-checked: rgba(34, 211, 238, 0.12);
+  --color: var(--cd-muted);
+  --color-checked: var(--ion-color-primary);
+  --indicator-color: transparent;
+  --border-radius: 8px;
+  min-height: 48px;
+  margin-right: 0.3rem;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+flex: 0 0 auto;
   min-width: max-content;
 }
 
@@ -2908,11 +2873,18 @@ ion-app:has(> .cd-offline) > ion-router-outlet {
 }
 
 .cd-metricas {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .cd-categorias {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .cd-fila-insumo {
@@ -2971,14 +2943,16 @@ ion-app:has(> .cd-offline) > ion-router-outlet {
   font-size: 0.75rem;
 }
 
-.cd-auth__dot {
-  animation: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .cd-auth__dot {
-    animation: none;
-  }
+width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ion-color-primary);
+  animation: cd-pulse 1.8s ease-in-out infinite;
+animation: none;
+animation: none;
+}
 }
 
 /* 9. Navegacion y bloques reportados en el APK (vista del tecnico).
@@ -3047,13 +3021,21 @@ ion-content.ion-padding {
 }
 
 ion-tab-bar ion-tab-button ion-icon {
-  width: 20px;
+font-size: 22px;
+width: 20px;
   height: 20px;
   font-size: 20px;
 }
 
 ion-tab-bar ion-tab-button ion-label {
-  margin: 1px 0 2px;
+margin-top: 3px;
+  margin-bottom: 3px;
+  font-family: var(--cd-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+margin: 1px 0 2px;
   font-family: var(--cd-font-body, inherit);
   font-size: 0.75rem;
   font-weight: 500;
@@ -3065,7 +3047,8 @@ ion-tab-bar ion-tab-button ion-label {
 }
 
 ion-tab-bar ion-tab-button.tab-selected ion-label {
-  font-weight: 600;
+font-weight: 700;
+font-weight: 600;
 }
 
 /* Disponibilidad: Ionic reserva un minimo por boton con etiqueta y las tres
