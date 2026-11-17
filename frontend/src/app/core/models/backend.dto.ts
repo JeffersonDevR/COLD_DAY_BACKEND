@@ -75,6 +75,16 @@ export interface RestablecerContrasenaApiRequest {
   nuevaPassword: string;
 }
 
+/**
+ * Body de `POST /api/solicitudes-perfil` (SolicitudPerfilApiRequest.java).
+ * El campo viaja en camelCase aunque la columna SQL sea `perfil_deseado`.
+ * La identidad del solicitante sale del JWT, nunca del body.
+ */
+export interface SolicitudPerfilApiRequest {
+  perfilDeseado: 'CLIENTE' | 'TECNICO';
+  motivacion: string;
+}
+
 /* ------------------------------------------------------------------ */
 /* clientes                                                            */
 /* ------------------------------------------------------------------ */

@@ -25,6 +25,8 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   /\/api\/(clientes|tecnicos|proveedores)$/,
   // Alta rápida del perfil de cliente (A5).
   /\/api\/clientes\/perfil$/,
+  // Solicitud de perfil (T5): la pantalla explica el 409 y el 422 con su propio copy.
+  /\/api\/solicitudes-perfil$/,
   // Creación de la OT (A5).
   /\/api\/ot$/,
   // Listado del panel del cliente (A4).
