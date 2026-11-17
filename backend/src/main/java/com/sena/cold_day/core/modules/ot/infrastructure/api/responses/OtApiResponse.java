@@ -10,6 +10,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.Diagnostico;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Prioridad;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.shared.domain.Point;
 
@@ -24,6 +25,8 @@ public record OtApiResponse(
         String clienteId,
         String tecnicoId,
         EstadoOt estado,
+        // Prioridad real de la orden, requerida en el JSON (MEDIA por defecto).
+        Prioridad prioridad,
         CategoriaServicio categoriaServicio,
         String descripcionFalla,
         String direccion,
@@ -84,7 +87,7 @@ public record OtApiResponse(
                 response.codigo() == null ? null : response.codigo().valor(),
                 response.clienteId() == null ? null : response.clienteId().valor().toString(),
                 response.tecnicoId() == null ? null : response.tecnicoId().valor().toString(),
-                response.estado(), response.categoriaServicio(), response.descripcionFalla(),
+                response.estado(), response.prioridad(), response.categoriaServicio(), response.descripcionFalla(),
                 response.direccion(), response.radioKm(), response.creadaEn(), response.canceladaPor(),
                 response.motivoCancelacion(), response.tarifaVisita(), response.visitaPagada(),
                 response.diagnostico(),

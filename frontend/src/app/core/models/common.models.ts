@@ -32,6 +32,9 @@ export type EstadoOt =
   | 'SIN_TECNICOS_DISPONIBLES'
   | 'DISPUTADA';
 
+/** Prioridad real de la orden (Prioridad.java). */
+export type Prioridad = 'ALTA' | 'MEDIA' | 'BAJA';
+
 export type OfertaEstado = 'PENDIENTE' | 'ACEPTADA' | 'EXPIRADA' | 'CANCELADA';
 
 export type MedioPago = 'EFECTIVO' | 'TRANSFERENCIA';
@@ -386,6 +389,8 @@ export interface OtResponse {
   barrio?: string;
   punto?: Point;
   estado: EstadoOt;
+  /** Opcional a propósito: los fixtures heredados no la traen; la UI usa `?? 'MEDIA'`. */
+  prioridad?: Prioridad;
   diagnostico?: DiagnosticoRequest;
   presupuesto?: {
     aprobado: boolean;

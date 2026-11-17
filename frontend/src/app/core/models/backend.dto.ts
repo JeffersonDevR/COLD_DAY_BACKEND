@@ -21,6 +21,7 @@ import {
   OfertaEstado,
   OfertaInsumoEstado,
   Point,
+  Prioridad,
   Rol,
   TarifaFuente,
   TipoCliente,
@@ -317,6 +318,12 @@ export interface OtApiResponse {
   clienteId: string;
   tecnicoId: string | null;
   estado: EstadoOt;
+  /**
+   * Prioridad real de la orden. El backend la devuelve siempre (V17), pero se
+   * declara opcional para no romper los fixtures de test que aún no la traen;
+   * el mapper cae a 'MEDIA' con `??`.
+   */
+  prioridad?: Prioridad | null;
   categoriaServicio: CategoriaServicio;
   descripcionFalla: string;
   direccion: string;
