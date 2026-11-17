@@ -128,6 +128,19 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     expect(navigate).toHaveBeenCalledWith(['/tecnico/radar']);
   });
 
+  it('habla en tuteo en la cola de órdenes', () => {
+    const { fixture } = setup({ otsApi: { getMisOts: vi.fn(() => of([])) } });
+    expect(texto(fixture)).toContain('No tienes órdenes en curso');
+  });
+
+  it('cada OT es un botón real que abre la ejecución', () => {
+    const { fixture, navigate } = setup();
+    const ot = fixture.nativeElement.querySelector('[data-testid="ot-ot1"]') as HTMLButtonElement;
+    expect(ot.tagName).toBe('BUTTON');
+    ot.click();
+    expect(navigate).toHaveBeenCalledWith(['/tecnico/ejecucion', 'ot1']);
+  });
+
   it('cambia la disponibilidad contra el API', () => {
     const { fixture, api } = setup();
     fixture.componentInstance.cambiarDisponibilidad('OCUPADO');
