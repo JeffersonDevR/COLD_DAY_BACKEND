@@ -8,7 +8,6 @@ import {
   IonFooter,
   IonHeader,
   IonIcon,
-  IonSpinner,
   IonTitle,
   IonToolbar,
 } from '@ionic/angular';
@@ -18,6 +17,9 @@ import { AuthService } from '@core/service/auth.service';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { ClientesApi } from '@core/service/clientes-api';
 import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
  * A10 — Mis equipos (cliente).
@@ -43,9 +45,11 @@ import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
     IonFooter,
     IonHeader,
     IonIcon,
-    IonSpinner,
     IonTitle,
     IonToolbar,
+    SkeletonComponent,
+    ErrorAlertComponent,
+    EmptyStateComponent,
   ],
   template: `
     <ion-header class="ion-no-border">
@@ -56,10 +60,7 @@ import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
 
     <ion-content class="ion-padding">
       @if (cargando()) {
-        <div class="cd-cargando" data-testid="equipos-cargando" aria-busy="true">
-          <ion-spinner name="dots"></ion-spinner>
-          <p class="cd-muted">Cargando tus equipos...</p>
-        </div>
+        <cd-skeleton label="Cargando tus equipos" testId="equipos-cargando" />
       } @else if (sinPerfilCliente()) {
         <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="equipos-sin-perfil">
           <h2 class="cd-alerta__titulo">Todavía no tenés perfil de cliente</h2>
@@ -72,23 +73,20 @@ import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
           </ion-button>
         </section>
       } @else if (errorCarga()) {
-        <section class="cd-alerta cd-alerta--error" role="alert" data-testid="equipos-error">
-          <h2 class="cd-alerta__titulo">No pudimos cargar tus equipos</h2>
-          <p class="cd-alerta__texto">
-            Revisá la conexión y volvé a intentar. Tus órdenes siguen guardadas.
-          </p>
-          <ion-button class="cd-cta" data-testid="equipos-reintentar" (click)="cargar()">
-            Reintentar
-          </ion-button>
-        </section>
+        <cd-error-alert
+          titulo="No pudimos cargar tus equipos"
+          texto="Revisa la conexión y vuelve a intentar. Tus órdenes siguen guardadas."
+          testId="equipos-error"
+          accionTestId="equipos-reintentar"
+          (reintentar)="cargar()"
+        />
       } @else if (!equipos().length) {
-        <section class="cd-vacio" data-testid="equipos-vacio">
-          <ion-icon name="cube-outline" aria-hidden="true"></ion-icon>
-          <h2 class="cd-vacio__titulo">Todavía no tenés equipos</h2>
-          <p class="cd-vacio__texto">
-            Cuando pidas un servicio, el equipo queda registrado con su historial.
-          </p>
-        </section>
+        <cd-empty-state
+          titulo="Todavía no tienes equipos"
+          texto="Cuando pidas un servicio, el equipo queda registrado con su historial."
+          icono="cube-outline"
+          testId="equipos-vacio"
+        />
       } @else {
         <p class="cd-eyebrow">{{ equipos().length }} equipos · historial completo</p>
 
