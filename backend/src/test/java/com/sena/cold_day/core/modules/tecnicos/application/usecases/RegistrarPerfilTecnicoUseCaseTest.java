@@ -27,6 +27,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServ
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 import com.sena.cold_day.core.modules.tecnicos.infrastructure.api.requests.TecnicoPerfilApiRequest;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.PerfilNoAdquiribleException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
@@ -38,7 +39,8 @@ import tools.jackson.databind.ObjectMapper;
  * Second-profile acquisition (spec capability {@code second-profile-acquisition}):
  * the technician profile is created for the authenticated principal, the role
  * comes only from the endpoint, and the token version is bumped so the token in
- * flight is revoked; the controller returns its replacement.
+ * flight is revoked; the controller returns its replacement. T4.3 adds the
+ * initial-role gate: only a TECNICO-registered usuario may self-adopt.
  */
 @ExtendWith(MockitoExtension.class)
 class RegistrarPerfilTecnicoUseCaseTest {
@@ -49,8 +51,12 @@ class RegistrarPerfilTecnicoUseCaseTest {
     @InjectMocks RegistrarPerfilTecnicoUseCase useCase;
 
     private Usuario usuario(Long id) {
+        return usuario(id, Rol.TECNICO);
+    }
+
+    private Usuario usuario(Long id, Rol rol) {
         return Usuario.reconstituir(id, "Ana", "ana@example.com", "hash", "3001234567", null,
-                Rol.CLIENTE, Instant.now(), false, true, 0);
+                rol, Instant.now(), false, true, 0);
     }
 
     private TecnicoPerfilRequest request(String numeroIdentificacion) {
@@ -93,6 +99,32 @@ class RegistrarPerfilTecnicoUseCaseTest {
         assertThatThrownBy(() -> useCase.registrar(new UsuarioId(7L), request("123")))
                 .isInstanceOf(UsuarioNoEncontradoException.class);
         verify(tecnicoRepository, never()).save(any(Tecnico.class));
+    }
+
+    /** T4.3: un usuario registrado como cliente no puede auto-adquirir TECNICO. */
+    @Test
+    void rejectsSelfAdoptionWhenInitialRoleIsNotTecnico() {
+        when(usuarioRepository.buscarPorId(new UsuarioId(7L)))
+                .thenReturn(Optional.of(usuario(7L, Rol.CLIENTE)));
+
+        assertThatThrownBy(() -> useCase.registrar(new UsuarioId(7L), request("123")))
+                .isInstanceOf(PerfilNoAdquiribleException.class);
+        verify(tecnicoRepository, never()).save(any(Tecnico.class));
+    }
+
+    /** El override admin saltea la puerta sin mutar el rol persistido. */
+    @Test
+    void desdeAdminOverrideBypassesTheInitialRoleGate() {
+        Usuario principal = usuario(7L, Rol.CLIENTE);
+        when(usuarioRepository.buscarPorId(new UsuarioId(7L))).thenReturn(Optional.of(principal));
+        when(tecnicoRepository.findByUsuarioId(7L)).thenReturn(Optional.empty());
+        when(tecnicoRepository.save(any(Tecnico.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = useCase.registrar(new UsuarioId(7L), request("123"), true);
+
+        assertThat(response.usuarioId()).isEqualTo(7L);
+        assertThat(principal.getRol()).isEqualTo(Rol.CLIENTE);
+        assertThat(principal.getTokenVersion()).isEqualTo(1);
     }
 
     /**

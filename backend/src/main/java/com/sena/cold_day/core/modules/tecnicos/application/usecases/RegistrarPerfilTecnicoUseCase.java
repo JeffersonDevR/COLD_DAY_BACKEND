@@ -10,8 +10,10 @@ import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.PerfilNoAdquiribleException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 /**
@@ -21,6 +23,10 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
  * (TECNICO). On success the principal's {@code tokenVersion} is bumped, which
  * revokes the token in flight (design D3); the controller hands back the
  * replacement so the caller stays signed in with the new capability.
+ *
+ * <p>T4.3: la adopcion self-service solo la puede hacer quien se registro como
+ * tecnico; los demas piden el cambio al administrador. El administrador adopta
+ * perfiles con {@code desdeAdmin=true}, que saltea la puerta sin mutar el rol.
  */
 @Service
 public class RegistrarPerfilTecnicoUseCase {
@@ -38,8 +44,18 @@ public class RegistrarPerfilTecnicoUseCase {
 
     @Transactional
     public TecnicoResponse registrar(UsuarioId usuarioId, TecnicoPerfilRequest request) {
+        return registrar(usuarioId, request, false);
+    }
+
+    /** {@code desdeAdmin=true} bypasses only the T4.3 initial-role gate. */
+    @Transactional
+    public TecnicoResponse registrar(UsuarioId usuarioId, TecnicoPerfilRequest request, boolean desdeAdmin) {
         Usuario usuario = usuarioRepository.buscarPorId(usuarioId)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(usuarioId.valor()));
+
+        if (!desdeAdmin && usuario.getRol() != Rol.TECNICO) {
+            throw new PerfilNoAdquiribleException();
+        }
 
         // Any technician row blocks a duplicate, even a soft-deleted one.
         if (tecnicoRepository.findByUsuarioId(usuarioId.valor()).isPresent()) {

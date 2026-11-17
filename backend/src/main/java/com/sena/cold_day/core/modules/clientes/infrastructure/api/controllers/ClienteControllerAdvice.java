@@ -15,6 +15,7 @@ import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteDuplicado
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteNoEncontradoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.PerfilNoAdquiribleException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
@@ -64,6 +65,12 @@ public class ClienteControllerAdvice {
     @ExceptionHandler(ClienteNoEncontradoException.class)
     ResponseEntity<ApiError> handleClienteNotFound(ClienteNoEncontradoException exception) {
         return error(HttpStatus.NOT_FOUND, exception);
+    }
+
+    /** T4.3: solo el rol inicial TECNICO puede adoptar un perfil por su cuenta. */
+    @ExceptionHandler(PerfilNoAdquiribleException.class)
+    ResponseEntity<ApiError> handlePerfilNoAdquirible(PerfilNoAdquiribleException fallo) {
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, fallo);
     }
 
     /** Race safety net: unique {@code usuario_id} violation maps to 409. */

@@ -23,6 +23,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontr
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoValidadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.PerfilNoAdquiribleException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 
 @RestControllerAdvice(assignableTypes = TecnicoController.class)
@@ -100,6 +101,12 @@ public class TecnicoControllerAdvice {
     @ExceptionHandler(EspecialidadesRequeridasException.class)
     ResponseEntity<ApiError> handleEspecialidadesRequeridas(EspecialidadesRequeridasException exception) {
         return error(HttpStatus.BAD_REQUEST, exception);
+    }
+
+    /** T4.3: solo el rol inicial TECNICO puede adoptar un perfil por su cuenta. */
+    @ExceptionHandler(PerfilNoAdquiribleException.class)
+    ResponseEntity<ApiError> handlePerfilNoAdquirible(PerfilNoAdquiribleException fallo) {
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, fallo);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
