@@ -120,8 +120,8 @@
   flex: 0 0 auto;
   width: max-content;
   max-width: none;
-  --padding-start: 0.25rem;
-  --padding-end: 0.25rem;
+  --padding-start: 0.1rem;
+  --padding-end: 0.1rem;
   min-width: 0;
 }
 
