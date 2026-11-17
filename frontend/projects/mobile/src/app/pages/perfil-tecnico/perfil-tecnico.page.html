@@ -13,10 +13,7 @@
 
 <ion-content class="ion-padding">
   @if (cargando()) {
-    <div class="cd-cargando" data-testid="perfil-cargando">
-      <ion-spinner name="dots"></ion-spinner>
-      <p class="cd-muted">Cargando tu perfil…</p>
-    </div>
+    <cd-skeleton label="Cargando tu perfil" testId="perfil-cargando" />
   }
 
   @if (tecnico(); as t) {
@@ -94,12 +91,11 @@
 
     <h2 class="cd-section__titulo">Documentos</h2>
     @if (documentos().length === 0) {
-      <section class="cd-vacio" data-testid="documentos-vacio">
-        <h2 class="cd-vacio__titulo">Sin documentos cargados</h2>
-        <p class="cd-vacio__texto">
-          La carga de documentos se hace desde la web: la app todavía no tiene cámara ni subida de archivos.
-        </p>
-      </section>
+      <cd-empty-state
+        titulo="Sin documentos cargados"
+        texto="La carga de documentos se hace desde la web: la app todavía no tiene cámara ni subida de archivos."
+        testId="documentos-vacio"
+      />
     } @else {
       @for (documento of documentos(); track documento.id) {
         <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">

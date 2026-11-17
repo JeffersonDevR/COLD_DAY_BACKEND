@@ -19,6 +19,8 @@ import {
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { MobileToastService } from '../../core/toast.service';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 const ETIQUETAS_CATEGORIA: Record<CategoriaServicio, string> = {
   CAMARAS_VIGILANCIA: 'Cámaras de vigilancia',
@@ -61,6 +63,8 @@ const ORDEN_CATEGORIAS: CategoriaServicio[] = [
     IonHeader,
     IonSpinner,
     IonToolbar,
+    SkeletonComponent,
+    EmptyStateComponent,
   ],
   templateUrl: './perfil-tecnico.page.html',
 })
