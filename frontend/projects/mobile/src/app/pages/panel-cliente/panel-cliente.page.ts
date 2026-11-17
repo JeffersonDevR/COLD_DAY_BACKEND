@@ -15,7 +15,6 @@ import {
   IonRefresherContent,
   IonSegment,
   IonSegmentButton,
-  IonSpinner,
   IonToolbar,
   RefresherCustomEvent,
   SegmentCustomEvent,
@@ -36,6 +35,9 @@ import {
 } from '@core/service/ots-cliente';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { MobileToastService } from '../../core/toast.service';
+import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
  * A4 — Panel del cliente.
@@ -65,8 +67,10 @@ import { MobileToastService } from '../../core/toast.service';
     IonRefresherContent,
     IonSegment,
     IonSegmentButton,
-    IonSpinner,
     IonToolbar,
+    SkeletonComponent,
+    ErrorAlertComponent,
+    EmptyStateComponent,
   ],
   template: `
     <ion-header class="cd-header">
@@ -86,54 +90,51 @@ import { MobileToastService } from '../../core/toast.service';
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding cd-panel-content">
       <ion-refresher slot="fixed" (ionRefresh)="refrescar($event)">
         <ion-refresher-content
-          pullingText="Deslizá para actualizar"
+          pullingText="Desliza para actualizar"
           refreshingSpinner="dots"
           refreshingText="Actualizando..."
         ></ion-refresher-content>
       </ion-refresher>
 
       <div class="cd-hero">
-        <p class="cd-eyebrow">Panel del cliente</p>
-        <h1 class="cd-headline" data-testid="panel-saludo">Hola, {{ nombre() }}</h1>
-        <p class="cd-hero__nota">
-          Pedí un servicio y tu solicitud sale a los técnicos cercanos de Cúcuta: el primero
-          que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.
-        </p>
-        <div class="cd-hero__acciones">
-          <ion-button
-            size="small"
-            fill="outline"
-            color="primary"
-            data-testid="panel-equipos"
-            (click)="verEquipos()"
-          >
-            <ion-icon slot="start" name="time-outline" aria-hidden="true"></ion-icon>
-            Historial
-          </ion-button>
-        </div>
+      <h1 class="cd-headline" data-testid="panel-saludo">Hola, {{ nombre() }}</h1>
+      <p class="cd-hero__nota">
+        Pide un servicio y tu solicitud sale a los técnicos cercanos de Cúcuta: el primero
+        que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.
+      </p>
+      <div class="cd-hero__acciones">
+        <ion-button
+          size="small"
+          fill="outline"
+          color="primary"
+          class="cd-accion"
+          data-testid="panel-equipos"
+          (click)="verHistorial()"
+        >
+          <ion-icon slot="start" name="time-outline" aria-hidden="true"></ion-icon>
+          Historial
+        </ion-button>
+      </div>
       </div>
 
       @if (cargando()) {
-        <div class="cd-cargando" data-testid="panel-cargando">
-          <ion-spinner name="dots"></ion-spinner>
-          <p class="cd-muted">Cargando tus servicios...</p>
-        </div>
+        <cd-skeleton label="Cargando tus servicios" testId="panel-cargando" />
       } @else if (errorCarga(); as mensaje) {
-        <section class="cd-alerta cd-alerta--error" role="alert" data-testid="panel-error">
-          <h2 class="cd-alerta__titulo">No pudimos cargar tus servicios</h2>
-          <p class="cd-alerta__texto">{{ mensaje }}</p>
-          <ion-button class="cd-cta" data-testid="panel-reintentar" (click)="reintentar()">
-            Reintentar
-          </ion-button>
-        </section>
+        <cd-error-alert
+          titulo="No pudimos cargar tus servicios"
+          [texto]="mensaje"
+          testId="panel-error"
+          accionTestId="panel-reintentar"
+          (reintentar)="reintentar()"
+        />
       } @else if (sinPerfilCliente()) {
         <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="panel-sin-perfil">
-          <h2 class="cd-alerta__titulo">Todavía no tenés perfil de cliente</h2>
+          <h2 class="cd-alerta__titulo">Todavía no tienes perfil de cliente</h2>
           <p class="cd-alerta__texto">
-            Tu cuenta puede pedir servicios, pero nos faltan tus datos de cliente. Los completás
+            Tu cuenta puede pedir servicios, pero nos faltan tus datos de cliente. Los completas
             en el mismo formulario de la solicitud con la dirección y la ubicación que ya vas a
             cargar ahí: al confirmar, el perfil se crea y la orden sale en el mismo paso.
           </p>
@@ -146,25 +147,14 @@ import { MobileToastService } from '../../core/toast.service';
           </ion-button>
         </section>
       } @else {
-        <section class="cd-metricas" aria-label="Resumen de tus servicios">
-          <article class="cd-metrica">
-            <span class="cd-metrica__valor" data-testid="panel-total-activas">{{ activas() }}</span>
-            <span class="cd-metrica__rotulo">Servicios en proceso</span>
-          </article>
-          <article class="cd-metrica">
-            <span class="cd-metrica__valor" data-testid="panel-total-finalizadas">
-              {{ finalizadas() }}
-            </span>
-            <span class="cd-metrica__rotulo">Servicios concluidos</span>
-          </article>
-          <article class="cd-metrica cd-metrica--aviso">
-            <span class="cd-metrica__valor" data-testid="panel-total-sin-tecnico">{{ sinTecnico() }}</span>
-            <span class="cd-metrica__rotulo">Sin técnico</span>
-          </article>
-        </section>
+        <p class="cd-panel__resumen" aria-label="Resumen de tus servicios">
+          <span><b data-testid="panel-total-activas">{{ activas() }}</b> en proceso</span>
+          <span><b data-testid="panel-total-finalizadas">{{ finalizadas() }}</b> {{ finalizadas() === 1 ? 'concluido' : 'concluidos' }}</span>
+          <span><b data-testid="panel-total-sin-tecnico">{{ sinTecnico() }}</b> sin técnico</span>
+        </p>
 
         <ion-segment
-          class="cd-filtros"
+          class="cd-filtros cd-filtros--cliente"
           [value]="filtro()"
           aria-label="Filtrar órdenes de trabajo por estado"
           data-testid="panel-filtros"
@@ -183,6 +173,7 @@ import { MobileToastService } from '../../core/toast.service';
         <ion-button
           expand="block"
           fill="clear"
+          class="cd-accion cd-panel__equipos"
           data-testid="panel-mis-equipos"
           (click)="irAMisEquipos()"
         >
@@ -191,14 +182,15 @@ import { MobileToastService } from '../../core/toast.service';
         </ion-button>
 
         @if (serviciosFiltrados().length === 0) {
-          <section class="cd-vacio" data-testid="panel-vacio">
-            <ion-icon name="file-tray-outline" aria-hidden="true"></ion-icon>
-            <h2 class="cd-vacio__titulo">{{ textos().tituloVacio }}</h2>
-            <p class="cd-vacio__texto">{{ textos().descripcionVacio }}</p>
-          </section>
+          <cd-empty-state
+            [titulo]="textos().tituloVacio"
+            [texto]="textos().descripcionVacio"
+            icono="file-tray-outline"
+            testId="panel-vacio"
+          />
         } @else {
           @for (ot of serviciosFiltrados(); track ot.id) {
-            <ion-card class="cd-ot" data-testid="panel-ot">
+            <ion-card class="cd-ot cd-panel-ot" data-testid="panel-ot">
               <ion-card-content>
                 <div class="cd-ot__cabecera">
                   <span class="cd-ot__icono" aria-hidden="true">
@@ -210,6 +202,8 @@ import { MobileToastService } from '../../core/toast.service';
                     </span>
                     <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
                   </div>
+                </div>
+                <div class="cd-panel__estado">
                   <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{
                     etiqueta(ot.estado)
                   }}</span>
@@ -228,6 +222,7 @@ import { MobileToastService } from '../../core/toast.service';
                   <ion-button
                     size="small"
                     fill="clear"
+                    class="cd-accion"
                     data-testid="panel-ot-ver"
                     (click)="verSeguimiento(ot.id)"
                   >
@@ -335,7 +330,7 @@ export class PanelClientePage {
 
   /** A10 — Mis equipos. Pantalla secundaria: se llega desde el panel. */
   protected irAMisEquipos(): void {
-    void this.router.navigate(['/cliente/equipos']);
+    void this.router.navigateByUrl('/cliente/equipos');
   }
 
   protected cambiarFiltro(evento: SegmentCustomEvent): void {
@@ -356,11 +351,12 @@ export class PanelClientePage {
   }
 
   /**
-   * El atajo "Historial" de la web apunta a `/cliente/historial`, una ruta que
-   * no existe: en móvil va a la tab real de equipos.
+   * "Historial" filtra las órdenes concluidas. Antes navegaba a `/cliente/equipos`,
+   * el mismo destino que "Mis equipos" en la misma pantalla (DESIGN §4: un botón,
+   * una ruta).
    */
-  protected verEquipos(): void {
-    void this.router.navigateByUrl('/cliente/equipos');
+  protected verHistorial(): void {
+    this.filtro.set('COMPLETADAS');
   }
 
   /** A6: cada OT del listado abre su seguimiento. */

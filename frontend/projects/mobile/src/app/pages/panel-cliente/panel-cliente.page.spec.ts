@@ -232,7 +232,7 @@ describe('PanelClientePage móvil', () => {
 
     expect(page.sinPerfilCliente()).toBe(true);
     expect(page.errorCarga()).toBeNull();
-    expect(texto(fixture)).toContain('Todavía no tenés perfil de cliente');
+    expect(texto(fixture)).toContain('Todavía no tienes perfil de cliente');
     // El 404 de perfil no es un error de carga ni un listado vacío genérico.
     expect(fixture.nativeElement.querySelector('[data-testid="panel-error"]')).toBeNull();
 
@@ -244,16 +244,20 @@ describe('PanelClientePage móvil', () => {
     expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
   });
 
-  it('el CTA del panel lleva a la solicitud y el atajo Historial a la tab de equipos', () => {
+  it('el CTA del panel lleva a la solicitud; Historial filtra y Mis equipos navega', () => {
     const { fixture, navigate } = setup(vi.fn(() => of([])));
 
     (fixture.nativeElement.querySelector('[data-testid="panel-solicitar"]') as HTMLElement).click();
     expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
 
-    // La web apunta a `/cliente/historial`, una ruta inexistente: acá va a la tab real.
+    // Un botón, una ruta: Historial NO navega a equipos, cambia la vista.
     (fixture.nativeElement.querySelector('[data-testid="panel-equipos"]') as HTMLElement).click();
+    fixture.detectChanges();
+    expect(texto(fixture)).toContain('Órdenes ya finalizadas');
+    expect(navigate).not.toHaveBeenCalledWith('/cliente/equipos');
+
+    (fixture.nativeElement.querySelector('[data-testid="panel-mis-equipos"]') as HTMLElement).click();
     expect(navigate).toHaveBeenCalledWith('/cliente/equipos');
-    expect(navigate).not.toHaveBeenCalledWith('/cliente/historial');
   });
 
   describe('refresco periódico', () => {
