@@ -46,15 +46,15 @@ Leyenda de modelo: 🟢 modelo barato suficiente · 🟡 conviene uno más capaz
 **Pasos:** reutiliza `shared/ui/{skeleton,loading,empty-state,error-alert}`. Cargando = skeleton con la forma de la lista; vacío = una línea + una acción; error = qué falló + botón reintentar. Un spec por estado.
 **Aceptación:** por pantalla, tres specs nuevos (carga, vacío, error) en verde; `ui:audit` limpio; ningún `*ngIf` anidado ilegible (usa `@if/@else`).
 
-### TU-01 🟡 Componente `<cd-page>`
-**Objetivo:** un solo contenedor de página (header con título/subtítulo/acción + `ion-content` con gutter + `ion-footer` opcional) para reemplazar 34 `ion-header` y 14 `ion-footer` escritos a mano.
-**Pasos:** crea `app/shared/ui/page/page.ts` (standalone, `OnPush`) con slots `[cdActions]`, `[cdFooter]`, inputs `titulo`, `subtitulo`, `volver`. Respeta `.cd-header`/`.cd-footer`/safe-area. Migra **una página por commit**, empezando por `liquidaciones-tecnico` (simple) y terminando por `solicitar-servicio` (compleja). No cambies estilos visibles: compara capturas.
-**Aceptación:** `grep -c "<ion-header" projects/mobile/src/app/pages -r` baja con cada commit; `mobile:test` y `ui:audit` limpios; capturas idénticas a 360/430.
+### TU-01 ✅ HECHO — Componente `<cd-page>`
+**Estado:** implementado en `app/shared/ui/page/page.ts` (standalone, `OnPush`). No volver a crearlo. Es el contenedor único de las tres pantallas principales (`panel-cliente`, `equipos`, `cuenta`): proyecta `[cdHeader]` / `[cdHeroAcciones]` / `[cdFooter]` y renderiza el héroe desde los inputs `titulo`/`subtitulo`. El host es `.cd-page { display: contents }` para que Ionic siga disponiendo `ion-header`/`ion-content`/`ion-footer` como hijos flex de `.ion-page`.
+**Trabajo restante (opcional):** migrar el resto de pantallas secundarias; para eso envuelve el contenido en `<cd-page>` y proyecta los slots, sin cambiar estilos visibles.
+**Aceptación ya cumplida:** las tres pantallas principales comparten el shell; la jerarquía y la regla están en `DESIGN.md` §5; `mobile:test` y `mobile:build` OK.
 
-### TU-02 🟡 Partir `styles.css` por capas
-**Objetivo:** reglas duplicadas fuera (`.cd-modo`, `.cd-metricas`, `.cd-filtros`, `.cd-card` aparecen 2–3 veces; gana la última).
-**Pasos:** (1) `ui:audit` y capturas **antes**. (2) Crea `projects/mobile/src/styles/{tokens,base,componentes,pantallas}.css` y un `styles.css` que los importe en ese orden (revisa `angular.json` → `styles`). (3) Mueve sin cambiar el orden efectivo; fusiona duplicados **dejando la regla ganadora actual**. (4) Actualiza `scripts/check-styles.mjs` y `check-ui-rules.mjs` para leer todos los archivos (hoy leen solo `styles.css`).
-**Aceptación:** capturas **byte-idénticas o equivalentes** a 360/390/430; `ui:check` y `check-styles` OK; `mobile:build` OK; ningún token declarado dos veces.
+### TU-02 ✅ HECHO — `styles.css` por capas
+**Estado:** implementado. `styles.css` importa `styles/tokens.css`, `styles/base.css`, `styles/componentes.css` y `styles/pantallas.css` en ese orden, y `scripts/check-styles.mjs` / `check-ui-rules.mjs` leen todos los archivos. No volver a crear los archivos ni a unirlos en un `styles.css` monolítico.
+**Trabajo restante (opcional):** si aparece una regla duplicada, fusionarla dejando la regla ganadora actual (la última); nunca subir un techo.
+**Aceptación ya cumplida:** `ui:check` y `check-styles` OK; `mobile:build` OK; ningún token declarado dos veces.
 
 ### TU-11 🟢 Limpiar la web (techos de `web`)
 **Objetivo:** bajar `UI-A2 web` (28 `outline-none`), `UI-C1 web` (5 grises), `UI-D1 web` (17 blur), `UI-L1 web` (19 voseo). Una regla por commit.

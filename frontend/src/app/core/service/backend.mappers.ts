@@ -170,6 +170,9 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
     descripcionFalla: dto.descripcionFalla,
     direccion: dto.direccion,
     estado: dto.estado,
+    // El backend siempre envía prioridad (V17); el fallback cubre fixtures y
+    // respuestas de versiones anteriores del contrato.
+    prioridad: dto.prioridad ?? 'MEDIA',
     diagnostico: dto.diagnostico ? aDiagnostico(dto.diagnostico) : undefined,
     presupuesto: dto.presupuesto ? aPresupuesto(dto.presupuesto) : undefined,
     fechaCreacion: dto.creadaEn,

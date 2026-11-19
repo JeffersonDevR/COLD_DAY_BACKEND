@@ -50,6 +50,26 @@ describe('agruparEquipos', () => {
     expect(equipos[0].codigoOt).toBe('CD-NUEVA');
   });
 
+  it('propaga la prioridad de la OT más reciente al equipo', () => {
+    const equipos = agruparEquipos([
+      ot({
+        categoriaServicio: 'REFRIGERACION',
+        id: 'vieja',
+        prioridad: 'BAJA',
+        fechaCreacion: '2026-01-05T10:00:00Z',
+      }),
+      ot({
+        categoriaServicio: 'REFRIGERACION',
+        id: 'nueva',
+        prioridad: 'ALTA',
+        fechaCreacion: '2026-10-12T10:00:00Z',
+      }),
+    ]);
+
+    expect(equipos[0].ultimaOtId).toBe('nueva');
+    expect(equipos[0].prioridad).toBe('ALTA');
+  });
+
   it('ordena los equipos por la intervención más reciente', () => {
     const equipos = agruparEquipos([
       ot({ categoriaServicio: 'LAVADORAS', fechaCreacion: '2026-03-01T10:00:00Z' }),

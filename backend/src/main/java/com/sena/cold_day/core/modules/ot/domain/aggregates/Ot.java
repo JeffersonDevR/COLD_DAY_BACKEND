@@ -25,6 +25,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Prioridad;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
@@ -55,6 +56,7 @@ public class Ot {
     private String direccion;
     private Point ubicacion;
     private EstadoOt estado;
+    private Prioridad prioridad;
     private double radioKm;
     private Instant ventanaExpiraEn;
     private Instant creadaEn;
@@ -140,6 +142,8 @@ public class Ot {
         ot.direccion = direccion;
         ot.ubicacion = ubicacion;
         ot.estado = EstadoOt.SOLICITADA;
+        // El cliente no elige prioridad al crear: el servidor fija MEDIA (V17).
+        ot.prioridad = Prioridad.MEDIA;
         ot.radioKm = 0.0;
         ot.creadaEn = ahora;
         ot.cambiosPendientes.add(new CambioEstado(null, EstadoOt.SOLICITADA, ActorOt.CLIENTE, ahora, null));
@@ -244,11 +248,9 @@ public class Ot {
 
     /**
      * Reconstitution from persistence including the human-readable code (V14).
-     * This is the canonical overload: the previous ones delegate here with a
-     * {@code null} code, so every existing call site and test that rebuilds an OT
-     * compiles untouched. A null code means "a row written by a path that never
-     * allocated one" — V14 backfilled every pre-existing row and production
-     * creation always assigns one — which is why the column stays nullable.
+     * Kept as a delegating overload so every existing call site and test that
+     * rebuilds an OT compiles untouched; a null priority is mapped to MEDIA by
+     * the canonical overload below.
      */
     @SuppressWarnings("java:S107") // Rehidratacion de persistencia: el estado completo del agregado (33 campos). Mismo motivo que la sobrecarga de 32 campos.
     public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
@@ -261,6 +263,31 @@ public class Ot {
             Integer calificacionEstrellas, String calificacionComentario, Instant calificacionEn,
             TecnicoId calificacionTecnicoId, String actaFirmaDataUrl, String actaCodigoVerificacion,
             Instant actaFirmadaEn, CodigoOt codigo) {
+        return reconstituir(id, clienteId, tecnicoId, categoriaServicio, descripcionFalla, evidenciaUrls,
+                direccion, ubicacion, estado, radioKm, ventanaExpiraEn, creadaEn, asignadaEn, finalizadaEn,
+                canceladaPor, motivoCancelacion, tarifaVisita, diagnostico, presupuesto, distanciaKm,
+                tarifaFuente, auxiliaresRequeridos, llegadaEn, medioPagoVisita, visitaPagadaEn,
+                calificacionEstrellas, calificacionComentario, calificacionEn, calificacionTecnicoId,
+                actaFirmaDataUrl, actaCodigoVerificacion, actaFirmadaEn, codigo, null);
+    }
+
+    /**
+     * Canonical reconstitution from persistence, now including the order priority
+     * (V17). Every overload above funnels here: a null priority means "a row or a
+     * caller that predates the column" and becomes MEDIA at this boundary, so no
+     * aggregate can ever expose a null priority (design D2).
+     */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: el estado completo del agregado (34 campos). Mismo motivo que la sobrecarga de 33 campos.
+    public static Ot reconstituir(OtId id, ClienteId clienteId, TecnicoId tecnicoId,
+            CategoriaServicio categoriaServicio, String descripcionFalla, List<String> evidenciaUrls,
+            String direccion, Point ubicacion, EstadoOt estado, double radioKm, Instant ventanaExpiraEn,
+            Instant creadaEn, Instant asignadaEn, Instant finalizadaEn, ActorOt canceladaPor,
+            MotivoCancelacion motivoCancelacion, BigDecimal tarifaVisita, Diagnostico diagnostico,
+            Presupuesto presupuesto, Double distanciaKm, TarifaFuente tarifaFuente,
+            Integer auxiliaresRequeridos, Instant llegadaEn, String medioPagoVisita, Instant visitaPagadaEn,
+            Integer calificacionEstrellas, String calificacionComentario, Instant calificacionEn,
+            TecnicoId calificacionTecnicoId, String actaFirmaDataUrl, String actaCodigoVerificacion,
+            Instant actaFirmadaEn, CodigoOt codigo, Prioridad prioridad) {
         Ot ot = new Ot();
         ot.id = id;
         ot.clienteId = clienteId;
@@ -271,6 +298,8 @@ public class Ot {
         ot.direccion = direccion;
         ot.ubicacion = ubicacion;
         ot.estado = estado;
+        // Fila o llamador anterior a V17: MEDIA en el limite, nunca null en el agregado.
+        ot.prioridad = prioridad == null ? Prioridad.MEDIA : prioridad;
         ot.radioKm = radioKm;
         ot.ventanaExpiraEn = ventanaExpiraEn;
         ot.creadaEn = creadaEn;
@@ -572,6 +601,11 @@ public class Ot {
 
     public EstadoOt getEstado() {
         return estado;
+    }
+
+    /** Prioridad real de la orden; MEDIA para toda fila que no la declare. */
+    public Prioridad getPrioridad() {
+        return prioridad;
     }
 
     public double getRadioKm() {

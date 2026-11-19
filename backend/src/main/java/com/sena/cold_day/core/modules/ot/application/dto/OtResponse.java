@@ -14,6 +14,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Prioridad;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.shared.domain.Point;
@@ -25,6 +26,8 @@ public record OtResponse(
         ClienteId clienteId,
         TecnicoId tecnicoId,
         EstadoOt estado,
+        // Prioridad real de la orden. Nunca null: MEDIA para filas anteriores a V17.
+        Prioridad prioridad,
         CategoriaServicio categoriaServicio,
         String descripcionFalla,
         String direccion,
@@ -64,6 +67,7 @@ public record OtResponse(
      */
     public static OtResponse fromDomain(Ot ot, List<CambioEstado> historial) {
         return new OtResponse(ot.getId(), ot.getCodigo(), ot.getClienteId(), ot.getTecnicoId(), ot.getEstado(),
+                ot.getPrioridad() == null ? Prioridad.MEDIA : ot.getPrioridad(),
                 ot.getCategoriaServicio(), ot.getDescripcionFalla(), ot.getDireccion(), ot.getRadioKm(),
                 ot.getCreadaEn(), ot.getCanceladaPor(), ot.getMotivoCancelacion(), ot.getTarifaVisita(),
                 ot.getDiagnostico(), ot.getPresupuesto(), ot.getUbicacion(), ot.getAuxiliaresRequeridos(),

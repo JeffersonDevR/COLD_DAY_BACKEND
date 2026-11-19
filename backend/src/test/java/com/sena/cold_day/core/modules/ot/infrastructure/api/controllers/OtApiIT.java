@@ -98,6 +98,9 @@ class OtApiIT {
                 .andExpect(jsonPath("$.codigo").value(matchesPattern("^OT-\\d{4}-\\d{4,}$")))
                 .andExpect(jsonPath("$.clienteId").value(cliente.getId().valor().toString()))
                 .andExpect(jsonPath("$.estado").value("BUSCANDO_TECNICO"))
+                // T2: la prioridad es un campo real del contrato y toda orden
+                // creada nace en MEDIA (el cliente no la elige).
+                .andExpect(jsonPath("$.prioridad").value("MEDIA"))
                 .andExpect(jsonPath("$.radioKm").value(10.0))
                 // Exposed even before acceptance: defaults to zero.
                 .andExpect(jsonPath("$.auxiliaresRequeridos").value(0))

@@ -21,6 +21,7 @@ import {
   OfertaEstado,
   OfertaInsumoEstado,
   Point,
+  Prioridad,
   Rol,
   TarifaFuente,
   TipoCliente,
@@ -72,6 +73,16 @@ export interface RecuperarContrasenaApiRequest {
 export interface RestablecerContrasenaApiRequest {
   token: string;
   nuevaPassword: string;
+}
+
+/**
+ * Body de `POST /api/solicitudes-perfil` (SolicitudPerfilApiRequest.java).
+ * El campo viaja en camelCase aunque la columna SQL sea `perfil_deseado`.
+ * La identidad del solicitante sale del JWT, nunca del body.
+ */
+export interface SolicitudPerfilApiRequest {
+  perfilDeseado: 'CLIENTE' | 'TECNICO';
+  motivacion: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -317,6 +328,12 @@ export interface OtApiResponse {
   clienteId: string;
   tecnicoId: string | null;
   estado: EstadoOt;
+  /**
+   * Prioridad real de la orden. El backend la devuelve siempre (V17), pero se
+   * declara opcional para no romper los fixtures de test que aún no la traen;
+   * el mapper cae a 'MEDIA' con `??`.
+   */
+  prioridad?: Prioridad | null;
   categoriaServicio: CategoriaServicio;
   descripcionFalla: string;
   direccion: string;

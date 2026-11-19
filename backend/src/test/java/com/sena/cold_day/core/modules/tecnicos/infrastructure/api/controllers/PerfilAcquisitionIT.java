@@ -62,8 +62,11 @@ class PerfilAcquisitionIT {
 
     @Test
     void acquiresTecnicoProfileForThePrincipalAndBumpsTokenVersion() throws Exception {
-        long usuarioId = registrarClientePublico("dual-tec@example.com");
-        String token = jwt(usuarioId, Rol.CLIENTE, 0);
+        long usuarioId = registrarTecnicoPublico("dual-tec@example.com");
+        // El alta publica ya creo el perfil tecnico; lo quitamos para probar la
+        // re-adopcion del rol inicial TECNICO que permite la puerta T4.3.
+        tecnicoRepository.deleteAll();
+        String token = jwt(usuarioId, Rol.TECNICO, 0);
 
         mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,15 +87,57 @@ class PerfilAcquisitionIT {
                 .andExpect(status().isUnauthorized());
     }
 
+    /** T4.3: un usuario registrado como cliente debe pedir el cambio al admin. */
+    @Test
+    void rejectsSelfAdoptionForClienteRegisteredUsuarioWith422() throws Exception {
+        long usuarioId = registrarClientePublico("gate-cli@example.com");
+        String token = jwt(usuarioId, Rol.CLIENTE, 0);
+
+        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"numeroIdentificacion\":\"T-G\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$").isMap())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.message").value(
+                        org.hamcrest.Matchers.containsString("solicitud de cambio de perfil al administrador")));
+
+        mockMvc.perform(post("/api/clientes/perfil").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tipoCliente\":\"B2C\",\"calle\":\"Calle 1\",\"ciudad\":\"Bogota\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422));
+
+        assertThat(tecnicoRepository.findByUsuarioId(usuarioId)).isEmpty();
+    }
+
+    /** T4.3: la puerta lee el rol persistido, no el claim del token. */
+    @Test
+    void gateReadsPersistedRoleNotTheJwtClaim() throws Exception {
+        long usuarioId = registrarClientePublico("claim-tecnico@example.com");
+        String tokenConClaimTecnico = jwt(usuarioId, Rol.TECNICO, 0);
+
+        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + tokenConClaimTecnico)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"numeroIdentificacion\":\"T-C\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422));
+
+        assertThat(usuarioRepository.findByCorreo("claim-tecnico@example.com").orElseThrow().getRol())
+                .isEqualTo(Rol.CLIENTE);
+        assertThat(tecnicoRepository.findByUsuarioId(usuarioId)).isEmpty();
+    }
+
     @Test
     void rejectsDuplicateTecnicoProfileWith409() throws Exception {
-        long usuarioId = registrarClientePublico("dual-tec-dup@example.com");
-        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE, 0))
+        long usuarioId = registrarTecnicoPublico("dual-tec-dup@example.com");
+        tecnicoRepository.deleteAll();
+        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + jwt(usuarioId, Rol.TECNICO, 0))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numeroIdentificacion\":\"T-2\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE, 1))
+        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + jwt(usuarioId, Rol.TECNICO, 1))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numeroIdentificacion\":\"T-2b\",\"categoriasServicio\":[\"REFRIGERACION\"]}"))
                 .andExpect(status().isConflict());
@@ -100,9 +145,10 @@ class PerfilAcquisitionIT {
 
     @Test
     void ignoresRoleInBodyWhenAcquiringTecnicoProfile() throws Exception {
-        long usuarioId = registrarClientePublico("dual-tec-m5@example.com");
+        long usuarioId = registrarTecnicoPublico("dual-tec-m5@example.com");
+        tecnicoRepository.deleteAll();
 
-        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + jwt(usuarioId, Rol.CLIENTE, 0))
+        mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + jwt(usuarioId, Rol.TECNICO, 0))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"numeroIdentificacion\":\"T-3\",\"categoriasServicio\":[\"REFRIGERACION\"],"
                                 + "\"rol\":\"ADMINISTRADOR\"}"))
@@ -112,7 +158,7 @@ class PerfilAcquisitionIT {
         // The body role is dropped: the usuario keeps its registration role and
         // the created profile is the technician one, never an administrator.
         assertThat(usuarioRepository.findByCorreo("dual-tec-m5@example.com").orElseThrow().getRol())
-                .isEqualTo(Rol.CLIENTE);
+                .isEqualTo(Rol.TECNICO);
         assertThat(tecnicoRepository.findByUsuarioId(usuarioId)).isPresent();
     }
 
@@ -177,8 +223,9 @@ class PerfilAcquisitionIT {
      */
     @Test
     void tecnicoProfileReturnsAFreshTokenThatKeepsTheSessionAlive() throws Exception {
-        long usuarioId = registrarClientePublico("dual-token-tec@example.com");
-        String revocado = jwt(usuarioId, Rol.CLIENTE, 0);
+        long usuarioId = registrarTecnicoPublico("dual-token-tec@example.com");
+        tecnicoRepository.deleteAll();
+        String revocado = jwt(usuarioId, Rol.TECNICO, 0);
 
         String body = mockMvc.perform(post("/api/tecnicos/perfil").header("Authorization", "Bearer " + revocado)
                         .contentType(MediaType.APPLICATION_JSON)

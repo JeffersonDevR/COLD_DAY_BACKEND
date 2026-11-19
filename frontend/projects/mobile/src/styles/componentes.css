@@ -484,3 +484,10 @@ transition-duration: 0.01ms;
   padding: 0 1rem;
 }
 
+/* Shell único (<cd-page>): desaparece del layout para que ion-header,
+   ion-content e ion-footer sigan siendo hijos flex de .ion-page y conserven
+   order:-1 / order:1 (no envoltorio con display propio). */
+.cd-page {
+  display: contents;
+}
+

@@ -12,6 +12,7 @@ import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteReposito
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.events.UsuarioRegistrado;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.PerfilNoAdquiribleException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.UsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
@@ -66,12 +67,24 @@ public class RegistrarClienteUseCase {
 
     /**
      * Crea solo el perfil para un usuario ya existente (reparación/backfill).
+     * T4.3: la adopcion self-service solo la puede hacer quien se registro como
+     * tecnico; los demas piden el cambio al administrador.
      */
     @Transactional
     public ClienteResponse registrar(ClienteRequest request, UsuarioId usuarioId) {
+        return registrar(request, usuarioId, false);
+    }
+
+    /** {@code desdeAdmin=true} bypasses only the T4.3 initial-role gate. */
+    @Transactional
+    public ClienteResponse registrar(ClienteRequest request, UsuarioId usuarioId, boolean desdeAdmin) {
 
         Usuario usuario = usuarioRepository.buscarPorId(usuarioId)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(usuarioId.valor()));
+
+        if (!desdeAdmin && usuario.getRol() != Rol.TECNICO) {
+            throw new PerfilNoAdquiribleException();
+        }
 
         if (clienteRepository.findByUsuarioId(usuarioId).isPresent()) {
             throw new ClienteDuplicadoException(usuarioId);

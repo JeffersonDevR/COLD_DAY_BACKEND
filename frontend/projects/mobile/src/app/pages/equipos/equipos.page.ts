@@ -4,7 +4,6 @@ import {
   IonButton,
   IonCard,
   IonCardContent,
-  IonContent,
   IonFooter,
   IonHeader,
   IonIcon,
@@ -12,17 +11,19 @@ import {
   IonToolbar,
 } from '@ionic/angular';
 import { esErrorPerfilClienteFaltante } from '@core/errorStatus/perfil-cliente';
-import { CategoriaServicio, EstadoOt, OtResponse } from '@core/models/common.models';
+import { EstadoOt, OtResponse } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { ClientesApi } from '@core/service/clientes-api';
 import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { PageComponent } from '../../shared/ui/page/page';
+import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
- * A10 — Mis equipos (cliente).
+ * A10 — Mis órdenes (cliente).
  *
  * El agrupado vive en `@core/service/equipos-cliente` (compartido con la web);
  * acá sólo queda la presentación y lo que esta plataforma decide: la
@@ -33,6 +34,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
  *
  * Se diferencia de la web en que un fallo de carga se puede reintentar en vez
  * de mostrar una lista vacía que miente sobre la causa.
+ *
+ * Organización: el mismo `<cd-page>` que las otras pantallas principales; el
+ * título vive en la cabecera, el contenido arranca con el eyebrow de conteo y
+ * termina en el CTA del pie.
  */
 @Component({
   selector: 'app-mobile-equipos',
@@ -41,31 +46,32 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     IonButton,
     IonCard,
     IonCardContent,
-    IonContent,
     IonFooter,
     IonHeader,
     IonIcon,
     IonTitle,
     IonToolbar,
+    PageComponent,
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    PriorityChipComponent,
   ],
   template: `
-    <ion-header class="ion-no-border">
-      <ion-toolbar>
-        <ion-title>Mis equipos</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <cd-page>
+      <ion-header class="ion-no-border" cdHeader>
+        <ion-toolbar>
+          <ion-title>Mis órdenes</ion-title>
+        </ion-toolbar>
+      </ion-header>
 
-    <ion-content class="ion-padding">
       @if (cargando()) {
         <cd-skeleton label="Cargando tus equipos" testId="equipos-cargando" />
       } @else if (sinPerfilCliente()) {
         <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="equipos-sin-perfil">
-          <h2 class="cd-alerta__titulo">Todavía no tenés perfil de cliente</h2>
+          <h2 class="cd-alerta__titulo">Todavía no tienes perfil de cliente</h2>
           <p class="cd-alerta__texto">
-            Necesitamos tus datos para asociar los equipos a tu cuenta. Los completás al pedir tu
+            Necesitamos tus datos para asociar los equipos a tu cuenta. Los completas al pedir tu
             primer servicio.
           </p>
           <ion-button class="cd-cta" data-testid="equipos-crear-perfil" (click)="irASolicitar()">
@@ -91,16 +97,17 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
         <p class="cd-eyebrow">{{ equipos().length }} equipos · historial completo</p>
 
         @for (equipo of equipos(); track equipo.categoria) {
-          <ion-card class="cd-ot" data-testid="equipo">
+          <ion-card class="cd-ot cd-ot--orden" data-testid="equipo">
             <ion-card-content>
               <div class="cd-ot__cabecera">
-                <span class="cd-ot__icono" aria-hidden="true">
-                  <ion-icon [name]="iconoDe(equipo.categoria)"></ion-icon>
-                </span>
                 <div class="cd-ot__titulos">
                   <span class="cd-ot__codigo">{{ equipo.codigoOt }}</span>
                   <h2 class="cd-ot__categoria">{{ equipo.etiqueta }}</h2>
                 </div>
+                <app-priority-chip
+                  class="cd-ot__prioridad"
+                  [prioridad]="equipo.prioridad ?? 'MEDIA'"
+                />
                 <span [class]="'cd-chip cd-chip--' + tono(equipo.estado)">
                   {{ etiqueta(equipo.estado) }}
                 </span>
@@ -126,15 +133,19 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           </ion-card>
         }
       }
-    </ion-content>
 
-    <ion-footer class="ion-no-border">
-      <ion-toolbar>
-        <ion-button expand="block" fill="outline" (click)="irASolicitar()">
+      <ion-footer class="cd-footer" cdFooter>
+        <ion-button
+          expand="block"
+          class="cd-cta"
+          data-testid="equipos-solicitar"
+          (click)="irASolicitar()"
+        >
+          <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
           Registrar otro equipo
         </ion-button>
-      </ion-toolbar>
-    </ion-footer>
+      </ion-footer>
+    </cd-page>
   `,
 })
 export class MobileEquiposPage implements OnInit {
@@ -150,15 +161,6 @@ export class MobileEquiposPage implements OnInit {
   readonly sinPerfilCliente = signal<boolean>(false);
 
   readonly equipos = computed<EquipoCliente[]>(() => agruparEquipos(this.ots()));
-
-  /** Iconografía de la plataforma. El `@core` no la conoce a propósito. */
-  private readonly iconos: Record<CategoriaServicio, string> = {
-    AIRE_ACONDICIONADO: 'snow-outline',
-    REFRIGERACION: 'thermometer-outline',
-    LAVADORAS: 'sync-outline',
-    ELECTRICIDAD: 'flash-outline',
-    CAMARAS_VIGILANCIA: 'videocam-outline',
-  };
 
   ngOnInit(): void {
     this.cargar();
@@ -183,10 +185,6 @@ export class MobileEquiposPage implements OnInit {
         this.errorCarga.set(true);
       },
     });
-  }
-
-  iconoDe(categoria: CategoriaServicio): string {
-    return this.iconos[categoria] ?? 'cube-outline';
   }
 
   etiqueta(estado: EstadoOt): string {

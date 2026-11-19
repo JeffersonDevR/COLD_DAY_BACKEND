@@ -6,7 +6,6 @@ import {
   IonButton,
   IonCard,
   IonCardContent,
-  IonContent,
   IonFooter,
   IonHeader,
   IonIcon,
@@ -37,6 +36,8 @@ import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { PageComponent } from '../../shared/ui/page/page';
+import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
@@ -49,6 +50,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
  *   web lo escondía tras un listado vacío (mentía sobre la causa).
  * - El refresco periódico (25 s, solo con la app visible) nunca borra la lista
  *   que el cliente ya está viendo.
+ *
+ * Organización: `<cd-page>` único, con la cabecera de marca en `[cdHeader]`, el
+ * saludo en el héroe (`titulo`/`subtitulo`), la acción "Historial" en
+ * `[cdHeroAcciones]` y el CTA "Pedir un técnico" en `[cdFooter]`.
  */
 @Component({
   selector: 'app-mobile-panel-cliente',
@@ -58,7 +63,6 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     IonButton,
     IonCard,
     IonCardContent,
-    IonContent,
     IonFooter,
     IonHeader,
     IonIcon,
@@ -68,29 +72,36 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     IonSegment,
     IonSegmentButton,
     IonToolbar,
+    PageComponent,
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    PriorityChipComponent,
   ],
   template: `
-    <ion-header class="cd-header">
-      <ion-toolbar>
-        <div class="cd-panel__barra">
-          <div class="cd-panel__identidad">
-            <span class="cd-panel__logo" aria-hidden="true">
-              <ion-icon name="snow-outline"></ion-icon>
-            </span>
-            <div>
-              <p class="cd-panel__marca">Cold Day · Ops</p>
-              <p class="cd-panel__rol">Panel de operaciones</p>
+    <cd-page
+      [titulo]="'Hola, ' + nombre()"
+      tituloTestId="panel-saludo"
+      [subtitulo]="heroNota"
+      contenidoClase="cd-panel-content"
+    >
+      <ion-header class="cd-header" cdHeader>
+        <ion-toolbar>
+          <div class="cd-panel__barra">
+            <div class="cd-panel__identidad">
+              <span class="cd-panel__logo" aria-hidden="true">
+                <ion-icon name="snow-outline"></ion-icon>
+              </span>
+              <div>
+                <p class="cd-panel__marca">Cold Day · Ops</p>
+                <p class="cd-panel__rol">Panel de operaciones</p>
+              </div>
             </div>
+            <span class="cd-chip cd-chip--activo">Cliente</span>
           </div>
-          <span class="cd-chip cd-chip--activo">Cliente</span>
-        </div>
-      </ion-toolbar>
-    </ion-header>
+        </ion-toolbar>
+      </ion-header>
 
-    <ion-content class="ion-padding cd-panel-content">
       <ion-refresher slot="fixed" (ionRefresh)="refrescar($event)">
         <ion-refresher-content
           pullingText="Desliza para actualizar"
@@ -99,13 +110,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
         ></ion-refresher-content>
       </ion-refresher>
 
-      <div class="cd-hero">
-      <h1 class="cd-headline" data-testid="panel-saludo">Hola, {{ nombre() }}</h1>
-      <p class="cd-hero__nota">
-        Pide un servicio y tu solicitud sale a los técnicos cercanos de Cúcuta: el primero
-        que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.
-      </p>
-      <div class="cd-hero__acciones">
+      <div class="cd-hero__acciones" cdHeroAcciones>
         <ion-button
           size="small"
           fill="outline"
@@ -117,7 +122,6 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           <ion-icon slot="start" name="time-outline" aria-hidden="true"></ion-icon>
           Historial
         </ion-button>
-      </div>
       </div>
 
       @if (cargando()) {
@@ -178,7 +182,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           (click)="irAMisEquipos()"
         >
           <ion-icon slot="start" name="cube-outline" aria-hidden="true"></ion-icon>
-          Mis equipos
+          Mis órdenes
         </ion-button>
 
         @if (serviciosFiltrados().length === 0) {
@@ -190,23 +194,20 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           />
         } @else {
           @for (ot of serviciosFiltrados(); track ot.id) {
-            <ion-card class="cd-ot cd-panel-ot" data-testid="panel-ot">
+            <ion-card class="cd-ot cd-panel-ot cd-ot--orden" data-testid="panel-ot">
               <ion-card-content>
                 <div class="cd-ot__cabecera">
-                  <span class="cd-ot__icono" aria-hidden="true">
-                    <ion-icon [name]="iconoCategoria(ot)"></ion-icon>
-                  </span>
                   <div class="cd-ot__titulos">
                     <span class="cd-ot__codigo" data-testid="panel-ot-codigo">
                       {{ ot.codigo || 'Sin código' }}
                     </span>
                     <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
                   </div>
-                </div>
-                <div class="cd-panel__estado">
-                  <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{
-                    etiqueta(ot.estado)
-                  }}</span>
+                  <app-priority-chip
+                    class="cd-ot__prioridad"
+                    [prioridad]="ot.prioridad ?? 'MEDIA'"
+                  />
+                  <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{ etiqueta(ot.estado) }}</span>
                 </div>
                 <p class="cd-ot__descripcion">{{ ot.descripcionFalla }}</p>
                 <div class="cd-ot__pie">
@@ -235,19 +236,19 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           }
         }
       }
-    </ion-content>
 
-    <ion-footer class="cd-footer">
-      <ion-button
-        expand="block"
-        class="cd-cta"
-        data-testid="panel-solicitar"
-        (click)="pedirTecnico()"
-      >
-        <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
-        Pedir un técnico
-      </ion-button>
-    </ion-footer>
+      <ion-footer class="cd-footer" cdFooter>
+        <ion-button
+          expand="block"
+          class="cd-cta"
+          data-testid="panel-solicitar"
+          (click)="pedirTecnico()"
+        >
+          <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
+          Pedir un técnico
+        </ion-button>
+      </ion-footer>
+    </cd-page>
   `,
 })
 export class PanelClientePage {
@@ -258,6 +259,10 @@ export class PanelClientePage {
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly ots = signal<OtResponse[]>([]);
+
+  /** Texto del héroe: el resumen operativo de la pantalla. */
+  protected readonly heroNota =
+    'Pide un servicio y tu solicitud sale a los técnicos cercanos de Cúcuta: el primero que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.';
 
   protected readonly cargando = signal(true);
   protected readonly errorCarga = signal<string | null>(null);
@@ -310,25 +315,7 @@ export class PanelClientePage {
     return ot.categoriaServicio.replaceAll('_', ' ');
   }
 
-  /** Ícono del tile por categoría (ionicons ya registrados en main.ts). */
-  protected iconoCategoria(ot: OtResponse): string {
-    switch (ot.categoriaServicio) {
-      case 'AIRE_ACONDICIONADO':
-        return 'snow-outline';
-      case 'REFRIGERACION':
-        return 'thermometer-outline';
-      case 'LAVADORAS':
-        return 'water-outline';
-      case 'ELECTRICIDAD':
-        return 'flash-outline';
-      case 'CAMARAS_VIGILANCIA':
-        return 'videocam-outline';
-      default:
-        return 'build-outline';
-    }
-  }
-
-  /** A10 — Mis equipos. Pantalla secundaria: se llega desde el panel. */
+  /** A10 — Mis órdenes. Pantalla secundaria: se llega desde el panel. */
   protected irAMisEquipos(): void {
     void this.router.navigateByUrl('/cliente/equipos');
   }
@@ -352,7 +339,7 @@ export class PanelClientePage {
 
   /**
    * "Historial" filtra las órdenes concluidas. Antes navegaba a `/cliente/equipos`,
-   * el mismo destino que "Mis equipos" en la misma pantalla (DESIGN §4: un botón,
+   * el mismo destino que "Mis órdenes" en la misma pantalla (DESIGN §4: un botón,
    * una ruta).
    */
   protected verHistorial(): void {

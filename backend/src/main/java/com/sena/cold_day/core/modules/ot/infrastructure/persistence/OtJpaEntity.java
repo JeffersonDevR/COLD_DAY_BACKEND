@@ -15,6 +15,7 @@ import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.MotivoCancelacion;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Prioridad;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.TarifaFuente;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
@@ -91,6 +92,13 @@ public class OtJpaEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", length = 30, nullable = false)
     private EstadoOt estado;
+
+    // Prioridad de la orden (V17). NOT NULL con DEFAULT 'MEDIA' en la base:
+    // siempre se escribe un valor explicito desde el dominio, que nunca expone
+    // null en este campo.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "prioridad", length = 10, nullable = false)
+    private Prioridad prioridad;
 
     @Column(name = "radio_km")
     private double radioKm;
@@ -237,6 +245,7 @@ public class OtJpaEntity {
         this.latitud = ubicacion == null ? null : ubicacion.latitud();
         this.longitud = ubicacion == null ? null : ubicacion.longitud();
         this.estado = source.getEstado();
+        this.prioridad = source.getPrioridad() == null ? Prioridad.MEDIA : source.getPrioridad();
         this.radioKm = source.getRadioKm();
         this.ventanaExpiraEn = source.getVentanaExpiraEn();
         this.creadaEn = source.getCreadaEn();
@@ -283,7 +292,7 @@ public class OtJpaEntity {
                 llegadaEn, medioPagoVisita, visitaPagadaEn, calificacionEstrellas, calificacionComentario,
                 calificacionEn, calificacionTecnicoId == null ? null : TecnicoId.desde(calificacionTecnicoId),
                 actaFirmaDataUrl, actaCodigoVerificacion, actaFirmadaEn,
-                codigo == null ? null : CodigoOt.de(codigo));
+                codigo == null ? null : CodigoOt.de(codigo), prioridad);
         return ot.conVersion(version == null ? 0L : version);
     }
 }
