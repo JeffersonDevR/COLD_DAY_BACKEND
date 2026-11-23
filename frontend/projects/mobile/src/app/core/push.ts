@@ -19,9 +19,9 @@ import { ApiConfig } from '@core/service/api.config';
  * el plugin de Google Services solo si el archivo existe).</li>
  * <li>Poner `habilitado: true` en {@link PUSH}.</li>
  * <li>`npx cap sync android` y reconstruir el APK.</li>
- * <li>Backend: un adaptador FCM de `NotificacionPushPort` que lea los tokens de
- * `dispositivo_push` (hoy solo existe el registro: V19 y
- * `POST /api/usuarios/me/dispositivos`) y envíe con la cuenta de servicio.</li>
+ * <li>Backend: ya existe `FcmNotificacionPushAdapter`; se activa con
+ * `FCM_ENABLED=true` y `FCM_CREDENTIALS_JSON` o `FCM_CREDENTIALS_PATH` (cuenta de
+ * servicio de Firebase, ver `backend/.env.example`).</li>
  * </ol>
  *
  * Mientras `habilitado` sea `false` no se pide permiso ni se registra nada: la
@@ -31,7 +31,7 @@ export interface PushConfig {
   readonly habilitado: boolean;
 }
 
-export const PUSH: PushConfig = { habilitado: false };
+export const PUSH: PushConfig = { habilitado: true };
 
 /** Canal Android de alta prioridad para ofertas y cambios de la OT. */
 export const CANAL_PUSH = 'ofertas';

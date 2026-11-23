@@ -46,3 +46,6 @@ load-tests/results/
 # IDE (IntelliJ) — config local del desarrollador, incluye datos de conexion a BD
 .idea/
 landing/README.md
+
+# Cuentas de servicio de Firebase: jamas al repositorio
+*firebase-adminsdk*.json

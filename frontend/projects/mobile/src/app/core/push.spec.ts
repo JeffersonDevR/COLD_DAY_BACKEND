@@ -28,8 +28,8 @@ describe('PushNotificacionesService', () => {
     };
   }
 
-  it('queda desactivado por defecto hasta que exista Firebase', () => {
-    expect(PUSH.habilitado).toBe(false);
+  it('queda habilitado ahora que existe Firebase', () => {
+    expect(PUSH.habilitado).toBe(true);
     expect(CANAL_PUSH).toBe('ofertas');
   });
 
