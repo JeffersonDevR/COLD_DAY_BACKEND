@@ -64,7 +64,7 @@ describe('PerfilTecnicoPage (B4)', () => {
     const { fixture } = setup();
     expect(texto(fixture)).toContain('Lucas Vega');
     expect(texto(fixture)).toContain('lucas@coldday.com');
-    expect(fixture.nativeElement.querySelector('[data-testid="estado-validacion"]').textContent).toContain('APROBADO');
+    expect(fixture.nativeElement.querySelector('[data-testid="estado-validacion"]').textContent).toContain('Aprobado');
   });
 
   it('no permite guardar sin cambios', () => {
@@ -105,11 +105,29 @@ describe('PerfilTecnicoPage (B4)', () => {
       ],
     });
     expect(texto(fixture)).toContain('Matrícula CONTE');
-    expect(texto(fixture)).toContain('usá la web');
+    expect(texto(fixture)).toContain('usa la web');
   });
 
   it('muestra el estado vacío de documentos', () => {
     const { fixture } = setup({ documentos: [] });
     expect(fixture.nativeElement.querySelector('[data-testid="documentos-vacio"]')).toBeTruthy();
+  });
+
+  it('cuenta las especialidades elegidas sobre el total', () => {
+    const { fixture } = setup();
+    expect(
+      fixture.nativeElement
+        .querySelector('[data-testid="especialidades-conteo"]')
+        ?.textContent?.trim(),
+    ).toContain('1 de 5 elegidas');
+  });
+
+  it('usa las etiquetas canónicas de categorías y documentos', () => {
+    const { fixture } = setup();
+    const page = fixture.componentInstance;
+
+    expect(page.etiquetaCategoria('LAVADORAS')).toBe('Lavadoras');
+    expect(page.etiquetaCategoria('CAMARAS_VIGILANCIA')).toBe('Cámaras de vigilancia');
+    expect(page.etiquetaDocumento('MATRICULA_CONTE')).toBe('Matrícula CONTE');
   });
 });

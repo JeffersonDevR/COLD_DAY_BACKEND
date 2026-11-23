@@ -1,9 +1,12 @@
 <ion-header class="cd-header">
   <ion-toolbar>
+    <cd-marca pantalla="Panel de técnico" [chip]="chipEstado()" />
     <div class="cd-hero cd-hero--compacto">
-      <h1 class="cd-headline" data-testid="tecnico-nombre">
-        {{ tecnico()?.nombre || 'Tu panel de técnico' }}
-      </h1>
+      @if (tecnico(); as t) {
+        <h1 class="cd-headline" data-testid="tecnico-nombre">Hola, {{ t.nombre }}</h1>
+      } @else {
+        <h1 class="cd-headline" data-testid="tecnico-nombre">Tu panel de técnico</h1>
+      }
       <p class="cd-hero__nota">
         @if (validacionAprobada()) {
           Cuenta habilitada para recibir órdenes
@@ -44,7 +47,7 @@
                 Reportando automáticamente por la OT en curso.
               }
               @case ('compartiendo') {
-                Visible en el radar mientras reportás tu posición.
+                Visible en el radar mientras reportas tu posición.
               }
               @default {
                 Ubicación apagada: no aparecerás en las ofertas.
@@ -151,9 +154,7 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- OTs activas -->
-  <h2 class="cd-section__titulo cd-section__titulo--bloque">Tus órdenes activas</h2>
-
+  <!-- OTs activas: carga, error y vacío siempre visibles (§5/UI-X6). -->
   @if (cargando()) {
     <cd-skeleton label="Cargando tus órdenes" testId="ots-cargando" />
   }
@@ -182,10 +183,13 @@
     </cd-empty-state>
   }
 
-  @for (orden of misOts(); track orden.id) {
+  <!-- La primera de la cola: la orden que se trabaja ahora (§4, urgencia manda). -->
+  @if (proximaOt(); as orden) {
+    <h2 class="cd-section__titulo cd-section__titulo--bloque">Próxima orden de trabajo</h2>
+
     <button
       type="button"
-      class="cd-ot"
+      class="cd-ot cd-ot--proxima"
       [attr.data-testid]="'ot-' + orden.id"
       (click)="abrirOt(orden.id)"
     >
@@ -201,7 +205,40 @@
         <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
         {{ orden.direccion }}
       </span>
-      <span class="cd-ayuda">Toca para abrir la ejecución</span>
+      @if (orden.clienteNombre || orden.barrio) {
+        <span class="cd-proxima__contexto">
+          @if (orden.clienteNombre; as cliente) { <span>{{ cliente }}</span> }
+          @if (orden.barrio) { <span class="cd-proxima__sep">·</span> <span>{{ orden.barrio }}</span> }
+        </span>
+      }
+      <span class="cd-proxima__cta">Abrir ejecución</span>
     </button>
+  }
+
+  @if (restoOts().length > 0) {
+    <h2 class="cd-section__titulo cd-section__titulo--bloque">Siguientes órdenes</h2>
+
+    @for (orden of restoOts(); track orden.id) {
+      <button
+        type="button"
+        class="cd-ot"
+        [attr.data-testid]="'ot-' + orden.id"
+        (click)="abrirOt(orden.id)"
+      >
+        <span class="cd-ot__cabecera">
+          <span>
+            <span class="cd-ot__codigo">{{ orden.codigo || 'Orden de trabajo' }}</span>
+            <span class="cd-ot__categoria">{{ orden.categoriaServicio.replace('_', ' ') }}</span>
+          </span>
+          <span class="cd-chip cd-chip--{{ tonoEstado(orden.estado) }}">{{ etiquetaEstado(orden.estado) }}</span>
+        </span>
+        <span class="cd-ot__descripcion">{{ orden.descripcionFalla }}</span>
+        <span class="cd-ot__direccion">
+          <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+          {{ orden.direccion }}
+        </span>
+        <span class="cd-ayuda">Toca para abrir la ejecución</span>
+      </button>
+    }
   }
 </ion-content>

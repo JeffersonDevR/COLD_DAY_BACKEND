@@ -15,31 +15,14 @@ import {
   CategoriaServicio,
   DocumentoTecnico,
   TecnicoResponse,
+  TipoDocumentoTecnico,
 } from '@core/models/common.models';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
+import { categoriaLabel, documentoLabel, estadoValidacionLabel } from '@core/ui/labels';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
-
-const ETIQUETAS_CATEGORIA: Record<CategoriaServicio, string> = {
-  CAMARAS_VIGILANCIA: 'Cámaras de vigilancia',
-  REFRIGERACION: 'Refrigeración',
-  AIRE_ACONDICIONADO: 'Aire acondicionado',
-  LAVADORAS: 'Lavadoras',
-  ELECTRICIDAD: 'Electricidad',
-};
-
-const ETIQUETAS_DOCUMENTO: Record<string, string> = {
-  CEDULA: 'Cédula',
-  ANTECEDENTES: 'Antecedentes',
-  ANTECEDENTES_POLICIA: 'Antecedentes de policía',
-  CERTIFICACION_CONTE: 'Certificación CONTE',
-  CERTIFICACION_SENA: 'Certificación SENA',
-  MATRICULA_CONTE: 'Matrícula CONTE',
-  RUT: 'RUT',
-  OTRO: 'Otro',
-};
 
 const ORDEN_CATEGORIAS: CategoriaServicio[] = [
   'CAMARAS_VIGILANCIA',
@@ -92,6 +75,8 @@ export class PerfilTecnicoPage implements OnInit {
   });
 
   readonly validacion = computed(() => this.tecnico()?.estadoValidacion ?? 'PENDIENTE');
+  /** Etiqueta canónica del estado de validación (labels.ts), igual que la web. */
+  readonly validacionLabel = computed(() => estadoValidacionLabel(this.validacion()));
   readonly motivoRechazo = computed(() => this.tecnico()?.motivoRechazoValidacion ?? null);
 
   ngOnInit(): void {
@@ -118,11 +103,11 @@ export class PerfilTecnicoPage implements OnInit {
   }
 
   etiquetaCategoria(categoria: CategoriaServicio): string {
-    return ETIQUETAS_CATEGORIA[categoria];
+    return categoriaLabel(categoria);
   }
 
-  etiquetaDocumento(tipo: string): string {
-    return ETIQUETAS_DOCUMENTO[tipo] ?? tipo;
+  etiquetaDocumento(tipo: TipoDocumentoTecnico): string {
+    return documentoLabel(tipo);
   }
 
   estaSeleccionada(categoria: CategoriaServicio): boolean {

@@ -57,7 +57,7 @@ import { ActivatedRoute } from '@angular/router';
 
 /** Only a 409 proves the client has not paid yet or the order moved elsewhere. */
 const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
-  409: 'No se pudo iniciar el desplazamiento: el cliente puede no haber pagado la visita todavía, o la orden cambió de estado en otro dispositivo. Actualizá e intentá de nuevo.',
+  409: 'No se pudo iniciar el desplazamiento: el cliente puede no haber pagado la visita todavía, o la orden cambió de estado en otro dispositivo. Actualiza e intenta de nuevo.',
 };
 
 /** B3 — Technician execution: travel, arrival, diagnosis and closure. */
@@ -134,12 +134,22 @@ export class EjecucionOtPage implements OnInit {
 
   readonly insumos = new FormArray<FormGroup>([]);
 
+  /**
+   * Valor vivo del formulario: los FormGroup no son signals, así que sin este
+   * espejo el total computado nunca se invalidaba al escribir (medido en el
+   * walkthrough: el presupuesto no reaccionaba).
+   */
+  private readonly valorDiagnostico = signal(this.diagnosticoForm.getRawValue());
+
   readonly totalPresupuesto = computed<number>(() => {
-    const valor = this.diagnosticoForm.getRawValue();
+    const valor = this.valorDiagnostico();
     return (valor.manoDeObra ?? 0) + (valor.repuestos ?? 0);
   });
 
   constructor() {
+    this.diagnosticoForm.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.valorDiagnostico.set(this.diagnosticoForm.getRawValue()));
     effect(() => this.presencia.sincronizarOt(this.ot()));
   }
 
@@ -185,6 +195,9 @@ export class EjecucionOtPage implements OnInit {
           this.recargarOt();
         },
         error: () => this.iniciarPollDeRespaldo(),
+        // En mock el stream llega VACÍO y completa sin error: sin este cierre
+        // el poll de respaldo jamás arrancaba y la pantalla nunca refrescaba.
+        complete: () => this.iniciarPollDeRespaldo(),
       });
   }
 

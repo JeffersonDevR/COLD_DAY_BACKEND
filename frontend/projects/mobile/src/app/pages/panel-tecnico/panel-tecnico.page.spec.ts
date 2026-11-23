@@ -107,6 +107,27 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     expect(texto(fixture)).toContain('Asignada');
   });
 
+  it('destaca la primera orden como próxima y abre la ejecución', () => {
+    const { fixture, navigate } = setup();
+    const destacada = fixture.nativeElement.querySelector(
+      '[data-testid="ot-ot1"]',
+    ) as HTMLButtonElement;
+
+    expect(texto(fixture)).toContain('Próxima orden de trabajo');
+    expect(destacada.className).toContain('cd-ot--proxima');
+
+    destacada.click();
+    expect(navigate).toHaveBeenCalledWith(['/tecnico/ejecucion', 'ot1']);
+  });
+
+  it('la barra de marca muestra el estado operativo del técnico', () => {
+    const { fixture } = setup({
+      tecnicoApi: { getMiPerfil: vi.fn(() => of(tecnico({ estadoOperativo: 'OCUPADO' }))) },
+    });
+
+    expect(texto(fixture)).toContain('En servicio');
+  });
+
   it('sincroniza la política de presencia con las OTs cargadas', () => {
     const { presencia } = setup();
     expect(presencia.sincronizarOts).toHaveBeenCalled();

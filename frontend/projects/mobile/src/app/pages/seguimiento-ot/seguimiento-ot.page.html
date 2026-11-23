@@ -328,9 +328,8 @@
       <div class="cd-nota cd-nota--cancelacion" role="note">
         <ion-icon name="information-circle-outline" aria-hidden="true"></ion-icon>
         <p>
-          <strong>Política de cancelación.</strong> Disponés de 10 minutos de gracia tras la
-          asignación para cancelar sin cargo. No es posible cancelar una vez iniciada la fase
-          de reparación física.
+          <strong>Política de cancelación.</strong> Puedes cancelar mientras la orden no entre en
+          la fase de reparación física; a partir de ahí ya no es posible.
         </p>
       </div>
     </div>
@@ -353,7 +352,7 @@
           <h2 id="modal-cancelar-titulo">Cancelar solicitud de OT</h2>
         </div>
         <p class="cd-modal__texto">
-          Indicá el motivo de la cancelación. Solo es admisible antes del inicio de la reparación.
+          Indica el motivo de la cancelación. Solo es admisible antes del inicio de la reparación.
         </p>
         <label class="cd-modal__label" for="motivo-cancelar">Motivo de la cancelación *</label>
         <textarea
@@ -406,7 +405,7 @@
           <h2 id="modal-disputa-titulo">Abrir disputa</h2>
         </div>
         <p class="cd-modal__texto">
-          Describí la discrepancia (costo, repuestos o calidad). El área administrativa mediará el caso.
+          Describe la discrepancia (costo, repuestos o calidad). El área administrativa mediará el caso.
         </p>
         <label class="cd-modal__label" for="motivo-disputa">Motivo de la disputa *</label>
         <textarea
@@ -414,7 +413,7 @@
           class="cd-textarea"
           rows="3"
           [formControl]="motivoDisputaControl"
-          placeholder="Explicá el motivo de la disputa…"
+          placeholder="Explica el motivo de la disputa…"
         ></textarea>
         <p class="cd-field-hint">Mínimo 5 caracteres.</p>
         @if (ayudaMotivo(motivoDisputaControl); as ayuda) {

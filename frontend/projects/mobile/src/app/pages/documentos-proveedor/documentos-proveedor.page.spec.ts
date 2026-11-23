@@ -78,4 +78,26 @@ describe('DocumentosProveedorPage (C2)', () => {
     expect(texto(fixture)).toContain('RUT');
     expect(texto(fixture)).toContain('2027-12-31');
   });
+
+  it('el héroe cuenta los documentos declarados', () => {
+    const { fixture } = setup({
+      documentos: [
+        { id: 1, tipo: 'RUT', fechaVencimiento: '2027-12-31' },
+        { id: 2, tipo: 'CEDULA' },
+      ],
+    });
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="documentos-conteo"]')?.textContent?.trim(),
+    ).toContain('2 documentos declarados');
+  });
+
+  it('usa la etiqueta canónica del tipo de documento', () => {
+    const { fixture } = setup({
+      documentos: [{ id: 3, tipo: 'CERTIFICADO', fechaVencimiento: '2027-10-01' }],
+    });
+    expect(texto(fixture)).toContain('Certificado');
+
+    const page = fixture.componentInstance;
+    expect(page.etiquetaDocumento('OTRO')).toBe('Otro');
+  });
 });

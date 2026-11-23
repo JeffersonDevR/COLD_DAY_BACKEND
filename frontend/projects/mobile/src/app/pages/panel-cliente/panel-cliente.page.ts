@@ -36,6 +36,7 @@ import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { PageComponent } from '../../shared/ui/page/page';
 import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
@@ -77,6 +78,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     ErrorAlertComponent,
     EmptyStateComponent,
     PriorityChipComponent,
+    MarcaBarraComponent,
   ],
   template: `
     <cd-page
@@ -87,18 +89,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     >
       <ion-header class="cd-header" cdHeader>
         <ion-toolbar>
-          <div class="cd-panel__barra">
-            <div class="cd-panel__identidad">
-              <span class="cd-panel__logo" aria-hidden="true">
-                <ion-icon name="snow-outline"></ion-icon>
-              </span>
-              <div>
-                <p class="cd-panel__marca">Cold Day · Ops</p>
-                <p class="cd-panel__rol">Panel de operaciones</p>
-              </div>
-            </div>
-            <span class="cd-chip cd-chip--activo">Cliente</span>
-          </div>
+          <cd-marca pantalla="Panel de operaciones" chip="Cliente" />
         </ion-toolbar>
       </ion-header>
 

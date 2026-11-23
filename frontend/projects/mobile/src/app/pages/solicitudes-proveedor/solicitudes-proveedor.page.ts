@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   IonButton,
   IonContent,
@@ -18,6 +18,7 @@ import { ProveedoresApi } from '@core/service/proveedores-api';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /** C1 — Provider portal: insumos requests with accept/reject/deliver. */
@@ -34,6 +35,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    MarcaBarraComponent,
   ],
   templateUrl: './solicitudes-proveedor.page.html',
 })
@@ -47,6 +49,15 @@ export class SolicitudesProveedorPage implements OnInit {
   /** 403 means the documentary gate blocks the provider, not a network failure. */
   readonly validacionBloquea = signal(false);
   readonly accionEnCurso = signal<string | null>(null);
+
+  /** Pendientes (por decidir) + aceptadas (por entregar): lo que se gestiona.
+   Rechazadas/expiradas/canceladas ya están resueltas y no cuentan. */
+  readonly solicitudesPorGestionar = computed(
+    () =>
+      this.ofertas().filter(
+        (oferta) => oferta.estado === 'PENDIENTE' || oferta.estado === 'ACEPTADA',
+      ).length,
+  );
 
   ngOnInit(): void {
     this.cargar();
@@ -76,7 +87,7 @@ export class SolicitudesProveedorPage implements OnInit {
         this.accionEnCurso.set(null);
         void this.toast.success(
           'Solicitud aceptada',
-          `Estado del requerimiento: ${this.etiquetaRequerimiento(requerimiento.estado)}. Coordiná la entrega con el técnico.`,
+          `Estado del requerimiento: ${this.etiquetaRequerimiento(requerimiento.estado)}. Coordina la entrega con el técnico.`,
         );
         this.cargar();
       },
@@ -92,7 +103,7 @@ export class SolicitudesProveedorPage implements OnInit {
     this.proveedoresApi.rechazar(oferta.id).subscribe({
       next: () => {
         this.accionEnCurso.set(null);
-        void this.toast.info('Solicitud rechazada', 'No quedás vinculado a esta entrega.');
+        void this.toast.info('Solicitud rechazada', 'No quedas vinculado a esta entrega.');
         this.cargar();
       },
       error: (err: Error) => {
@@ -139,7 +150,7 @@ export class SolicitudesProveedorPage implements OnInit {
           return mensajeErrorAccion(err);
       }
     }
-    return 'Ocurrió un error inesperado. Intentá de nuevo.';
+    return 'Ocurrió un error inesperado. Intenta de nuevo.';
   }
 
   etiquetaOferta(estado: OfertaInsumoEstado): string {

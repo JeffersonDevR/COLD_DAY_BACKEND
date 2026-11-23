@@ -120,6 +120,8 @@ export class MapaSeguimientoComponent {
 
   private readonly mapaEl = viewChild<ElementRef<HTMLDivElement>>('mapaEl');
   private elementoActual: HTMLDivElement | null = null;
+  /** `true` tras el primer fitBounds del par técnico-destino (no se re-encaja). */
+  private limitesAjustados = false;
   private mapa: google.maps.Map | null = null;
   private marcadorTecnico: google.maps.Marker | null = null;
   private marcadorDestino: google.maps.Marker | null = null;
@@ -244,7 +246,21 @@ export class MapaSeguimientoComponent {
     }
 
     if (this.mapa) {
-      this.mapa.setCenter(this.centro());
+      if (tecnicoPos && destinoPos) {
+        // Encaja técnico y destino la primera vez que hay par: con centro y
+        // zoom fijos el marcador lejano quedaba fuera del encuadre y la línea
+        // parecía no conectar. Después el usuario conserva su zoom.
+        if (!this.limitesAjustados) {
+          this.limitesAjustados = true;
+          const limites = new google.maps.LatLngBounds();
+          limites.extend(tecnicoPos);
+          limites.extend(destinoPos);
+          this.mapa.fitBounds(limites, 48);
+        }
+      } else {
+        this.limitesAjustados = false;
+        this.mapa.setCenter(this.centro());
+      }
     }
   }
 

@@ -1,10 +1,16 @@
 <ion-header class="cd-header">
   <ion-toolbar>
+    <cd-marca pantalla="Radar" chip="Técnico" />
     <div class="cd-hero cd-hero--compacto">
       <h1 class="cd-headline">Ofertas cercanas</h1>
       <p class="cd-hero__nota">
         Recibes ofertas de clientes cercanos; la primera que aceptas es tuya.
       </p>
+      @if (ofertas().length > 0) {
+        <p class="cd-hero__nota cd-radar__conteo" data-testid="radar-conteo">
+          {{ ofertas().length }} {{ ofertas().length === 1 ? 'oferta' : 'ofertas' }} cerca de ti
+        </p>
+      }
     </div>
   </ion-toolbar>
 </ion-header>
@@ -59,16 +65,21 @@
   @for (oferta of ofertas(); track trackOt($index, oferta)) {
     <article class="cd-ot cd-oferta" [attr.data-testid]="'oferta-' + oferta.ot.id">
       <div class="cd-ot__cabecera">
-        <div>
-          <p class="cd-ot__codigo">{{ oferta.ot.codigo || 'Orden de trabajo' }}</p>
-          <p class="cd-ot__categoria">{{ oferta.ot.categoriaServicio.replace('_', ' ') }}</p>
+        <div class="cd-oferta__identidad">
+          <span class="cd-oferta__icono" aria-hidden="true">
+            <ion-icon [name]="iconoCategoria(oferta.ot.categoriaServicio)"></ion-icon>
+          </span>
+          <div class="cd-oferta__titulos">
+            <p class="cd-ot__codigo">{{ oferta.ot.codigo || 'Orden de trabajo' }}</p>
+            <p class="cd-ot__categoria">{{ categoriaLabel(oferta.ot.categoriaServicio) }}</p>
+          </div>
         </div>
         <span class="cd-chip cd-chip--espera" role="status" aria-live="polite" aria-atomic="true">
           Expira en {{ expira(oferta.segundosRestantes) }}
         </span>
       </div>
 
-      <p class="cd-ot__descripcion">{{ oferta.ot.descripcionFalla }}</p>
+      <h2 class="cd-oferta__titulo">{{ oferta.ot.descripcionFalla }}</h2>
       <p class="cd-ot__direccion">
         <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
         {{ oferta.ot.direccion }}
@@ -99,7 +110,7 @@
             <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
             <span class="cd-cta__loading">Aceptando…</span>
           } @else {
-            Aceptar
+            Aceptar servicio
           }
         </ion-button>
       </div>

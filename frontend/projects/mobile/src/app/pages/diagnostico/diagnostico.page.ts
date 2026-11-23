@@ -201,6 +201,9 @@ export class DiagnosticoPage implements OnInit {
           this.recargarOt();
         },
         error: () => this.iniciarPollDeRespaldo(),
+        // En mock el stream llega VACÍO y completa sin error: sin este cierre
+        // el poll de respaldo jamás arrancaba y la pantalla nunca refrescaba.
+        complete: () => this.iniciarPollDeRespaldo(),
       });
   }
 
