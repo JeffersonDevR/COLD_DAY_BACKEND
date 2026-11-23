@@ -75,5 +75,15 @@ Safe-area con notch, teclado virtual (el CTA fijo no debe tapar el campo; evalua
 
 ---
 
+## Progreso (2026-11-23) — para retomar en otro equipo
+
+- **Rama:** `feat/mobile-stitch-integration` (desde `main`). Commits: export Stitch + renovación de reglas; barra de marca e iconos compartidos; integración de pantallas Stitch en cliente, técnico y proveedor; baseline `UI-L1` mobile 22→13.
+- **Verificado:** `ui:check` OK. Suite `mobile`: 301 OK, 7 fallos en `modo/modo.service.spec.ts`, **los mismos 7 fallan en `main`** (deuda previa, no introducida por esta rama).
+- **Mocks:** `useMocks: false` por defecto (igual que `main`). No se commitió ningún cambio de demo.
+- **Pendiente de este backlog:** TU-07 (quitar Public Sans), TU-03 (títulos mono y eyebrows), TU-04 (estados carga/vacío/error), TU-06 (señal de scroll), TU-05 (13 usos de voseo en móvil), TU-10 (blur 1, halos 4, gradiente 1, `env()` directo 4).
+- **1:1 Stitch sin auditar:** B0 Panel Técnico, A4 Panel Cliente, A8 Pago y acta, B3 Ejecución, A7 (auditoría completa), B2 Mis OTs, A1/A2.
+- **Bloqueado por backend:** ver `renovacion-reglas-stitch.md` §2 y §5.
+- **Fuera de los commits (sin decidir):** cambios de demo en `frontend/src/app/core/service/*` (WS5), `node_modules/` en la raíz (sin regla de `.gitignore`), caché `.atl/`.
+
 ## Fuera de alcance de este backlog
 Rediseño visual (no se recomienda: el sistema ya está implementado), tablet de dos columnas, modo claro, `landing/`.
