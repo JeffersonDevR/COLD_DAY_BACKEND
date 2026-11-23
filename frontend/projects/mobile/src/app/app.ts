@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { IonApp, IonIcon, IonRouterOutlet } from '@ionic/angular';
+import { AuthService } from '@core/service/auth.service';
 import { NetworkStatusService } from './core/network';
+import { PushNotificacionesService } from './core/push';
 
 /**
  * Root shell of the mobile app: Ionic providers the outlet consumed by the
@@ -24,4 +26,16 @@ import { NetworkStatusService } from './core/network';
 })
 export class MobileApp {
   protected readonly red = inject(NetworkStatusService);
+  private readonly auth = inject(AuthService);
+  private readonly push = inject(PushNotificacionesService);
+
+  constructor() {
+    // Al iniciar sesión se registra el dispositivo para push (no-op mientras
+    // PUSH.habilitado sea false, ver core/push.ts).
+    effect(() => {
+      if (this.auth.isAuthenticated()) {
+        void this.push.activar();
+      }
+    });
+  }
 }
