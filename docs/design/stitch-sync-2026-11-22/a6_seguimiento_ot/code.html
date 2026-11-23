@@ -1,0 +1,297 @@
+<!DOCTYPE html><html class="dark" lang="es"><head></head><body class="bg-canvas text-on-surface flex justify-center min-h-screen"><svg class="inline-defs-container" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"></svg>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>A6 Seguimiento de OT · Cold Day</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Fonts: Space Grotesk, Inter, Space Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "surface-variant": "#16233b",
+            "outline-variant": "#1e293b",
+            primary: "#22d3ee",
+            "on-primary": "#083344",
+            amber: {
+              DEFAULT: "#f59e0b",
+              400: "#fbbf24",
+              500: "#f59e0b"
+            },
+            violet: {
+              DEFAULT: "#a78bfa"
+            },
+            success: {
+              DEFAULT: "#22c55e"
+            },
+            danger: {
+              DEFAULT: "#f87171"
+            },
+            "on-surface": "#f1f5f9",
+            "on-surface-variant": "#94a3b8"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"],
+            label: ["Space Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #0b1220;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    .amber-glow {
+      box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.35);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  
+
+<!-- Mobile Simulator Screen Frame (390x844 strict feel) -->
+<div class="w-full max-w-[390px] min-h-[844px] bg-canvas flex flex-col relative pb-32 border-x border-[#1e293b]/40">
+<!-- Top System Safe Area Buffer -->
+
+<!-- Fixed Header -->
+<header class="sticky top-0 z-40 bg-canvas/95 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-outline-variant" style="padding-top: max(env(safe-area-inset-top, 44px), 44px);">
+<div class="flex items-center gap-3">
+<button aria-label="Volver" class="w-11 h-11 flex items-center justify-center rounded-lg bg-surface border border-outline-variant text-on-surface hover:text-primary active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-headline font-bold text-base text-on-surface tracking-tight leading-tight">Seguimiento</h1>
+<span class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider">OT #CD-8819 · Split 3000F</span>
+</div>
+</div>
+<!-- Trailing Status Chip -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/30 rounded-full">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="font-mono text-[11px] font-bold text-primary uppercase tracking-wider">EN CAMINO</span>
+</div>
+</header>
+<!-- Main Scrollable Content -->
+<main class="px-4 pt-3 flex flex-col gap-3">
+<!-- ETA Banner -->
+<section class="bg-surface border border-outline-variant rounded-xl p-3.5 flex items-center justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 mt-0.5">
+<span class="material-symbols-outlined" data-icon="electric_moped">electric_moped</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-sm text-on-surface tracking-tight">Tu técnico llega en 12 min</span>
+</div>
+<p class="text-[13px] text-on-surface-variant font-body">Lucas V. · A 1,8 km de tu domicilio</p>
+</div>
+</div>
+<div class="flex items-center">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-70"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+</div>
+</section>
+<!-- Tactical Map Card Mockup -->
+<section class="bg-surface border border-outline-variant rounded-xl overflow-hidden relative h-[210px] flex flex-col">
+<!-- Map Canvas SVG Mockup -->
+<div class="absolute inset-0 w-full h-full bg-[#0b1220]">
+<!-- Grid Background & Roads -->
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 358 210" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="24" id="tacticalGrid" patternUnits="userSpaceOnUse" width="24">
+<path d="M 24 0 L 0 0 0 24" fill="none" opacity="0.6" stroke="#16233b" stroke-width="0.8"></path>
+</pattern>
+</defs>
+<rect fill="#0b1220" height="100%" width="100%"></rect>
+<rect fill="url(#tacticalGrid)" height="100%" width="100%"></rect>
+<!-- Avenue & Street Lines (Dark Ops Mockup) -->
+<path d="M-20,160 L380,60" fill="none" stroke="#1e293b" stroke-width="12"></path>
+<path d="M60,-20 L160,230" fill="none" stroke="#1e293b" stroke-width="9"></path>
+<path d="M220,-20 L270,230" fill="none" stroke="#1e293b" stroke-width="6"></path>
+<path d="M-10,40 L380,110" fill="none" stroke="#16233b" stroke-width="5"></path>
+<path d="M120,180 L320,130" fill="none" stroke="#16233b" stroke-width="4"></path>
+<!-- Route Track Dashed in Cyan -->
+<path d="M 85,134 Q 150,115 175,75 T 260,52" fill="none" stroke="#22d3ee" stroke-dasharray="6,4" stroke-linecap="round" stroke-width="3"></path>
+<!-- Technique Marker Point (Start of dashed) -->
+<circle cx="85" cy="134" fill="#22d3ee" fill-opacity="0.15" r="16"></circle>
+<circle cx="85" cy="134" fill="#0b1220" r="9" stroke="#22d3ee" stroke-width="2"></circle>
+<!-- Destination Point (Av Cabildo) -->
+<circle cx="260" cy="52" fill="#f87171" fill-opacity="0.12" r="16"></circle>
+<circle cx="260" cy="52" fill="#0b1220" r="9" stroke="#f87171" stroke-width="2"></circle>
+</svg>
+</div>
+<!-- Overlaid Visual Elements: Vehicle and Destination -->
+<div class="absolute left-[73px] top-[122px] pointer-events-none flex items-center justify-center w-6 h-6 text-primary">
+<span class="material-symbols-outlined text-[15px]" data-icon="moped">moped</span>
+</div>
+<div class="absolute right-[86px] top-[40px] pointer-events-none flex items-center justify-center w-6 h-6 text-danger">
+<span class="material-symbols-outlined text-[15px]" data-icon="location_on">location_on</span>
+</div>
+<!-- Map Floating Pills -->
+<!-- Destination label -->
+<div class="absolute top-3 left-3 bg-surface/90 backdrop-blur-md border border-outline-variant rounded-lg px-2.5 py-1.5 flex items-center gap-2">
+<span class="material-symbols-outlined text-danger text-[16px]" data-icon="home">home</span>
+<div class="flex flex-col">
+<span class="font-mono text-[10px] text-on-surface-variant uppercase tracking-wider leading-none">DESTINO</span>
+<span class="text-[12px] font-semibold text-on-surface leading-tight">Cra. 15 # 85-30, Bogotá</span>
+</div>
+</div>
+<!-- Metric ETA pill -->
+<div class="absolute bottom-3 right-3 bg-surface/95 backdrop-blur-md border border-outline-variant rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[15px]" data-icon="schedule">schedule</span>
+<span class="font-mono text-[11px] font-bold text-primary">1.8 km · 12 min</span>
+</div>
+<!-- GPS Calibrate hint -->
+<div class="absolute bottom-3 left-3 bg-surface/80 border border-outline-variant/60 rounded px-1.5 py-0.5">
+<span class="font-mono text-[9px] text-on-surface-variant uppercase tracking-wider">GPS LIVE · RT-88</span>
+</div>
+</section>
+<!-- Horizontal Event Timeline (4 steps) -->
+<section class="bg-surface border border-outline-variant rounded-xl p-3 flex flex-col gap-2"><div class="flex items-center justify-between pb-1">
+<span class="font-mono text-[11px] text-slate-300 font-medium uppercase tracking-wider">ESTADO DEL SERVICIO</span>
+<span class="font-mono text-[11px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded border border-primary/20">PASO 3 DE 4</span>
+</div>
+<div class="grid grid-cols-4 gap-1.5">
+<div class="bg-canvas border border-[#1e293b] rounded-lg p-2 flex flex-col items-center text-center transition-all">
+<div class="w-5 h-5 rounded-full bg-success/20 text-success flex items-center justify-center mb-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="check">check</span>
+</div>
+<span class="text-[11px] font-semibold text-slate-200 leading-none">Solicitada</span>
+<span class="font-mono text-[10px] text-slate-400 mt-1">14:10</span>
+</div>
+<div class="bg-canvas border border-[#1e293b] rounded-lg p-2 flex flex-col items-center text-center transition-all">
+<div class="w-5 h-5 rounded-full bg-success/20 text-success flex items-center justify-center mb-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="check">check</span>
+</div>
+<span class="text-[11px] font-semibold text-slate-200 leading-none">Asignada</span>
+<span class="font-mono text-[10px] text-slate-400 mt-1">14:18</span>
+</div>
+<div class="bg-primary/15 border border-primary/50 rounded-lg p-2 flex flex-col items-center text-center relative shadow-sm">
+<div class="w-5 h-5 rounded-full bg-primary text-canvas flex items-center justify-center mb-1">
+<span class="material-symbols-outlined text-[13px] font-bold" data-icon="near_me">near_me</span>
+</div>
+<span class="text-[11px] font-bold text-primary leading-none">En camino</span>
+<span class="font-mono text-[10px] font-semibold text-primary mt-1">14:32</span>
+</div>
+<div class="bg-canvas/50 border border-[#1e293b]/70 rounded-lg p-2 flex flex-col items-center text-center opacity-75">
+<div class="w-5 h-5 rounded-full bg-surface border border-outline-variant text-slate-400 flex items-center justify-center mb-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="build">build</span>
+</div>
+<span class="text-[11px] font-medium text-slate-400 leading-none">Diagnóstico</span>
+<span class="font-mono text-[10px] text-slate-400 mt-1">Pendiente</span>
+</div>
+</div></section>
+<!-- Assigned Technician Card -->
+<section class="bg-surface border border-[#1e293b] rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-3">
+<div class="relative shrink-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant border border-slate-700/60 flex items-center justify-center font-headline font-bold text-base text-primary">
+LV
+</div>
+<span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-success border-2 border-surface rounded-full"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-headline font-semibold text-[15px] text-on-surface leading-tight">Lucas Vázquez</span>
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="verified">verified</span>
+</div>
+<span class="font-mono text-[11px] text-slate-300 mt-0.5">CONTE #4829 · <span class="text-slate-400">Especialista Clima</span></span>
+<div class="flex items-center gap-1 mt-1">
+<span class="text-amber text-[13px]">★</span>
+<span class="text-[12px] font-semibold text-on-surface">4.9</span>
+<span class="text-[12px] text-slate-400">(124 servicios)</span>
+</div>
+</div>
+</div>
+<a aria-label="Llamar al técnico Lucas Vázquez" class="min-w-[44px] min-h-[44px] px-3.5 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 text-primary font-medium" href="tel:+5491100000000">
+<span class="material-symbols-outlined text-[18px]" data-icon="phone">phone</span>
+<span class="text-[13px] font-medium font-body">Llamar</span>
+</a>
+</section>
+<!-- Budget Card (Collapsed) -->
+<section class="bg-surface border border-[#1e293b] rounded-xl p-3.5 flex flex-col gap-3 shadow-sm">
+<div class="flex items-center justify-between gap-2">
+<div class="flex flex-col">
+<span class="font-mono text-[11px] text-slate-300 uppercase tracking-wider font-medium">PRESUPUESTO APROBADO</span>
+<div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 mt-1">
+<span class="font-headline font-bold text-xl text-on-surface tracking-tight">$165.000 COP</span>
+<span class="text-[12px] text-slate-300 font-body">Reparación split + carga</span>
+</div>
+</div>
+<button class="min-h-[44px] min-w-[44px] px-3 py-2 flex items-center gap-1 text-primary hover:text-primary/80 bg-surface-variant/80 border border-slate-700/50 rounded-lg active:scale-95 transition-all shrink-0" type="button">
+<span class="text-[13px] font-semibold">Ver detalle</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<div class="flex items-center justify-between pt-2.5 border-t border-slate-800">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-violet text-[16px]" data-icon="verified_user">verified_user</span>
+<span class="text-[12px] text-slate-300 font-body">Garantía oficial Cold Day 90 días</span>
+</div>
+<div class="px-2 py-0.5 rounded bg-violet/10 border border-violet/20 font-mono text-[10px] font-semibold text-violet uppercase tracking-wide">
+REPUESTOS OK
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Bottom Primary Action & Safe Area -->
+<div class="fixed bottom-0 max-w-[390px] w-full bg-canvas/95 backdrop-blur-md px-4 pt-3 pb-6 border-t border-outline-variant z-50" style="padding-bottom: max(env(safe-area-inset-bottom, 34px), 34px);">
+<div class="flex flex-col gap-2">
+<button class="w-full h-12 bg-amber hover:bg-amber-400 text-canvas font-headline font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] amber-glow" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="payments">payments</span>
+<span>Pagar visita · $50.000 COP</span>
+</button>
+<p class="text-center font-body text-[12px] text-on-surface-variant leading-tight">
+          El monto se descuenta del presupuesto final aprobado.
+        </p>
+</div>
+</div>
+</div>
+
+
+
+
+</body></html>

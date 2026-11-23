@@ -1,0 +1,275 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>Cold Day Ops - Ejecución de OT</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "outline-variant": "#1e293b",
+            primary: "#22d3ee",
+            "primary-focus": "#06b6d4",
+            accent: {
+              violet: "#a78bfa",
+              amber: "#f59e0b",
+              success: "#22c55e",
+              danger: "#f87171"
+            },
+            "on-surface": "#f1f5f9",
+            "on-surface-variant": "#94a3b8"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      font-size: 20px;
+      line-height: 1;
+    }
+    .material-symbols-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    /* Restrained Cyan Glow */
+    .glow-cyan-action {
+      box-shadow: 0 0 18px -2px rgba(34, 211, 238, 0.35);
+    }
+    /* Hardware acceleration for mobile performance */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-canvas text-on-surface font-body antialiased min-h-screen flex flex-col justify-between selection:bg-primary/20 selection:text-primary">
+<!-- Mobile Viewport Frame (Simulated 390x844 layout container) -->
+<div class="w-full max-w-[390px] mx-auto min-h-screen bg-canvas flex flex-col relative shadow-2xl border-x border-outline-variant/40">
+<!-- TOP HEADER (Technician Task Focused: with Close/Back and OT Code) -->
+<header class="sticky top-0 z-40 bg-surface/95 backdrop-blur-md px-4 pt-3 pb-3 flex items-center justify-between border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<button aria-label="Volver a lista de órdenes" class="touch-target flex items-center justify-center -ml-2 rounded-lg text-on-surface-variant hover:text-primary active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[22px]">arrow_back</span>
+</button>
+<div>
+<h1 class="font-headline font-bold text-base text-on-surface tracking-tight">OT #CD-8819</h1>
+</div>
+</div>
+<!-- Status Badge -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent-violet/10 text-accent-violet border border-accent-violet/30 font-label text-[11px] font-semibold tracking-wider uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-violet animate-pulse"></span>
+        EN REPARACIÓN
+      </span>
+</header>
+<!-- MAIN SCROLLABLE CANVAS -->
+<main class="flex-1 px-4 pt-4 pb-36 space-y-4">
+<!-- Summary Service Banner -->
+<div class="bg-surface rounded-xl p-3.5 border border-outline-variant shadow-sm space-y-2">
+<div class="flex items-start gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined text-[18px]">ac_unit</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="font-headline font-semibold text-sm text-on-surface truncate">Split 3000F gotea agua interior</p>
+<div class="flex items-center gap-2 text-xs text-on-surface-variant mt-0.5">
+<span class="truncate">Sofía Alemán</span>
+<span class="text-outline-variant">•</span>
+<span class="truncate">Cra. 15 # 85-30, Chicó Norte</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Execution Vertical Stepper -->
+<div class="bg-surface rounded-xl p-4 border border-outline-variant space-y-4">
+<div class="flex items-center justify-between border-b border-outline-variant pb-2.5">
+<span class="font-label text-[11px] font-bold text-on-surface-variant tracking-wider uppercase">Fases del servicio</span>
+<span class="font-headline text-xs text-accent-success font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] material-symbols-fill">verified</span>
+            3/4 Completados
+          </span>
+</div>
+<div class="relative pl-6 space-y-4 text-xs before:absolute before:left-2 before:top-2 before:bottom-3 before:w-[2px] before:bg-outline-variant">
+<!-- Step 1: Completed -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-accent-success/20 border border-accent-success flex items-center justify-center text-accent-success">
+<span class="material-symbols-outlined text-[11px] font-bold">check</span>
+</span>
+<div class="flex items-baseline justify-between">
+<span class="font-medium text-on-surface">En camino</span>
+<span class="font-label text-[11px] text-on-surface-variant">14:15 hs</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80">Llegaste a la zona asignada</span>
+</div>
+<!-- Step 2: Completed -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-accent-success/20 border border-accent-success flex items-center justify-center text-accent-success">
+<span class="material-symbols-outlined text-[11px] font-bold">check</span>
+</span>
+<div class="flex items-baseline justify-between">
+<span class="font-medium text-on-surface">En domicilio</span>
+<span class="font-label text-[11px] text-on-surface-variant">14:32 hs</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80">Recepción confirmada con cliente</span>
+</div>
+<!-- Step 3: Completed -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-accent-success/20 border border-accent-success flex items-center justify-center text-accent-success">Presupuesto $165.000 COP aprobado</span>
+<div class="flex items-baseline justify-between">
+<span class="font-medium text-on-surface">Diagnóstico técnico</span>
+<span class="font-label text-[11px] text-on-surface-variant">14:48 hs</span>
+</div>
+<span class="text-[11px] text-accent-success">Presupuesto $165.000 COP aprobado</span>
+</div>
+<!-- Step 4: Active Stage -->
+<div class="relative flex flex-col">
+<span class="absolute -left-6 top-1 w-4 h-4 rounded-full bg-primary/20 border border-primary flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+</span>
+<div class="flex items-baseline justify-between">
+<span class="font-headline font-semibold text-primary text-sm tracking-tight">Reparación en curso</span>
+<span class="font-label text-[11px] text-primary uppercase font-bold tracking-wider">Activo</span>
+</div>
+<span class="text-[11px] text-on-surface-variant">Intervención física del equipo y sellado</span>
+</div>
+</div>
+</div>
+<!-- ACTIVE STAGE CARD: Timer & Repuestos -->
+<div class="bg-surface rounded-xl p-4 border border-outline-variant space-y-4">
+<!-- Timer Block -->
+<div class="bg-canvas/80 rounded-lg p-3.5 border border-outline-variant flex items-center justify-between">
+<div>
+<span class="font-label text-[11px] uppercase tracking-wider text-on-surface-variant block">TIEMPO TRANSCURRIDO</span>
+<span class="font-headline font-bold text-2xl text-primary tracking-tight font-mono" id="ot-timer">00:25:23</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">timer</span>
+</div>
+</div>
+<!-- Repuestos Cargados Section -->
+<div class="space-y-2.5 pt-1">
+<div class="flex items-center justify-between">
+<span class="font-label text-[11px] font-bold text-accent-violet tracking-wider uppercase flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">build_circle</span>
+              REPUESTOS UTILIZADOS
+            </span>
+<span class="font-label text-[11px] text-on-surface-variant">2 ITEMS</span>
+</div>
+<!-- Repuesto Item 1 -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-canvas border border-outline-variant text-xs">
+<div class="min-w-0 pr-2">
+<p class="font-medium text-on-surface truncate">Válvula de expansión 1/4</p>
+<p class="text-[11px] text-on-surface-variant">Cantidad: 1 un.</p>
+</div>
+<span class="px-2 py-0.5 rounded bg-accent-violet/10 text-accent-violet border border-accent-violet/20 font-label font-semibold text-[11px] whitespace-nowrap">$60.000 COP</span>
+</div>
+<!-- Repuesto Item 2 -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-canvas border border-outline-variant text-xs">
+<div class="min-w-0 pr-2">
+<p class="font-medium text-on-surface truncate">Carga refrigerante R410a (500g)</p>
+<p class="text-[11px] text-on-surface-variant">Cantidad: 1 un.</p>
+</div>
+<span class="px-2 py-0.5 rounded bg-accent-violet/10 text-accent-violet border border-accent-violet/20 font-label font-semibold text-[11px] whitespace-nowrap">$35.000 COP</span>
+</div>
+<!-- Ghost Action Button for Parts -->
+<button class="w-full touch-target rounded-lg border border-dashed border-accent-violet/50 text-accent-violet hover:bg-accent-violet/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs font-semibold font-headline" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            + Agregar repuesto
+          </button>
+</div>
+</div>
+<!-- Quick Contact Row with Client -->
+<div class="bg-surface rounded-xl p-3 border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-outline-variant/60 flex items-center justify-center font-headline font-bold text-sm text-primary border border-outline-variant">
+            SA
+          </div>
+<div>
+<h2 class="text-xs font-semibold text-on-surface">Sofía Alemán</h2>
+<div class="flex items-center gap-1.5 text-[11px] text-accent-success">
+<span class="w-1.5 h-1.5 rounded-full bg-accent-success"></span>
+              En domicilio
+            </div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<!-- Call Button (Touch target 44px) -->
+<a aria-label="Llamar a Sofía Alemán" class="touch-target w-11 h-11 rounded-lg bg-canvas border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary/40 active:scale-95 flex items-center justify-center transition-all" href="tel:+5491100000000">
+<span class="material-symbols-outlined">phone</span>
+</a>
+<!-- Chat Button (Touch target 44px) -->
+<button aria-label="Chat con Sofía Alemán" class="touch-target w-11 h-11 rounded-lg bg-canvas border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary/40 active:scale-95 flex items-center justify-center transition-all" type="button">
+<span class="material-symbols-outlined">chat</span>
+</button>
+</div>
+</div>
+</main>
+<!-- BOTTOM STICKY ACTION BAR (Single primary cyan CTA + Report problem) -->
+<div class="sticky bottom-0 z-40 bg-surface/95 backdrop-blur-md px-4 pt-3 pb-6 border-t border-outline-variant space-y-2">
+<button class="w-full h-12 rounded-lg bg-primary text-black font-headline font-bold text-sm tracking-wide glow-cyan-action active:scale-[0.98] transition-transform flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-[20px] font-bold">check_circle</span>
+        Finalizar reparación
+      </button>
+<button class="w-full py-1.5 text-center text-xs text-accent-danger/80 hover:text-accent-danger font-medium transition-colors touch-target flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+        Reportar problema o anomalía
+      </button>
+</div>
+</div>
+<!-- Inline Script for Realistic Timer Simulation -->
+<script>
+    (function initTimer() {
+      let seconds = 15;
+      let minutes = 24;
+      let hours = 0;
+      const timerElement = document.getElementById('ot-timer');
+      
+      if (!timerElement) return;
+
+      setInterval(() => {
+        seconds++;
+        if (seconds >= 60) {
+          seconds = 0;
+          minutes++;
+          if (minutes >= 60) {
+            minutes = 0;
+            hours++;
+          }
+        }
+        const format = (num) => String(num).padStart(2, '0');
+        timerElement.textContent = `${format(hours)}:${format(minutes)}:${format(seconds)}`;
+      }, 1000);
+    })();
+  </script>
+
+
+</body></html>

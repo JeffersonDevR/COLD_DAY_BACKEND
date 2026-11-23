@@ -1,0 +1,328 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>A7 Diagnóstico y presupuesto - Cold Day</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;700&amp;family=Space+Grotesk:wght@600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            surface: "#111b2e",
+            background: "#0b1220",
+            primary: "#22d3ee",
+            violetAccent: "#a78bfa",
+            danger: "#f87171",
+            amberBadge: "#f59e0b",
+            darkBorder: "#1e293b",
+            mutedText: "#94a3b8"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"],
+            mono: ["Space Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      background-color: #0b1220;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .custom-scroll {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .cyan-glow {
+      box-shadow: 0 0 16px -2px rgba(34, 211, 238, 0.35);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0b1220] text-slate-100 flex justify-center min-h-screen select-none antialiased">
+<!-- Mobile Viewport Frame (390px Max Standard) -->
+<div class="relative w-full min-h-screen bg-[#0b1220] flex flex-col justify-between overflow-x-hidden border-[#1e293b]/60 shadow-2xl pb-44">
+<!-- Top Safe Area & Top Bar -->
+<header class="sticky top-0 z-30 w-full bg-[#0b1220]/95 backdrop-blur-md px-4 pt-3 pb-2 border-b border-[#1e293b]">
+<!-- Status bar placeholder simulation -->
+<div class="flex justify-between items-center text-[11px] font-mono text-slate-400 mb-2 px-1">
+<span>09:41</span>
+<div class="flex items-center gap-1.5 text-slate-400">
+<span class="material-symbols-outlined text-[13px] leading-none" data-icon="network_cell">network_cell</span>
+<span class="material-symbols-outlined text-[13px] leading-none" data-icon="wifi">wifi</span>
+<span class="material-symbols-outlined text-[13px] leading-none" data-icon="battery_full">battery_full</span>
+</div>
+</div>
+<div class="flex items-center justify-between h-11">
+<button aria-label="Volver" class="w-11 h-11 -ml-2 rounded-lg flex items-center justify-center text-slate-300 hover:text-white active:bg-[#111b2e] transition-colors" type="button">
+<span class="material-symbols-outlined text-2xl" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline font-bold text-lg text-slate-100 tracking-tight flex-1 px-2 truncate">
+          Presupuesto
+        </h1>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111b2e] border border-[#1e293b] text-[11px] font-mono text-slate-300 tracking-wide">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+<span>OT #CD-8819</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-4 pt-3 space-y-3.5 custom-scroll">
+<!-- Status Sub-badge -->
+<div class="flex items-center justify-between text-[11px] font-mono px-0.5">
+<span class="text-amber-400 uppercase tracking-wider font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="pending">pending</span>
+          DIAGNÓSTICO LISTO
+        </span>
+<span class="text-slate-400">Emitido hoy 14:48</span>
+</div>
+<!-- Equipment & Technician Summary Pill/Card -->
+<section class="bg-[#111b2e] border border-[#1e293b] rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded bg-[#0b1220] border border-[#1e293b] flex items-center justify-center text-slate-300">
+<span class="material-symbols-outlined text-xl" data-icon="mode_fan">mode_fan</span>
+</div>
+<div>
+<div class="font-headline text-sm font-semibold text-slate-100 leading-snug">
+              Split 3000F
+            </div>
+<div class="text-[12px] text-slate-400 font-normal">Matrícula CONTE Lucas V. <span class="font-mono text-slate-300">#4829</span></div>
+</div>
+</div>
+<div class="px-2 py-0.5 bg-[#0b1220] border border-[#1e293b] rounded text-[11px] font-mono text-slate-400">
+          En domicilio
+        </div>
+</section>
+<!-- Diagnosis Card -->
+<section class="bg-[#111b2e] border border-[#1e293b] rounded-lg p-3.5 space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-mono text-[11px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-slate-400" data-icon="build">build</span>
+            DIAGNÓSTICO TÉCNICO
+          </span>
+<span class="text-[11px] text-slate-400 font-mono">Revisión #1</span>
+</div>
+<p class="text-[13px] text-slate-200 leading-relaxed font-normal line-clamp-2">
+          Falla en válvula de expansión y microfuga en cañería de baja. Requiere presurización y recambio de conector.
+        </p>
+</section>
+<!-- Detailed Breakdown (Presupuesto) Card -->
+<section class="bg-[#111b2e] border border-[#1e293b] rounded-lg p-3.5 space-y-3">
+<div class="flex items-center justify-between pb-1">
+<span class="font-mono text-[11px] uppercase tracking-wider text-slate-400 font-bold">COP</span>
+<span class="text-[11px] font-mono text-slate-400">COP</span>
+</div>
+<!-- Line items -->
+<div class="space-y-2.5 text-[13px]">
+<!-- Row 1 -->
+<div class="flex items-start justify-between gap-2">
+<span class="text-slate-300">Mano de obra especializada</span>
+<span class="font-mono font-medium text-slate-100">$120.000</span>
+</div>
+<!-- Row 2 (Violet Repuestos Accent) -->
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-1.5">
+<span class="text-slate-300">Repuestos certificados</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-tight bg-[#a78bfa]/15 text-[#a78bfa] border border-[#a78bfa]/30">
+                REPUESTOS
+              </span>
+</div>
+<span class="font-mono font-medium text-[#a78bfa]">$60.000</span>
+</div>
+<!-- Row 3 -->
+<div class="flex items-start justify-between gap-2">
+<span class="text-slate-300">Carga gas refrigerante R410a</span>
+<span class="font-mono font-medium text-slate-100">$35.000</span>
+</div>
+<!-- Row 4 (Bonificación) -->
+<div class="flex items-start justify-between gap-2 text-slate-400">
+<span class="text-[12px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+              Descuento visita técnica inicial
+            </span>
+<span class="font-mono text-[12px] text-slate-400">-$50.000</span>
+</div>
+</div>
+<!-- 1px slate divider -->
+<div class="w-full h-px bg-[#1e293b] my-2"></div>
+<!-- Total Row -->
+<div class="flex items-end justify-between pt-1">
+<div>
+<div class="font-mono text-[11px] tracking-wider uppercase text-slate-400 font-bold">
+              TOTAL A PAGAR
+            </div>
+<div class="text-[11px] text-slate-400">IVA e insumos incluidos</div>
+</div>
+<div class="font-mono font-bold text-2xl text-[#22d3ee] tracking-tight">$165.000</div>
+</div>
+<!-- Guarantee badge -->
+<div class="mt-2 pt-2 border-t border-[#1e293b]/70 flex items-center gap-2 text-[12px] text-slate-300">
+<span class="material-symbols-outlined text-base text-cyan-400" data-icon="verified_user">verified_user</span>
+<span>Garantía oficial Cold Day 90 días incluida</span>
+</div>
+</section>
+<!-- Version limitation notice -->
+<p class="text-center text-[12px] text-slate-400 px-3 py-1 font-body">
+        El chat de diagnóstico llega en una próxima versión.
+      </p>
+</main>
+<!-- Fixed Bottom Action Container -->
+<div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full z-40 bg-[#0b1220]/95 backdrop-blur-md border-t border-[#1e293b] p-4 space-y-2.5">
+<!-- Primary Cyan Action Button -->
+<button class="w-full h-12 bg-[#22d3ee] text-[#0b1220] rounded-lg font-headline font-bold text-sm tracking-wide uppercase flex items-center justify-center gap-2 cyan-glow active:scale-[0.98] transition-all hover:bg-cyan-300" id="btn-approve" type="button">
+<span class="material-symbols-outlined text-lg leading-none" data-icon="check">check</span>
+        Aprobá el presupuesto
+      </button>
+<!-- Danger Rejection Outline Action -->
+<button class="w-full h-11 bg-transparent border border-[#f87171] text-[#f87171] rounded-lg font-headline font-medium text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 active:bg-[#f87171]/10 transition-colors" id="btn-open-rejection" type="button">
+<span class="material-symbols-outlined text-base leading-none" data-icon="close">close</span>
+        Rechazar presupuesto
+      </button>
+</div>
+<!-- Rejection Bottom Sheet Overlay / Drawer -->
+<div class="fixed inset-0 z-50 bg-[#0b1220]/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 flex justify-center items-end" id="rejection-sheet-backdrop">
+<div class="w-full bg-[#111b2e] border-t border-x border-[#1e293b] rounded-t-2xl p-4 space-y-4 transform translate-y-full transition-transform duration-200" id="rejection-sheet-content">
+<!-- Drag Handle Indicator -->
+<div class="w-12 h-1 bg-slate-600 rounded-full mx-auto -mt-1 mb-2"></div>
+<!-- Header -->
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline font-bold text-base text-slate-100">
+              Rechazar presupuesto
+            </h2>
+<p class="text-[12px] text-slate-400 mt-0.5 font-body">
+              Contanos el motivo para coordinar el cierre de la orden:
+            </p>
+</div>
+<button class="text-slate-400 hover:text-slate-200 p-1" id="btn-close-sheet-icon" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="close">close</span>
+</button>
+</div>
+<!-- Quick selection tags (Reason pills) -->
+<div class="space-y-2" id="rejection-options">
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-[#1e293b] bg-[#0b1220] cursor-pointer hover:border-slate-600 transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-[#22d3ee] bg-[#111b2e] border-slate-600 focus:ring-0" name="rejection_reason" type="radio" value="costo">
+<span class="text-[13px] text-slate-200">Costo elevado</span>
+</div>
+<span class="font-mono text-[11px] text-slate-400">$</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-[#1e293b] bg-[#0b1220] cursor-pointer hover:border-slate-600 transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-[#22d3ee] bg-[#111b2e] border-slate-600 focus:ring-0" name="rejection_reason" type="radio" value="otro_servicio">
+<span class="text-[13px] text-slate-200">Conseguí otro servicio</span>
+</div>
+<span class="material-symbols-outlined text-sm text-slate-400" data-icon="swap_horiz">swap_horiz</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-[#1e293b] bg-[#0b1220] cursor-pointer hover:border-slate-600 transition-colors">
+<div class="flex items-center gap-2">
+<input class="text-[#22d3ee] bg-[#111b2e] border-slate-600 focus:ring-0" name="rejection_reason" type="radio" value="posponer">
+<span class="text-[13px] text-slate-200">No voy a reparar ahora</span>
+</div>
+<span class="material-symbols-outlined text-sm text-slate-400" data-icon="schedule">schedule</span>
+</label>
+</div>
+<!-- Text Observation Input -->
+<div>
+<label class="block font-mono text-[11px] text-slate-400 uppercase tracking-wider mb-1.5" for="obs-input">
+            OBSERVACIONES ADICIONALES
+          </label>
+<textarea class="w-full bg-[#0b1220] border border-[#1e293b] rounded-lg p-2.5 text-[13px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#22d3ee] focus:ring-0 resize-none" id="obs-input" placeholder="Escribí una observación (opcional)..." rows="2"></textarea>
+</div>
+<!-- Sheet Action Buttons -->
+<div class="grid grid-cols-2 gap-2.5 pt-1 pb-2">
+<button class="h-11 border border-[#1e293b] text-slate-300 rounded-lg text-xs font-headline font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors" id="btn-cancel-sheet" type="button">
+            Cancelar
+          </button>
+<button class="h-11 bg-[#f87171] text-[#0b1220] font-headline font-bold text-xs uppercase tracking-wider rounded-lg active:scale-95 transition-all" id="btn-confirm-rejection" type="button">
+            Confirmar rechazo
+          </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+    // Micro-interactions for bottom sheet
+    const openBtn = document.getElementById('btn-open-rejection');
+    const closeBtn = document.getElementById('btn-cancel-sheet');
+    const closeIcon = document.getElementById('btn-close-sheet-icon');
+    const backdrop = document.getElementById('rejection-sheet-backdrop');
+    const sheetContent = document.getElementById('rejection-sheet-content');
+    const confirmBtn = document.getElementById('btn-confirm-rejection');
+    const approveBtn = document.getElementById('btn-approve');
+
+    function openRejectionDrawer() {
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+      backdrop.classList.add('opacity-100', 'pointer-events-auto');
+      sheetContent.classList.remove('translate-y-full');
+      sheetContent.classList.add('translate-y-0');
+    }
+
+    function closeRejectionDrawer() {
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+      backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+      sheetContent.classList.add('translate-y-full');
+      sheetContent.classList.remove('translate-y-0');
+    }
+
+    openBtn.addEventListener('click', openRejectionDrawer);
+    closeBtn.addEventListener('click', closeRejectionDrawer);
+    closeIcon.addEventListener('click', closeRejectionDrawer);
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) {
+        closeRejectionDrawer();
+      }
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      confirmBtn.innerText = "Rechazando...";
+      setTimeout(() => {
+        closeRejectionDrawer();
+        confirmBtn.innerText = "Confirmar rechazo";
+        alert("Orden rechazada. Un coordinador se pondrá en contacto.");
+      }, 500);
+    });
+
+    approveBtn.addEventListener('click', () => {
+      approveBtn.innerText = "Confirmando...";
+      setTimeout(() => {
+        approveBtn.innerText = "¡Presupuesto Aprobado!";
+        approveBtn.classList.remove('bg-[#22d3ee]');
+        approveBtn.classList.add('bg-emerald-400');
+      }, 400);
+    });
+  </script>
+
+
+
+
+</body></html>

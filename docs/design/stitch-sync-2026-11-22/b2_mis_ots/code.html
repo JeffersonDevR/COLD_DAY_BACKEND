@@ -1,0 +1,180 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Cold Day Ops - Mis OTs</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            surface: "#111b2e",
+            "surface-canvas": "#0b1220",
+            primary: "#22d3ee",
+            outline: "#1e293b",
+            "outline-variant": "#1e293b",
+            "on-surface-variant": "#94a3b8"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"],
+            mono: ["Space Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 12px);
+    }
+  </style>
+</head>
+<body class="bg-[#0b1220] text-slate-100 font-body antialiased min-h-screen flex flex-col justify-between selection:bg-cyan-500/20 selection:text-cyan-300">
+<!-- Fixed Top Header -->
+<header class="fixed top-0 inset-x-0 z-40 bg-[#111b2e]/95 backdrop-blur-md border-b border-[#1e293b] pt-safe">
+<div class="flex justify-between items-center w-full px-4 h-14">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg overflow-hidden border border-[#1e293b] bg-[#0b1220] flex items-center justify-center">
+<img alt="Cold Day Brand Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XiO-AxEHuaOTB8N9UX504Q9uGpTJw4XkUs1SjDl5C910wV7SQOxq_LmviLK76OnC1eQ7Qjo59Jz3DdEXhRZcvGui584K_4QL-Iv__fRFftYOqTY6jA1MCEDhruBs_UIP6pZ9nw6Z0doPNzIZPMF17oM4AieErgzqjeio4AWRwP9hpn1xsz-cmikj29jlAnwyu5fegdqYon6PmL34FpaTR69918zjmuViLU7_Ztz5G5x2SlPr0grWUxlJ4">
+</div>
+<div>
+<h1 class="font-headline font-bold text-base tracking-wide text-slate-100 leading-tight">Mis OTs</h1>
+<p class="font-mono text-[10px] uppercase tracking-wider text-cyan-400">EN GUARDIA</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button aria-label="Notificaciones" class="relative w-10 h-10 rounded-lg flex items-center justify-center text-slate-300 hover:text-white active:scale-95 transition-transform bg-[#0b1220]/60 border border-[#1e293b]" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-cyan-400"></span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Scrollable Content Container (Mobile Viewport Framed to 390px spec) -->
+<main class="w-full max-w-[420px] mx-auto pt-20 pb-24 px-4 flex-1 flex flex-col gap-4">
+<!-- Compact Shift Summary Strip -->
+<section class="bg-[#111b2e]/80 border border-[#1e293b] rounded-lg px-3.5 py-2.5 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-2 text-slate-300 text-xs">
+<span class="material-symbols-outlined text-cyan-400 text-base">schedule</span>
+<span>Hoy: <strong class="text-white font-medium">2 servicios</strong></span>
+</div>
+<div class="font-mono text-xs font-bold text-cyan-400 tracking-tight">$320.000 COP <span class="text-[10px] text-slate-400 font-normal">estimado</span></div>
+</section>
+<!-- Ionic Style Segmented Control -->
+<nav aria-label="Filtro de órdenes" class="bg-[#0b1220] p-1 rounded-lg border border-[#1e293b] grid grid-cols-2 gap-1">
+<button class="w-full min-h-[44px] py-2 rounded-md bg-[#1e293b] text-white font-semibold text-xs border border-cyan-500/30 flex items-center justify-center gap-2 shadow-sm transition" type="button"><span>Activas</span><span class="px-2 py-0.5 text-[11px] font-mono rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-bold">2</span></button>
+<button class="w-full min-h-[44px] py-2 rounded-md text-slate-300 hover:text-white hover:bg-slate-800/50 text-xs flex items-center justify-center gap-2 transition" type="button"><span>Historial</span><span class="text-[11px] font-mono text-slate-400">14</span></button>
+</nav>
+<!-- Active Orders Stack -->
+<div class="flex flex-col gap-3.5">
+<!-- OT Card 1: Urgent / In Progress Route -->
+<article class="bg-[#111b2e] border border-[#1e293b] rounded-xl p-4 flex flex-col gap-3 relative shadow-md">
+<!-- Badge Header Row -->
+<div class="flex items-center justify-between">
+<span class="font-mono text-[11px] uppercase tracking-wider text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-cyan-400">ac_unit</span>
+            CLIMATIZACIÓN
+          </span>
+<span class="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 font-semibold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+            EN CAMINO
+          </span>
+</div>
+<!-- Issue Title -->
+<h2 class="font-headline font-semibold text-slate-100 text-base leading-snug">
+          Split 3000F gotea agua interior
+        </h2>
+<!-- Details / Client & Address -->
+<div class="space-y-1.5 text-xs text-slate-300 border-t border-[#1e293b]/70 pt-2.5">
+<div class="flex items-center justify-between">
+<span class="text-slate-400">Cliente:</span>
+<span class="font-medium text-slate-200">Sofía Alemán</span>
+</div>
+<div class="flex items-center gap-1.5 text-slate-300 truncate"><span class="material-symbols-outlined text-slate-400 text-sm flex-shrink-0">location_on</span>
+<span class="truncate">Cra. 15 # 85-30, Chicó Norte</span></div>
+<div class="flex items-center gap-1.5 text-slate-400">
+<span class="material-symbols-outlined text-amber-400 text-sm flex-shrink-0">timer</span>
+<span>Franja: <strong class="text-slate-200">14:30 - 15:30 hs</strong> <span class="text-cyan-300 font-mono">(En 20 min)</span></span>
+</div>
+</div>
+<!-- Price preview & Primary Action -->
+<div class="border-t border-[#1e293b]/70 pt-3 flex items-center justify-between gap-3">
+<div>
+<div class="font-mono text-[10px] text-slate-400 uppercase tracking-wider">Monto cierre</div>
+<div class="font-mono text-sm font-bold text-cyan-400">$160.000 COP <span class="text-[11px] font-normal text-slate-400">estimado</span></div>
+</div>
+<button class="h-12 px-5 rounded-xl bg-[#22d3ee] text-[#0b1220] font-headline font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,211,238,0.25)] hover:bg-cyan-300 active:scale-95 transition-all" type="button"><span>Continuar ruta</span><span class="material-symbols-outlined text-[20px]">navigation</span></button>
+</div>
+</article>
+<!-- OT Card 2: Subsequent In Repair Order -->
+<article class="bg-[#111b2e] border border-[#1e293b] rounded-xl p-4 flex flex-col gap-3 relative shadow-md">
+<!-- Badge Header Row -->
+<div class="flex items-center justify-between">
+<span class="font-mono text-[11px] uppercase tracking-wider text-slate-400 flex items-center gap-1"><span class="material-symbols-outlined text-[15px] text-purple-400">local_laundry_service</span>
+            LAVADORA</span>
+<span class="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/50 font-semibold">
+            EN REPARACIÓN
+          </span>
+</div>
+<!-- Issue Title -->
+<h2 class="font-headline font-semibold text-slate-100 text-base leading-snug">Lavadora carga superior error E3 desagote</h2>
+<!-- Details / Client & Address -->
+<div class="space-y-1.5 text-xs text-slate-300 border-t border-[#1e293b]/70 pt-2.5"><div class="flex items-center justify-between"><span class="text-slate-300">Cliente:</span><span class="font-medium text-slate-100">Gonzalo Méndez</span></div><div class="flex items-center gap-1.5 text-slate-200 truncate"><span class="material-symbols-outlined text-slate-300 text-sm flex-shrink-0">location_on</span><span class="truncate">Calle 100 # 19-61, Usaquén</span></div><div class="flex items-center gap-1.5 text-slate-300"><span class="material-symbols-outlined text-slate-300 text-sm flex-shrink-0">schedule</span><span>Franja: <strong class="text-white font-medium">16:30 - 17:30 hs</strong></span></div></div>
+<!-- Price preview & Secondary Action -->
+<div class="border-t border-[#1e293b]/70 pt-3 flex items-center justify-between gap-3">
+<div>
+<div class="font-mono text-[10px] text-slate-400 uppercase tracking-wider">Monto cierre</div>
+<div class="font-mono text-sm font-bold text-slate-200">$160.000 COP <span class="text-[11px] font-normal text-slate-400">estimado</span></div>
+</div>
+<button class="min-h-[44px] h-11 px-5 rounded-xl border border-[#1e293b] bg-[#1e293b]/80 text-slate-200 hover:text-white hover:bg-[#1e293b] font-headline font-semibold text-xs tracking-wide flex items-center justify-center gap-1.5 active:scale-95 transition-all" type="button"><span>Ver detalle</span><span class="material-symbols-outlined text-base">arrow_forward</span></button>
+</div>
+</article>
+<!-- System operational hint -->
+<div class="px-2 py-1 text-center">
+<p class="text-[11px] font-mono text-slate-500 uppercase tracking-widest">Sincronizado vía Telemetría · Red Bogotá Norte</p>
+</div>
+</div>
+</main>
+<!-- Fixed Bottom Navigation Bar (Matched to Shared Components JSON) -->
+<nav aria-label="Navegación principal" class="fixed bottom-0 inset-x-0 z-50 bg-[#111b2e] border-t border-[#1e293b] pb-safe flex justify-around items-center px-4 py-2">
+<!-- Tab 1: Radar -->
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-cyan-400 transition-colors duration-150 py-1 min-w-[64px] min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-xl">radar</span>
+<span class="font-label text-xs uppercase tracking-wider mt-0.5">Radar</span>
+</a>
+<!-- Tab 2: Mis OTs (Active) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-[#22d3ee] font-semibold py-1 min-w-[64px] min-h-[44px] relative" href="#">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-label text-xs uppercase tracking-wider mt-0.5">Mis OTs</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#22d3ee] absolute bottom-0.5"></span>
+</a>
+<!-- Tab 3: Perfil -->
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-cyan-400 transition-colors duration-150 py-1 min-w-[64px] min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-xl">person</span>
+<span class="font-label text-xs uppercase tracking-wider mt-0.5">Perfil</span>
+</a>
+</nav>
+
+
+
+
+</body></html>
