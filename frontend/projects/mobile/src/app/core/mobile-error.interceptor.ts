@@ -51,6 +51,10 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   // Configuración de mapas: el servicio tiene respaldo local y no es una
   // acción del usuario, así que un fallo acá no merece un toast.
   /\/api\/config\/maps$/,
+  // Registro del token push: ocurre solo, en segundo plano, justo tras iniciar
+  // sesión. Si falla (p. ej. un backend sin el endpoint) el usuario no hizo
+  // ninguna acción y un toast de error sería ruido.
+  /\/api\/usuarios\/me\/dispositivos$/,
 ];
 
 function esAccionSilenciosa(url: string): boolean {
