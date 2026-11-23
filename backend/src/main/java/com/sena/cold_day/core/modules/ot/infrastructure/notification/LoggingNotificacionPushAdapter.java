@@ -2,6 +2,7 @@ package com.sena.cold_day.core.modules.ot.infrastructure.notification;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
@@ -16,6 +17,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
  * on push delivery, so this adapter only records the event.
  */
 @Component
+@ConditionalOnProperty(name = "app.push.fcm.enabled", havingValue = "false", matchIfMissing = true)
 public class LoggingNotificacionPushAdapter implements NotificacionPushPort {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingNotificacionPushAdapter.class);

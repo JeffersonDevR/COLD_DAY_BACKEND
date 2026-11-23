@@ -1,7 +1,7 @@
 <ion-header class="cd-header">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/tecnico/ots" text="" aria-label="Volver al panel"></ion-back-button>
+      <ion-back-button defaultHref="/tecnico/cuenta" text="" aria-label="Volver a Cuenta"></ion-back-button>
     </ion-buttons>
     <div class="cd-hero cd-hero--compacto">
       <h1 class="cd-headline">Mi perfil</h1>
@@ -76,51 +76,29 @@
           </p>
         }
 
-        <ion-button
-          expand="block"
-          class="cd-cta"
-          [disabled]="seleccionVacia() || guardando() || !hayCambios()"
-          (click)="guardar()"
-          data-testid="guardar-especialidades"
-        >
-          @if (guardando()) {
-            <ion-spinner name="dots"></ion-spinner>
-          } @else {
-            Guardar especialidades
-          }
-        </ion-button>
       </ion-card-content>
     </ion-card>
 
-    <h2 class="cd-section__titulo">Documentos</h2>
-    @if (documentos().length === 0) {
-      <cd-empty-state
-        titulo="Sin documentos cargados"
-        texto="La carga de documentos se hace desde la web: la app todavía no tiene cámara ni subida de archivos."
-        testId="documentos-vacio"
-      />
-    } @else {
-      @for (documento of documentos(); track documento.id) {
-        <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">
-          <div class="cd-ot__cabecera">
-            <div>
-              <p class="cd-ot__codigo">{{ documento.nombre || etiquetaDocumento(documento.tipo) }}</p>
-              @if (documento.fechaVencimiento) {
-                <p class="cd-ot__categoria">Vence {{ documento.fechaVencimiento }}</p>
-              }
-            </div>
-            <span class="cd-chip cd-chip--{{ tonoDocumento(documento) }}">
-              {{ documento.estadoValidacion }}
-            </span>
-          </div>
-          @if (documento.observaciones) {
-            <p class="cd-ot__descripcion">{{ documento.observaciones }}</p>
-          }
-        </article>
-      }
-    }
     <p class="cd-ayuda">
-      Para subir o renovar un documento usa la web hasta que la app tenga cámara y subida de archivos.
+      Tus documentos de validación se consultan en el tab Gestión, junto a tus liquidaciones.
     </p>
   }
 </ion-content>
+
+<ion-footer class="cd-footer">
+  <ion-button
+    expand="block"
+    class="cd-cta"
+    [attr.aria-busy]="guardando()"
+    [disabled]="seleccionVacia() || guardando() || !hayCambios()"
+    (click)="guardar()"
+    data-testid="guardar-especialidades"
+  >
+    @if (guardando()) {
+      <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+      <span class="cd-cta__loading">Guardando…</span>
+    } @else {
+      Guardar especialidades
+    }
+  </ion-button>
+</ion-footer>

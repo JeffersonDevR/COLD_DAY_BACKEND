@@ -51,7 +51,7 @@ import { MobileToastService } from '../../core/toast.service';
 const MENSAJES_ACTA: Record<number, string> = {
   409: 'El acta ya quedó registrada o la orden no está finalizada todavía. Actualizá la pantalla para ver el estado actual.',
   400: 'La firma no es válida: volvé a dibujarla y registrá el acta de nuevo.',
-  403: 'Esta orden no te pertenece, así que no podés firmar su acta.',
+  403: 'Esta orden no te pertenece, así que no puedes firmar su acta.',
 };
 
 /**
@@ -118,15 +118,21 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
   /**
-   * Visit-tariff estimate. This screen NEVER queries it (see the header):
-   * it stays `null` and the row shows "Por confirmar". The signal and the
-   * total formula are kept identical to the web contract.
+   * Visit tariff: reads the fee already recorded on the OT (`tarifaVisita`,
+   * diagnóstico + traslado). This screen never queries the estimator.
    */
   readonly estimacion = signal<TarifaEstimadaResponse | null>(null);
 
-  /** Repair budget + estimated visit tariff (web contract). */
+  /** Tarifa de visita real registrada en la OT. */
+  readonly tarifaVisita = computed<number | null>(() => {
+    const registrada = this.ot()?.tarifaVisita;
+    if (registrada != null) return registrada;
+    return this.estimacion()?.tarifa ?? null;
+  });
+
+  /** Repair budget + recorded visit tariff. */
   readonly totalMonto = computed<number>(
-    () => (this.ot()?.presupuesto?.total || 0) + (this.estimacion()?.tarifa ?? 0),
+    () => (this.ot()?.presupuesto?.total || 0) + (this.tarifaVisita() ?? 0),
   );
 
   readonly visitaPagada = computed<boolean>(() => this.ot()?.visitaPagada === true);
@@ -143,7 +149,7 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   });
 
   readonly visitaLabel = computed<string>(() => {
-    const tarifa = this.estimacion()?.tarifa;
+    const tarifa = this.tarifaVisita();
     return tarifa == null ? 'Por confirmar' : this.formatoMoneda(tarifa);
   });
 
@@ -342,7 +348,7 @@ export class PagoActaPage implements OnInit, AfterViewInit {
     if (!firmaDataUrl) {
       this.toast.error(
         'No pudimos registrar tu acta',
-        'Volvé a dibujar tu firma e intentá de nuevo.',
+        'Vuelve a dibujar tu firma e inténtalo de nuevo.',
       );
       return;
     }

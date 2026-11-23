@@ -67,13 +67,37 @@ Ver `docs/backend/TAREAS-BACKEND.md` TB-10: sembrar una OT en cada estado y una 
 Safe-area con notch, teclado virtual (el CTA fijo no debe tapar el campo; evaluar `@capacitor/keyboard`), WebView (`:has()`, `dvh`), fuente del sistema al 130–150 %. Documenta hallazgos en `DESIGN.md` §8.
 
 ### TU-12 🟢 Auditoría Playwright en CI
-`npm i -D playwright-core`; job opcional que levanta backend con Testcontainers/seed, sirve la app en `:4200` y corre `npm run ui:audit` (necesita `UI_AUDIT_PASSWORD` como secreto). Hasta entonces `ui:audit` es manual y obligatoria antes de dar por hecha una tarea visual.
+**Estado (2026-11-23): instalado y medido en local.** `playwright-core` está en `devDependencies`, el job `ui-audit` existe en `.github/workflows/frontend-ci.yml` con `continue-on-error: true` (temporal: depende del seed de TU-08 y del secreto `UI_AUDIT_PASSWORD`).
+
+```bash
+cd frontend
+npx playwright-core install chromium          # una vez por máquina
+UI_AUDIT_PASSWORD=<password demo del seeder> npm run ui:audit
+# salida esperada: "pantallas auditadas: 65, con hallazgos: 0"
+```
+
+Requiere backend en `:8090` y la app servida en `:4200`. El script inicia sesión UNA vez por rol (rate limit 10/min por IP: no lo relances en bucle; si ves "Correo o contraseña incorrectos" tras varios intentos, es 429 — espera un minuto).
+
+**Trabajo restante:** quitar `continue-on-error` cuando TU-08 siembre las pantallas con datos; sumar el job a los checks obligatorios de `main`.
 
 ### TU-13 🟢 Restaurar el origen de producción
 `frontend/.env`: si `MOBILE_API_ORIGIN` apunta a `localhost`, restaura la URL de producción **antes** de `mobile:build`, `mobile:apk` o `mobile:aab`. Añade a `scripts/build-apk.mjs` un chequeo que **aborte** si el origen es `localhost`.
 **Aceptación:** `npm run mobile:apk` con origen local falla con mensaje claro.
 
 ---
+
+### TU-14 🟡 (parcial: liquidaciones-tecnico hecho; proveedor pendiente) Homogeneidad: colas a `cd-page` y detalles con estados
+**Objetivo:** cerrar las brechas de `docs/design/NAVEGACION.md` §3. **Una pantalla por commit.**
+**Orden:** `liquidaciones-tecnico`, `solicitudes-proveedor`, `documentos-proveedor` → `cd-page` (plantilla Cola); luego skeleton + error con reintento en `seguimiento-ot`, `ejecucion-ot`, `diagnostico`, `pago-acta`; luego error en `documentos-proveedor` y vacío/error en `perfil-tecnico`.
+**Aceptación:** la fila de la pantalla en NAVEGACION §3 queda completa; specs de carga/vacío/error; `ui:check`, `mobile:test`, `mobile:build` OK.
+
+### TU-15 ✅ Navegación: volver predecible y alcanzabilidad (UI-N1/N2)
+**Objetivo:** que `ion-back-button` lleve al padre real y su etiqueta no mienta (`ejecucion-ot`, `perfil-tecnico` dicen «Volver al panel» y van a Mis OTs); añadir un spec que compare las rutas de `app.routes.ts` con la lista de entradas de NAVEGACION §1 y falle si una ruta no tiene entrada.
+**Aceptación:** spec nuevo en verde; `grep -rn "Volver al panel" projects/mobile` sin discrepancias.
+
+### TU-16 🟡 Huecos de funcionalidad frontend (F1, F2, F5, F6, F7)
+**Objetivo:** pantalla `recuperar` + enlace en login (F1); datos y contraseña en Cuenta (F2, tras decidir D4); countdown vivo del radar (F5); `ion-refresher` en las colas del proveedor y del técnico (F6/F7).
+**Aceptación:** por hueco, spec nuevo + fila actualizada/borrada en NAVEGACION §2.
 
 ## Progreso (2026-11-23) — para retomar en otro equipo
 

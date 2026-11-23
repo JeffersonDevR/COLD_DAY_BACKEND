@@ -51,6 +51,10 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   // Configuración de mapas: el servicio tiene respaldo local y no es una
   // acción del usuario, así que un fallo acá no merece un toast.
   /\/api\/config\/maps$/,
+  // Registro del token push: ocurre solo, en segundo plano, justo tras iniciar
+  // sesión. Si falla (p. ej. un backend sin el endpoint) el usuario no hizo
+  // ninguna acción y un toast de error sería ruido.
+  /\/api\/usuarios\/me\/dispositivos$/,
 ];
 
 function esAccionSilenciosa(url: string): boolean {
@@ -119,7 +123,7 @@ export const mobileErrorInterceptor: HttpInterceptorFn = (req, next) => {
 
       if (normalizado.status === 401 && auth.isAuthenticated()) {
         normalizado.sesionNotificada = true;
-        void toast.warning('Tu sesión expiró', 'Ingresá de nuevo para continuar.');
+        void toast.warning('Tu sesión expiró', 'Ingresa de nuevo para continuar.');
         auth.logout();
       } else if (esAccionSilenciosa(req.url)) {
         // La pantalla es la única voz: no se agrega un toast genérico encima.

@@ -197,6 +197,10 @@ export function aOtResponse(dto: OtApiResponse): OtResponse {
       : undefined,
     auxiliaresRequeridos: dto.auxiliaresRequeridos,
     visitaPagada: dto.visitaPagada,
+    // La tarifa de visita ya viene registrada en la OT: se expone tal cual
+    // para que A7/A8 muestren el valor real (antes se botaba y el desglose
+    // del cliente decía "Por confirmar" para siempre).
+    tarifaVisita: dto.tarifaVisita ?? undefined,
     evidenciaUrls: [],
     // Acta firmada (V11). El código se muestra tal cual lo emitió el
     // servidor; acá no se deriva ni se recalcula nada.

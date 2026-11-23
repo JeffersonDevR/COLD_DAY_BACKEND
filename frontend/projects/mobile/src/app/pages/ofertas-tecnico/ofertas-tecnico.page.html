@@ -1,21 +1,19 @@
-<ion-header class="cd-header">
-  <ion-toolbar>
-    <cd-marca pantalla="Radar" chip="Técnico" />
-    <div class="cd-hero cd-hero--compacto">
-      <h1 class="cd-headline">Ofertas cercanas</h1>
-      <p class="cd-hero__nota">
-        Recibes ofertas de clientes cercanos; la primera que aceptas es tuya.
-      </p>
-      @if (ofertas().length > 0) {
-        <p class="cd-hero__nota cd-radar__conteo" data-testid="radar-conteo">
-          {{ ofertas().length }} {{ ofertas().length === 1 ? 'oferta' : 'ofertas' }} cerca de ti
-        </p>
-      }
-    </div>
-  </ion-toolbar>
-</ion-header>
+<cd-page
+  titulo="Ofertas cercanas"
+  subtitulo="Recibes ofertas de clientes cercanos; la primera que aceptas es tuya."
+>
+  <ion-header class="cd-header" cdHeader>
+    <ion-toolbar>
+      <cd-marca pantalla="Radar" chip="Técnico" />
+    </ion-toolbar>
+  </ion-header>
 
-<ion-content class="ion-padding">
+  @if (ofertas().length > 0) {
+    <p class="cd-hero__nota cd-radar__conteo" data-testid="radar-conteo">
+      {{ ofertas().length }} {{ ofertas().length === 1 ? 'oferta' : 'ofertas' }} cerca de ti
+    </p>
+  }
+
   @if (tecnico() && !validacionAprobada()) {
     <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="radar-no-habilitado">
       <h2 class="cd-alerta__titulo">Todavía no puedes tomar ofertas</h2>
@@ -67,7 +65,7 @@
       <div class="cd-ot__cabecera">
         <div class="cd-oferta__identidad">
           <span class="cd-oferta__icono" aria-hidden="true">
-            <ion-icon [name]="iconoCategoria(oferta.ot.categoriaServicio)"></ion-icon>
+            <ion-icon aria-hidden="true" [name]="iconoCategoria(oferta.ot.categoriaServicio)"></ion-icon>
           </span>
           <div class="cd-oferta__titulos">
             <p class="cd-ot__codigo">{{ oferta.ot.codigo || 'Orden de trabajo' }}</p>
@@ -116,4 +114,4 @@
       </div>
     </article>
   }
-</ion-content>
+</cd-page>

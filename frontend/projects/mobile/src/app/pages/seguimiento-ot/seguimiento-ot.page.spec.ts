@@ -61,7 +61,7 @@ function setup({
   sse,
   loader,
 }: {
-  otApi?: { getOtById?: Stub; getTecnicoUbicacion?: Stub };
+  otApi?: { getOtById?: Stub; getTecnicoUbicacion?: Stub; estimarTarifa?: Stub };
   clientesApi?: { cancelarOt?: Stub; abrirDisputa?: Stub; pagarVisita?: Stub };
   sse?: { abrirOtStream: ReturnType<typeof vi.fn> };
   loader?: ReturnType<typeof loaderMapaStub>;
@@ -72,7 +72,10 @@ function setup({
   const abrirDisputa = clientesApi?.abrirDisputa ?? vi.fn(() => of(undefined));
   const pagarVisita = clientesApi?.pagarVisita ?? vi.fn(() => of(undefined));
 
-  const api = { getOtById, getTecnicoUbicacion };
+  const estimarTarifa =
+    otApi?.estimarTarifa ??
+    vi.fn(() => of({ distanciaKm: 4, tarifaFuente: 'ROAD', banda: 1, tarifa: 50000, fueraDeRango: false }));
+  const api = { getOtById, getTecnicoUbicacion, estimarTarifa };
   const clientes = { cancelarOt, abrirDisputa, pagarVisita };
   const sseMock = sse ?? { abrirOtStream: vi.fn(() => new Subject<OtEstadoCambiado>()) };
   const toast = {
@@ -279,6 +282,41 @@ describe('SeguimientoOtPage móvil (A6)', () => {
 
     vi.advanceTimersByTime(POLL_INTERVAL_MS);
     expect(getOtById).toHaveBeenCalledTimes(3);
+  });
+
+  it('pinta la tarifa REAL de la visita (estimador) en el panel y el CTA', () => {
+    const estimarTarifa = vi.fn(() =>
+      of({ distanciaKm: 4, tarifaFuente: 'ROAD', banda: 1, tarifa: 50000, fueraDeRango: false }),
+    );
+    const { fixture } = setup({
+      otApi: {
+        getOtById: vi.fn(() => of(ot({ estado: 'ASIGNADA', visitaPagada: false, punto: PUNTO }))),
+        estimarTarifa,
+      },
+    });
+
+    expect(estimarTarifa).toHaveBeenCalledWith({ latitud: PUNTO.latitud, longitud: PUNTO.longitud });
+    expect(fixture.nativeElement.querySelector('[data-testid="tarifa-visita"]')?.textContent).toContain('50');
+    expect(
+      (fixture.nativeElement.querySelector('[data-testid="pagar-visita"]') as HTMLElement).textContent,
+    ).toContain('Pagar visita ·');
+  });
+
+  it('sin estimación real (fuera de rango o error) no pinta ningún monto', () => {
+    const estimarTarifa = vi.fn(() =>
+      of({ distanciaKm: 90, tarifaFuente: 'LINEAL', banda: null, tarifa: null, fueraDeRango: true }),
+    );
+    const { fixture } = setup({
+      otApi: {
+        getOtById: vi.fn(() => of(ot({ estado: 'ASIGNADA', visitaPagada: false, punto: PUNTO }))),
+        estimarTarifa,
+      },
+    });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tarifa-visita"]')).toBeNull();
+    expect(
+      (fixture.nativeElement.querySelector('[data-testid="pagar-visita"]') as HTMLElement).textContent,
+    ).not.toContain('·');
   });
 
   it('pagar la visita (ASIGNADA sin pago) envía el medio elegido y avisa', () => {

@@ -164,4 +164,50 @@ describe('EjecucionOtPage (B3)', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="ot-reintentar"]')).toBeTruthy();
   });
+
+  it('el envío incompleto no es silencioso: aviso visible y toast, sin llamada al API', () => {
+    const { fixture, api, toast } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+
+    fixture.componentInstance.enviarDiagnostico();
+    fixture.detectChanges();
+
+    expect(api.registrarDiagnostico).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="diagnostico-incompleto"]')).toBeTruthy();
+  });
+
+  it('la búsqueda rápida del catálogo agrega la línea con cantidad 1', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+    const page = fixture.componentInstance;
+
+    page.buscarInsumo('gas r410');
+    fixture.detectChanges();
+
+    const item = fixture.nativeElement.querySelector(
+      '[data-testid="catalogo-gas-r410a"]',
+    ) as HTMLButtonElement;
+    expect(item).toBeTruthy();
+    item.click();
+    fixture.detectChanges();
+
+    expect(page.insumos.length).toBe(1);
+    expect(page.insumos.at(0).getRawValue()).toEqual({
+      descripcion: 'Gas refrigerante R410A 900 g',
+      cantidad: 1,
+    });
+    expect(page.busquedaInsumo()).toBe('');
+  });
+
+  it('sin resultados el catálogo lo dice y no inventa productos', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+    fixture.componentInstance.buscarInsumo('tornillo xyz');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="catalogo-sin-resultados"]')).toBeTruthy();
+  });
+
+  it('la foto del equipo no vive en la ejecución del técnico (solo en la solicitud del cliente)', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+    expect(fixture.nativeElement.querySelector('app-foto-local')).toBeNull();
+  });
 });

@@ -5,6 +5,7 @@
 // elipsis o pestañas de la barra cortadas.
 //
 // Requisitos (una vez):  npm i -D playwright-core && npx playwright-core install chromium
+//                       (playwright-core ya está en devDependencies: solo falta el navegador)
 // Con la app servida en local, backend en :8090 y CORS permitido (puerto 4200):
 //   MOBILE_API_ORIGIN=http://localhost:8090 npm run mobile:start -- --port 4200
 //   UI_AUDIT_PASSWORD=<demo-password del seeder> npm run ui:audit
@@ -38,6 +39,17 @@ if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) {
 }
 const OUT = process.env.UI_AUDIT_OUT ?? path.join(os.tmpdir(), 'cold-day-ui-audit');
 mkdirSync(OUT, { recursive: true });
+
+/**
+ * Captura de evidencia. `animations: 'disabled'` congela spinners/pulsos (con
+ * animación infinita Playwright espera estabilidad y agota el timeout) y una
+ * captura fallida no debe tumbar la auditoría: el veredicto son los hallazgos.
+ */
+async function captura(page, nombre) {
+  await page
+    .screenshot({ path: path.join(OUT, `${nombre}.png`), animations: 'disabled', timeout: 15000 })
+    .catch((err) => console.warn(`  (captura ${nombre} omitida: ${err.message.split('\n')[0]})`));
+}
 
 const VIEWPORTS = [
   { n: '320', w: 320, h: 568 },
@@ -94,8 +106,28 @@ async function login(page, user) {
   await page.waitForSelector('ion-input');
   await page.locator('ion-input[formcontrolname=correo] input').fill(user);
   await page.locator('ion-input[formcontrolname=password] input').fill(PASSWORD);
+  // El botón arranca deshabilitado hasta que el form es válido (OnPush): sin
+  // esta espera el click puede caer en un botón inerte y el login nunca ocurre.
+  await page.waitForFunction(
+    () => {
+      const boton = document.querySelector('ion-button[type=submit]');
+      return !!boton && !boton.hasAttribute('disabled') && boton.getAttribute('aria-disabled') !== 'true';
+    },
+    undefined,
+    { timeout: 10000 },
+  );
   await page.locator('ion-button[type=submit]').click();
-  await page.waitForURL(/\/(cliente|tecnico|proveedor|solo-web)/, { timeout: 15000 });
+  try {
+    await page.waitForURL(/\/(cliente|tecnico|proveedor|solo-web)/, { timeout: 15000 });
+  } catch {
+    // El fallo debe decir POR QUÉ: credenciales, rate limit o backend caído.
+    const visible = await page.locator('[data-testid=error-login]').innerText().catch(() => '');
+    throw new Error(
+      `No se pudo iniciar sesión como ${user} (URL: ${page.url()}). ` +
+        (visible ? `La app dijo: "${visible.trim()}". ` : '') +
+        'Revisa UI_AUDIT_PASSWORD, el backend en :8090 y el rate limit (10/min por IP: no relances en bucle).',
+    );
+  }
 }
 
 const estados = {};
@@ -116,7 +148,7 @@ for (const vp of VIEWPORTS) {
     await page.waitForSelector('ion-input');
     await page.waitForTimeout(600);
     resultados.push({ vp: vp.n, ruta: 'login', ...(await page.evaluate(auditar, SCROLL_INTENCIONAL)) });
-    await page.screenshot({ path: path.join(OUT, `${vp.n}-login.png`) });
+    await captura(page, `${vp.n}-login`);
     await ctx.close();
   }
   for (const r of ROLES) {
@@ -135,7 +167,7 @@ for (const vp of VIEWPORTS) {
       await page.waitForSelector('ion-content', { timeout: 10000 }).catch(() => {});
       await page.waitForTimeout(900);
       resultados.push({ vp: vp.n, ruta: `${r.rol}/${ruta}`, ...(await page.evaluate(auditar, SCROLL_INTENCIONAL)) });
-      await page.screenshot({ path: path.join(OUT, `${vp.n}-${r.rol}-${ruta}.png`) });
+      await captura(page, `${vp.n}-${r.rol}-${ruta}`);
     }
     await ctx.close();
   }

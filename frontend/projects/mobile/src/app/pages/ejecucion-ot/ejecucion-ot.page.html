@@ -1,7 +1,7 @@
 <ion-header class="cd-header">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/tecnico/ots" text="" aria-label="Volver al panel"></ion-back-button>
+      <ion-back-button defaultHref="/tecnico/ots" text="" aria-label="Volver a Mis OTs"></ion-back-button>
     </ion-buttons>
     <div class="cd-hero cd-hero--compacto">
       <p class="cd-eyebrow">Ejecución de la OT</p>
@@ -75,7 +75,7 @@
     @if (mostrarDiagnostico()) {
       <ion-card class="cd-card">
         <ion-card-content>
-          <h2 class="cd-card__titulo">Diagnóstico y presupuesto</h2>
+          <h2 class="cd-card__titulo">Mano de obra e insumos</h2>
           <form [formGroup]="diagnosticoForm" class="cd-form" (ngSubmit)="enviarDiagnostico()">
             <ion-textarea
               formControlName="diagnostico"
@@ -110,11 +110,48 @@
               Total: $ {{ totalPresupuesto().toLocaleString('es-CO') }} COP
             </p>
 
-            <h3 class="cd-calificar__subtitulo">Insumos que necesitás</h3>
+            <h3 class="cd-calificar__subtitulo">Insumos que necesitas</h3>
+
+            <!-- Búsqueda rápida en el catálogo del proveedor (mock aprobado por
+                 el dueño hasta que el backend exponga el catálogo real). -->
+            <ion-input
+              class="cd-busqueda-insumo"
+              label="Buscar en el catálogo"
+              labelPlacement="stacked"
+              type="search"
+              placeholder="Ej. gas R410A, capacitor, breaker…"
+              [value]="busquedaInsumo()"
+              (ionInput)="buscarInsumo($any($event).detail.value)"
+              data-testid="buscar-insumo"
+            ></ion-input>
+            @if (busquedaActiva()) {
+              @if (resultadosCatalogo().length > 0) {
+                <div class="cd-catalogo" role="group" aria-label="Resultados del catálogo">
+                  @for (producto of resultadosCatalogo(); track producto.id) {
+                    <button
+                      type="button"
+                      class="cd-catalogo__item"
+                      [attr.data-testid]="'catalogo-' + producto.id"
+                      (click)="agregarDesdeCatalogo(producto)"
+                    >
+                      <ion-icon name="add-circle-outline" aria-hidden="true"></ion-icon>
+                      <span class="cd-catalogo__nombre">{{ producto.nombre }}</span>
+                      <span class="cd-catalogo__unidad">{{ producto.unidad }}</span>
+                    </button>
+                  }
+                </div>
+              } @else {
+                <p class="cd-ayuda" data-testid="catalogo-sin-resultados">
+                  Sin resultados en el catálogo. Agrégalo manualmente abajo.
+                </p>
+              }
+            }
+
             @for (grupo of insumos.controls; track $index) {
               <div class="cd-fila-insumo" [formGroup]="grupo">
                 <ion-input
                   formControlName="descripcion"
+                  aria-label="Descripción del insumo"
                   placeholder="Ej. Gas R410A 900g"
                   [attr.data-testid]="'insumo-desc-' + $index"
                 ></ion-input>
@@ -122,6 +159,7 @@
                   type="number"
                   inputmode="numeric"
                   formControlName="cantidad"
+                  aria-label="Cantidad del insumo"
                   placeholder="1"
                   [attr.data-testid]="'insumo-cant-' + $index"
                 ></ion-input>
@@ -132,10 +170,14 @@
             }
             <ion-button fill="clear" (click)="agregarInsumo()" data-testid="agregar-insumo">
               <ion-icon slot="start" name="add-outline" aria-hidden="true"></ion-icon>
-              Agregar insumo
+              Agregar insumo manualmente
             </ion-button>
 
-            <app-foto-local />
+            @if (formularioIncompleto()) {
+              <p class="cd-field-error" role="alert" data-testid="diagnostico-incompleto">
+                Faltan datos: revisa el diagnóstico, la mano de obra, los repuestos y cada insumo.
+              </p>
+            }
 
             <ion-button
               expand="block"
@@ -168,19 +210,6 @@
             <ion-segment-button value="EFECTIVO"><ion-label>Efectivo</ion-label></ion-segment-button>
             <ion-segment-button value="TRANSFERENCIA"><ion-label>Transferencia</ion-label></ion-segment-button>
           </ion-segment>
-          <ion-button
-            expand="block"
-            class="cd-cta"
-            [disabled]="finalizando()"
-            (click)="finalizarServicio()"
-            data-testid="finalizar-servicio"
-          >
-            @if (finalizando()) {
-              <ion-spinner name="dots"></ion-spinner>
-            } @else {
-              Finalizar y notificar al cliente
-            }
-          </ion-button>
         </ion-card-content>
       </ion-card>
     }
@@ -190,7 +219,7 @@
         <h2 class="cd-alerta__titulo">Servicio finalizado</h2>
         <p class="cd-alerta__texto">El cliente ya puede ver el acta y calificar el servicio.</p>
       </section>
-      <ion-button expand="block" class="cd-cta" (click)="irAlPanel()">Volver al panel</ion-button>
+      <ion-button expand="block" class="cd-cta" (click)="irAlPanel()">Volver a Mis OTs</ion-button>
     }
 
     <!-- Insumos ya solicitados -->
@@ -210,3 +239,25 @@
     }
   }
 </ion-content>
+
+@if (ot(); as orden) {
+  @if (orden.estado === 'EN_REPARACION') {
+    <ion-footer class="cd-footer">
+      <ion-button
+        expand="block"
+        class="cd-cta"
+        [attr.aria-busy]="finalizando()"
+        [disabled]="finalizando()"
+        (click)="finalizarServicio()"
+        data-testid="finalizar-servicio"
+      >
+        @if (finalizando()) {
+          <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+          <span class="cd-cta__loading">Procesando…</span>
+        } @else {
+          Finalizar y notificar al cliente
+        }
+      </ion-button>
+    </ion-footer>
+  }
+}

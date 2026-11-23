@@ -423,6 +423,12 @@ export interface OtResponse {
    * cuando el servidor afirma explícitamente `false`.
    */
   visitaPagada?: boolean;
+  /**
+   * Tarifa de visita registrada por el backend (diagnóstico + traslado,
+   * calculada por distancia al crear la OT). El cliente la ve en el desglose
+   * de A7/A8; opcional porque fixtures y OTs antiguas no la traen.
+   */
+  tarifaVisita?: number;
   // Acta de Garantía y firma
   firmaClienteUrl?: string;
   actaGarantiaGenerada?: boolean;

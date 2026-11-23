@@ -177,6 +177,20 @@ describe('DiagnosticoPage móvil (A7)', () => {
     expect(total).toContain('COP');
   });
 
+  it('la tarifa de visita registrada (diagnóstico + traslado) se muestra y suma al total', () => {
+    const { fixture } = setup({
+      otApi: { getOtById: vi.fn(() => of(ot({ tarifaVisita: 25000 }))) },
+    });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="costo-visita"]')?.textContent).toContain(
+      '25.000',
+    );
+    expect(fixture.nativeElement.querySelector('[data-testid="costo-total"]')?.textContent).toContain(
+      '375.000',
+    );
+    expect(texto(fixture)).toContain('Visita: diagnóstico y traslado');
+  });
+
   it('muestra los insumos que declaró el técnico dentro del desglose', () => {
     const { fixture } = setup({
       otApi: {

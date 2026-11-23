@@ -37,6 +37,13 @@ services:
         sync: false
       - key: POSTGRES_PASSWORD
         sync: false
+      # Push por FCM (opcional). Con FCM_ENABLED=true hay que dar
+      # FCM_CREDENTIALS_JSON (contenido de la cuenta de servicio de Firebase);
+      # si falta, el arranque falla a proposito. Nunca va al repo.
+      - key: FCM_ENABLED
+        value: "false"
+      - key: FCM_CREDENTIALS_JSON
+        sync: false
       - key: GOOGLE_MAPS_ENABLED
         value: "true"
       # Server key: restringida por IP, solo la usa el backend. Nunca sale al front.

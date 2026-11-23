@@ -174,6 +174,18 @@ describe('PagoActaPage móvil (A8)', () => {
     );
   });
 
+  it('la tarifa de visita registrada en la OT se muestra y suma al total', () => {
+    const { fixture } = setup({ orden: ot({ tarifaVisita: 20000 }) });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="costo-visita"]')?.textContent).toContain(
+      '20.000',
+    );
+    expect(fixture.nativeElement.querySelector('[data-testid="costo-total"]')?.textContent).toContain(
+      '370.000',
+    );
+    expect(texto(fixture)).toContain('Tarifa por distancia registrada en la orden');
+  });
+
   it('si la estimación existe, el total la incluye y no se expone el split interno', () => {
     const { fixture } = setup({});
     const page = fixture.componentInstance;
@@ -403,7 +415,7 @@ describe('PagoActaPage móvil (A8)', () => {
 
     expect(toast.error).toHaveBeenCalledWith(
       'No pudimos registrar tu acta',
-      'Esta orden no te pertenece, así que no podés firmar su acta.',
+      'Esta orden no te pertenece, así que no puedes firmar su acta.',
     );
     expect(String(toast.error.mock.calls[0]?.[1])).not.toContain('usuario 7');
   });
@@ -548,7 +560,7 @@ describe('PagoActaPage móvil (A8)', () => {
       orden: ot({ estado: 'ASIGNADA', visitaPagada: false }),
     });
 
-    expect(texto(fixture)).toContain('Visita pendiente de pago');
+    expect(texto(fixture)).toContain('Pendiente de pago');
   });
 
   it('muestra la nota de visita pagada cuando el backend la reporta', () => {
@@ -556,7 +568,7 @@ describe('PagoActaPage móvil (A8)', () => {
       orden: ot({ estado: 'ASIGNADA', visitaPagada: true }),
     });
 
-    expect(texto(fixture)).toContain('Visita pagada');
+    expect(texto(fixture)).toContain('Pagada: el técnico ya puede iniciar');
   });
 
   it('el CTA inferior vuelve al seguimiento de la OT', () => {

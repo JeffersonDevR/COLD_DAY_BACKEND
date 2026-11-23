@@ -1,3 +1,4 @@
+import type { Route } from '@angular/router';
 import { routes } from './app.routes';
 import { MODOS } from './modo/modo';
 
@@ -121,8 +122,8 @@ describe('mobile routes', () => {
     expect(MODOS.CLIENTE.home).toBe('/cliente/panel');
     expect(MODOS.TECNICO.home).toBe('/tecnico/radar');
     expect(MODOS.PROVEEDOR.home).toBe('/proveedor/insumos');
-    expect(MODOS.CLIENTE.tabs.map((tab) => tab.label)).toEqual(['Panel', 'Mis órdenes', 'Cuenta']);
-    expect(MODOS.TECNICO.tabs.map((tab) => tab.label)).toEqual(['Radar', 'Mis OTs', 'Cuenta']);
+    expect(MODOS.CLIENTE.tabs.map((tab) => tab.label)).toEqual(['Panel', 'Mis equipos', 'Cuenta']);
+    expect(MODOS.TECNICO.tabs.map((tab) => tab.label)).toEqual(['Radar', 'Mis OTs', 'Gestión', 'Cuenta']);
     expect(MODOS.PROVEEDOR.tabs.map((tab) => tab.label)).toEqual([
       'Insumos',
       'Documentos',
@@ -130,9 +131,10 @@ describe('mobile routes', () => {
     ]);
   });
 
-  it('liquidaciones no es tab del técnico, pero la ruta sigue existiendo', () => {
-    // Decisión: la plata no ocupa un tab; se entra por la tarjeta del panel.
-    expect(MODOS.TECNICO.tabs.map((tab) => tab.id)).not.toContain('liquidaciones');
+  it('Gestión es tab del técnico y agrupa liquidaciones con documentos', () => {
+    // Decisión del dueño (2026-11-23): la plata y los papeles viven en un tab.
+    const gestion = MODOS.TECNICO.tabs.find((tab) => tab.id === 'liquidaciones');
+    expect(gestion?.label).toBe('Gestión');
 
     const tecnico = routes.find((route) => route.path === 'tecnico');
     const liquidaciones = tecnico?.children?.find((child) => child.path === 'liquidaciones');
@@ -143,6 +145,44 @@ describe('mobile routes', () => {
   it('keeps the canonical /cuenta route outside the tabs', () => {
     expect(paths).toContain('cuenta');
     expect(routes.find((route) => route.path === 'cuenta')?.loadComponent).toBeTypeOf('function');
+  });
+
+  it('lists every mode route in the NAVEGACION.md inventory (UI-N1)', () => {
+    // Espejo de docs/design/NAVEGACION.md §1. Si añades o mueves una ruta,
+    // actualiza este inventario Y esa tabla (entrada + volver) en el mismo commit.
+    const inventario = [
+      '/cliente/panel',
+      '/cliente/equipos',
+      '/cliente/cuenta',
+      '/cliente/solicitar',
+      '/cliente/ot/:id',
+      '/cliente/ot/:id/diagnostico',
+      '/cliente/ot/:id/pago',
+      '/cliente/ot/:id/calificar',
+      '/tecnico/radar',
+      '/tecnico/ots',
+      '/tecnico/liquidaciones',
+      '/tecnico/cuenta',
+      '/tecnico/ejecucion/:id',
+      '/tecnico/perfil',
+      '/proveedor/insumos',
+      '/proveedor/documentos',
+      '/proveedor/cuenta',
+    ];
+
+    const hojas = (rutas: readonly Route[], prefijo: string): string[] =>
+      rutas.flatMap((ruta) => {
+        if (ruta.redirectTo !== undefined || ruta.path === undefined || ruta.path === '**') return [];
+        const actual = ruta.path === '' ? prefijo : `${prefijo}/${ruta.path}`;
+        if (ruta.children) return hojas(ruta.children, actual);
+        return [actual];
+      });
+
+    const reales = ['cliente', 'tecnico', 'proveedor'].flatMap((modo) =>
+      hojas(routes.find((route) => route.path === modo)?.children ?? [], `/${modo}`),
+    );
+
+    expect([...reales].sort()).toEqual([...inventario].sort());
   });
 
   it('sends unknown paths back to login', () => {

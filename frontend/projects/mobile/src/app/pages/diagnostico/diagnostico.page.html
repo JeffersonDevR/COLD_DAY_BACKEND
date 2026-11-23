@@ -55,7 +55,7 @@
       <ion-card-content>
         <div class="cd-dictamen__encabezado">
           <span class="cd-dictamen__icono" aria-hidden="true">
-            <ion-icon name="construct-outline"></ion-icon>
+            <ion-icon aria-hidden="true" name="construct-outline"></ion-icon>
           </span>
           <div>
             <h2 class="cd-dictamen__titulo">Dictamen técnico oficial</h2>
@@ -70,13 +70,18 @@
             <span class="cd-muted">El técnico todavía no cargó el dictamen de este equipo.</span>
           }
         </div>
+      </ion-card-content>
+    </ion-card>
 
-        <!-- Fixed three-row cost breakdown (no per-line budget) -->
-        <h3 class="cd-desglose__titulo">Desglose de costos de intervención (COP)</h3>
+    <!-- A7 — el presupuesto es su propio bloque (jerarquía): el cliente decide
+         sobre el dinero, no sobre el documento. -->
+    <h2 class="cd-section__titulo cd-section__titulo--bloque">Lo que vas a pagar</h2>
+    <ion-card class="cd-desglose-card">
+      <ion-card-content>
         <div class="cd-desglose">
           <div class="cd-desglose__fila cd-desglose__fila--visita">
             <div class="cd-desglose__detalle">
-              <span class="cd-desglose__nombre">Visita y diagnóstico</span>
+              <span class="cd-desglose__nombre">Visita: diagnóstico y traslado</span>
               @if (estimacion(); as est) {
                 @if (est.fueraDeRango) {
                   <p class="cd-desglose__nota cd-desglose__nota--aviso">
@@ -89,6 +94,8 @@
                     {{ etiquetaFuente(est.tarifaFuente) }}
                   </p>
                 }
+              } @else if (tarifaVisita() !== null) {
+                <p class="cd-desglose__nota">Tarifa por distancia registrada en la orden</p>
               } @else {
                 <p class="cd-desglose__nota">El cargo de visita se confirma con el técnico</p>
               }
@@ -160,11 +167,13 @@
             class="cd-textarea"
             rows="3"
             [formControl]="motivoRechazo"
+            [attr.aria-invalid]="ayudaMotivo() ? 'true' : null"
+            aria-describedby="motivo-rechazo-ayuda motivo-rechazo-error"
             placeholder="Explicá la discrepancia en repuestos, costo o tiempo estimado…"
           ></textarea>
-          <p class="cd-field-hint">Mínimo 5 caracteres.</p>
+          <p class="cd-field-hint" id="motivo-rechazo-ayuda">Mínimo 5 caracteres.</p>
           @if (ayudaMotivo(); as ayuda) {
-            <p class="cd-field-error" role="alert">{{ ayuda }}</p>
+            <p class="cd-field-error" id="motivo-rechazo-error" role="alert">{{ ayuda }}</p>
           }
           <div class="cd-rechazo__acciones">
             <ion-button fill="clear" color="medium" data-testid="rechazo-cancelar" (click)="cerrarRechazo()">

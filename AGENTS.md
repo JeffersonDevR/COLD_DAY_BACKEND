@@ -4,7 +4,7 @@ Punto de entrada para cualquier agente/modelo/harness (Claude, Codex, Cursor, Co
 
 | Si vas a tocar… | Lee (obligatorio) | Backlog de tareas | Verificador ejecutable |
 |---|---|---|---|
-| UI / estilos / copy de `frontend/` | [`DESIGN.md`](DESIGN.md) + [`PRODUCT.md`](PRODUCT.md) | [`docs/design/TAREAS-UI.md`](docs/design/TAREAS-UI.md) | `cd frontend && npm run ui:check` |
+| UI / estilos / copy / pantallas de `frontend/` | [`DESIGN.md`](DESIGN.md) + [`PRODUCT.md`](PRODUCT.md) + [`docs/design/NAVEGACION.md`](docs/design/NAVEGACION.md) | [`docs/design/TAREAS-UI.md`](docs/design/TAREAS-UI.md) | `cd frontend && npm run ui:check` |
 | `backend/` (Java/Spring) | [`docs/backend/GUIA-BACKEND.md`](docs/backend/GUIA-BACKEND.md) + [`ARQUITECTURA.md`](ARQUITECTURA.md) | [`docs/backend/TAREAS-BACKEND.md`](docs/backend/TAREAS-BACKEND.md) | `node backend/scripts/check-backend-rules.mjs` |
 | Cualquier otra cosa | `ARQUITECTURA.md`, `docs/pendientes.md` | — | — |
 

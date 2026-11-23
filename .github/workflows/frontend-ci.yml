@@ -79,3 +79,100 @@ jobs:
         run: npm run ui:check
       - name: Build mobile (production)
         run: npx ng build mobile --configuration production
+
+  # Auditoría de render por tamaño (DESIGN.md §10/§11, TAREAS-UI TU-12): levanta
+  # PostGIS + backend dev + el móvil servido en :4200 y mide 13 rutas × 5 anchos
+  # (320/360/390/430/768) buscando desborde horizontal, texto <12 px, targets
+  # <44 px, texto recortado y pestañas cortadas.
+  #
+  # continue-on-error: true a propósito y TEMPORAL. El runner necesita además el
+  # seed con OTs/ofertas en cada estado (TU-08) para que las pantallas con datos
+  # no midan estados vacíos. Cuando TU-08 cierre y este job tenga 3 corridas
+  # verdes, quitar esta línea y sumarlo a los checks obligatorios.
+  ui-audit:
+    name: ui-audit
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: cold_day
+          POSTGRES_USER: cold_day
+          POSTGRES_PASSWORD: cold_day
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cold_day -d cold_day"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      SPRING_PROFILES_ACTIVE: dev
+      PORT: '8090'
+      POSTGRES_URL: jdbc:postgresql://localhost:5432/cold_day
+      POSTGRES_USER: cold_day
+      POSTGRES_PASSWORD: cold_day
+      # El audit inicia sesión como los usuarios sembrados: el seed es requisito.
+      APP_SEED_ENABLED: 'true'
+      UI_AUDIT_PASSWORD: ${{ secrets.UI_AUDIT_PASSWORD }}
+      UI_AUDIT_BASE: http://localhost:4200
+      UI_AUDIT_OUT: ${{ runner.temp }}/ui-audit
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+      - name: Start backend (dev profile) against PostGIS
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          ./gradlew bootRun --console=plain > /tmp/boot.log 2>&1 &
+          for _ in $(seq 1 180); do
+            if curl -fsS http://localhost:8090/actuator/health >/dev/null 2>&1; then
+              echo "backend healthy"; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::el backend no arrancó"; tail -n 200 /tmp/boot.log; exit 1
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Chromium for Playwright
+        working-directory: frontend
+        run: npx playwright-core install --with-deps chromium
+      - name: Serve mobile app on :4200 (CORS-allowed dev origin)
+        working-directory: frontend
+        env:
+          MOBILE_API_ORIGIN: http://localhost:8090
+        run: |
+          set -euo pipefail
+          npm run mobile:start -- --port 4200 > /tmp/serve.log 2>&1 &
+          for _ in $(seq 1 150); do
+            if curl -fsS http://localhost:4200 >/dev/null 2>&1; then
+              echo "app served"; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::la app no se sirvió"; tail -n 100 /tmp/serve.log; exit 1
+      - name: UI audit (13 rutas × 5 anchos)
+        working-directory: frontend
+        run: npm run ui:audit
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-audit-screenshots
+          path: ${{ runner.temp }}/ui-audit
+          if-no-files-found: warn
+          retention-days: 7

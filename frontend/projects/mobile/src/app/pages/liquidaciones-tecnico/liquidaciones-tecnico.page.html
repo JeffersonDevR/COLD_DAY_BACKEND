@@ -1,14 +1,13 @@
-<ion-header class="cd-header">
-  <ion-toolbar>
-    <div class="cd-hero cd-hero--compacto">
-      <p class="cd-eyebrow">Técnico</p>
-      <h1 class="cd-headline">Mis liquidaciones</h1>
-      <p class="cd-hero__nota">Comisión de intermediación de los servicios cobrados en efectivo.</p>
-    </div>
-  </ion-toolbar>
-</ion-header>
+<cd-page
+  titulo="Gestión"
+  subtitulo="Tu plata y tus papeles: liquidaciones y documentos en un solo lugar."
+>
+  <ion-header class="cd-header" cdHeader>
+    <ion-toolbar>
+      <cd-marca pantalla="Gestión" chip="Técnico" />
+    </ion-toolbar>
+  </ion-header>
 
-<ion-content class="ion-padding">
   <ion-refresher slot="fixed" (ionRefresh)="recargar($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
@@ -20,12 +19,14 @@
   @if (fallo() && !cargando()) {
     <cd-error-alert
       titulo="No pudimos cargar tus liquidaciones"
-      texto="Revisá tu conexión y vuelve a intentarlo."
+      texto="Revisa tu conexión y vuelve a intentarlo."
       testId="liquidaciones-error"
       accionTestId="reintentar-liquidaciones"
       (reintentar)="reintentar()"
     />
   }
+
+  <h2 class="cd-section__titulo cd-section__titulo--bloque">Liquidaciones</h2>
 
   @if (!cargando()) {
     <section
@@ -39,7 +40,7 @@
       </p>
       @if (porConsignar() > 0) {
         <p class="cd-alerta__texto" data-testid="nota-consignacion">
-          La consignación se registra desde la web. Mientras haya una pendiente no podés tomar
+          La consignación se registra desde la web. Mientras haya una pendiente no puedes tomar
           servicios nuevos.
         </p>
       }
@@ -86,4 +87,36 @@
       }
     </article>
   }
-</ion-content>
+
+  <!-- Documentos de validación: agrupados con la plata (petición del dueño). -->
+  <h2 class="cd-section__titulo cd-section__titulo--bloque">Documentos</h2>
+  @if (documentos().length === 0) {
+    <cd-empty-state
+      titulo="Sin documentos cargados"
+      texto="La carga de documentos se hace desde la web: la app todavía no tiene cámara ni subida de archivos."
+      testId="documentos-vacio"
+    />
+  } @else {
+    @for (documento of documentos(); track documento.id) {
+      <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">
+        <div class="cd-ot__cabecera">
+          <div>
+            <p class="cd-ot__codigo">{{ documento.nombre || etiquetaDocumento(documento.tipo) }}</p>
+            @if (documento.fechaVencimiento) {
+              <p class="cd-ot__categoria">Vence {{ documento.fechaVencimiento }}</p>
+            }
+          </div>
+          <span class="cd-chip cd-chip--{{ tonoDocumento(documento) }}">
+            {{ documento.estadoValidacion }}
+          </span>
+        </div>
+        @if (documento.observaciones) {
+          <p class="cd-ot__descripcion">{{ documento.observaciones }}</p>
+        }
+      </article>
+    }
+  }
+  <p class="cd-ayuda">
+    Para subir o renovar un documento usa la web hasta que la app tenga cámara y subida de archivos.
+  </p>
+</cd-page>

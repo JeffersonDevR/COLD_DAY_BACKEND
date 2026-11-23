@@ -33,11 +33,6 @@ ion-tab-bar {
   --border: 1px solid var(--cd-surface-border);
 }
 
-ion-tab-bar.cd-tab-bar {
-  height: 64px;
-  min-height: 64px;
-}
-
 ::selection {
   background: rgba(34, 211, 238, 0.2);
 }
@@ -63,7 +58,6 @@ ion-tab-bar.cd-tab-bar {
   --box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
   --min-height: 48px;
   min-height: 48px;
-  height: 48px;
   margin: 0;
   font-family: var(--cd-font-headline);
   font-size: 0.9375rem;
@@ -149,9 +143,20 @@ ion-tab-bar.cd-tab-bar {
   letter-spacing: 0;
 }
 
-/* Fixed bottom CTA bar (thumb zone) shared by transactional screens. */
-.cd-footer {  background: var(--cd-surface);
+/* Fixed bottom CTA bar (thumb zone) shared by transactional screens.
+   El safe-area vive acá y no en el toolbar: varios footers proyectan un div
+   o un ion-button directo (sin ion-toolbar) y quedaban sin zona segura. */
+.cd-footer {
+  background: var(--cd-surface);
   border-top: 1px solid var(--cd-surface-border);
+  /* Ningún footer del proyecto usa ion-toolbar: el contenido (botón o div)
+     es hijo directo y necesita su propio gutter de 16 px + zona segura. */
+  padding: 0.75rem 1rem calc(0.75rem + var(--cd-safe-bottom));
+}
+
+/* Dentro de ion-tabs el tab bar ya absorbe la zona segura inferior. */
+ion-tabs .cd-footer {
+  padding-bottom: 0.75rem;
 }
 
 .cd-footer ion-toolbar {
@@ -161,6 +166,5 @@ ion-tab-bar.cd-tab-bar {
   --padding-end: 1rem;
   --padding-top: 0.75rem;
   --padding-bottom: 0.75rem;
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }
 

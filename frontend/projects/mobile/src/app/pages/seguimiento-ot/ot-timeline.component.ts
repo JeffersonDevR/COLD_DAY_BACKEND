@@ -49,7 +49,7 @@ const ICONO_PASO: Readonly<Record<string, string>> = {
             [attr.data-testid]="'timeline-paso-' + paso.estado"
           >
             <span class="cd-timeline__nodo" aria-hidden="true">
-              <ion-icon [name]="icono(paso)"></ion-icon>
+              <ion-icon aria-hidden="true" [name]="icono(paso)"></ion-icon>
             </span>
             <span class="cd-timeline__etiqueta">{{ paso.label }}</span>
           </li>

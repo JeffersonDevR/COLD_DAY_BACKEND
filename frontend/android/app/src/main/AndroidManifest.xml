@@ -49,6 +49,12 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!--
+      Notificaciones (Android 13+): permiso en tiempo de ejecucion que pide
+      core/push.ts. Inofensivo mientras PUSH.habilitado sea false.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- La app funciona sin GPS ni cámara: no se filtra en Play por hardware. -->
     <uses-feature android:name="android.hardware.location" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />

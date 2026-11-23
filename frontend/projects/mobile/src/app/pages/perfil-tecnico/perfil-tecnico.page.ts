@@ -6,6 +6,7 @@ import {
   IonCard,
   IonCardContent,
   IonContent,
+  IonFooter,
   IonHeader,
   IonSpinner,
   IonToolbar,
@@ -13,15 +14,12 @@ import {
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import {
   CategoriaServicio,
-  DocumentoTecnico,
   TecnicoResponse,
-  TipoDocumentoTecnico,
 } from '@core/models/common.models';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
-import { categoriaLabel, documentoLabel, estadoValidacionLabel } from '@core/ui/labels';
+import { categoriaLabel, estadoValidacionLabel } from '@core/ui/labels';
 import { MobileToastService } from '../../core/toast.service';
-import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 const ORDEN_CATEGORIAS: CategoriaServicio[] = [
@@ -32,11 +30,12 @@ const ORDEN_CATEGORIAS: CategoriaServicio[] = [
   'ELECTRICIDAD',
 ];
 
-/** B4 — Technician profile, specialties and documents (read-only documents). */
+/** B4 — Technician profile and specialties. Documents live in the Gestión tab. */
 @Component({
   selector: 'app-perfil-tecnico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonFooter,
     IonBackButton,
     IonButton,
     IonButtons,
@@ -47,7 +46,6 @@ const ORDEN_CATEGORIAS: CategoriaServicio[] = [
     IonSpinner,
     IonToolbar,
     SkeletonComponent,
-    EmptyStateComponent,
   ],
   templateUrl: './perfil-tecnico.page.html',
 })
@@ -56,7 +54,6 @@ export class PerfilTecnicoPage implements OnInit {
   private readonly toast = inject(MobileToastService);
 
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
-  readonly documentos = signal<DocumentoTecnico[]>([]);
   readonly cargando = signal(true);
   readonly guardando = signal(false);
   readonly seleccion = signal<Set<CategoriaServicio>>(new Set());
@@ -96,18 +93,10 @@ export class PerfilTecnicoPage implements OnInit {
         void avisarErrorAccion(this.toast, 'No pudimos cargar tu perfil', err);
       },
     );
-    this.tecnicosApi.getMisDocumentos().subscribe({
-      next: (documentos) => this.documentos.set(documentos),
-      error: () => this.documentos.set([]),
-    });
   }
 
   etiquetaCategoria(categoria: CategoriaServicio): string {
     return categoriaLabel(categoria);
-  }
-
-  etiquetaDocumento(tipo: TipoDocumentoTecnico): string {
-    return documentoLabel(tipo);
   }
 
   estaSeleccionada(categoria: CategoriaServicio): boolean {
@@ -149,18 +138,6 @@ export class PerfilTecnicoPage implements OnInit {
 
   tonoValidacion(): string {
     switch (this.validacion()) {
-      case 'APROBADO':
-        return 'ok';
-      case 'RECHAZADO':
-      case 'SUSPENDIDO':
-        return 'cerrada';
-      default:
-        return 'espera';
-    }
-  }
-
-  tonoDocumento(documento: DocumentoTecnico): string {
-    switch (documento.estadoValidacion) {
       case 'APROBADO':
         return 'ok';
       case 'RECHAZADO':

@@ -24,9 +24,13 @@ import { MODOS, ModoApp, ModoTab } from '../../modo/modo';
   imports: [IonIcon, IonLabel, IonTabBar, IonTabButton, IonTabs],
   template: `
     <ion-tabs>
-      <ion-tab-bar class="cd-tab-bar" slot="bottom">
+      <ion-tab-bar class="cd-tab-bar" slot="bottom" aria-label="Navegación principal">
         @for (tab of tabs; track tab.id) {
-          <ion-tab-button [tab]="tab.id" [attr.data-testid]="'tab-' + tab.id">
+          <ion-tab-button
+            [tab]="tab.id"
+            [attr.data-testid]="'tab-' + tab.id"
+            [attr.aria-current]="activeTab() === tab.id ? 'page' : null"
+          >
             <ion-icon
               [name]="activeTab() === tab.id ? tab.iconActive : tab.icon"
               aria-hidden="true"

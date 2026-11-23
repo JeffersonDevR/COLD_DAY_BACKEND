@@ -6,6 +6,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -54,8 +55,9 @@ import { OtTimelineComponent } from './ot-timeline.component';
  *
  * - Sin radar: con SOLICITADA/BUSCANDO_TECNICO se muestra una tarjeta clara de
  *   "Buscando técnico…"; no se piden técnicos cercanos ni se dibuja mapa.
- * - Sin estimación de tarifa embebida (la calcula POST /api/ot/tarifa/estimar):
- *   el panel de pago muestra los medios y el copy, no el monto estimado.
+ * - Sin estimación de tarifa embebida en la OT: el monto de la visita se pide a
+ *   POST /api/ot/tarifa/estimar (valor real, nunca un hardcode) solo cuando el
+ *   panel de pago aplica. Si falla o está fuera de rango no se pinta monto.
  *
  * Todo lo demás se replica: carga con banner + Reintentar, SSE con fallback a
  * poll de 25 s, sondeo de posición de 15 s solo con la app visible (404 = sin
@@ -166,6 +168,37 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
     const estado = this.ot()?.estado;
     return estado === 'CANCELADA' || estado === 'DISPUTADA';
   });
+
+  /** Tarifa real de la visita (POST /api/ot/tarifa/estimar); `null` = no se pinta. */
+  readonly tarifaVisita = signal<number | null>(null);
+
+  /** Clave estable del destino: no relanza la estimación en cada refresco de la OT. */
+  private readonly destinoVisita = computed<string | null>(() => {
+    const punto = this.puedePagarVisita() ? this.ot()?.punto : null;
+    return punto ? `${punto.latitud},${punto.longitud}` : null;
+  });
+
+  /** `$ 50.000 COP` en es-CO (misma convención que A7). */
+  formatoCop(valor: number): string {
+    return `$ ${valor.toLocaleString('es-CO')} COP`;
+  }
+
+  constructor() {
+    effect((onCleanup) => {
+      const clave = this.destinoVisita();
+      this.tarifaVisita.set(null);
+      if (!clave) return;
+      const [latitud, longitud] = clave.split(',').map(Number);
+      const suscripcion = this.otApi.estimarTarifa({ latitud, longitud }).subscribe({
+        next: (estimacion) =>
+          this.tarifaVisita.set(
+            estimacion.fueraDeRango || estimacion.tarifa === null ? null : estimacion.tarifa,
+          ),
+        error: () => this.tarifaVisita.set(null),
+      });
+      onCleanup(() => suscripcion.unsubscribe());
+    });
+  }
 
   ngOnInit(): void {
     this.cargaOtEstado = cargarOtDesdeRuta(

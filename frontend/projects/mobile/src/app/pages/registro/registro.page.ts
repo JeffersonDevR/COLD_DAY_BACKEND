@@ -669,7 +669,7 @@ export class RegistroPage {
   private completarAlta(res: TokenResponse, correo: string, rol: RolAlta): void {
     this.loading.set(false);
     this.auth.establecerSesionDesdeToken(res, correo);
-    void this.toast.success('Cuenta creada', 'Bienvenido a Cold Day. Ya podés empezar.');
+    void this.toast.success('Cuenta creada', 'Bienvenido a Cold Day. Ya puedes empezar.');
     // El proveedor nace PENDIENTE: sus solicitudes de insumos responderían 403,
     // así que aterriza en su expediente, igual que en la web.
     const destino =
@@ -681,7 +681,7 @@ export class RegistroPage {
     this.loading.set(false);
     void this.toast.success(
       'Cuenta creada',
-      'Ingresá con tu correo y tu contraseña para empezar.',
+      'Ingresa con tu correo y tu contraseña para empezar.',
     );
     void this.router.navigateByUrl('/login');
   }

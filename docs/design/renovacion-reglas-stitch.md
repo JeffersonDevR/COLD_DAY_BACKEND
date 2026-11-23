@@ -1,5 +1,7 @@
 # Renovación de reglas vs. Stitch (2026-11-23)
 
+> **Archivado (2026-11-23).** Las reglas renegociadas se incorporaron a `DESIGN.md` §0.1 y a la regla afectada; el radar de faltantes, lo bloqueado por datos y las decisiones pendientes se mudaron a `docs/design/NAVEGACION.md` §2 y §4. No lo uses como fuente: es historia de la negociación.
+
 Decisión del dueño del producto: **la fidelidad al diseño Stitch manda**; donde una regla de `DESIGN.md` bloquee su aplicación correcta, la regla se renegocia en vez de saltarse el diseño.
 
 Este documento es la negociación, elemento por elemento, con su costo real. No es una lista de deseos: cada fila dice qué hace falta para pintarlo hoy.

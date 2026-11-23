@@ -34,7 +34,7 @@ export const MODOS: Record<ModoApp, ModoConfig> = {
     home: '/cliente/panel',
     tabs: [
       { id: 'panel', label: 'Panel', icon: 'home-outline', iconActive: 'home' },
-      { id: 'equipos', label: 'Mis órdenes', icon: 'cube-outline', iconActive: 'cube' },
+      { id: 'equipos', label: 'Mis equipos', icon: 'cube-outline', iconActive: 'cube' },
       { id: 'cuenta', label: 'Cuenta', icon: 'person-outline', iconActive: 'person' },
     ],
   },
@@ -44,6 +44,9 @@ export const MODOS: Record<ModoApp, ModoConfig> = {
     tabs: [
       { id: 'radar', label: 'Radar', icon: 'radio-outline', iconActive: 'radio' },
       { id: 'ots', label: 'Mis OTs', icon: 'construct-outline', iconActive: 'construct' },
+      // Gestión = liquidaciones + documentos (el id es el segmento de ruta
+      // histórico `liquidaciones`; la etiqueta es la sección completa).
+      { id: 'liquidaciones', label: 'Gestión', icon: 'folder-outline', iconActive: 'folder' },
       { id: 'cuenta', label: 'Cuenta', icon: 'person-outline', iconActive: 'person' },
     ],
   },

@@ -142,6 +142,8 @@ describe('mobileErrorInterceptor', () => {
       'http://api.test/api/ot/OT-1/acta',
       'http://api.test/api/disputas/ot/OT-1',
       'http://api.test/api/sse/ticket',
+      // Registro del token push: segundo plano, sin acción del usuario.
+      'http://api.test/api/usuarios/me/dispositivos',
     ];
 
     for (const url of urls) {
