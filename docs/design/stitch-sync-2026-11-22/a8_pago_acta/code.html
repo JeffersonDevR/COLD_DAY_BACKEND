@@ -1,0 +1,215 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Cold Day - Pago y Acta de Servicio</title>
+<!-- Material Symbols Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Typography Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "surface-subtle": "#0e1726",
+            "outline-border": "#1e293b",
+            primary: "#22d3ee",
+            "primary-focus": "#06b6d4",
+            amber: {
+              400: "#fbbf24",
+              500: "#f59e0b",
+              950: "#451a03"
+            },
+            violet: {
+              400: "#a78bfa",
+              950: "#2e1065"
+            },
+            emerald: {
+              400: "#4ade80",
+              500: "#22c55e",
+              950: "#052e16"
+            }
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"],
+            label: ["Public Sans", "sans-serif"]
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Safe mobile viewport constraint 390px centered preview */
+    body {
+      background-color: #05080f;
+    }
+    .mobile-frame {
+      max-width: 390px;
+      min-height: 844px;
+      margin: 0 auto;
+      background-color: #0b1220;
+    }
+    /* Remove tap highlighting */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-slate-200 antialiased font-body flex justify-center items-start min-h-screen w-full overflow-x-hidden">
+<div class="w-full max-w-md mx-auto relative flex flex-col justify-between overflow-x-hidden border-x border-[#1e293b]/60 shadow-2xl bg-[#0b1220] min-h-screen">
+<header class="sticky top-0 z-40 bg-[#0b1220]/95 backdrop-blur-md px-4 pt-10 pb-3 border-b border-[#1e293b]">
+<div class="flex items-center justify-between h-11">
+<button aria-label="Volver" class="w-11 h-11 -ml-2 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-[#111b2e] active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[22px]">arrow_back</span>
+</button>
+<h1 class="font-headline font-bold text-lg tracking-tight text-white">
+Pago
+</h1>
+<div class="inline-flex items-center px-2.5 py-1 rounded bg-[#111b2e] border border-[#1e293b] gap-1.5 shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+<span class="font-mono text-xs font-semibold text-amber-400 tracking-tight">OT #CD-8819</span>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full px-4 py-4 space-y-4">
+<section class="w-full bg-[#111b2e] rounded-xl border border-[#1e293b] p-3.5 space-y-3">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="font-mono text-[10px] text-slate-400 tracking-wider uppercase">Orden de Trabajo</span>
+<div class="font-headline font-bold text-base text-slate-100 flex items-center gap-1.5">
+<span>Reparación Split 3000F</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-medium font-mono">
+Finalizado
+</span>
+</div>
+<div class="pt-2 border-t border-[#1e293b] flex items-center justify-between text-xs">
+<div class="flex items-center gap-2 text-slate-300">
+<span class="material-symbols-outlined text-slate-400 text-base">engineering</span>
+<span>Técnico asignado:</span>
+</div>
+<span class="font-medium text-slate-200">Lucas Vázquez <span class="text-slate-400 font-mono">(Mat. #4829)</span></span>
+</div>
+</section>
+<section class="w-full bg-[#111b2e] rounded-xl border border-[#1e293b] p-4 space-y-3.5">
+<div class="flex items-center justify-between">
+<h2 class="font-headline font-semibold text-xs tracking-wider text-slate-400 uppercase">
+Detalle de liquidación
+</h2>
+<span class="font-mono text-[11px] text-slate-400">COP ($)</span>
+</div>
+<div class="space-y-2.5 text-sm">
+<div class="flex items-center justify-between">
+<span class="text-slate-300">Subtotal Servicio</span>
+<span class="font-mono text-slate-200 font-medium">$120.000</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-slate-300">Repuestos certificados</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold tracking-tight bg-violet-950/80 border border-violet-400/30 text-violet-400">
+REPUESTOS
+</span>
+</div>
+<span class="font-mono text-slate-200 font-medium">$60.000</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-slate-300">Anticipo visita técnica</span>
+<span class="text-[11px] text-emerald-400">Bonificado / descontado</span>
+</div>
+<span class="font-mono text-emerald-400 font-medium">-$50.000</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-slate-300">Comisión de plataforma e insumos</span>
+<span class="font-mono text-slate-200 font-medium">$35.000</span>
+</div>
+</div>
+<div class="border-t border-[#1e293b] pt-3 flex items-baseline justify-between">
+<div class="flex flex-col">
+<span class="font-headline font-bold text-xs uppercase tracking-wider text-slate-300">Total a pagar</span>
+<span class="text-[11px] text-slate-400 font-normal">IVA e impuestos incluidos</span>
+</div>
+<div class="font-headline font-bold text-2xl tracking-tight text-[#22d3ee]">$165.000</div>
+</div>
+</section>
+<section class="w-full space-y-2.5">
+<label class="block font-headline font-semibold text-xs tracking-wider text-slate-400 uppercase px-0.5">
+Método de pago
+</label>
+<div aria-label="Método de pago" class="space-y-2" role="radiogroup">
+<label class="relative flex items-center justify-between p-3.5 rounded-xl bg-[#111b2e] border border-[#22d3ee]/60 cursor-pointer min-h-[52px] select-none transition-colors w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#22d3ee] text-xl">account_balance</span>
+<div class="flex flex-col"><span class="text-sm font-medium text-slate-100">Transferencia bancaria / PSE</span><span class="text-[11px] text-slate-400">Acreditación y débito inmediato PSE</span></div>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-[#22d3ee] flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-[#22d3ee]"></div>
+</div>
+<input checked="" class="sr-only" name="payment_method" type="radio" value="cbu">
+</label>
+<label class="relative flex items-center justify-between p-3.5 rounded-xl bg-[#111b2e] border border-[#1e293b] hover:border-slate-700 cursor-pointer min-h-[52px] select-none transition-colors w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 text-xl">account_balance_wallet</span>
+<div class="flex flex-col"><span class="text-sm font-medium text-slate-300">Nequi / Daviplata</span><span class="text-[11px] text-slate-400">Transferencia móvil con QR interoperable o llave celular</span></div>
+</div>
+<div class="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center"></div>
+<input class="sr-only" name="payment_method" type="radio" value="nequi">
+</label>
+</div>
+<p class="text-[11px] text-slate-400 px-1 flex items-start gap-1.5 leading-relaxed pt-0.5"><span class="material-symbols-outlined text-slate-400 text-sm mt-0.5">verified_user</span><span>El comprobante fiscal / factura electrónica DIAN se enviará a tu correo tras confirmar la transacción.</span></p>
+</section>
+</main>
+<footer class="w-full p-4 pt-1 space-y-3 pb-8 bg-[#0b1220]">
+<button class="w-full h-12 bg-[#22d3ee] hover:bg-[#06b6d4] active:scale-[0.98] transition-all rounded-xl font-headline font-bold text-sm tracking-tight text-[#0b1220] flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(34,211,238,0.22)]" type="button"><span>Pagar $165.000 COP</span><span class="material-symbols-outlined text-lg">arrow_forward</span></button>
+<div class="w-full bg-[#111b2e] rounded-xl border border-[#1e293b] p-3 flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0 pr-2">
+<div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-emerald-500 text-base" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<p class="text-xs text-slate-300 truncate">
+Acta digital <span class="font-mono text-slate-200 font-semibold">#8819</span> firmada por Lucas V.
+</p>
+</div>
+<button class="inline-flex items-center gap-1 font-label text-xs font-semibold text-[#22d3ee] hover:text-cyan-300 py-1.5 px-2 rounded -mr-1 transition-colors shrink-0" type="button">
+<span>Ver acta</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</footer>
+</div>
+
+
+
+
+
+
+</body></html>

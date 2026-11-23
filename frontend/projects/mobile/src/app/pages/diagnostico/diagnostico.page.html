@@ -112,6 +112,16 @@
             <div class="cd-desglose__detalle">
               <span class="cd-desglose__nombre">Repuestos y materiales</span>
               <p class="cd-desglose__nota">Repuestos declarados por el técnico</p>
+              @if (orden.diagnostico?.insumos?.length) {
+                <ul class="cd-desglose__insumos" data-testid="insumos-diagnostico">
+                  @for (linea of orden.diagnostico!.insumos!; track $index) {
+                    <li>
+                      <span class="cd-desglose__insumo-cantidad">{{ linea.cantidad }} ×</span>
+                      <span>{{ linea.descripcion }}</span>
+                    </li>
+                  }
+                </ul>
+              }
             </div>
             <span class="cd-desglose__valor" data-testid="costo-repuestos">{{ repuestosLabel() }}</span>
           </div>

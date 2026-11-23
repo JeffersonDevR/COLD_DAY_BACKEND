@@ -491,3 +491,49 @@ transition-duration: 0.01ms;
   display: contents;
 }
 
+/* Barra de marca del sistema (<cd-marca>): identidad + etiqueta de pantalla +
+   chip de contexto (Stitch). Nace de la fila que solo tenía el Panel del
+   cliente (.cd-panel__barra) y pasa a ser el estándar de las pantallas de
+   tabs. */
+.cd-marca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cd-marca__identidad {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.cd-marca__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 8px;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  color: var(--ion-color-primary);
+}
+
+.cd-marca__nombre {
+  margin: 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.cd-marca__pantalla {
+  margin: 0;
+  font-family: var(--cd-font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+}
+

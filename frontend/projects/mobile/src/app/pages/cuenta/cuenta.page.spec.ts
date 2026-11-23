@@ -160,12 +160,29 @@ describe('CuentaPage', () => {
   it('valida el perfil y la motivación antes de enviar', () => {
     const { fixture, solicitar } = setup({ disponibles: ['CLIENTE'], actual: 'CLIENTE' });
 
+    boton(fixture, 'agregar-tecnico').click();
+    fixture.detectChanges();
     boton(fixture, 'solicitar-perfil').click();
     fixture.detectChanges();
 
-    expect(texto(fixture, 'error-perfil')).toContain('Elige el perfil');
     expect(texto(fixture, 'error-motivacion')).toContain('Cuéntanos por qué');
     expect(solicitar).not.toHaveBeenCalled();
+  });
+
+  it('agrega perfiles desde filas y abre el formulario preseleccionado', () => {
+    const { fixture } = setup({ disponibles: ['CLIENTE'], actual: 'CLIENTE' });
+
+    expect(boton(fixture, 'agregar-tecnico')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="agregar-cliente"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="formulario-perfil"]')).toBeNull();
+
+    boton(fixture, 'agregar-tecnico').click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="formulario-perfil"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="solicitar-perfil"]')).toBeTruthy();
+    // La fila desaparece mientras el formulario está abierto.
+    expect(fixture.nativeElement.querySelector('[data-testid="agregar-tecnico"]')).toBeNull();
   });
 
   it('rechaza una motivación demasiado corta', () => {
@@ -248,5 +265,20 @@ describe('CuentaPage', () => {
     expect(texto(fixture, 'solicitud-error')).toContain('No pudimos enviar tu solicitud');
     boton(fixture, 'solicitud-reintentar').click();
     expect(solicitar).toHaveBeenCalledTimes(2);
+  });
+
+  it('muestra cuántos perfiles tiene habilitados la cuenta', () => {
+    const { fixture } = setup({ disponibles: ['CLIENTE'], actual: 'CLIENTE' });
+
+    expect(texto(fixture, 'cuenta-perfiles-habilitados')).toContain('1 de 3 perfiles habilitados');
+  });
+
+  it('con los tres perfiles habilitados el conteo dice 3 de 3', () => {
+    const { fixture } = setup({
+      disponibles: ['CLIENTE', 'TECNICO', 'PROVEEDOR'],
+      actual: 'PROVEEDOR',
+    });
+
+    expect(texto(fixture, 'cuenta-perfiles-habilitados')).toContain('3 de 3 perfiles habilitados');
   });
 });

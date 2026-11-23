@@ -7,15 +7,16 @@ import {
   IonFooter,
   IonHeader,
   IonIcon,
-  IonTitle,
   IonToolbar,
 } from '@ionic/angular';
 import { esErrorPerfilClienteFaltante } from '@core/errorStatus/perfil-cliente';
-import { EstadoOt, OtResponse } from '@core/models/common.models';
+import { CategoriaServicio, EstadoOt, OtResponse } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { ClientesApi } from '@core/service/clientes-api';
 import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
+import { iconoCategoria as iconoDeCategoria } from '../../core/icono-categoria';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { PageComponent } from '../../shared/ui/page/page';
@@ -49,19 +50,19 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     IonFooter,
     IonHeader,
     IonIcon,
-    IonTitle,
     IonToolbar,
     PageComponent,
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
     PriorityChipComponent,
+    MarcaBarraComponent,
   ],
   template: `
     <cd-page>
       <ion-header class="ion-no-border" cdHeader>
         <ion-toolbar>
-          <ion-title>Mis órdenes</ion-title>
+          <cd-marca pantalla="Mis órdenes" chip="Cliente" />
         </ion-toolbar>
       </ion-header>
 
@@ -100,9 +101,14 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           <ion-card class="cd-ot cd-ot--orden" data-testid="equipo">
             <ion-card-content>
               <div class="cd-ot__cabecera">
-                <div class="cd-ot__titulos">
-                  <span class="cd-ot__codigo">{{ equipo.codigoOt }}</span>
-                  <h2 class="cd-ot__categoria">{{ equipo.etiqueta }}</h2>
+                <div class="cd-equipo__identidad">
+                  <span class="cd-equipo__icono" aria-hidden="true">
+                    <ion-icon [name]="iconoCategoria(equipo.categoria)"></ion-icon>
+                  </span>
+                  <div class="cd-ot__titulos">
+                    <span class="cd-ot__codigo">{{ equipo.codigoOt }}</span>
+                    <h2 class="cd-ot__categoria">{{ equipo.etiqueta }}</h2>
+                  </div>
                 </div>
                 <app-priority-chip
                   class="cd-ot__prioridad"
@@ -112,6 +118,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
                   {{ etiqueta(equipo.estado) }}
                 </span>
               </div>
+              <p class="cd-ot__descripcion">{{ equipo.descripcionFalla }}</p>
               <div class="cd-ot__pie">
                 <span>
                   {{ equipo.intervenciones }}
@@ -193,6 +200,11 @@ export class MobileEquiposPage implements OnInit {
 
   tono(estado: EstadoOt): string {
     return tonoEstadoOt(estado);
+  }
+
+  /** Icono decorativo por categoría; el contenedor va con aria-hidden. */
+  iconoCategoria(categoria: CategoriaServicio): string {
+    return iconoDeCategoria(categoria);
   }
 
   abrir(equipo: EquipoCliente): void {

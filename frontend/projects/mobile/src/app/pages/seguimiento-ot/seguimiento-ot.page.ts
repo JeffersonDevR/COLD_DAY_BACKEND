@@ -235,6 +235,9 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
           // poll de respaldo toma la posta.
           this.iniciarPollDeRespaldo();
         },
+        // En mock el stream llega VACÍO y completa sin error: sin este cierre
+        // el poll de respaldo jamás arrancaba y la pantalla nunca refrescaba.
+        complete: () => this.iniciarPollDeRespaldo(),
       });
   }
 
@@ -252,14 +255,14 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
     if (destino === 'ASIGNADA') {
       this.toast.info(
         'Técnico asignado',
-        'Un técnico aceptó tu orden de trabajo. Podés seguir su avance en esta pantalla.',
+        'Un técnico aceptó tu orden de trabajo. Puedes seguir su avance en esta pantalla.',
       );
       return;
     }
     if (destino === 'EN_DIAGNOSTICO') {
       this.toast.info(
         'Presupuesto recibido',
-        'El técnico envió el presupuesto de la reparación. Revisalo y aprobalo para continuar.',
+        'El técnico envió el presupuesto de la reparación. Revísalo y apruébalo para continuar.',
       );
     }
   }

@@ -21,8 +21,10 @@ import {
 } from '@core/models/common.models';
 import { ProveedorRegistroService } from '@core/service/proveedor-registro.service';
 import { ProveedoresApi } from '@core/service/proveedores-api';
+import { documentoLabel } from '@core/ui/labels';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /** C2 — Provider documents: metadata only (no upload exists in the backend). */
@@ -44,6 +46,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     IonToolbar,
     SkeletonComponent,
     EmptyStateComponent,
+    MarcaBarraComponent,
   ],
   templateUrl: './documentos-proveedor.page.html',
 })
@@ -117,13 +120,13 @@ export class DocumentosProveedorPage implements OnInit {
   explicacionEstado(): string {
     switch (this.estadoValidacion()) {
       case 'APROBADO':
-        return 'Tu documentación fue aprobada. Ya podés aceptar pedidos de insumos.';
+        return 'Tu documentación fue aprobada. Ya puedes aceptar pedidos de insumos.';
       case 'RECHAZADO':
-        return 'Tu documentación fue rechazada. Corregí lo indicado y volvé a declararla.';
+        return 'Tu documentación fue rechazada. Corrige lo indicado y vuelve a declararla.';
       case 'PENDIENTE':
-        return 'Un administrador todavía revisa tu expediente. Mientras tanto no podés aceptar pedidos.';
+        return 'Un administrador todavía revisa tu expediente. Mientras tanto no puedes aceptar pedidos.';
       default:
-        return 'No conocemos el estado de validación de esta sesión. Volvé a iniciar sesión o contactá al administrador.';
+        return 'No conocemos el estado de validación de esta sesión. Vuelve a iniciar sesión o contacta al administrador.';
     }
   }
 
@@ -136,5 +139,10 @@ export class DocumentosProveedorPage implements OnInit {
       default:
         return 'espera';
     }
+  }
+
+  /** Etiqueta canónica del tipo (labels.ts); el backend expone el enum como string. */
+  etiquetaDocumento(tipo: string): string {
+    return documentoLabel(tipo as TipoDocumentoProveedor);
   }
 }

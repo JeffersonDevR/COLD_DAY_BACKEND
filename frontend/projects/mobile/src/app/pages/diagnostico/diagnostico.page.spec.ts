@@ -177,6 +177,31 @@ describe('DiagnosticoPage móvil (A7)', () => {
     expect(total).toContain('COP');
   });
 
+  it('muestra los insumos que declaró el técnico dentro del desglose', () => {
+    const { fixture } = setup({
+      otApi: {
+        getOtById: vi.fn(() =>
+          of(
+            ot({
+              diagnostico: {
+                diagnostico: 'Compresor con fuga de refrigerante en la línea de baja.',
+                insumos: [
+                  { descripcion: 'Gas R410A 900g', cantidad: 2 },
+                  { descripcion: 'Filtro secador', cantidad: 1 },
+                ],
+              },
+            }),
+          ),
+        ),
+      },
+    });
+
+    const lista = fixture.nativeElement.querySelector('[data-testid="insumos-diagnostico"]');
+    expect(lista?.textContent).toContain('Gas R410A 900g');
+    expect(lista?.textContent).toContain('Filtro secador');
+    expect(lista?.textContent).toContain('2 ×');
+  });
+
   it('manoDeObra (legacy) se usa cuando manoObra falta', () => {
     const presupuesto = {
       aprobado: false,

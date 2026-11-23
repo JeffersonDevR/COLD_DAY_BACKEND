@@ -1,0 +1,234 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>A2 Registro · Cold Day</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "surface-muted": "#0f172a",
+            "outline-dim": "#1e293b",
+            "outline-active": "#334155",
+            primary: "#22d3ee",
+            "primary-focus": "#06b6d4",
+            "on-primary": "#042f2e",
+            danger: "#f87171",
+            "danger-muted": "#451a1a",
+            "text-muted": "#94a3b8",
+            "text-dim": "#64748b",
+            "text-bright": "#f1f5f9"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Space Mono", "monospace"],
+            sans: ["Inter", "sans-serif"]
+          },
+          boxShadow: {
+            "cyan-glow": "0 0 16px -2px rgba(34, 211, 238, 0.45)",
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* iOS Safe Area constraints & touch ergonomics */
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
+    body {
+      background-color: #050911;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      line-height: 1;
+    }
+    /* Hide scrollbar for cleanly clamped viewport */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#050911] text-text-bright font-body flex justify-center items-center min-h-screen p-0 sm:p-4 antialiased">
+<!-- Mobile Frame Container (Strict 390x844 viewport spec) -->
+<main class="w-full max-w-[390px] h-[844px] bg-canvas relative overflow-hidden flex flex-col justify-between border border-outline-dim shadow-2xl sm:rounded-[36px]">
+<!-- Top System / Safe Area & Fixed Ionic Header -->
+<header class="w-full bg-canvas/95 backdrop-blur-md pt-[calc(env(safe-area-inset-top,10px)+6px)] px-4 pb-2 z-40 border-b border-outline-dim/80 flex-shrink-0" style="padding-top: max(env(safe-area-inset-top, 44px), 44px);">
+<!-- Status bar visual anchor -->
+<div class="flex justify-between items-center text-[11px] font-label text-text-dim px-1 pb-2">
+<span class="font-bold tracking-tight">09:41</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[13px]">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[13px]">wifi</span>
+<span class="material-symbols-outlined text-[14px]">battery_full</span>
+</div>
+</div>
+<!-- Ionic Native Navigation Bar -->
+<div class="h-12 flex items-center justify-between">
+<!-- Back Button Touch Target (min 44px) -->
+<a aria-label="Volver" class="w-11 h-11 -ml-2 rounded-lg flex items-center justify-center text-text-muted hover:text-text-bright active:bg-surface transition-colors" href="#login">
+<span class="material-symbols-outlined text-xl">arrow_back_ios_new</span>
+</a>
+<!-- Header Title -->
+<h1 class="font-headline font-bold text-base tracking-tight text-text-bright text-center">
+          Crear cuenta
+        </h1>
+<!-- Header Right Anchor (Security status indicator) -->
+<div class="w-11 h-11 -mr-2 rounded-lg flex items-center justify-center text-text-dim" title="Canal Seguro TLS 1.3">
+<span class="material-symbols-outlined text-lg text-text-dim/80">verified_user</span>
+</div>
+</div>
+</header>
+<!-- Scrollable Body Content -->
+<div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-3 space-y-4">
+<!-- Brand Minimal Status & Segmented Control -->
+<div class="space-y-3">
+<!-- Cold Day Ops Banner -->
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-md bg-surface flex items-center justify-center border border-outline-dim">
+<span class="material-symbols-outlined text-primary text-sm">ac_unit</span>
+</div>
+<span class="font-headline text-xs font-bold tracking-wider uppercase text-text-dim">COLD DAY · OPS CO</span>
+</div>
+<span class="font-label text-[10px] uppercase text-text-dim bg-surface px-2 py-0.5 rounded border border-outline-dim">FASE REGISTRO</span>
+</div>
+<!-- Segmented Control / Tabs: Cliente / Técnico / Proveedor -->
+<nav aria-label="Tipo de cuenta" class="bg-surface p-1 rounded-xl border border-outline-dim grid grid-cols-3 gap-1">
+<!-- Tab 1: Cliente (Active) -->
+<button class="py-2 text-center rounded-lg bg-outline-dim text-primary border border-primary/30 transition-all" type="button">
+<span class="font-headline font-semibold text-xs tracking-tight block">Cliente</span>
+<span class="font-label text-[9px] uppercase tracking-wider text-primary/80">Hogar / Com</span>
+</button>
+<!-- Tab 2: Técnico (Inactive) -->
+<button class="py-2 text-center rounded-lg hover:bg-surface-muted text-text-dim hover:text-text-muted transition-all" type="button">
+<span class="font-headline font-semibold text-xs tracking-tight block">Técnico</span>
+<span class="font-label text-[9px] uppercase tracking-wider text-text-dim/70">Matriculado</span>
+</button>
+<!-- Tab 3: Proveedor (Inactive) -->
+<button class="py-2 text-center rounded-lg hover:bg-surface-muted text-text-dim hover:text-text-muted transition-all" type="button">
+<span class="font-headline font-semibold text-xs tracking-tight block">Proveedor</span>
+<span class="font-label text-[9px] uppercase tracking-wider text-text-dim/70">Repuestos</span>
+</button>
+</nav>
+</div>
+<!-- Compact Form Card -->
+<form class="bg-surface border border-outline-dim rounded-xl p-3.5 space-y-3 shadow-sm" id="registrationForm" onsubmit="event.preventDefault();">
+<!-- Field 1: NOMBRE COMPLETO -->
+<div class="space-y-1">
+<label class="block font-label text-[11px] uppercase tracking-wider text-text-dim" for="fullname">
+            Nombre Completo
+          </label>
+<div class="relative flex items-center">
+<input class="w-full h-11 bg-surface-muted border border-outline-dim rounded-lg px-3 pl-9 text-sm text-text-bright font-body focus:border-primary focus:ring-0 focus:outline-none placeholder:text-text-dim/50" id="fullname" name="fullname" placeholder="Ej. Martín Rossi" type="text" value="Martín Rossi">
+<span class="material-symbols-outlined absolute left-2.5 text-text-dim text-base pointer-events-none">badge</span>
+</div>
+</div>
+<!-- Field 2: CORREO ELECTRÓNICO (INLINE ERROR STATE SPECIFIED) -->
+<div class="space-y-1">
+<div class="flex justify-between items-center">
+<label class="block font-label text-[11px] uppercase tracking-wider text-danger" for="email">
+              Correo Electrónico
+            </label>
+<span class="font-label text-[10px] text-danger uppercase tracking-tight">Revisá el dato</span>
+</div>
+<div class="relative flex items-center">
+<input aria-describedby="email-error" aria-invalid="true" class="w-full h-11 bg-danger-muted/30 border border-danger rounded-lg px-3 pl-9 pr-9 text-sm text-text-bright font-body focus:border-danger focus:ring-0 focus:outline-none" id="email" name="email" type="email" value="martin.rossi@invalido.com.co">
+<span class="material-symbols-outlined absolute left-2.5 text-danger text-base pointer-events-none">mail</span>
+<span class="material-symbols-outlined absolute right-2.5 text-danger text-base pointer-events-none">error</span>
+</div>
+<!-- Error helper message -->
+<div class="flex items-center gap-1.5 pt-0.5 text-danger" id="email-error">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="text-xs font-body leading-none">Ingresá un correo válido con dominio activo.</span>
+</div>
+</div>
+<!-- Field 3: CONTRASEÑA -->
+<div class="space-y-1">
+<label class="block font-label text-[11px] uppercase tracking-wider text-text-dim" for="password">
+            Contraseña
+          </label>
+<div class="relative flex items-center">
+<input class="w-full h-11 bg-surface-muted border border-outline-dim rounded-lg px-3 pl-9 pr-11 text-sm text-text-bright font-body tracking-widest focus:border-primary focus:ring-0 focus:outline-none placeholder:tracking-normal placeholder:text-text-dim/50" id="password" name="password" placeholder="Mínimo 8 caracteres" type="password" value="ColdRepairs2024!">
+<span class="material-symbols-outlined absolute left-2.5 text-text-dim text-base pointer-events-none">lock</span>
+<!-- Eye toggle button (touch target) -->
+<button aria-label="Alternar visibilidad de contraseña" class="absolute right-0 h-11 w-11 flex items-center justify-center text-text-muted hover:text-text-bright" id="togglePassword" onclick="const p = document.getElementById('password'); const isPass = p.type === 'password'; p.type = isPass ? 'text' : 'password'; document.getElementById('eyeIcon').textContent = isPass ? 'visibility_off' : 'visibility';" type="button">
+<span class="material-symbols-outlined text-base" id="eyeIcon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Field 4: DIRECCIÓN DE CASA (Contextual to Cliente segment) -->
+<div class="space-y-1">
+<div class="flex justify-between items-center">
+<label class="block font-label text-[11px] uppercase tracking-wider text-text-dim" for="address">
+              Dirección de Casa
+            </label>
+<span class="font-label text-[9px] uppercase tracking-tight text-primary">BOGOTÁ / COLOMBIA</span>
+</div>
+<div class="relative flex items-center">
+<input class="w-full h-11 bg-surface-muted border border-outline-dim rounded-lg px-3 pl-9 text-sm text-text-bright font-body focus:border-primary focus:ring-0 focus:outline-none placeholder:text-text-dim/50" id="address" name="address" placeholder="Ej. Cra. 15 # 85-30" type="text" value="Cra. 15 # 85-30, Bogotá">
+<span class="material-symbols-outlined absolute left-2.5 text-primary text-base pointer-events-none">location_on</span>
+</div>
+</div>
+<!-- Terms & Security Disclaimer -->
+<div class="pt-1 border-t border-outline-dim/60 flex items-start gap-2 text-text-dim">
+<span class="material-symbols-outlined text-[15px] text-text-dim mt-0.5 flex-shrink-0">shield</span>
+<p class="font-label text-[10px] leading-relaxed tracking-tight text-text-dim">Tus datos están protegidos · Encriptación TLS 1.3 con almacenamiento bajo normativa Habeas Data Ley 1581.</p>
+</div>
+</form>
+</div>
+<!-- Bottom Actions / Footer Section (Docked to safe area bottom) -->
+<footer class="w-full bg-canvas/95 backdrop-blur-md px-4 pt-2.5 pb-[calc(env(safe-area-inset-bottom,12px)+10px)] border-t border-outline-dim flex-shrink-0 space-y-2" style="padding-bottom: max(env(safe-area-inset-bottom, 34px), 34px);">
+<!-- Primary Action CTA (Height >= 48px, cyan highlight with restricted glow) -->
+<button class="w-full h-12 bg-primary hover:bg-primary-focus active:scale-[0.99] text-on-primary font-headline font-bold text-sm tracking-wide rounded-xl shadow-cyan-glow flex items-center justify-center gap-2 transition-all cursor-pointer" type="button">
+<span>Crear cuenta</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+<!-- Secondary Ghost Link (Back to Login, min 44px touch target) -->
+<a class="w-full h-11 flex items-center justify-center font-body text-xs text-text-muted hover:text-primary active:opacity-75 transition-colors gap-1" href="#login">
+<span>¿Ya tenés cuenta en Cold Day?</span>
+<span class="font-semibold text-primary underline underline-offset-2">Ingresá</span>
+</a>
+<!-- Home Indicator bar emulation for iOS aesthetic -->
+<div class="w-32 h-1 bg-outline-dim mx-auto rounded-full mt-1 opacity-70"></div>
+</footer>
+</main>
+
+
+
+
+</body></html>

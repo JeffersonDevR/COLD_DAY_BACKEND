@@ -110,7 +110,7 @@ const TIPOS_CLIENTE: readonly { valor: TipoCliente; etiqueta: string }[] = [
 ];
 
 const MSG_FALTA_UBICACION =
-  'Usá tu ubicación o ubicá la dirección antes de enviar: el técnico necesita el punto exacto.';
+  'Usa tu ubicación o ubica la dirección antes de enviar: el técnico necesita el punto exacto.';
 
 /**
  * A5 — Solicitar servicio (paso 1).
@@ -185,7 +185,7 @@ const MSG_FALTA_UBICACION =
         >
           <h2 class="cd-alerta__titulo">Tu cuenta todavía no tiene perfil de cliente</h2>
           <p class="cd-alerta__texto">
-            Podés crearlo ahora con la dirección y la ubicación que ya cargaste. Al confirmar,
+            Puedes crearlo ahora con la dirección y la ubicación que ya cargaste. Al confirmar,
             creamos el perfil y enviamos tu solicitud en el mismo paso.
           </p>
 
@@ -241,12 +241,12 @@ const MSG_FALTA_UBICACION =
             }
             @if (perfilForm.controls.calle.touched && perfilForm.controls.calle.invalid) {
               <p class="cd-field-error" data-testid="error-perfil-calle">
-                Escribí la dirección del servicio.
+                Escribe la dirección del servicio.
               </p>
             }
             @if (perfilForm.controls.ciudad.touched && perfilForm.controls.ciudad.invalid) {
               <p class="cd-field-error" data-testid="error-perfil-ciudad">
-                Escribí la ciudad del servicio.
+                Escribe la ciudad del servicio.
               </p>
             }
 
@@ -421,7 +421,7 @@ const MSG_FALTA_UBICACION =
 
         @if (paso() === 3) {
           <section class="cd-card cd-resumen" data-testid="resumen-solicitud">
-            <p class="cd-eyebrow">Revisá tu solicitud</p>
+            <p class="cd-eyebrow">Revisa tu solicitud</p>
 
             <div class="cd-resumen__fila">
               <div>
@@ -660,7 +660,7 @@ export class SolicitarServicioPage {
     };
     reconocimiento.onerror = () => {
       this.dictando.set(false);
-      void this.toast.error('No pudimos dictar', 'Probá de nuevo o escribí la falla.');
+      void this.toast.error('No pudimos dictar', 'Prueba de nuevo o escribe la falla.');
     };
     reconocimiento.onend = () => this.dictando.set(false);
 
@@ -678,12 +678,12 @@ export class SolicitarServicioPage {
     if (!control.touched || control.valid) return null;
     if (control.hasError('required')) {
       return campo === 'direccion'
-        ? 'Escribí la dirección del servicio.'
-        : 'Contanos qué está fallando.';
+        ? 'Escribe la dirección del servicio.'
+        : 'Cuéntanos qué está fallando.';
     }
     return campo === 'direccion'
       ? 'La dirección necesita al menos 5 caracteres.'
-      : 'Describí la falla con al menos 10 caracteres.';
+      : 'Describe la falla con al menos 10 caracteres.';
   }
 
   protected textoCoordenadas(): string {
@@ -699,7 +699,7 @@ export class SolicitarServicioPage {
       this.solicitudForm.controls.direccion.markAsTouched();
       void this.toast.info(
         'Falta la dirección',
-        'Escribí la dirección completa y volvé a intentar.',
+        'Escribe la dirección completa y vuelve a intentar.',
       );
       return;
     }
@@ -719,7 +719,7 @@ export class SolicitarServicioPage {
         this.geocodificando.set(false);
         void this.toast.error(
           'Sin resultados',
-          'No pudimos ubicar esa dirección. Probá con otra o usá tu ubicación.',
+          'No pudimos ubicar esa dirección. Prueba con otra o usa tu ubicación.',
         );
       },
     });
@@ -800,7 +800,7 @@ export class SolicitarServicioPage {
             // Backend legado: el JWT en vuelo quedó revocado y no se reintenta
             // con una sesión muerta. El borrador sigue intacto.
             this.errorCrearPerfil.set(
-              'Creamos tu perfil, pero la sesión necesita renovarse. Iniciá sesión de nuevo y volvé a enviar la solicitud.',
+              'Creamos tu perfil, pero la sesión necesita renovarse. Inicia sesión de nuevo y vuelve a enviar la solicitud.',
             );
             return;
           }
@@ -816,7 +816,7 @@ export class SolicitarServicioPage {
             return;
           }
           this.errorCrearPerfil.set(
-            'No pudimos crear tu perfil de cliente. Tus datos siguen acá; probá de nuevo.',
+            'No pudimos crear tu perfil de cliente. Tus datos siguen acá; prueba de nuevo.',
           );
         },
       });

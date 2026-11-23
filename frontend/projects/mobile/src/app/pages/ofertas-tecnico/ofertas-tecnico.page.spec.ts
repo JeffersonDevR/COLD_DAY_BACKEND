@@ -100,6 +100,7 @@ describe('OfertasTecnicoPage (B1)', () => {
     expect(texto(fixture)).toContain('OT-2026-0011');
     expect(texto(fixture)).toContain('3,2 km');
     expect(texto(fixture)).toContain('Expira en 42s');
+    expect(texto(fixture)).toContain('Aceptar servicio');
   });
 
   it('no inventa distancia cuando el backend todavía no la expone', () => {
@@ -171,5 +172,41 @@ describe('OfertasTecnicoPage (B1)', () => {
     });
     expect(fixture.nativeElement.querySelector('[data-testid="radar-error"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="radar-reintentar"]')).toBeTruthy();
+  });
+
+  it('el héroe cuenta las ofertas activas en singular', () => {
+    const { fixture } = setup();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="radar-conteo"]')?.textContent?.trim(),
+    ).toContain('1 oferta cerca de ti');
+  });
+
+  it('el conteo pasa a plural con varias ofertas', () => {
+    const { fixture } = setup({
+      ofertasApi: {
+        getOfertasParaTecnico: vi.fn(() =>
+          of([oferta(), oferta({ id: 'of2', otId: 'ot2', ot: ot({ id: 'ot2' }) })]),
+        ),
+      },
+    });
+    expect(texto(fixture)).toContain('2 ofertas cerca de ti');
+  });
+
+  it('la falla encabeza la tarjeta y la categoría usa su etiqueta canónica', () => {
+    const { fixture } = setup();
+    const tarjeta = fixture.nativeElement.querySelector('[data-testid="oferta-ot1"]');
+    expect(tarjeta?.querySelector('.cd-oferta__titulo')?.textContent).toContain('No enfría.');
+    expect(tarjeta?.querySelector('.cd-oferta__icono')?.getAttribute('aria-hidden')).toBe('true');
+    expect(texto(fixture)).toContain('Aire acondicionado');
+  });
+
+  it('cada categoría mapea a su icono registrado', () => {
+    const { fixture } = setup();
+    const page = fixture.componentInstance;
+    expect(page.iconoCategoria('AIRE_ACONDICIONADO')).toBe('thermometer-outline');
+    expect(page.iconoCategoria('REFRIGERACION')).toBe('snow-outline');
+    expect(page.iconoCategoria('LAVADORAS')).toBe('water-outline');
+    expect(page.iconoCategoria('ELECTRICIDAD')).toBe('flash-outline');
+    expect(page.iconoCategoria('CAMARAS_VIGILANCIA')).toBe('videocam-outline');
   });
 });

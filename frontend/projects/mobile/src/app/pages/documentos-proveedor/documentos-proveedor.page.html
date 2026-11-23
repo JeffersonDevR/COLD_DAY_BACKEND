@@ -1,9 +1,15 @@
 <ion-header class="cd-header">
   <ion-toolbar>
+    <cd-marca pantalla="Portal de proveedor" chip="Proveedor" />
     <div class="cd-hero cd-hero--compacto">
-      <p class="cd-eyebrow">Portal proveedor</p>
       <h1 class="cd-headline">Mis documentos</h1>
       <p class="cd-hero__nota">Declaraciones de metadata: tipo y vencimiento.</p>
+      @if (!cargando() && documentos().length > 0) {
+        <p class="cd-hero__nota cd-bandeja__conteo" data-testid="documentos-conteo">
+          {{ documentos().length }}
+          {{ documentos().length === 1 ? 'documento declarado' : 'documentos declarados' }}
+        </p>
+      }
     </div>
   </ion-toolbar>
 </ion-header>
@@ -36,7 +42,7 @@
     <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">
       <div class="cd-ot__cabecera">
         <div>
-          <p class="cd-ot__codigo">{{ documento.tipo }}</p>
+          <p class="cd-ot__codigo">{{ etiquetaDocumento(documento.tipo) }}</p>
           @if (documento.fechaVencimiento) {
             <p class="cd-ot__categoria">Vence {{ documento.fechaVencimiento }}</p>
           }

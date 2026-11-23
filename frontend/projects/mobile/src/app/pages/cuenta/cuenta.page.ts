@@ -16,6 +16,7 @@ import { SolicitudesPerfilApi } from '@core/service/solicitudes-perfil-api';
 import { ModoApp, ORDEN_MODOS } from '../../modo/modo';
 import { ModoService } from '../../modo/modo.service';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { PageComponent } from '../../shared/ui/page/page';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
@@ -58,16 +59,13 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
     PageComponent,
     SkeletonComponent,
     ErrorAlertComponent,
+    MarcaBarraComponent,
   ],
   template: `
     <cd-page>
       <ion-header class="cd-header" cdHeader>
         <ion-toolbar>
-          <div class="cd-auth__bar cd-auth__bar--nav">
-            <span aria-hidden="true"></span>
-            <h1 class="cd-auth__bar-titulo">Mi cuenta</h1>
-            <span class="cd-chip cd-chip--ok" data-testid="cuenta-verificado">Verificado</span>
-          </div>
+          <cd-marca pantalla="Mi cuenta" chip="Verificado" chipTestId="cuenta-verificado" />
         </ion-toolbar>
       </ion-header>
 
@@ -83,6 +81,9 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
       <section class="cd-card cd-modos">
         <p class="cd-eyebrow">Modo de la app</p>
         <p class="cd-muted">Elige con qué perfil quieres usar Cold Day. Puedes cambiarlo cuando quieras.</p>
+        <p class="cd-muted cd-modos__conteo" data-testid="cuenta-perfiles-habilitados">
+          {{ disponibles().length }} de {{ todos.length }} perfiles habilitados
+        </p>
         @if (!puedeAutoActivar()) {
           <p class="cd-muted" data-testid="cuenta-gating">
             Tu cuenta no se registró como técnico. Los perfiles que no tienes los activa el
@@ -120,10 +121,10 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
 
       @if (faltantes().length > 0) {
         <section class="cd-card" data-testid="cuenta-agregar-perfil">
-          <p class="cd-eyebrow">Pedir otro perfil</p>
+          <p class="cd-eyebrow">Agregar perfil</p>
           <p class="cd-muted">
-            Elige el perfil que quieres activar y cuéntanos por qué. El administrador revisa tu
-            solicitud.
+            El perfil que te falta lo activa el administrador. Pídelo desde acá y te avisamos
+            cuando lo revise.
           </p>
 
           @switch (estadoSolicitud()) {
@@ -158,52 +159,75 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
                 />
               }
 
-              <ion-list class="cd-form" data-testid="formulario-perfil">
-                <ion-item>
-                  <ion-select
-                    label="Perfil que quieres pedir"
-                    labelPlacement="stacked"
-                    interface="popover"
-                    data-testid="perfil-solicitado"
-                    [value]="perfilSolicitado() ?? ''"
-                    [attr.aria-invalid]="errorPerfil() ? 'true' : null"
-                    [attr.aria-describedby]="errorPerfil() ? 'error-perfil' : null"
-                    (ionChange)="cambiarPerfil($any($event).detail.value)"
+              @if (perfilSolicitado(); as pedido) {
+                <ion-list class="cd-form" data-testid="formulario-perfil">
+                  <ion-item>
+                    <ion-select
+                      label="Perfil que quieres pedir"
+                      labelPlacement="stacked"
+                      interface="popover"
+                      data-testid="perfil-solicitado"
+                      [value]="pedido"
+                      [attr.aria-invalid]="errorPerfil() ? 'true' : null"
+                      [attr.aria-describedby]="errorPerfil() ? 'error-perfil' : null"
+                      (ionChange)="cambiarPerfil($any($event).detail.value)"
+                    >
+                      <ion-select-option value="CLIENTE">Cliente</ion-select-option>
+                      <ion-select-option value="TECNICO">Técnico</ion-select-option>
+                    </ion-select>
+                  </ion-item>
+                  @if (errorPerfil(); as error) {
+                    <p class="cd-field-error" id="error-perfil" role="alert" data-testid="error-perfil">{{ error }}</p>
+                  }
+                  <ion-item>
+                    <ion-textarea
+                      label="¿Por qué quieres este perfil?"
+                      labelPlacement="stacked"
+                      rows="4"
+                      maxlength="1000"
+                      data-testid="motivacion"
+                      [value]="motivacion()"
+                      [attr.aria-invalid]="errorMotivacion() ? 'true' : null"
+                      [attr.aria-describedby]="errorMotivacion() ? 'error-motivacion' : null"
+                      (ionInput)="cambiarMotivacion($any($event).detail.value)"
+                    ></ion-textarea>
+                  </ion-item>
+                  @if (errorMotivacion(); as error) {
+                    <p class="cd-field-error" id="error-motivacion" role="alert" data-testid="error-motivacion">{{ error }}</p>
+                  }
+                </ion-list>
+
+                <ion-button
+                  expand="block"
+                  class="cd-cta"
+                  data-testid="solicitar-perfil"
+                  (click)="enviar()"
+                >
+                  Enviar solicitud
+                </ion-button>
+              } @else {
+                @for (perfil of perfilesSolicitables(); track perfil) {
+                  <button
+                    type="button"
+                    class="cd-modo"
+                    [attr.data-testid]="'agregar-' + perfil.toLowerCase()"
+                    (click)="abrirSolicitud(perfil)"
                   >
-                    <ion-select-option value="CLIENTE">Cliente</ion-select-option>
-                    <ion-select-option value="TECNICO">Técnico</ion-select-option>
-                  </ion-select>
-                </ion-item>
-                @if (errorPerfil(); as error) {
-                  <p class="cd-field-error" id="error-perfil" role="alert" data-testid="error-perfil">{{ error }}</p>
+                    <span class="cd-modo__icono" aria-hidden="true">
+                      <ion-icon [name]="icono(perfil)"></ion-icon>
+                    </span>
+                    <span class="cd-modo__texto">
+                      <span class="cd-modo__nombre">Agregar perfil de {{ etiqueta(perfil) }}</span>
+                      <span class="cd-modo__nota">El administrador lo activa</span>
+                    </span>
+                  </button>
                 }
-
-                <ion-item>
-                  <ion-textarea
-                    label="¿Por qué quieres este perfil?"
-                    labelPlacement="stacked"
-                    rows="4"
-                    maxlength="1000"
-                    data-testid="motivacion"
-                    [value]="motivacion()"
-                    [attr.aria-invalid]="errorMotivacion() ? 'true' : null"
-                    [attr.aria-describedby]="errorMotivacion() ? 'error-motivacion' : null"
-                    (ionInput)="cambiarMotivacion($any($event).detail.value)"
-                  ></ion-textarea>
-                </ion-item>
-                @if (errorMotivacion(); as error) {
-                  <p class="cd-field-error" id="error-motivacion" role="alert" data-testid="error-motivacion">{{ error }}</p>
+                @if (perfilesSolicitables().length === 0) {
+                  <p class="cd-muted">
+                    Los demás perfiles los activa un administrador; no se piden desde la app.
+                  </p>
                 }
-              </ion-list>
-
-              <ion-button
-                expand="block"
-                class="cd-cta"
-                data-testid="solicitar-perfil"
-                (click)="enviar()"
-              >
-                Enviar solicitud
-              </ion-button>
+              }
             }
           }
         </section>
@@ -279,6 +303,21 @@ export class CuentaPage {
   protected readonly faltantes = computed(() =>
     this.todos.filter((modo) => !this.disponibles().includes(modo)),
   );
+
+  /** Perfiles que esta app sabe pedir al administrador (contrato del formulario). */
+  protected readonly perfilesSolicitables = computed(() =>
+    this.faltantes().filter(
+      (modo): modo is PerfilSolicitable => modo === 'CLIENTE' || modo === 'TECNICO',
+    ),
+  );
+
+  /**
+   * Abre el formulario de solicitud con el perfil ya elegido (Stitch A3: la
+   * sección "AGREGAR PERFIL" son filas; la motivación se pide a demanda).
+   */
+  protected abrirSolicitud(perfil: PerfilSolicitable): void {
+    this.perfilSolicitado.set(perfil);
+  }
 
   protected icono(modo: ModoApp): string {
     switch (modo) {

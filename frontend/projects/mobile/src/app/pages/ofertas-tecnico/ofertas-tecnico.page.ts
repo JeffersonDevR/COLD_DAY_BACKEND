@@ -22,14 +22,21 @@ import {
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { AUXILIARES_MAX } from '@core/environment/auxiliares';
-import { OfertaTecnicoResponse, TecnicoResponse } from '@core/models/common.models';
+import {
+  CategoriaServicio,
+  OfertaTecnicoResponse,
+  TecnicoResponse,
+} from '@core/models/common.models';
 import { SseService } from '@core/service/sse.service';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
+import { categoriaLabel } from '@core/ui/labels';
+import { iconoCategoria as iconoDeCategoria } from '../../core/icono-categoria';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /** Only a 409 proves another technician took the order first. */
@@ -53,6 +60,7 @@ const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    MarcaBarraComponent,
   ],
   templateUrl: './ofertas-tecnico.page.html',
 })
@@ -74,6 +82,9 @@ export class OfertasTecnicoPage implements OnInit {
 
   readonly auxiliaresMax = AUXILIARES_MAX;
   readonly auxiliaresOpciones = Array.from({ length: AUXILIARES_MAX + 1 }, (_, i) => i);
+
+  /** Etiqueta canónica de la categoría: mismo vocabulario que la web (labels.ts). */
+  readonly categoriaLabel = categoriaLabel;
 
   readonly validacionAprobada = computed(() => this.tecnico()?.estadoValidacion === 'APROBADO');
   readonly bloqueadoPorLiquidacion = computed(
@@ -238,6 +249,12 @@ export class OfertasTecnicoPage implements OnInit {
     const minutos = Math.floor(total / 60);
     const resto = total % 60;
     return minutos > 0 ? `${minutos}m ${resto}s` : `${resto}s`;
+  }
+
+  /** Icono decorativo de la categoría de la oferta; no lleva dato, por eso el
+   * contenedor va con aria-hidden en la plantilla. */
+  iconoCategoria(categoria: CategoriaServicio): string {
+    return iconoDeCategoria(categoria);
   }
 
   trackOt(_: number, oferta: OfertaTecnicoResponse): string {

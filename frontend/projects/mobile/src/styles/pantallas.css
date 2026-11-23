@@ -1497,14 +1497,23 @@ animation: none;
 
 .cd-ficha__total {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
   margin-top: 0.5rem;
   padding: 0.55rem 0.65rem;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   background: rgba(34, 211, 238, 0.08);
   border: 1px solid rgba(34, 211, 238, 0.25);
   border-radius: var(--cd-radius-control);
+}
+
+/* El monto manda (Stitch): Grotesk grande con cifras tabulares (UI-T4). */
+.cd-ficha__total strong {
+  font-family: var(--cd-font-headline);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .cd-nota {
@@ -1632,7 +1641,96 @@ animation: none;
 .cd-oferta .cd-ot__categoria {
   font-size: 0.8125rem;
   letter-spacing: 0;
-  white-space: nowrap;
+  /* Etiqueta canónica de labels.ts: ya llega en frase, sin mayúsculas por CSS,
+     y puede envolver junto al icono en 320 px. */
+  text-transform: none;
+  white-space: normal;
+}
+
+/* B1/A10 — Identidad con icono de categoría en pozo (Stitch 2026-11-22). En B1
+   la falla además es el título de la tarjeta en Grotesk frase (UI-T3); el monto
+   estimado y la barra de urgencia del diseño no se pintan porque el DTO no los
+   trae (no inventar). */
+.cd-oferta__identidad,
+.cd-equipo__identidad {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.cd-oferta__icono,
+.cd-equipo__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-control);
+  background: var(--cd-well);
+  color: var(--cd-text-3);
+}
+
+.cd-oferta__icono ion-icon,
+.cd-equipo__icono ion-icon {
+  font-size: 1.125rem;
+}
+
+.cd-oferta__titulos {
+  min-width: 0;
+}
+
+.cd-oferta__titulo {
+  margin: 0.5rem 0 0;
+  font-family: var(--cd-font-headline);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--cd-text-1);
+  overflow-wrap: anywhere;
+}
+
+/* Conteo vivo en el héroe (B1 radar, C0 bandeja del proveedor): dato real con
+   cifras tabulares (UI-T4). Sin cian (no se toca, UI-C2) y sin pulso animado:
+   la pantalla conserva un solo indicador "live" y un halo rompería UI-D2. */
+.cd-radar__conteo,
+.cd-bandeja__conteo {
+  font-variant-numeric: tabular-nums;
+  color: var(--cd-text-3);
+}
+
+/* C0/C1 — Solicitudes del proveedor: el repuesto es el foco de la tarjeta y la
+   cantidad es dato de máquina (mono, tabular). Los montos del diseño Stitch no
+   se pintan: el DTO de la oferta de insumos no trae precio (PRODUCT.md). */
+.cd-solicitud__item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--cd-text-1);
+  overflow-wrap: anywhere;
+}
+
+.cd-solicitud__item + .cd-solicitud__item {
+  margin-top: 0.15rem;
+}
+
+.cd-solicitud__cantidad {
+  flex: 0 0 auto;
+  font-family: var(--cd-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--cd-text-3);
+}
+
+/* A3 — Mi cuenta: cuántos perfiles de la sesión están habilitados (dato real
+   de sesión; las demás métricas del diseño no se pintan porque esta pantalla
+   no carga calificaciones ni conteos por rol). */
+.cd-modos__conteo {
+  font-variant-numeric: tabular-nums;
 }
 
 .cd-acciones-oferta {
@@ -1756,8 +1854,9 @@ animation: none;
 
 .cd-desglose__valor {
   flex: 0 0 auto;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -1772,9 +1871,71 @@ animation: none;
   background: rgba(34, 211, 238, 0.1);
 }
 
+/* El monto total es la cifra más importante de la tarjeta (Stitch lo pinta
+   en headline bold): Grotesk grande y cifras tabulares (UI-T4). */
 .cd-desglose__total strong {
   font-family: var(--cd-font-headline);
-  font-size: 0.95rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* B0 — Próxima orden: la primera de la cola destacada con borde de acción.
+   El CTA es un asiento visual dentro del botón-tarjeta (no anidado). */
+.cd-ot--proxima {
+  border-color: var(--cd-action);
+  background: var(--cd-surface-2);
+}
+
+.cd-proxima__contexto {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--cd-text-3);
+  overflow-wrap: anywhere;
+}
+
+.cd-proxima__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin-top: 0.7rem;
+  padding: 0.5rem 1rem;
+  font-family: var(--cd-font-headline);
+  font-weight: 700;
+  color: var(--cd-action-deep);
+  background: var(--cd-action);
+  border-radius: var(--cd-radius-control);
+}
+
+/* Insumos del diagnóstico tal como los declaró el técnico: la cantidad es
+   dato de máquina (mono, tabular) y la descripción puede venir larga. */
+.cd-desglose__insumos {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--cd-text-2);
+}
+
+.cd-desglose__insumos li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+.cd-desglose__insumo-cantidad {
+  flex: 0 0 auto;
+  font-family: var(--cd-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--cd-text-3);
 }
 
 .cd-desglose__legal {
@@ -2353,48 +2514,8 @@ animation: none;
   padding: 0.15rem 0.4rem;
 }
 
-/* A4 — barra de identidad, tiles de OT, métrica amber y filtros tipo píldora. */
-.cd-panel__barra {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.cd-panel__identidad {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.cd-panel__logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  border-radius: 8px;
-  background: var(--cd-surface);
-  border: 1px solid var(--cd-surface-border);
-  color: var(--ion-color-primary);
-}
-
-.cd-panel__marca {
-  margin: 0;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.cd-panel__rol {
-  margin: 0;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--cd-muted);
-}
+/* A4 — tiles de OT, métrica amber y filtros tipo píldora. (La barra de
+   identidad ahora es el componente compartido <cd-marca> en componentes.css.) */
 
 .cd-metrica--aviso .cd-metrica__valor {
   color: var(--ion-color-warning);

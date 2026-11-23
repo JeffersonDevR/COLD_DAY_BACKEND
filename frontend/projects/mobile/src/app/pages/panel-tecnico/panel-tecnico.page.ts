@@ -29,10 +29,12 @@ import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
+import { estadoOperativoLabel } from '@core/ui/labels';
 import { EstadoOperativo, EstadoOt, OtResponse, TecnicoResponse } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
@@ -62,6 +64,7 @@ const MENSAJES_ESTADO_OPERATIVO: Record<number, string> = {
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    MarcaBarraComponent,
   ],
   templateUrl: './panel-tecnico.page.html',
 })
@@ -89,6 +92,16 @@ export class PanelTecnicoPageMobile implements OnInit {
   readonly bloqueadoPorLiquidacion = computed(
     () => this.tecnico()?.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION',
   );
+
+  /** El chip de la barra de marca refleja el estado operativo real (Stitch B0). */
+  readonly chipEstado = computed(() => {
+    const estado = this.tecnico()?.estadoOperativo;
+    return estado ? estadoOperativoLabel(estado) : '';
+  });
+
+  /** La primera de la cola: la orden en la que se trabaja ahora (§4). */
+  readonly proximaOt = computed(() => this.misOts()[0] ?? null);
+  readonly restoOts = computed(() => this.misOts().slice(1));
 
   readonly modoUbicacion = computed(() => this.presencia.modo());
   readonly compartirUbicacion = computed(() => this.presencia.compartirUbicacion());
@@ -159,7 +172,7 @@ export class PanelTecnicoPageMobile implements OnInit {
     this.tecnicosApi.actualizarEstadoOperativo(nuevo).subscribe({
       next: () => {
         this.tecnico.set({ ...actual, estadoOperativo: nuevo });
-        void this.toast.info('Estado actualizado', `Ahora estás ${nuevo.toLowerCase()}.`);
+        void this.toast.info('Estado actualizado', `Ahora estás ${estadoOperativoLabel(nuevo).toLowerCase()}.`);
       },
       error: (err: Error) =>
         void avisarErrorAccion(

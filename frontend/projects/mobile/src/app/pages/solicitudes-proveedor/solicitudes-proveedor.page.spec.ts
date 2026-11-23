@@ -66,6 +66,7 @@ describe('SolicitudesProveedorPage (C1)', () => {
     const { fixture } = setup();
     expect(texto(fixture)).toContain('Gas R410A 900g');
     expect(texto(fixture)).toContain('Pendiente');
+    expect(texto(fixture)).toContain('Acepta, rechaza o confirma entregas');
   });
 
   it('acepta la oferta', () => {
@@ -109,5 +110,33 @@ describe('SolicitudesProveedorPage (C1)', () => {
     expect(toast.error).toHaveBeenCalled();
     expect(toast.error.mock.calls[0]?.[1]).toContain('Otra empresa');
     expect(stub.aceptar).toHaveBeenCalled();
+  });
+
+  it('el héroe cuenta las solicitudes por gestionar en singular', () => {
+    const { fixture } = setup();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="solicitudes-conteo"]')?.textContent?.trim(),
+    ).toContain('1 solicitud por gestionar');
+  });
+
+  it('el conteo excluye las solicitudes ya resueltas', () => {
+    const { fixture } = setup({ ofertas: [oferta({ estado: 'RECHAZADO' })] });
+    expect(fixture.nativeElement.querySelector('[data-testid="solicitudes-conteo"]')).toBeNull();
+  });
+
+  it('el conteo pasa a plural y suma pendientes y aceptadas', () => {
+    const { fixture } = setup({
+      ofertas: [oferta(), oferta({ id: 'of2', requerimientoId: 'req2', estado: 'ACEPTADA' })],
+    });
+    expect(texto(fixture)).toContain('2 solicitudes por gestionar');
+  });
+
+  it('la cantidad es dato de máquina junto al repuesto', () => {
+    const { fixture } = setup();
+    const item = fixture.nativeElement.querySelector(
+      '[data-testid="solicitud-of1"] .cd-solicitud__item',
+    );
+    expect(item?.textContent).toContain('2 ×');
+    expect(item?.textContent).toContain('Gas R410A 900g');
   });
 });

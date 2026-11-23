@@ -132,6 +132,7 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 | Componente | Clase / archivo | Regla |
 |---|---|---|
 | Contenedor de página | `cd-page`, `shared/ui/page` | shell único de las pantallas principales: `[cdHeader]`, héroe por `titulo`/`subtitulo` + `[cdHeroAcciones]`, `[cdFooter]`; `display:contents` para no romper el flex de `.ion-page` |
+| Barra de marca | `.cd-marca`, `shared/ui/marca-barra` | identidad Cold Day · Ops + etiqueta de pantalla + chip de contexto (Stitch); **estándar de las pantallas de tabs**, va en `[cdHeader]` sobre el héroe. Es chrome de AppBar, no eyebrow de título (UI-T5 aplica al título de pantalla) |
 | AppBar / header | `.cd-header` | sticky, ≥56 px, safe-area arriba |
 | Footer con CTA | `.cd-footer` | fijo, zona del pulgar, safe-area abajo, helper 12 px encima |
 | Tab bar | `ion-tab-bar.cd-tab-bar` | ≥44 px por tab, etiqueta en frase 12 px, `aria-current` |
@@ -265,7 +266,7 @@ Prototipos en `docs/design/dark-ops/<carpeta>/` (`code.html`, a veces `screen.pn
 
 Flujo de solicitud (3 pasos): CTA `Continuar` → `Continuar a revisión` → `Solicitar técnico`; categoría = tarjeta vertical sin truncar con check 24×24 y selección por `ion-radio-group`; descripción con dictado ≥44×48 (Web Speech con fallback a teclado); ubicación = una tarjeta `ion-item button` ≥64 px; sin sección de evidencia fotográfica ni "Próximamente"; hint `Desliza para volver`; CTA fijo 52 px con helper de 12 px encima.
 
-Paridad web↔móvil y qué es solo-web (admin/contable): `docs/mobile-paridad.md` (mantener al agregar pantallas).
+Paridad web↔móvil y qué es solo-web (admin/contable): `docs/mobile-paridad.md` (mantener al agregar pantallas). Renegociación de reglas frente a los diseños Stitch 2026-11-22 (qué se aplica hoy, qué exige backend, qué se renegocia): `docs/design/renovacion-reglas-stitch.md`.
 
 ---
 

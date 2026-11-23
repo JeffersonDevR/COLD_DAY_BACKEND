@@ -1,9 +1,15 @@
 <ion-header class="cd-header">
   <ion-toolbar>
+    <cd-marca pantalla="Portal de proveedor" chip="Proveedor" />
     <div class="cd-hero cd-hero--compacto">
-      <p class="cd-eyebrow">Portal proveedor</p>
       <h1 class="cd-headline">Solicitudes de insumos</h1>
-      <p class="cd-hero__nota">Aceptá, rechazá o confirmá entregas de repuestos.</p>
+      <p class="cd-hero__nota">Acepta, rechaza o confirma entregas de repuestos.</p>
+      @if (solicitudesPorGestionar() > 0) {
+        <p class="cd-hero__nota cd-bandeja__conteo" data-testid="solicitudes-conteo">
+          {{ solicitudesPorGestionar() }}
+          {{ solicitudesPorGestionar() === 1 ? 'solicitud por gestionar' : 'solicitudes por gestionar' }}
+        </p>
+      }
     </div>
   </ion-toolbar>
 </ion-header>
@@ -17,7 +23,7 @@
     <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="validacion-bloquea">
       <h2 class="cd-alerta__titulo">Tu cuenta todavía no está habilitada</h2>
       <p class="cd-alerta__texto">
-        Un administrador revisa tu documentación. Mientras tanto no podés aceptar pedidos de insumos.
+        Un administrador revisa tu documentación. Mientras tanto no puedes aceptar pedidos de insumos.
       </p>
     </section>
   }
@@ -56,7 +62,10 @@
 
       @if (oferta.requerimiento; as req) {
         @for (item of req.items; track $index) {
-          <p class="cd-ot__descripcion">{{ item.cantidad }} × {{ item.descripcion }}</p>
+          <p class="cd-solicitud__item">
+            <span class="cd-solicitud__cantidad">{{ item.cantidad }} ×</span>
+            <span>{{ item.descripcion }}</span>
+          </p>
         }
         @if (req.observaciones) {
           <p class="cd-ayuda">{{ req.observaciones }}</p>
