@@ -119,7 +119,7 @@ export const mobileErrorInterceptor: HttpInterceptorFn = (req, next) => {
 
       if (normalizado.status === 401 && auth.isAuthenticated()) {
         normalizado.sesionNotificada = true;
-        void toast.warning('Tu sesión expiró', 'Ingresá de nuevo para continuar.');
+        void toast.warning('Tu sesión expiró', 'Ingresa de nuevo para continuar.');
         auth.logout();
       } else if (esAccionSilenciosa(req.url)) {
         // La pantalla es la única voz: no se agrega un toast genérico encima.

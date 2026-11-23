@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { of, throwError } from 'rxjs';
-import { LiquidacionResponse, TecnicoResponse } from '@core/models/common.models';
+import { DocumentoTecnico, LiquidacionResponse, TecnicoResponse } from '@core/models/common.models';
 import { LiquidacionApi } from '@core/service/liquidacion-api';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { LiquidacionesTecnicoPage } from './liquidaciones-tecnico.page';
@@ -27,11 +27,13 @@ function setup({
   lista = [] as LiquidacionResponse[],
   falla = false,
   sinPerfil = false,
+  documentos = [] as DocumentoTecnico[],
 } = {}) {
   const tecnicosApi = {
     getMiPerfil: vi.fn(() =>
       sinPerfil ? of(undefined) : of({ id: 'T-1' } as TecnicoResponse),
     ),
+    getMisDocumentos: vi.fn(() => of(documentos)),
   };
   const liquidacionApi = {
     getLiquidacionesPorTecnico: vi.fn(() =>
@@ -123,5 +125,38 @@ describe('LiquidacionesTecnicoPage (B5)', () => {
     const { fixture } = setup({ sinPerfil: true });
 
     expect(fixture.componentInstance.fallo()).toBe(true);
+  });
+
+  it('agrupa los documentos con las liquidaciones (tab Gestión)', () => {
+    const { fixture } = setup({
+      documentos: [
+        {
+          id: 'd1',
+          tipo: 'MATRICULA_CONTE',
+          nombre: 'Matrícula CONTE',
+          estadoValidacion: 'APROBADO',
+        },
+      ],
+    });
+
+    expect(texto(fixture)).toContain('Gestión');
+    expect(texto(fixture)).toContain('Liquidaciones');
+    expect(texto(fixture)).toContain('Documentos');
+    expect(texto(fixture)).toContain('Matrícula CONTE');
+    expect(texto(fixture)).toContain('usa la web');
+  });
+
+  it('muestra el estado vacío de documentos', () => {
+    const { fixture } = setup({ documentos: [] });
+    expect(fixture.nativeElement.querySelector('[data-testid="documentos-vacio"]')).toBeTruthy();
+  });
+
+  it('usa la etiqueta canónica del documento cuando no trae nombre', () => {
+    const { fixture } = setup({
+      documentos: [
+        { id: 'd2', tipo: 'MATRICULA_CONTE', estadoValidacion: 'PENDIENTE' } as DocumentoTecnico,
+      ],
+    });
+    expect(texto(fixture)).toContain('Matrícula CONTE');
   });
 });

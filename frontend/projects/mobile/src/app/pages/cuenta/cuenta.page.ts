@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   IonButton,
   IonHeader,
@@ -13,6 +14,7 @@ import {
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { AuthService } from '@core/service/auth.service';
 import { SolicitudesPerfilApi } from '@core/service/solicitudes-perfil-api';
+import { PushNotificacionesService } from '../../core/push';
 import { ModoApp, ORDEN_MODOS } from '../../modo/modo';
 import { ModoService } from '../../modo/modo.service';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
@@ -31,12 +33,12 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
 
 /**
  * A3 — Mi cuenta (Stitch). Concentra la identidad de la sesión, el selector de
- * modo (B15), el pedido de perfiles y el cierre de sesión.
+ * modo (solo con más de un perfil habilitado), el pedido de perfiles (solo para
+ * quien se registró como técnico) y el cierre de sesión.
  *
- * El selector muestra SIEMPRE los tres modos: los que la cuenta no tiene quedan
- * deshabilitados con la explicación, en vez de esconderse sin contexto. Según la
- * regla del backend, solo quien se registró como técnico puede adoptar un perfil
- * por su cuenta; los demás lo piden al administrador desde el formulario.
+ * Regla del dueño (2026-11-23) + PRODUCT.md: solo quien se registró como
+ * técnico puede adoptar/pedir un perfil desde la app; los demás perfiles los
+ * activa el administrador por fuera. Un cliente puro no ve modos ni solicitudes.
  *
  * Organización: el mismo `<cd-page>` de las otras pantallas principales. El
  * título vive en la cabecera y las secciones siguen el orden
@@ -65,7 +67,7 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
     <cd-page>
       <ion-header class="cd-header" cdHeader>
         <ion-toolbar>
-          <cd-marca pantalla="Mi cuenta" chip="Verificado" chipTestId="cuenta-verificado" />
+          <cd-marca pantalla="Mi cuenta" [chip]="etiqueta(modoActivo())" chipTestId="cuenta-verificado" />
         </ion-toolbar>
       </ion-header>
 
@@ -78,48 +80,96 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
         </div>
       </section>
 
-      <section class="cd-card cd-modos">
-        <p class="cd-eyebrow">Modo de la app</p>
-        <p class="cd-muted">Elige con qué perfil quieres usar Cold Day. Puedes cambiarlo cuando quieras.</p>
-        <p class="cd-muted cd-modos__conteo" data-testid="cuenta-perfiles-habilitados">
-          {{ disponibles().length }} de {{ todos.length }} perfiles habilitados
-        </p>
-        @if (!puedeAutoActivar()) {
-          <p class="cd-muted" data-testid="cuenta-gating">
-            Tu cuenta no se registró como técnico. Los perfiles que no tienes los activa el
-            administrador cuando envías una solicitud.
-          </p>
-        }
-
-        @for (modo of todos; track modo) {
+      @if (modoActivo() === 'TECNICO') {
+        <section class="cd-card">
           <button
             type="button"
             class="cd-modo"
-            [class.cd-modo--activo]="esActual(modo)"
-            [disabled]="!disponible(modo)"
-            [attr.aria-pressed]="esActual(modo)"
-            [attr.data-testid]="'modo-' + modo.toLowerCase()"
-            (click)="elegir(modo)"
+            data-testid="cuenta-perfil-tecnico"
+            (click)="irAlPerfilTecnico()"
           >
             <span class="cd-modo__icono" aria-hidden="true">
-              <ion-icon [name]="icono(modo)"></ion-icon>
+              <ion-icon aria-hidden="true" [name]="icono('TECNICO')"></ion-icon>
             </span>
             <span class="cd-modo__texto">
-              <span class="cd-modo__nombre">{{ etiqueta(modo) }}</span>
-              <span class="cd-modo__nota">{{ descripcion(modo) }}</span>
+              <span class="cd-modo__nombre">Mi perfil técnico</span>
+              <span class="cd-modo__nota">Especialidades, matrícula y documentos</span>
             </span>
-            @if (esActual(modo)) {
-              <span class="cd-modo__pill">En uso</span>
-            } @else if (!disponible(modo)) {
-              <span class="cd-modo__pill cd-modo__pill--off" [attr.data-testid]="'modo-bloqueado-' + modo.toLowerCase()">
-                {{ puedeAutoActivar() ? 'No disponible' : 'Pídelo al admin' }}
-              </span>
-            }
           </button>
-        }
-      </section>
+        </section>
+      }
 
-      @if (faltantes().length > 0) {
+      <!-- El selector de modo solo existe cuando hay más de un perfil real que
+           elegir (petición del dueño 2026-11-23): un cliente puro no ve "modos". -->
+      @if (disponibles().length > 1) {
+        <section class="cd-card cd-modos">
+          <p class="cd-eyebrow">Modo de la app</p>
+          <p class="cd-muted">Elige con qué perfil quieres usar Cold Day. Puedes cambiarlo cuando quieras.</p>
+          <p class="cd-muted cd-modos__conteo" data-testid="cuenta-perfiles-habilitados">
+            {{ disponibles().length }} de {{ todos.length }} perfiles habilitados
+          </p>
+
+          @for (modo of todos; track modo) {
+            <button
+              type="button"
+              class="cd-modo"
+              [class.cd-modo--activo]="esActual(modo)"
+              [disabled]="!disponible(modo)"
+              [attr.aria-pressed]="esActual(modo)"
+              [attr.data-testid]="'modo-' + modo.toLowerCase()"
+              (click)="elegir(modo)"
+            >
+              <span class="cd-modo__icono" aria-hidden="true">
+                <ion-icon aria-hidden="true" [name]="icono(modo)"></ion-icon>
+              </span>
+              <span class="cd-modo__texto">
+                <span class="cd-modo__nombre">{{ etiqueta(modo) }}</span>
+                <span class="cd-modo__nota">{{ descripcion(modo) }}</span>
+              </span>
+              @if (esActual(modo)) {
+                <span class="cd-modo__pill">En uso</span>
+              } @else if (!disponible(modo)) {
+                <span class="cd-modo__pill cd-modo__pill--off" [attr.data-testid]="'modo-bloqueado-' + modo.toLowerCase()">
+                  {{ puedeAutoActivar() ? 'No disponible' : 'Pídelo al admin' }}
+                </span>
+              }
+            </button>
+          }
+        </section>
+      }
+
+      <!-- Solo quien se registró como técnico puede pedir/adoptar otro perfil
+           desde la app (PRODUCT.md, principio 5). El resto lo gestiona el admin. -->
+      @if (puedeAutoActivar() && faltantes().length > 0) {
+        @switch (estadoSolicitud()) {
+          @case ('exito') {
+            <section class="cd-alerta cd-alerta--ok" role="status" data-testid="solicitud-exito">
+              <h2 class="cd-alerta__titulo">Solicitud enviada</h2>
+              <p class="cd-alerta__texto">
+                Recibimos tu pedido de perfil de {{ etiqueta(perfilSolicitado()!) }}. Te avisaremos
+                cuando el administrador lo revise.
+              </p>
+            </section>
+          }
+          @case ('duplicado') {
+            <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="solicitud-duplicada">
+              <h2 class="cd-alerta__titulo">Ya tienes una solicitud abierta</h2>
+              <p class="cd-alerta__texto">
+                Tenemos una solicitud pendiente para este perfil. Espera a que el administrador
+                la revise antes de enviar otra.
+              </p>
+            </section>
+          }
+          @case ('error') {
+            <cd-error-alert
+              titulo="No pudimos enviar tu solicitud"
+              [texto]="mensajeError()"
+              testId="solicitud-error"
+              accionTestId="solicitud-reintentar"
+              (reintentar)="reintentar()"
+            />
+          }
+        }
         <section class="cd-card" data-testid="cuenta-agregar-perfil">
           <p class="cd-eyebrow">Agregar perfil</p>
           <p class="cd-muted">
@@ -131,34 +181,8 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
             @case ('enviando') {
               <cd-skeleton label="Enviando tu solicitud" testId="solicitud-enviando" />
             }
-            @case ('exito') {
-              <section class="cd-alerta cd-alerta--ok" role="status" data-testid="solicitud-exito">
-                <h2 class="cd-alerta__titulo">Solicitud enviada</h2>
-                <p class="cd-alerta__texto">
-                  Recibimos tu pedido de perfil de {{ etiqueta(perfilSolicitado()!) }}. Te avisaremos
-                  cuando el administrador lo revise.
-                </p>
-              </section>
-            }
+            @case ('exito') {}
             @default {
-              @if (estadoSolicitud() === 'duplicado') {
-                <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="solicitud-duplicada">
-                  <h2 class="cd-alerta__titulo">Ya tienes una solicitud abierta</h2>
-                  <p class="cd-alerta__texto">
-                    Tenemos una solicitud pendiente para este perfil. Espera a que el administrador
-                    la revise antes de enviar otra.
-                  </p>
-                </section>
-              } @else if (estadoSolicitud() === 'error') {
-                <cd-error-alert
-                  titulo="No pudimos enviar tu solicitud"
-                  [texto]="mensajeError()"
-                  testId="solicitud-error"
-                  accionTestId="solicitud-reintentar"
-                  (reintentar)="reintentar()"
-                />
-              }
-
               @if (perfilSolicitado(); as pedido) {
                 <ion-list class="cd-form" data-testid="formulario-perfil">
                   <ion-item>
@@ -214,7 +238,7 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
                     (click)="abrirSolicitud(perfil)"
                   >
                     <span class="cd-modo__icono" aria-hidden="true">
-                      <ion-icon [name]="icono(perfil)"></ion-icon>
+                      <ion-icon aria-hidden="true" [name]="icono(perfil)"></ion-icon>
                     </span>
                     <span class="cd-modo__texto">
                       <span class="cd-modo__nombre">Agregar perfil de {{ etiqueta(perfil) }}</span>
@@ -247,7 +271,9 @@ type EstadoSolicitud = 'inicial' | 'enviando' | 'exito' | 'duplicado' | 'error';
   `,
 })
 export class CuentaPage {
+  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly push = inject(PushNotificacionesService);
   private readonly modos = inject(ModoService);
   private readonly solicitudesApi = inject(SolicitudesPerfilApi);
 
@@ -397,7 +423,16 @@ export class CuentaPage {
     this.enviar();
   }
 
+  protected irAlPerfilTecnico(): void {
+    void this.router.navigate(['/tecnico/perfil']);
+  }
+
   protected salir(): void {
+    // Da de baja el token push antes de perder el JWT; sin token sale directo.
+    if (this.push.tieneToken()) {
+      void this.push.desactivar().finally(() => this.auth.logout());
+      return;
+    }
     this.auth.logout();
   }
 }

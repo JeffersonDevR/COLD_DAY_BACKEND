@@ -12,6 +12,21 @@ const COLOR_POR_TIPO: Record<AvisoTipo, string> = {
   WARNING: 'warning',
 };
 
+/** Icono (ya registrado en main.ts) y variante visual por tipo. */
+const ICONO_POR_TIPO: Record<AvisoTipo, string> = {
+  SUCCESS: 'checkmark-circle-outline',
+  ERROR: 'close-circle-outline',
+  INFO: 'information-circle-outline',
+  WARNING: 'alert-circle-outline',
+};
+
+const CLASE_POR_TIPO: Record<AvisoTipo, string> = {
+  SUCCESS: 'cd-toast--ok',
+  ERROR: 'cd-toast--error',
+  INFO: 'cd-toast--info',
+  WARNING: 'cd-toast--aviso',
+};
+
 /** Duración por tipo: los errores y advertencias se leen, los avisos no. */
 const DURACION_POR_TIPO: Record<AvisoTipo, number> = {
   SUCCESS: 3000,
@@ -38,6 +53,12 @@ export class MobileToastService {
     mensaje?: string,
     duracionMs = DURACION_POR_TIPO[tipo],
   ): Promise<void> {
+    // Un aviso a la vez: el nuevo reemplaza al anterior en vez de apilarse.
+    try {
+      await this.controller.dismiss();
+    } catch {
+      // No había ninguno abierto.
+    }
     try {
       const toast = await this.controller.create({
         header: titulo,
@@ -45,6 +66,11 @@ export class MobileToastService {
         duration: duracionMs,
         position: 'top',
         color: COLOR_POR_TIPO[tipo],
+        icon: ICONO_POR_TIPO[tipo],
+        cssClass: ['cd-toast', CLASE_POR_TIPO[tipo]],
+        // Los errores interrumpen (alert); el resto se anuncia sin cortar al lector.
+        htmlAttributes: { role: tipo === 'ERROR' ? 'alert' : 'status' },
+        buttons: [{ icon: 'close-outline', role: 'cancel', htmlAttributes: { 'aria-label': 'Cerrar aviso' } }],
       });
       await toast.present();
     } catch {

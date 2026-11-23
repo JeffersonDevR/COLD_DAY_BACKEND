@@ -1,24 +1,14 @@
-<ion-header class="cd-header">
-  <ion-toolbar>
-    <cd-marca pantalla="Panel de técnico" [chip]="chipEstado()" />
-    <div class="cd-hero cd-hero--compacto">
-      @if (tecnico(); as t) {
-        <h1 class="cd-headline" data-testid="tecnico-nombre">Hola, {{ t.nombre }}</h1>
-      } @else {
-        <h1 class="cd-headline" data-testid="tecnico-nombre">Tu panel de técnico</h1>
-      }
-      <p class="cd-hero__nota">
-        @if (validacionAprobada()) {
-          Cuenta habilitada para recibir órdenes
-        } @else {
-          Tu cuenta todavía no está habilitada para recibir órdenes
-        }
-      </p>
-    </div>
-  </ion-toolbar>
-</ion-header>
+<cd-page
+  [titulo]="tecnico() ? 'Hola, ' + tecnico()!.nombre : 'Tu panel de técnico'"
+  [subtitulo]="validacionAprobada() ? 'Cuenta habilitada para recibir órdenes' : 'Tu cuenta todavía no está habilitada para recibir órdenes'"
+  tituloTestId="tecnico-nombre"
+>
+  <ion-header class="cd-header" cdHeader>
+    <ion-toolbar>
+      <cd-marca pantalla="Panel de técnico" [chip]="chipEstado()" />
+    </ion-toolbar>
+  </ion-header>
 
-<ion-content class="ion-padding">
   @if (validacionRechazada()) {
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="validacion-rechazada">
       <h2 class="cd-alerta__titulo">Tu cuenta no está habilitada</h2>
@@ -35,124 +25,86 @@
     </section>
   }
 
-  <!-- Presencia: un solo switch decide si el técnico aparece en el radar. -->
-  <ion-card class="cd-card">
-    <ion-card-content>
-      <div class="cd-ot__cabecera">
-        <div>
-          <h2 class="cd-card__titulo">Compartir ubicación</h2>
-          <p class="cd-muted">
-            @switch (modoUbicacion()) {
-              @case ('ejecutando') {
-                Reportando automáticamente por la OT en curso.
-              }
-              @case ('compartiendo') {
-                Visible en el radar mientras reportas tu posición.
-              }
-              @default {
-                Ubicación apagada: no aparecerás en las ofertas.
-              }
+  <!-- Tu estado: bloque plano, sin tarjetas (petición del dueño 2026-11-23).
+       Una fila de texto + toggle para la ubicación; chips para disponibilidad
+       (3 opciones fijas: el segment sobraba y desbordaba). -->
+  <h2 class="cd-section__titulo cd-section__titulo--bloque">Tu estado</h2>
+  <section class="cd-estado" aria-label="Tu estado operativo">
+    <div class="cd-estado__fila">
+      <div class="cd-estado__texto">
+        <h2 class="cd-estado__titulo">{{ tituloUbicacion() }}</h2>
+        <p class="cd-muted">
+          @switch (modoUbicacion()) {
+            @case ('ejecutando') {
+              Reportando automáticamente por la OT en curso.
             }
-          </p>
-        </div>
-        <ion-toggle
-          [checked]="compartirUbicacion()"
-          [disabled]="switchBloqueado()"
-          (ionChange)="alternarCompartirUbicacion($any($event))"
-          aria-label="Compartir ubicación"
-          data-testid="switch-ubicacion"
-        ></ion-toggle>
-      </div>
-
-      @if (switchBloqueado()) {
-        <p class="cd-ayuda" data-testid="switch-bloqueado">
-          Se mantiene activo mientras tienes una OT en curso.
+            @case ('compartiendo') {
+              Tus ofertas llegan a los clientes cercanos.
+            }
+            @default {
+              Ubicación apagada: no aparecerás en las ofertas.
+            }
+          }
         </p>
-      }
-
-      @if (radarVisible()) {
-        <p class="cd-ubicacion__estado">
+        @if (radarVisible()) {
           <span class="cd-chip cd-chip--ok" role="status" data-testid="radar-visible">Visible en el radar</span>
-        </p>
-      }
+        }
+      </div>
+      <ion-toggle
+        [checked]="compartirUbicacion()"
+        [disabled]="switchBloqueado()"
+        (ionChange)="alternarCompartirUbicacion($any($event))"
+        aria-label="Compartir ubicación"
+        data-testid="switch-ubicacion"
+      ></ion-toggle>
+    </div>
 
-      @if (ubicacionMotivo(); as motivo) {
-        <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ubicacion-motivo">
-          <p class="cd-alerta__texto">{{ motivo }}</p>
-          <ion-button class="cd-cta" (click)="reintentarUbicacion()" data-testid="ubicacion-reintentar">
-            <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
-            Reintentar
-          </ion-button>
-        </section>
-      }
+    @if (switchBloqueado()) {
+      <p class="cd-ayuda cd-ubicacion__nota" data-testid="switch-bloqueado">
+        <ion-icon name="sync-outline" aria-hidden="true"></ion-icon>
+        Se mantiene activo mientras tienes una OT en curso.
+      </p>
+    }
 
-      <ion-button
-        fill="clear"
-        class="cd-accion"
-        (click)="irAPerfil()"
-        data-testid="ir-perfil"
-      >
-        <ion-icon slot="start" name="person-outline" aria-hidden="true"></ion-icon>
-        Mi perfil y documentos
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+    @if (ubicacionMotivo(); as motivo) {
+      <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ubicacion-motivo">
+        <p class="cd-alerta__texto">{{ motivo }}</p>
+        <ion-button class="cd-cta" (click)="reintentarUbicacion()" data-testid="ubicacion-reintentar">
+          <ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+          Reintentar
+        </ion-button>
+      </section>
+    }
 
-  <!-- Disponibilidad operativa (el backend la bloquea con OT activa). -->
-  <ion-card class="cd-card">
-    <ion-card-content>
-      <h2 class="cd-card__titulo">Disponibilidad</h2>
+    <div class="cd-estado__fila cd-estado__fila--columna">
+      <h2 class="cd-estado__titulo">Disponibilidad</h2>
       @if (bloqueadoPorLiquidacion()) {
         <section class="cd-alerta cd-alerta--error" role="alert" data-testid="bloqueado-liquidacion">
           <h2 class="cd-alerta__titulo">Operación bloqueada</h2>
           <p class="cd-alerta__texto">
-            Tienes liquidaciones pendientes. Regularízalas desde la web para volver a tomar servicios.
+            Tienes liquidaciones pendientes. Revisa el tab Gestión y registra la consignación desde la web para volver a tomar servicios.
           </p>
         </section>
       } @else {
-        <ion-segment
-          [value]="disponibilidad()"
-          (ionChange)="cambiarDisponibilidad($any($event).detail.value)"
-          data-testid="segment-disponibilidad"
-        >
-          <ion-segment-button value="DISPONIBLE" data-testid="disp-disponible">
-            <ion-label>Disponible</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="OCUPADO" data-testid="disp-ocupado">
-            <ion-label>Ocupado</ion-label>
-          </ion-segment-button>
-          <ion-segment-button value="FUERA_DE_SERVICIO" data-testid="disp-fuera">
-            <ion-label>Fuera</ion-label>
-          </ion-segment-button>
-        </ion-segment>
+        <div class="cd-chips cd-estado__chips" role="group" aria-label="Disponibilidad">
+          @for (opcion of opcionesDisponibilidad; track opcion.valor) {
+            <button
+              type="button"
+              class="cd-chip cd-chip--opcion"
+              [class.cd-chip--activo]="disponibilidad() === opcion.valor"
+              [attr.aria-pressed]="disponibilidad() === opcion.valor"
+              [attr.data-testid]="'disp-' + opcion.testId"
+              (click)="cambiarDisponibilidad(opcion.valor)"
+            >{{ opcion.etiqueta }}</button>
+          }
+        </div>
         <p class="cd-ayuda">Con una OT en curso no puedes cambiar la disponibilidad.</p>
       }
-    </ion-card-content>
-  </ion-card>
+    </div>
+  </section>
 
-  <!-- Liquidaciones no tiene tab: vive acá para que no haya que buscarla. -->
-  <ion-card class="cd-card" data-testid="acceso-liquidaciones">
-    <ion-card-content>
-      <div class="cd-ot__cabecera">
-        <div>
-          <h2 class="cd-card__titulo">Mis liquidaciones</h2>
-          <p class="cd-muted">Lo que la plataforma te debe y el estado de cada consignación.</p>
-        </div>
-        @if (bloqueadoPorLiquidacion()) {
-          <span class="cd-chip cd-chip--espera" data-testid="liquidaciones-pendientes">Pendiente</span>
-        }
-      </div>
-      <ion-button
-        class="cd-cta cd-cta--secundaria"
-        fill="outline"
-        (click)="irALiquidaciones()"
-        data-testid="ir-liquidaciones"
-      >
-        <ion-icon slot="start" name="cash-outline" aria-hidden="true"></ion-icon>
-        Ver mis liquidaciones
-      </ion-button>
-    </ion-card-content>
-  </ion-card>
+  <!-- Liquidaciones y documentos viven en el tab Gestión: acá solo queda la
+       alerta de bloqueo (arriba) cuando hay una consignación pendiente. -->
 
   <!-- OTs activas: carga, error y vacío siempre visibles (§5/UI-X6). -->
   @if (cargando()) {
@@ -176,13 +128,16 @@
       icono="clipboard-outline"
       testId="ots-vacio"
     >
-      <ion-button class="cd-cta" (click)="irARadar()" data-testid="ir-radar">
-        <ion-icon slot="start" name="radio-outline" aria-hidden="true"></ion-icon>
-        Ver ofertas cercanas
-      </ion-button>
+      <!-- Si ya hay ofertas visibles abajo, esa sección lleva al radar: no
+           duplicamos la misma ruta con dos controles (DESIGN §4). -->
+      @if (ofertas().length === 0) {
+        <ion-button class="cd-cta" (click)="irARadar()" data-testid="ir-radar">
+          <ion-icon slot="start" name="radio-outline" aria-hidden="true"></ion-icon>
+          Ver ofertas cercanas
+        </ion-button>
+      }
     </cd-empty-state>
   }
-
   <!-- La primera de la cola: la orden que se trabaja ahora (§4, urgencia manda). -->
   @if (proximaOt(); as orden) {
     <h2 class="cd-section__titulo cd-section__titulo--bloque">Próxima orden de trabajo</h2>
@@ -207,8 +162,18 @@
       </span>
       @if (orden.clienteNombre || orden.barrio) {
         <span class="cd-proxima__contexto">
-          @if (orden.clienteNombre; as cliente) { <span>{{ cliente }}</span> }
-          @if (orden.barrio) { <span class="cd-proxima__sep">·</span> <span>{{ orden.barrio }}</span> }
+          @if (orden.clienteNombre; as cliente) {
+            <span class="cd-proxima__spec">
+              <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
+              {{ cliente }}
+            </span>
+          }
+          @if (orden.barrio) {
+            <span class="cd-proxima__spec">
+              <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+              {{ orden.barrio }}
+            </span>
+          }
         </span>
       }
       <span class="cd-proxima__cta">Abrir ejecución</span>
@@ -241,4 +206,52 @@
       </button>
     }
   }
-</ion-content>
+
+  <!-- Ofertas activas (Stitch B0 §6): preview real del radar. Solo aparece
+       cuando hay ofertas; el contador hace tictac y la aceptación vive en el
+       radar (un botón, una ruta). -->
+  @if (ofertas().length > 0) {
+    <div class="cd-ofertas__cabecera">
+      <h2 class="cd-section__titulo cd-section__titulo--bloque" data-testid="ofertas-activas">
+        Ofertas activas ({{ ofertas().length }})
+      </h2>
+      @if (hayPrioridadAlta()) {
+        <span class="cd-ofertas__prioridad" data-testid="ofertas-prioridad">
+          <ion-icon name="flash-outline" aria-hidden="true"></ion-icon>
+          Prioridad alta
+        </span>
+      }
+    </div>
+
+    @for (oferta of ofertas(); track oferta.id) {
+      <button
+        type="button"
+        class="cd-ot cd-oferta-panel"
+        [attr.data-testid]="'oferta-panel-' + oferta.ot.id"
+        (click)="irARadar()"
+      >
+        <span class="cd-ot__cabecera">
+          <span class="cd-oferta__identidad">
+            <span class="cd-oferta__icono" aria-hidden="true">
+              <ion-icon aria-hidden="true" [name]="iconoCategoria(oferta.ot.categoriaServicio)"></ion-icon>
+            </span>
+            <span class="cd-oferta__titulos">
+              <span class="cd-ot__codigo">{{ oferta.ot.codigo || 'Orden de trabajo' }}</span>
+              <span class="cd-ot__categoria">{{ categoriaLabel(oferta.ot.categoriaServicio) }}</span>
+            </span>
+          </span>
+          <span class="cd-chip cd-chip--espera" role="status" aria-live="polite" aria-atomic="true">
+            Expira en {{ expira(oferta.segundosRestantes) }}
+          </span>
+        </span>
+        <span class="cd-oferta__titulo">{{ oferta.ot.descripcionFalla }}</span>
+        <span class="cd-ot__direccion">
+          <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+          {{ oferta.ot.direccion }}
+        </span>
+        <span class="cd-ayuda">{{ distanciaLinea(oferta) }}</span>
+        <span class="cd-oferta-panel__cta">Ver en el radar</span>
+      </button>
+    }
+  }
+</cd-page>

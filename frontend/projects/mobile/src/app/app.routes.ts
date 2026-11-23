@@ -18,7 +18,7 @@ const PANTALLAS: Record<string, Pantalla> = {
     description: 'Tus servicios activos, el seguimiento de cada OT y el acceso rápido a pedir ayuda.',
   },
   equipos: {
-    title: 'Mis órdenes',
+    title: 'Mis equipos',
     description: 'El historial de tus equipos y los servicios que les hicimos.',
   },
   radar: {
@@ -36,6 +36,10 @@ const PANTALLAS: Record<string, Pantalla> = {
   documentos: {
     title: 'Documentos',
     description: 'Los papeles de tu empresa y su estado de validación.',
+  },
+  liquidaciones: {
+    title: 'Gestión',
+    description: 'Tus liquidaciones y tus documentos de validación, juntos.',
   },
 };
 
@@ -151,18 +155,12 @@ const RUTAS_EXTRA: Partial<Record<ModoApp, Route[]>> = {
       loadComponent: cargarEjecucion,
     },
     {
-      // B4: perfil, especialidades y documentos del técnico.
+      // B4: perfil y especialidades del técnico. Los documentos se mudaron al
+      // tab Gestión junto a las liquidaciones.
       path: 'perfil',
       title: 'Mi perfil técnico · Cold Day',
       loadComponent: () =>
         import('./pages/perfil-tecnico/perfil-tecnico.page').then((m) => m.PerfilTecnicoPage),
-    },
-    {
-      // No es tab: se entra por la tarjeta fija del panel de Mis OTs. La plata
-      // no se mira todo el día, pero tampoco puede quedar escondida.
-      path: 'liquidaciones',
-      title: 'Mis liquidaciones · Cold Day',
-      loadComponent: HOJAS_REALES['tecnico/liquidaciones'],
     },
   ],
 };
@@ -199,6 +197,8 @@ const modoRoute = (modo: ModoApp): Route => ({
     { path: '', pathMatch: 'full', redirectTo: MODOS[modo].tabs[0].id },
     ...MODOS[modo].tabs.map((tab) => (tab.id === 'cuenta' ? cuentaRoute() : hoja(modo, tab.id))),
     ...(RUTAS_EXTRA[modo] ?? []),
+    // URL desconocida con sesión: vuelve al inicio del modo, no al login.
+    { path: '**', redirectTo: MODOS[modo].tabs[0].id },
   ],
 });
 

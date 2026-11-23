@@ -5,7 +5,7 @@ import { provideIonicAngular } from '@ionic/angular';
 import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { ApiHttpError } from '@core/alertas/api-http.error';
-import { OtResponse, TecnicoResponse } from '@core/models/common.models';
+import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '@core/models/common.models';
 import { SseService, OfertaCreada } from '@core/service/sse.service';
 import { TecnicoPresenciaService } from '@core/service/tecnico-presencia.service';
 import { TecnicosApi } from '@core/service/tecnicos-api';
@@ -38,6 +38,21 @@ function ot(overrides: Partial<OtResponse> = {}): OtResponse {
   };
 }
 
+function oferta(overrides: Partial<OfertaTecnicoResponse> = {}): OfertaTecnicoResponse {
+  return {
+    id: 'of1',
+    otId: 'ot9',
+    ot: ot({ id: 'ot9', codigo: 'OT-2026-0099', descripcionFalla: 'Split gotea agua.', prioridad: 'MEDIA' }),
+    tecnicoId: 'tec-1',
+    distanciaKm: 1.8,
+    radioVigenteKm: 5,
+    segundosRestantes: 90,
+    estado: 'PENDIENTE',
+    fechaCreacion: '2026-11-23T10:00:00Z',
+    ...overrides,
+  };
+}
+
 function presenciaStub(overrides: Record<string, unknown> = {}) {
   return {
     modo: signal<'apagada' | 'compartiendo' | 'ejecutando'>('apagada'),
@@ -56,15 +71,18 @@ function presenciaStub(overrides: Record<string, unknown> = {}) {
 function setup({
   tecnicoApi,
   otsApi,
+  ofertasApi,
   presencia = presenciaStub(),
 }: {
   tecnicoApi?: { getMiPerfil?: Stub };
   otsApi?: { getMisOts?: Stub };
+  ofertasApi?: { getOfertasParaTecnico?: Stub };
   presencia?: ReturnType<typeof presenciaStub>;
 } = {}) {
   const api = {
     getMiPerfil: tecnicoApi?.getMiPerfil ?? vi.fn(() => of(tecnico())),
     getMisOts: otsApi?.getMisOts ?? vi.fn(() => of([ot()])),
+    getOfertasParaTecnico: ofertasApi?.getOfertasParaTecnico ?? vi.fn(() => of([])),
     actualizarEstadoOperativo: vi.fn(() => of(true)),
   };
   const toast = { success: vi.fn(), info: vi.fn(), warning: vi.fn(), error: vi.fn() };
@@ -184,5 +202,101 @@ describe('PanelTecnicoPageMobile (B2)', () => {
       new CustomEvent('ionChange', { detail: { checked: true } }),
     );
     expect(presencia.activar).toHaveBeenCalled();
+  });
+
+  it('el título de ubicación afirma el estado (Stitch B0)', () => {
+    const apagada = setup();
+    expect(texto(apagada.fixture)).toContain('Compartir ubicación');
+    TestBed.resetTestingModule();
+
+    const activa = setup({
+      presencia: presenciaStub({ modo: signal('compartiendo'), compartirUbicacion: signal(true) }),
+    });
+    expect(texto(activa.fixture)).toContain('Compartiendo ubicación');
+    expect(texto(activa.fixture)).toContain('Tus ofertas llegan a los clientes cercanos');
+  });
+
+  it('muestra las ofertas activas con conteo real y abre el radar', () => {
+    const { fixture, navigate } = setup({
+      ofertasApi: { getOfertasParaTecnico: vi.fn(() => of([oferta()])) },
+    });
+
+    expect(texto(fixture)).toContain('Ofertas activas (1)');
+    expect(texto(fixture)).toContain('Split gotea agua.');
+    expect(texto(fixture)).toContain('Expira en 1m 30s');
+    expect(texto(fixture)).toContain('A 1,8 km');
+
+    const tarjeta = fixture.nativeElement.querySelector(
+      '[data-testid="oferta-panel-ot9"]',
+    ) as HTMLButtonElement;
+    expect(tarjeta.tagName).toBe('BUTTON');
+    tarjeta.click();
+    expect(navigate).toHaveBeenCalledWith(['/tecnico/radar']);
+  });
+
+  it('sin ofertas no hay sección ni conteo en cero', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('[data-testid="ofertas-activas"]')).toBeNull();
+    expect(texto(fixture)).not.toContain('Ofertas activas');
+  });
+
+  it('el aviso de prioridad alta solo aparece con una oferta ALTA real', () => {
+    const media = setup({
+      ofertasApi: { getOfertasParaTecnico: vi.fn(() => of([oferta()])) },
+    });
+    expect(media.fixture.nativeElement.querySelector('[data-testid="ofertas-prioridad"]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const alta = setup({
+      ofertasApi: {
+        getOfertasParaTecnico: vi.fn(() =>
+          of([oferta({ ot: ot({ id: 'ot9', prioridad: 'ALTA' }) })]),
+        ),
+      },
+    });
+    expect(texto(alta.fixture)).toContain('Prioridad alta');
+  });
+
+  it('el countdown hace tictac y retira la oferta al expirar', () => {
+    vi.useFakeTimers();
+    try {
+      const getOfertas = vi
+        .fn()
+        .mockReturnValueOnce(of([oferta({ segundosRestantes: 2 })]))
+        .mockReturnValue(of([]));
+      const { fixture } = setup({ ofertasApi: { getOfertasParaTecnico: getOfertas } });
+      expect(texto(fixture)).toContain('Expira en 2s');
+
+      vi.advanceTimersByTime(1000);
+      fixture.detectChanges();
+      expect(texto(fixture)).toContain('Expira en 1s');
+
+      const llamadasAntes = getOfertas.mock.calls.length;
+      vi.advanceTimersByTime(1000);
+      fixture.detectChanges();
+      // Expiró: se retira de la vista y se recarga la lista real del backend.
+      expect(fixture.nativeElement.querySelector('[data-testid="oferta-panel-ot9"]')).toBeNull();
+      expect(getOfertas.mock.calls.length).toBeGreaterThan(llamadasAntes);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('no duplica la ruta al radar: con ofertas visibles el vacío no lleva CTA', () => {
+    const { fixture } = setup({
+      otsApi: { getMisOts: vi.fn(() => of([])) },
+      ofertasApi: { getOfertasParaTecnico: vi.fn(() => of([oferta()])) },
+    });
+    expect(fixture.nativeElement.querySelector('[data-testid="ots-vacio"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="ir-radar"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="oferta-panel-ot9"]')).toBeTruthy();
+  });
+
+  it('la distancia en 0 no se pinta como métrica: solo el radio difundido', () => {
+    const { fixture } = setup({
+      ofertasApi: { getOfertasParaTecnico: vi.fn(() => of([oferta({ distanciaKm: 0 })])) },
+    });
+    expect(texto(fixture)).toContain('Dentro de tu radio');
+    expect(texto(fixture)).not.toContain('A 0 km');
   });
 });

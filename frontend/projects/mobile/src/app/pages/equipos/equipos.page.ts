@@ -24,7 +24,7 @@ import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-ch
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
- * A10 — Mis órdenes (cliente).
+ * A10 — Mis equipos (cliente).
  *
  * El agrupado vive en `@core/service/equipos-cliente` (compartido con la web);
  * acá sólo queda la presentación y lo que esta plataforma decide: la
@@ -62,7 +62,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     <cd-page>
       <ion-header class="ion-no-border" cdHeader>
         <ion-toolbar>
-          <cd-marca pantalla="Mis órdenes" chip="Cliente" />
+          <cd-marca pantalla="Mis equipos" chip="Cliente" />
         </ion-toolbar>
       </ion-header>
 
@@ -103,7 +103,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
               <div class="cd-ot__cabecera">
                 <div class="cd-equipo__identidad">
                   <span class="cd-equipo__icono" aria-hidden="true">
-                    <ion-icon [name]="iconoCategoria(equipo.categoria)"></ion-icon>
+                    <ion-icon aria-hidden="true" [name]="iconoCategoria(equipo.categoria)"></ion-icon>
                   </span>
                   <div class="cd-ot__titulos">
                     <span class="cd-ot__codigo">{{ equipo.codigoOt }}</span>

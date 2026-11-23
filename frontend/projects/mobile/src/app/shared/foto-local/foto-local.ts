@@ -82,7 +82,7 @@ export class FotoLocalComponent {
     } catch (err) {
       void this.toast.error(
         'No se pudo abrir la cámara',
-        err instanceof Error ? err.message : 'Intentá de nuevo.',
+        err instanceof Error ? err.message : 'Inténtalo de nuevo.',
       );
     } finally {
       this.sacando.set(false);

@@ -263,7 +263,7 @@ describe('PanelClientePage móvil', () => {
     expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
   });
 
-  it('el CTA del panel lleva a la solicitud; Historial filtra y Mis órdenes navega', () => {
+  it('el CTA del panel lleva a la solicitud; Historial filtra y no duplica la ruta del tab', () => {
     const { fixture, navigate } = setup(vi.fn(() => of([])));
 
     (fixture.nativeElement.querySelector('[data-testid="panel-solicitar"]') as HTMLElement).click();
@@ -275,8 +275,8 @@ describe('PanelClientePage móvil', () => {
     expect(texto(fixture)).toContain('Órdenes ya finalizadas');
     expect(navigate).not.toHaveBeenCalledWith('/cliente/equipos');
 
-    (fixture.nativeElement.querySelector('[data-testid="panel-mis-equipos"]') as HTMLElement).click();
-    expect(navigate).toHaveBeenCalledWith('/cliente/equipos');
+    // "Mis equipos" es un tab: el panel ya no duplica esa ruta con un botón.
+    expect(fixture.nativeElement.querySelector('[data-testid="panel-mis-equipos"]')).toBeNull();
   });
 
   describe('refresco periódico', () => {

@@ -24,6 +24,7 @@ import {
   IonCard,
   IonCardContent,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonInput,
@@ -52,7 +53,7 @@ import {
   SolicitudInsumoResponse,
 } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
-import { FotoLocalComponent } from '../../shared/foto-local/foto-local';
+import { CatalogoInsumosService, ProductoCatalogo } from '../../core/catalogo-insumos';
 import { ActivatedRoute } from '@angular/router';
 
 /** Only a 409 proves the client has not paid yet or the order moved elsewhere. */
@@ -65,6 +66,7 @@ const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
   selector: 'app-ejecucion-ot',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonFooter,
     ReactiveFormsModule,
     IonBackButton,
     IonButton,
@@ -81,7 +83,6 @@ const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
     IonSpinner,
     IonTextarea,
     IonToolbar,
-    FotoLocalComponent,
   ],
   templateUrl: './ejecucion-ot.page.html',
 })
@@ -95,6 +96,7 @@ export class EjecucionOtPage implements OnInit {
   private readonly apiConfig = inject(ApiConfig);
   private readonly mockDb = inject(MockDbService);
   private readonly toast = inject(MobileToastService);
+  private readonly catalogo = inject(CatalogoInsumosService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly otId = signal('');
@@ -133,6 +135,21 @@ export class EjecucionOtPage implements OnInit {
   });
 
   readonly insumos = new FormArray<FormGroup>([]);
+
+  /** Búsqueda rápida en el catálogo (mock aprobado hasta que exista el endpoint). */
+  readonly busquedaInsumo = signal('');
+  readonly resultadosCatalogo = computed<ProductoCatalogo[]>(() =>
+    this.catalogo.buscar(this.busquedaInsumo(), this.ot()?.categoriaServicio),
+  );
+  readonly busquedaActiva = computed(() => this.busquedaInsumo().trim().length >= 2);
+
+  /** Intento de envío: hace visibles los campos faltantes (antes el botón
+   * fallaba en silencio y parecía muerto). */
+  readonly intentoEnvio = signal(false);
+  readonly formularioIncompleto = computed(() => {
+    if (!this.intentoEnvio()) return false;
+    return this.diagnosticoForm.invalid || this.insumos.invalid;
+  });
 
   /**
    * Valor vivo del formulario: los FormGroup no son signals, así que sin este
@@ -243,7 +260,7 @@ export class EjecucionOtPage implements OnInit {
       next: () => {
         this.enSitio.set(true);
         this.recargarOt();
-        void this.toast.success('Llegada registrada', 'Registrá el diagnóstico y el presupuesto.');
+        void this.toast.success('Llegada registrada', 'Registra el diagnóstico y el presupuesto.');
       },
       error: (err: Error) =>
         void avisarErrorAccion(this.toast, 'No se pudo registrar la llegada', err),
@@ -266,12 +283,41 @@ export class EjecucionOtPage implements OnInit {
     this.insumos.removeAt(index);
   }
 
+  buscarInsumo(valor: unknown): void {
+    this.busquedaInsumo.set(typeof valor === 'string' ? valor : '');
+  }
+
+  /** Agrega la línea del catálogo con cantidad 1; el técnico ajusta después. */
+  agregarDesdeCatalogo(producto: ProductoCatalogo): void {
+    this.insumos.push(
+      new FormGroup({
+        descripcion: new FormControl(producto.nombre, {
+          nonNullable: true,
+          validators: [Validators.required],
+        }),
+        cantidad: new FormControl(1, {
+          nonNullable: true,
+          validators: [Validators.required, Validators.min(1)],
+        }),
+      }),
+    );
+    this.busquedaInsumo.set('');
+  }
+
   enviarDiagnostico(): void {
     if (this.diagnosticoForm.invalid || this.insumos.invalid) {
+      // El fallo nunca es silencioso: se marcan los campos y se explica qué falta.
+      this.intentoEnvio.set(true);
       this.diagnosticoForm.markAllAsTouched();
+      this.insumos.controls.forEach((grupo) => grupo.markAllAsTouched());
+      void this.toast.warning(
+        'Faltan datos del diagnóstico',
+        'Completa el diagnóstico, la mano de obra y los repuestos (y cada insumo con su cantidad) antes de enviar.',
+      );
       return;
     }
     if (this.enviandoDiagnostico()) return;
+    this.intentoEnvio.set(false);
 
     const valor = this.diagnosticoForm.getRawValue();
     const insumos = this.insumos.controls.map((grupo) => {

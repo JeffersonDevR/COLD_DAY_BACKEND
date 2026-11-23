@@ -93,24 +93,10 @@ describe('PerfilTecnicoPage (B4)', () => {
     expect(api.actualizarMisEspecialidades).not.toHaveBeenCalled();
   });
 
-  it('lista documentos y explica que la carga es por web', () => {
-    const { fixture } = setup({
-      documentos: [
-        {
-          id: 'd1',
-          tipo: 'MATRICULA_CONTE',
-          nombre: 'Matrícula CONTE',
-          estadoValidacion: 'APROBADO',
-        },
-      ],
-    });
-    expect(texto(fixture)).toContain('Matrícula CONTE');
-    expect(texto(fixture)).toContain('usa la web');
-  });
-
-  it('muestra el estado vacío de documentos', () => {
-    const { fixture } = setup({ documentos: [] });
-    expect(fixture.nativeElement.querySelector('[data-testid="documentos-vacio"]')).toBeTruthy();
+  it('remite los documentos al tab Gestión (agrupados con liquidaciones)', () => {
+    const { fixture } = setup();
+    expect(texto(fixture)).toContain('tab Gestión');
+    expect(fixture.nativeElement.querySelector('[data-testid="documentos-vacio"]')).toBeNull();
   });
 
   it('cuenta las especialidades elegidas sobre el total', () => {
@@ -122,12 +108,11 @@ describe('PerfilTecnicoPage (B4)', () => {
     ).toContain('1 de 5 elegidas');
   });
 
-  it('usa las etiquetas canónicas de categorías y documentos', () => {
+  it('usa las etiquetas canónicas de categorías', () => {
     const { fixture } = setup();
     const page = fixture.componentInstance;
 
     expect(page.etiquetaCategoria('LAVADORAS')).toBe('Lavadoras');
     expect(page.etiquetaCategoria('CAMARAS_VIGILANCIA')).toBe('Cámaras de vigilancia');
-    expect(page.etiquetaDocumento('MATRICULA_CONTE')).toBe('Matrícula CONTE');
   });
 });

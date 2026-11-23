@@ -50,6 +50,72 @@
   }
 
   @if (ot(); as orden) {
+    <!-- A8: el pago va primero (qué pagas, con el total), el acta y la firma
+         después. Antes el documento legal encabezaba la pantalla y el dinero
+         quedaba al final, contra la jerarquía de la tarea. -->
+    <ion-card class="cd-liquidacion">
+      <ion-card-content>
+        <h2 class="cd-card__titulo">Liquidación del pago</h2>
+
+        <div class="cd-desglose">
+          <!-- El estado del cobro vive DENTRO de la fila de visita: antes era una
+               nota suelta entre filas y rompía la lectura del desglose. -->
+          <div class="cd-desglose__fila cd-desglose__fila--visita">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Visita: diagnóstico y traslado</span>
+              @if (tarifaVisita() !== null) {
+                <p class="cd-desglose__nota">Tarifa por distancia registrada en la orden</p>
+              } @else {
+                <p class="cd-desglose__nota">El cargo de visita se confirma con el técnico</p>
+              }
+              @if (visitaPendienteDePago()) {
+                <p class="cd-desglose__nota cd-desglose__nota--aviso">
+                  Pendiente de pago: el técnico no puede iniciar el desplazamiento
+                  hasta que se registre.
+                </p>
+              } @else if (visitaPagada()) {
+                <p class="cd-desglose__nota cd-desglose__nota--ok">
+                  Pagada: el técnico ya puede iniciar el desplazamiento.
+                </p>
+              }
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-visita">{{ visitaLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__fila">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Mano de obra certificada</span>
+              @if (manoObra() === null) {
+                <p class="cd-desglose__nota" data-testid="presupuesto-pendiente">
+                  El técnico todavía no cargó el presupuesto
+                </p>
+              }
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-mano-obra">{{ manoObraLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__fila">
+            <div class="cd-desglose__detalle">
+              <span class="cd-desglose__nombre">Repuestos y materiales</span>
+              <p class="cd-desglose__nota">Repuestos declarados por el técnico</p>
+            </div>
+            <span class="cd-desglose__valor" data-testid="costo-repuestos">{{ repuestosLabel() }}</span>
+          </div>
+
+          <div class="cd-desglose__total">
+            <span>Total a pagar</span>
+            <strong data-testid="costo-total">{{ formatoTotal(totalMonto()) }}</strong>
+          </div>
+        </div>
+
+        @if (!orden.presupuesto) {
+          <p class="cd-desglose__nota cd-presupuesto-nota">
+            Sin presupuesto registrado: el técnico todavía no cargó los montos del servicio.
+          </p>
+        }
+      </ion-card-content>
+    </ion-card>
+
     <!-- The acta is registerable only once the service is FINALIZADA. -->
     @if (!esFinalizada()) {
       <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="acta-no-finalizada">
@@ -68,7 +134,7 @@
         <div class="cd-acta__encabezado">
           <div class="cd-acta__marca">
             <span class="cd-acta__icono" aria-hidden="true">
-              <ion-icon name="shield-checkmark-outline"></ion-icon>
+              <ion-icon aria-hidden="true" name="shield-checkmark-outline"></ion-icon>
             </span>
             <div>
               <h2 class="cd-acta__empresa">COLD DAY S.A.S.</h2>
@@ -150,65 +216,6 @@
             </p>
           }
         </div>
-      </ion-card-content>
-    </ion-card>
-
-    <!-- Liquidación del pago: read-only amounts -->
-    <ion-card class="cd-liquidacion">
-      <ion-card-content>
-        <h2 class="cd-card__titulo">Liquidación del pago</h2>
-
-        <div class="cd-desglose">
-          <div class="cd-desglose__fila cd-desglose__fila--visita">
-            <div class="cd-desglose__detalle">
-              <span class="cd-desglose__nombre">Visita y diagnóstico</span>
-              <p class="cd-desglose__nota">El cargo de visita se confirma con el técnico</p>
-            </div>
-            <span class="cd-desglose__valor" data-testid="costo-visita">{{ visitaLabel() }}</span>
-          </div>
-
-          @if (visitaPendienteDePago()) {
-            <p class="cd-desglose__nota cd-desglose__nota--aviso cd-visita-linea">
-              Visita pendiente de pago: el técnico no puede iniciar el desplazamiento
-              hasta que se registre.
-            </p>
-          } @else if (visitaPagada()) {
-            <p class="cd-desglose__nota cd-desglose__nota--ok cd-visita-linea">
-              Visita pagada: el técnico ya puede iniciar el desplazamiento.
-            </p>
-          }
-
-          <div class="cd-desglose__fila">
-            <div class="cd-desglose__detalle">
-              <span class="cd-desglose__nombre">Mano de obra certificada</span>
-              @if (manoObra() === null) {
-                <p class="cd-desglose__nota" data-testid="presupuesto-pendiente">
-                  El técnico todavía no cargó el presupuesto
-                </p>
-              }
-            </div>
-            <span class="cd-desglose__valor" data-testid="costo-mano-obra">{{ manoObraLabel() }}</span>
-          </div>
-
-          <div class="cd-desglose__fila">
-            <div class="cd-desglose__detalle">
-              <span class="cd-desglose__nombre">Repuestos y materiales</span>
-              <p class="cd-desglose__nota">Repuestos declarados por el técnico</p>
-            </div>
-            <span class="cd-desglose__valor" data-testid="costo-repuestos">{{ repuestosLabel() }}</span>
-          </div>
-
-          <div class="cd-desglose__total">
-            <span>Total a pagar</span>
-            <strong data-testid="costo-total">{{ formatoTotal(totalMonto()) }}</strong>
-          </div>
-        </div>
-
-        @if (!orden.presupuesto) {
-          <p class="cd-desglose__nota cd-presupuesto-nota">
-            Sin presupuesto registrado: el técnico todavía no cargó los montos del servicio.
-          </p>
-        }
       </ion-card-content>
     </ion-card>
   }

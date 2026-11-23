@@ -81,7 +81,7 @@
               (click)="elegirEstrellas(n)"
               [attr.data-testid]="'estrella-' + n"
             >
-              <ion-icon [name]="n <= estrellas() ? 'star' : 'star-outline'"></ion-icon>
+              <ion-icon aria-hidden="true" [name]="n <= estrellas() ? 'star' : 'star-outline'"></ion-icon>
             </button>
           }
         </div>

@@ -1,24 +1,23 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
-  IonButton,
-  IonContent,
   IonHeader,
-  IonIcon,
   IonRefresher,
   IonRefresherContent,
   IonToolbar,
 } from '@ionic/angular';
-import { LiquidacionResponse } from '@core/models/common.models';
+import { DocumentoTecnico, LiquidacionResponse, TipoDocumentoTecnico } from '@core/models/common.models';
 import { LiquidacionApi } from '@core/service/liquidacion-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { TecnicosApi } from '@core/service/tecnicos-api';
-import { estadoLiquidacionLabel, medioPagoLabel } from '@core/ui/labels';
+import { documentoLabel, estadoLiquidacionLabel, medioPagoLabel } from '@core/ui/labels';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
+import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
+import { PageComponent } from '../../shared/ui/page/page';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
- * B5 — Liquidaciones del técnico.
+ * B5 — Gestión del técnico: liquidaciones + documentos en un solo tab.
  *
  * Lee `GET /api/tecnicos/me/liquidaciones` (el backend resuelve el técnico del
  * JWT, así que no se envía ningún id). Es de solo lectura a propósito: el
@@ -26,22 +25,24 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
  * carga; la app sirve para que el técnico sepa cuánto debe y en qué estado está
  * cada servicio.
  *
+ * Los documentos de validación viven acá junto a la plata (petición del dueño
+ * 2026-11-23): el perfil queda para identidad y especialidades.
+ *
  * El endpoint ya devuelve `otCodigo`, así que la lista se lee sin mostrar UUID.
  */
 @Component({
   selector: 'app-liquidaciones-tecnico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    IonButton,
-    IonContent,
     IonHeader,
-    IonIcon,
+    PageComponent,
     IonRefresher,
     IonRefresherContent,
     IonToolbar,
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
+    MarcaBarraComponent,
   ],
   templateUrl: './liquidaciones-tecnico.page.html',
 })
@@ -52,6 +53,9 @@ export class LiquidacionesTecnicoPage implements OnInit {
   readonly liquidaciones = signal<LiquidacionResponse[]>([]);
   readonly cargando = signal(true);
   readonly fallo = signal(false);
+
+  /** Documentos de validación del técnico (antes vivían en el perfil). */
+  readonly documentos = signal<DocumentoTecnico[]>([]);
 
   /** Comisión que el técnico todavía tiene que consignar. */
   readonly porConsignar = computed(() =>
@@ -69,6 +73,10 @@ export class LiquidacionesTecnicoPage implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+    this.tecnicosApi.getMisDocumentos().subscribe({
+      next: (documentos) => this.documentos.set(documentos),
+      error: () => this.documentos.set([]),
+    });
   }
 
   /**
@@ -151,5 +159,21 @@ export class LiquidacionesTecnicoPage implements OnInit {
   /** Montos sin decimales: el COP no se usa con centavos en la operación. */
   cop(valor?: number): string {
     return (valor ?? 0).toLocaleString('es-CO', { maximumFractionDigits: 0 });
+  }
+
+  etiquetaDocumento(tipo: TipoDocumentoTecnico): string {
+    return documentoLabel(tipo);
+  }
+
+  tonoDocumento(documento: DocumentoTecnico): string {
+    switch (documento.estadoValidacion) {
+      case 'APROBADO':
+        return 'ok';
+      case 'RECHAZADO':
+      case 'SUSPENDIDO':
+        return 'cerrada';
+      default:
+        return 'espera';
+    }
   }
 }

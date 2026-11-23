@@ -11,7 +11,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
   IonButton,
-  IonContent,
   IonHeader,
   IonIcon,
   IonSelect,
@@ -38,6 +37,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
+import { PageComponent } from '../../shared/ui/page/page';
 
 /** Only a 409 proves another technician took the order first. */
 const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
@@ -49,8 +49,8 @@ const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
   selector: 'app-ofertas-tecnico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    PageComponent,
     IonButton,
-    IonContent,
     IonHeader,
     IonIcon,
     IonSelect,

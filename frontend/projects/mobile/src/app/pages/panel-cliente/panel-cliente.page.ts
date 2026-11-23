@@ -103,7 +103,6 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
       <div class="cd-hero__acciones" cdHeroAcciones>
         <ion-button
-          size="small"
           fill="outline"
           color="primary"
           class="cd-accion"
@@ -164,17 +163,8 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
         <p class="cd-muted cd-panel__sub" data-testid="panel-subtitulo">{{ textos().subtitulo }}</p>
 
-        <!-- A10 no es un tab: se abre desde acá y se vuelve al panel. -->
-        <ion-button
-          expand="block"
-          fill="clear"
-          class="cd-accion cd-panel__equipos"
-          data-testid="panel-mis-equipos"
-          (click)="irAMisEquipos()"
-        >
-          <ion-icon slot="start" name="cube-outline" aria-hidden="true"></ion-icon>
-          Mis órdenes
-        </ion-button>
+        <!-- "Mis equipos" es un tab: el botón que duplicaba la ruta se retiró
+             (DESIGN §4, un botón una ruta). -->
 
         @if (serviciosFiltrados().length === 0) {
           <cd-empty-state
@@ -184,8 +174,13 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
             testId="panel-vacio"
           />
         } @else {
+          <h2 class="cd-section__titulo cd-section__titulo--bloque">Tus servicios</h2>
           @for (ot of serviciosFiltrados(); track ot.id) {
-            <ion-card class="cd-ot cd-panel-ot cd-ot--orden" data-testid="panel-ot">
+            <ion-card
+              class="cd-ot cd-panel-ot cd-ot--orden"
+              [class.cd-panel-ot--destacada]="$first && tono(ot.estado) === 'curso'"
+              data-testid="panel-ot"
+            >
               <ion-card-content>
                 <div class="cd-ot__cabecera">
                   <div class="cd-ot__titulos">
@@ -251,9 +246,9 @@ export class PanelClientePage {
 
   private readonly ots = signal<OtResponse[]>([]);
 
-  /** Texto del héroe: el resumen operativo de la pantalla. */
+  /** Texto del héroe: corto y operativo; el detalle vive en la solicitud. */
   protected readonly heroNota =
-    'Pide un servicio y tu solicitud sale a los técnicos cercanos de Cúcuta: el primero que la acepta toma la orden. Seguimiento en vivo y acta formal de garantía.';
+    'Pide un servicio y sigue tu OT en vivo, con acta de garantía.';
 
   protected readonly cargando = signal(true);
   protected readonly errorCarga = signal<string | null>(null);
@@ -306,11 +301,6 @@ export class PanelClientePage {
     return ot.categoriaServicio.replaceAll('_', ' ');
   }
 
-  /** A10 — Mis órdenes. Pantalla secundaria: se llega desde el panel. */
-  protected irAMisEquipos(): void {
-    void this.router.navigateByUrl('/cliente/equipos');
-  }
-
   protected cambiarFiltro(evento: SegmentCustomEvent): void {
     const valor = evento.detail.value;
     if (valor) this.filtro.set(valor as FiltroOts);
@@ -330,7 +320,7 @@ export class PanelClientePage {
 
   /**
    * "Historial" filtra las órdenes concluidas. Antes navegaba a `/cliente/equipos`,
-   * el mismo destino que "Mis órdenes" en la misma pantalla (DESIGN §4: un botón,
+   * el mismo destino que "Mis equipos" en la misma pantalla (DESIGN §4: un botón,
    * una ruta).
    */
   protected verHistorial(): void {

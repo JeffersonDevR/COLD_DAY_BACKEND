@@ -97,17 +97,23 @@ export class DiagnosticoPage implements OnInit {
   readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
   /**
-   * Visit-tariff estimate. This screen NEVER queries it (see the header):
-   * it stays `null` and the row shows "Por confirmar". The signal and the
-   * total formula are kept identical to the web contract so the apps do
-   * not diverge: if the visit flow publishes the estimate, the total
-   * picks it up without touching this screen.
+   * Visit-tariff estimate. This screen NEVER queries the estimator (the fee
+   * is disclosed and charged in the OT flow, A6): it reads the tariff already
+   * recorded on the OT (`tarifaVisita`, real backend datum). The signal stays
+   * for the web-contract shape; the recorded tariff wins when present.
    */
   readonly estimacion = signal<TarifaEstimadaResponse | null>(null);
 
-  /** Repair budget + estimated visit tariff (web contract). */
+  /** Tarifa de visita real: la registrada en la OT (diagnóstico + traslado). */
+  readonly tarifaVisita = computed<number | null>(() => {
+    const registrada = this.ot()?.tarifaVisita;
+    if (registrada != null) return registrada;
+    return this.estimacion()?.tarifa ?? null;
+  });
+
+  /** Repair budget + recorded visit tariff. */
   readonly totalServicio = computed<number>(
-    () => (this.ot()?.presupuesto?.total || 0) + (this.estimacion()?.tarifa ?? 0),
+    () => (this.ot()?.presupuesto?.total || 0) + (this.tarifaVisita() ?? 0),
   );
 
   /** Technician dictamen with the web fallbacks; null = not loaded yet. */
@@ -123,7 +129,7 @@ export class DiagnosticoPage implements OnInit {
   });
 
   readonly visitaLabel = computed<string>(() => {
-    const tarifa = this.estimacion()?.tarifa;
+    const tarifa = this.tarifaVisita();
     return tarifa == null ? 'Por confirmar' : this.formatoMoneda(tarifa);
   });
 

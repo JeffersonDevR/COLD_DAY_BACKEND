@@ -106,7 +106,7 @@
       <ion-card class="cd-buscando" data-testid="buscando-tecnico">
         <ion-card-content class="cd-buscando__cuerpo">
           <span class="cd-buscando__icono" aria-hidden="true">
-            <ion-icon name="search-outline"></ion-icon>
+            <ion-icon aria-hidden="true" name="search-outline"></ion-icon>
           </span>
           <div>
             <h2 class="cd-buscando__titulo">Buscando técnico…</h2>
@@ -126,7 +126,7 @@
         <ion-card-content>
           <div class="cd-pago__encabezado">
             <span class="cd-pago__icono" aria-hidden="true">
-              <ion-icon name="wallet-outline"></ion-icon>
+              <ion-icon aria-hidden="true" name="wallet-outline"></ion-icon>
             </span>
             <div>
               <h2 class="cd-pago__titulo">
@@ -141,6 +141,13 @@
               </p>
             </div>
           </div>
+
+          @if (tarifaVisita(); as tarifa) {
+            <p class="cd-pago__texto" data-testid="tarifa-visita">
+              Tarifa de la visita:
+              <strong class="tnum">{{ formatoCop(tarifa) }}</strong>
+            </p>
+          }
 
           <div class="cd-pago__medios" role="group" aria-label="Medio de pago">
             <button
@@ -181,7 +188,8 @@
                 ? 'Procesando pago…'
                 : (pagoVisitaReabreDespacho()
                     ? 'Pagar visita y reabrir despacho'
-                    : 'Pagar visita')
+                    : 'Pagar visita') +
+                  (tarifaVisita() ? ' · ' + formatoCop(tarifaVisita()!) : '')
             }}
           </ion-button>
         </ion-card-content>

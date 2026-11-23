@@ -17,7 +17,7 @@ import { IonIcon } from '@ionic/angular';
     <div class="cd-marca" [attr.data-testid]="testId() ?? null">
       <div class="cd-marca__identidad">
         <span class="cd-marca__logo" aria-hidden="true">
-          <ion-icon name="snow-outline"></ion-icon>
+          <ion-icon aria-hidden="true" name="snow-outline"></ion-icon>
         </span>
         <div>
           <p class="cd-marca__nombre">Cold Day · Ops</p>

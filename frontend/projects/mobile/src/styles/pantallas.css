@@ -23,6 +23,14 @@
   padding-top: 0.4rem;
 }
 
+/* La acción del héroe (p. ej. "Historial") es una pastilla outline: necesita
+   aire horizontal propio; el padding 0 de .cd-accion (pensado para botones
+   clear dentro de tarjeta) dejaba el texto pegado al borde. */
+.cd-hero__acciones .cd-accion {
+  --padding-start: 0.9rem;
+  --padding-end: 0.9rem;
+}
+
 .cd-cargando {
   display: grid;
   justify-items: center;
@@ -114,6 +122,12 @@
 
 .cd-ot.cd-panel-ot .cd-ot__codigo {
   white-space: nowrap;
+}
+
+/* A4 — la primera OT en curso encabeza la cola con borde de acción (DESIGN §4:
+   una OT activa grande; el resto del listado queda en segundo plano). */
+ion-card.cd-panel-ot--destacada {
+  border-color: var(--cd-action);
 }
 
 /* El footer fijo no debe tapar la última tarjeta al llegar al final del scroll. */
@@ -229,29 +243,35 @@ button.cd-ot .cd-ot__direccion {
   overflow-wrap: anywhere;
 }
 
-/* Chips: el estado de la OT se lee de un color, no de un icono. */
+/* Chips: el estado de la OT se lee de un color, no de un icono. Tintes y
+   bordes reforzados: a la luz del día las familias (ok/curso/espera/cerrada)
+   se distinguían apenas entre sí. Sigue siendo tinta sobre tinte (UI-C3). */
 .cd-chip--ok {
+  font-weight: 600;
   color: var(--cd-success-ink);
-  border-color: rgba(110, 231, 183, 0.5);
-  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(110, 231, 183, 0.7);
+  background: rgba(16, 185, 129, 0.2);
 }
 
 .cd-chip--curso {
+  font-weight: 600;
   color: var(--ion-color-primary);
-  border-color: rgba(34, 211, 238, 0.5);
-  background: rgba(34, 211, 238, 0.1);
+  border-color: rgba(34, 211, 238, 0.7);
+  background: rgba(34, 211, 238, 0.16);
 }
 
 .cd-chip--espera {
+  font-weight: 600;
   color: var(--cd-warn-ink);
-  border-color: rgba(252, 211, 77, 0.5);
-  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(252, 211, 77, 0.7);
+  background: rgba(245, 158, 11, 0.2);
 }
 
 .cd-chip--cerrada {
+  font-weight: 600;
   color: var(--cd-danger-ink);
-  border-color: rgba(252, 165, 165, 0.45);
-  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(252, 165, 165, 0.65);
+  background: rgba(248, 113, 113, 0.18);
 }
 
 .cd-vacio {
@@ -577,9 +597,8 @@ button.cd-ot .cd-ot__direccion {
   50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cd-buscando__icono {
-display: grid;
+.cd-buscando__icono {
+  display: grid;
   place-items: center;
   flex: 0 0 auto;
   width: 2.75rem;
@@ -588,8 +607,12 @@ display: grid;
   color: var(--cd-warn-ink);
   background: rgba(245, 158, 11, 0.15);
   animation: cd-buscando-pulso 1.6s ease-in-out infinite;
-animation: none;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-buscando__icono {
+    animation: none;
+  }
 }
 
 .cd-buscando__titulo {
@@ -776,6 +799,7 @@ animation: none;
 /* Esqueleto de carga (shared/ui/skeleton): barras del tema, no Tailwind. */
 .cd-esqueleto {
   width: 100%;
+  height: 5.5rem;
   margin-bottom: 0.5rem;
   background: var(--cd-surface-2);
   border: 1px solid var(--cd-surface-border);
@@ -790,13 +814,9 @@ animation: none;
 
 @media (prefers-reduced-motion: reduce) {
   .cd-esqueleto {
-height: 5.5rem;
-  background: var(--cd-surface);
-  border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius-card);
-animation: none;
+    animation: none;
     opacity: 0.75;
-}
+  }
 }
 
 /* Hoja inferior del técnico: 3 alturas, contenido sin ruido. */
@@ -810,7 +830,7 @@ animation: none;
   --padding-start: 1rem;
   --padding-end: 1rem;
   --padding-top: 0.9rem;
-  --padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  --padding-bottom: calc(1rem + var(--cd-safe-bottom));
 }
 
 .cd-sheet__cabecera {
@@ -1756,6 +1776,12 @@ animation: none;
 
 /* A7 - Diagnostico y presupuesto: dictamen, desglose y decision. */
 .cd-dictamen {
+  margin-bottom: 0.25rem;
+}
+
+/* A7 — bloque de presupuesto: separado del dictamen, con el total como cifra
+   protagonista (Stitch A8 "Total a pagar"). */
+.cd-desglose-card {
   margin-bottom: 0.75rem;
 }
 
@@ -1881,20 +1907,45 @@ animation: none;
 }
 
 /* B0 — Próxima orden: la primera de la cola destacada con borde de acción.
-   El CTA es un asiento visual dentro del botón-tarjeta (no anidado). */
-.cd-ot--proxima {
-  border-color: var(--cd-action);
-  background: var(--cd-surface-2);
+   El CTA es un asiento visual dentro del botón-tarjeta (no anidado).
+   La especificidad button.cd-ot es necesaria: `button.cd-ot` (0,1,1) pinta
+   fondo transparente y borde 0; con solo `.cd-ot--proxima` (0,1,0) la tarjeta
+   destacada quedaba plana. */
+button.cd-ot.cd-ot--proxima {
+  padding: 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-action);
+  border-radius: var(--cd-radius-card);
 }
 
+/* Fila de specs hundida (Stitch B0 "Key Specs Grid"): cliente y barrio con
+   icono, solo datos reales del DTO. Distancia y hora no se pintan: el backend
+   no las expone para la OT asignada (no inventar). */
 .cd-proxima__contexto {
   display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  margin-top: 0.35rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--cd-well);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-control);
   font-size: 0.8rem;
-  color: var(--cd-text-3);
+  color: var(--cd-text-2);
+}
+
+.cd-proxima__spec {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.cd-proxima__spec ion-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  color: var(--cd-text-3);
 }
 
 .cd-proxima__cta {
@@ -1909,6 +1960,150 @@ animation: none;
   font-weight: 700;
   color: var(--cd-action-deep);
   background: var(--cd-action);
+  border-radius: var(--cd-radius-control);
+}
+
+/* B0 — Nota de presencia con icono sync y divisor (Stitch): solo cuando el
+   switch está bloqueado por una OT en curso; antes se afirmaría algo falso. */
+.cd-ubicacion__nota {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--cd-line);
+}
+
+.cd-ubicacion__nota ion-icon {
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+  color: var(--cd-text-3);
+}
+
+/* B0 — "Tu estado": bloque plano sin tarjeta (petición del dueño): texto +
+   toggle para ubicación, chips para disponibilidad. Profundidad = hairline. */
+.cd-estado {
+  margin: 0.25rem 0 1rem;
+  padding: 0 1rem;
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-estado__fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+}
+
+.cd-estado__fila + .cd-estado__fila,
+.cd-estado__fila + .cd-ayuda,
+.cd-estado .cd-alerta + .cd-estado__fila {
+  border-top: 1px solid var(--cd-line);
+}
+
+.cd-estado__fila--columna {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.cd-estado__texto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cd-estado__titulo {
+  margin: 0 0 0.15rem;
+  font-family: var(--cd-font-headline);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--cd-text-1);
+}
+
+.cd-estado__texto .cd-muted {
+  margin: 0 0 0.3rem;
+  font-size: 0.8rem;
+}
+
+.cd-estado__fila ion-toggle {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
+/* Chips de disponibilidad: target táctil completo (el chip base mide ~34 px). */
+.cd-estado__chips {
+  margin: 0.25rem 0 0;
+}
+
+.cd-estado__chips .cd-chip {
+  min-height: 44px;
+  padding-inline: 1rem;
+}
+
+.cd-estado > .cd-accion {
+  margin-top: 0.25rem;
+}
+
+/* B0 — Ofertas activas: preview real del radar en el panel. Cabecera con
+   conteo vivo y aviso de prioridad (dato real `prioridad`, no decoración). */
+.cd-ofertas__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-ofertas__prioridad {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cd-warn-ink);
+  white-space: nowrap;
+}
+
+.cd-ofertas__prioridad ion-icon {
+  font-size: 0.85rem;
+}
+
+button.cd-ot.cd-oferta-panel {
+  padding: 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-oferta-panel .cd-oferta__titulo {
+  display: block;
+}
+
+/* La etiqueta canónica ya llega en frase desde labels.ts (igual que B1). */
+.cd-oferta-panel .cd-ot__categoria {
+  font-size: 0.8125rem;
+  text-transform: none;
+}
+
+/* El vencimiento es un contador: cifras tabulares (UI-T4). */
+.cd-oferta-panel .cd-chip--espera {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Asiento ghost: la acción primaria rellena de la pantalla es el CTA de la
+   próxima OT; aceptar vive en el radar (un botón, una ruta). */
+.cd-oferta-panel__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 0.7rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cd-text-2);
+  border: 1px solid var(--cd-line-strong);
   border-radius: var(--cd-radius-control);
 }
 
@@ -1955,11 +2150,11 @@ animation: none;
   color: var(--cd-warn-ink);
 }
 
-/* Decision row: reject (outline) + approve (primary CTA). */
+/* Decision row: reject (outline) + approve (primary CTA). El gutter y la zona
+   segura los da .cd-footer. */
 .cd-decision {
   display: grid;
   gap: 0.45rem;
-  margin-bottom: 0.75rem;
 }
 
 /* Reject panel: mediation reason, mirrors the web dispute split. */
@@ -2097,7 +2292,7 @@ animation: none;
 }
 
 .cd-volver {
-  margin: 0.25rem 0 calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  margin: 0.25rem 0 calc(0.75rem + var(--cd-safe-bottom));
 }
 
 /* A8 - Pago y acta: documento, firma digital y liquidaci�n. */
@@ -2247,14 +2442,6 @@ animation: none;
 
 .cd-liquidacion {
   margin-bottom: 0.75rem;
-}
-
-.cd-visita-linea {
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  background: var(--cd-well);
-  border-top: 1px solid var(--cd-surface-border);
-  border-bottom: 1px solid var(--cd-surface-border);
 }
 
 .cd-desglose__nota--ok {
@@ -2638,7 +2825,7 @@ animation: none;
 /* Cierre de fidelidad: safe-area en headers planos, foco/invalid de inputs y
    card de ubicación confirmada de A5. */
 ion-header:not(.cd-header) {
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: var(--cd-safe-top);
 }
 
 /* Campos con cuerpo (Stitch): fondo canvas, borde, radio 8 y altura táctil. */
@@ -2664,7 +2851,9 @@ ion-header:not(.cd-header) {
 .cd-form ion-input,
 .cd-form ion-select,
 .cd-form ion-textarea {
-  font-size: 0.85rem;
+  /* 16 px: el valor del campo se lee de un vistazo en campo (y evita el zoom
+     automático de iOS al enfocar). Antes 0.85 rem era ilegible bajo el sol. */
+  font-size: 1rem;
 }
 
 /* La superficie tocable del control debe llegar a 44 px (medido: el input
@@ -2675,7 +2864,7 @@ ion-header:not(.cd-header) {
 
 .cd-form .label-text {
   font-family: 'Space Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   letter-spacing: 0;
   line-height: 1.35;
   white-space: normal;
@@ -2991,6 +3180,48 @@ grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-columns: minmax(0, 1fr) 5rem auto;
 }
 
+/* Catálogo de insumos (B3): resultados de la búsqueda rápida como filas
+   tocables de 44 px; el nombre puede envolver, la unidad queda a la derecha. */
+.cd-catalogo {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.cd-catalogo__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  background: var(--cd-well);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-control);
+  color: var(--cd-text-2);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cd-catalogo__item ion-icon {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+  color: var(--ion-color-primary);
+}
+
+.cd-catalogo__nombre {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cd-catalogo__unidad {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
 .cd-auth__bar--nav > * {
   min-width: 0;
 }
@@ -3043,16 +3274,11 @@ grid-template-columns: repeat(2, minmax(0, 1fr));
   font-size: 0.75rem;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cd-auth__dot {
-width: 6px;
+.cd-auth__dot {
+  width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--ion-color-primary);
-  animation: cd-pulse 1.8s ease-in-out infinite;
-animation: none;
-animation: none;
-}
 }
 
 /* 9. Navegacion y bloques reportados en el APK (vista del tecnico).
@@ -3121,21 +3347,13 @@ ion-content.ion-padding {
 }
 
 ion-tab-bar ion-tab-button ion-icon {
-font-size: 22px;
-width: 20px;
+  width: 20px;
   height: 20px;
   font-size: 20px;
 }
 
 ion-tab-bar ion-tab-button ion-label {
-margin-top: 3px;
-  margin-bottom: 3px;
-  font-family: var(--cd-font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-margin: 1px 0 2px;
+  margin: 1px 0 2px;
   font-family: var(--cd-font-body, inherit);
   font-size: 0.75rem;
   font-weight: 500;
@@ -3147,8 +3365,7 @@ margin: 1px 0 2px;
 }
 
 ion-tab-bar ion-tab-button.tab-selected ion-label {
-font-weight: 700;
-font-weight: 600;
+  font-weight: 600;
 }
 
 /* Disponibilidad: Ionic reserva un minimo por boton con etiqueta y las tres
@@ -3219,3 +3436,49 @@ ion-back-button:focus-within::part(native) {
   outline-offset: 2px;
 }
 
+
+/* Avisos (ion-toast): un solo aspecto Dark Ops para todos los tipos. El color
+   de estado va en el borde izquierdo y el icono; el fondo es siempre superficie
+   (contraste de texto estable). Ionic ya respeta la safe-area superior. */
+ion-toast.cd-toast {
+  --background: var(--cd-surface-2);
+  --color: var(--cd-text-1);
+  --border-color: var(--cd-line-strong);
+  --border-width: 1px;
+  --border-radius: var(--cd-radius-card);
+  --button-color: var(--cd-text-3);
+  --min-height: 56px;
+  --box-shadow: none;
+  font-family: var(--cd-font-body);
+}
+
+ion-toast.cd-toast::part(header) {
+  font-family: var(--cd-font-head);
+  font-weight: 700;
+  color: var(--cd-text-1);
+}
+
+ion-toast.cd-toast::part(message) {
+  font-size: 0.875rem;
+  color: var(--cd-text-2);
+}
+
+ion-toast.cd-toast::part(icon) {
+  font-size: 1.5rem;
+}
+
+ion-toast.cd-toast--ok { --border-color: var(--cd-success); }
+ion-toast.cd-toast--error { --border-color: var(--cd-danger); }
+ion-toast.cd-toast--aviso { --border-color: var(--cd-warn); }
+ion-toast.cd-toast--info { --border-color: var(--cd-action); }
+
+ion-toast.cd-toast--ok::part(icon) { color: var(--cd-success-ink); }
+ion-toast.cd-toast--error::part(icon) { color: var(--cd-danger-ink); }
+ion-toast.cd-toast--aviso::part(icon) { color: var(--cd-warn-ink); }
+ion-toast.cd-toast--info::part(icon) { color: var(--cd-action-soft); }
+
+/* El botón de cerrar es target táctil completo. */
+ion-toast.cd-toast::part(button) {
+  min-width: 44px;
+  min-height: 44px;
+}

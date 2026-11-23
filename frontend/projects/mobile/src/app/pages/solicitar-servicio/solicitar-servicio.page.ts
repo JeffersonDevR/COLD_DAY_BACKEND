@@ -294,7 +294,7 @@ const MSG_FALTA_UBICACION =
                 (click)="setCategoria(cat.valor)"
               >
                 <span class="cd-categoria__icono" aria-hidden="true">
-                  <ion-icon [name]="cat.icono"></ion-icon>
+                  <ion-icon aria-hidden="true" [name]="cat.icono"></ion-icon>
                 </span>
                 <span class="cd-categoria__marca" aria-hidden="true"></span>
                 <span class="cd-categoria__texto">
@@ -917,7 +917,7 @@ export class SolicitarServicioPage {
       error: () => {
         void this.toast.error(
           'Sin dirección',
-          'No pudimos resolver la dirección de ese punto. Escribila a mano.',
+          'No pudimos resolver la dirección de ese punto. Escríbela a mano.',
         );
       },
     });

@@ -9,16 +9,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { interval } from 'rxjs';
 import {
   IonButton,
-  IonCard,
-  IonCardContent,
-  IonContent,
   IonHeader,
   IonIcon,
-  IonLabel,
-  IonSegment,
-  IonSegmentButton,
   IonToggle,
   IonToolbar,
 } from '@ionic/angular';
@@ -29,13 +24,22 @@ import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
-import { estadoOperativoLabel } from '@core/ui/labels';
-import { EstadoOperativo, EstadoOt, OtResponse, TecnicoResponse } from '@core/models/common.models';
+import { categoriaLabel, estadoOperativoLabel } from '@core/ui/labels';
+import {
+  CategoriaServicio,
+  EstadoOperativo,
+  EstadoOt,
+  OfertaTecnicoResponse,
+  OtResponse,
+  TecnicoResponse,
+} from '@core/models/common.models';
+import { iconoCategoria as iconoDeCategoria } from '../../core/icono-categoria';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
+import { PageComponent } from '../../shared/ui/page/page';
 
 /**
  * The backend answers 409 on `PUT /tecnicos/me/estado` when there is an active
@@ -50,15 +54,10 @@ const MENSAJES_ESTADO_OPERATIVO: Record<number, string> = {
   selector: 'app-panel-tecnico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    PageComponent,
     IonButton,
-    IonCard,
-    IonCardContent,
-    IonContent,
     IonHeader,
     IonIcon,
-    IonLabel,
-    IonSegment,
-    IonSegmentButton,
     IonToggle,
     IonToolbar,
     SkeletonComponent,
@@ -80,6 +79,27 @@ export class PanelTecnicoPageMobile implements OnInit {
   readonly misOts = signal<OtResponse[]>([]);
   readonly otsError = signal(false);
   readonly cargando = signal(true);
+
+  /** Ofertas vivas del radar, previsualizadas en el panel (Stitch B0 §6).
+   * Solo se pintan cuando existen: sin ofertas no hay sección ni conteo en 0. */
+  readonly ofertas = signal<OfertaTecnicoResponse[]>([]);
+  readonly hayPrioridadAlta = computed(() =>
+    this.ofertas().some((o) => o.ot.prioridad === 'ALTA'),
+  );
+
+  /** Etiqueta canónica de la categoría: mismo vocabulario que el radar. */
+  readonly categoriaLabel = categoriaLabel;
+
+  /** Disponibilidad como chips de selección: 3 opciones fijas, sin segment. */
+  readonly opcionesDisponibilidad: readonly {
+    valor: EstadoOperativo;
+    etiqueta: string;
+    testId: string;
+  }[] = [
+    { valor: 'DISPONIBLE', etiqueta: 'Disponible', testId: 'disponible' },
+    { valor: 'OCUPADO', etiqueta: 'Ocupado', testId: 'ocupado' },
+    { valor: 'FUERA_DE_SERVICIO', etiqueta: 'Fuera', testId: 'fuera' },
+  ];
 
   readonly validacionAprobada = computed(() => this.tecnico()?.estadoValidacion === 'APROBADO');
   readonly validacionRechazada = computed(() => {
@@ -104,6 +124,10 @@ export class PanelTecnicoPageMobile implements OnInit {
   readonly restoOts = computed(() => this.misOts().slice(1));
 
   readonly modoUbicacion = computed(() => this.presencia.modo());
+  /** Stitch B0: el título afirma el estado ("Compartiendo ubicación"). */
+  readonly tituloUbicacion = computed(() =>
+    this.presencia.modo() === 'apagada' ? 'Compartir ubicación' : 'Compartiendo ubicación',
+  );
   readonly compartirUbicacion = computed(() => this.presencia.compartirUbicacion());
   readonly switchBloqueado = computed(() => this.presencia.switchBloqueado());
   readonly ubicacionReportando = computed(() => this.presencia.reportando());
@@ -116,14 +140,55 @@ export class PanelTecnicoPageMobile implements OnInit {
     this.presencia.sincronizarOts([]);
     cargarTecnicoAutenticado(
       this.tecnicosApi,
-      (tecnico) => this.tecnico.set(tecnico),
+      (tecnico) => {
+        this.tecnico.set(tecnico);
+        if (tecnico) this.cargarOfertas();
+      },
       (err) => avisarErrorAccion(this.toast, 'No pudimos cargar tu perfil de técnico', err),
     );
     this.cargarOts();
     pollVisibleTab()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.cargarOts(false));
+      .subscribe(() => {
+        this.cargarOts(false);
+        this.cargarOfertas();
+      });
     this.escucharOfertas();
+    this.iniciarTickerOfertas();
+  }
+
+  /** Preview silencioso: si falla, la sección simplemente no aparece (el
+   * radar conserva su propio error con reintento; acá no se inventa nada). */
+  private cargarOfertas(): void {
+    const tecnico = this.tecnico();
+    if (!tecnico) return;
+    this.tecnicosApi.getOfertasParaTecnico(tecnico.id).subscribe({
+      next: (ofertas) => this.ofertas.set(ofertas),
+      error: () => this.ofertas.set([]),
+    });
+  }
+
+  /**
+   * Ticker local del countdown (renovacion-reglas-stitch §6): el snapshot de
+   * `segundosRestantes` no puede quedar congelado. Al llegar a 0 la oferta se
+   * retira de la vista y se recarga la lista real del backend.
+   */
+  private iniciarTickerOfertas(): void {
+    interval(1000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.ofertas().length === 0) return;
+        let expiradas = false;
+        const vivas = this.ofertas()
+          .map((o) => ({ ...o, segundosRestantes: o.segundosRestantes - 1 }))
+          .filter((o) => {
+            if (o.segundosRestantes > 0) return true;
+            expiradas = true;
+            return false;
+          });
+        this.ofertas.set(vivas);
+        if (expiradas) this.cargarOfertas();
+      });
   }
 
   private cargarOts(inicial = true): void {
@@ -156,11 +221,13 @@ export class PanelTecnicoPageMobile implements OnInit {
       .abrirOfertasTecnico()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () =>
+        next: () => {
           void this.toast.info(
             'Nueva oferta',
             'Hay una nueva orden de trabajo disponible cerca de ti.',
-          ),
+          );
+          this.cargarOfertas();
+        },
         error: () => undefined,
       });
   }
@@ -216,14 +283,6 @@ export class PanelTecnicoPageMobile implements OnInit {
     void this.router.navigate(['/tecnico/radar']);
   }
 
-  irAPerfil(): void {
-    void this.router.navigate(['/tecnico/perfil']);
-  }
-
-  irALiquidaciones(): void {
-    void this.router.navigate(['/tecnico/liquidaciones']);
-  }
-
   abrirOt(otId: string): void {
     void this.router.navigate(['/tecnico/ejecucion', otId]);
   }
@@ -234,5 +293,34 @@ export class PanelTecnicoPageMobile implements OnInit {
 
   tonoEstado(estado: EstadoOt): string {
     return tonoEstadoOt(estado);
+  }
+
+  /** Mismo formato de vencimiento que el radar (B1): un solo vocabulario. */
+  expira(segundos: number): string {
+    const total = Math.max(0, Math.floor(segundos));
+    const minutos = Math.floor(total / 60);
+    const resto = total % 60;
+    return minutos > 0 ? `${minutos}m ${resto}s` : `${resto}s`;
+  }
+
+  /**
+   * `distanciaKm` en 0 significa que el backend no expuso la distancia real:
+   * en ese caso solo se afirma el radio difundido (dato del DTO), nunca "0 km".
+   * Igual que en el radar.
+   */
+  distanciaLinea(oferta: OfertaTecnicoResponse): string {
+    const radio = `radio de ${this.distancia(oferta.radioVigenteKm)}`;
+    return oferta.distanciaKm > 0
+      ? `A ${this.distancia(oferta.distanciaKm)} · ${radio}`
+      : `Dentro de tu radio · ${radio}`;
+  }
+
+  private distancia(km: number): string {
+    return `${km.toLocaleString('es-CO', { maximumFractionDigits: 1 })} km`;
+  }
+
+  /** Icono decorativo de categoría compartido con el radar. */
+  iconoCategoria(categoria: CategoriaServicio): string {
+    return iconoDeCategoria(categoria);
   }
 }
