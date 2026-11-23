@@ -8,7 +8,7 @@
 
 ## 0. Protocolo obligatorio (en este orden)
 
-1. Lee este archivo completo. Lee `PRODUCT.md` (voz y principios) si tocas texto.
+1. Lee este archivo completo. Lee `PRODUCT.md` (voz y principios) si tocas texto. Si añades, mueves o quitas una pantalla, ruta o punto de entrada, lee y actualiza [`docs/design/NAVEGACION.md`](docs/design/NAVEGACION.md).
 2. Corre `cd frontend && npm run ui:check` **antes** de empezar. Anota el resultado.
 3. Haz el cambio mínimo que cumpla la tarea. Reutiliza lo que ya existe (§5, §8).
 4. Corre `npm run ui:check` **después**. Si alguna regla "SUBIÓ", corrige el código. **Prohibido** subir techos o editar `frontend/scripts/ui-rules.baseline.json` a mano.
@@ -17,6 +17,19 @@
 7. Entrega con el checklist de §11 marcado, uno por uno, con la evidencia (comando + resultado).
 
 **Prohibido para el agente:** desactivar reglas, añadir `// eslint-disable`/`/* ui-ignore */`, usar `--no-verify`, borrar tests, bajar umbrales de cobertura, o declarar "hecho" sin ejecutar §11.
+
+### 0.1 Precedencia: ¿qué gana, el diseño Stitch o una regla?
+
+Decisión del dueño del producto (2026-11-23), que sustituye cualquier lectura de «las reglas ganan siempre»:
+
+| Qué | Quién manda | Ejemplos |
+|---|---|---|
+| **Estructura**: qué pantallas existen, qué secciones y elementos llevan, su orden | El **prototipo Stitch** (`docs/design/dark-ops/`). Si una regla lo bloquea, se renegocia la regla aquí, no se recorta el diseño | barra de marca, iconos de categoría, tarjetas de servicio |
+| **Medidas, tokens, tipografía, contraste** | Las **reglas** de este archivo | piso 12 px, target 44 px, paleta, radios |
+| **No negociable** (protege al usuario, ningún diseño lo anula) | **PRODUCT.md** + WCAG | es-CO y tuteo · WCAG AA (zoom, contraste, 12 px) · no inventar precios/SLA/políticas/métricas |
+| **Dato que el backend no entrega** | **No se pinta.** Lo bloqueado por datos vive en `NAVEGACION.md` §2 | monto en ofertas, rating, avatar, KPIs |
+
+Los exports crudos de Stitch traen defectos de generación (voseo, `.com.ar`, `tel:+54`, «lavarropas», `user-scalable=no`, texto de 10–11 px): se corrigen al implementar, **no** son parte del diseño. Excepciones y renegociaciones se anotan **solo en este archivo** (en la regla afectada), nunca en un documento paralelo.
 
 ---
 
@@ -81,9 +94,9 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 | Overlay / modal | 16 px | 16 px |
 | Pastilla | 999 px | 999 px |
 | Badge | — | 4 px |
-| Botón primario | **mín. 48 px, objetivo 52 px** | 40 px (36 compacto) |
+| Botón primario | **mín. 48 px**; 52 px en el CTA fijo del footer (aplicar al tocar cada pantalla) | 40 px (36 compacto) |
 | Campo de formulario | 48 px | 40 px |
-| Tab bar | mín. 56 px (64 en diseño) | — |
+| Tab bar | mín. 56 px, altura natural (`auto`); el diseño llega a 64 y no se fija tope | — |
 | AppBar | mín. 56 px | topbar 64 px |
 | Target táctil | **mín. 44×44** (24×24 absoluto) | 32 px densidad, 40 por defecto |
 | Gutter de pantalla | **16 px** (§8, UI-X1) | 16/24/32 por breakpoint |
@@ -119,9 +132,14 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 - **UI-X4 — Banner sin conexión** nunca tapa el header: usa `ion-app:has(> .cd-offline)` (ya implementado). No lo reemplaces por `position:fixed` sobre el contenido.
 - **UI-X5 — Teclado virtual:** con un campo enfocado, el CTA fijo no puede tapar el campo. Probar en dispositivo real (pendiente: plugin Keyboard de Capacitor).
 - **Una acción primaria rellena por pantalla**; el resto ghost/outline. Excepción: colas de trabajo donde cada fila tiene su acción (`solicitudes-proveedor`, `panel-tecnico`).
+- **La acción primaria de un detalle o formulario va en `ion-footer.cd-footer`**, en la zona del pulgar, nunca dentro de una tarjeta que se desplaza (ej.: «Finalizar y notificar», «Guardar especialidades»). Dentro de `ion-tabs` el footer no suma la zona segura inferior: la absorbe el tab bar (`ion-tabs .cd-footer`).
+- **UI-N1 — Toda pantalla es alcanzable.** Cada pantalla de negocio tiene al menos un punto de entrada desde un tab o desde su pantalla padre, y está registrada en `docs/design/NAVEGACION.md` §1. Un dato o función que el rol usa (p. ej. especialidades del técnico) se encuentra también desde **Cuenta** si es de perfil. *(Revisión en §11; automática cuando exista el spec de alcanzabilidad.)*
+- **UI-N2 — Volver predecible.** Las pantallas de tab no llevan botón volver. Las pantallas apiladas llevan `ion-back-button` con `aria-label="Volver"` (o al destino real, p. ej. «Volver a Mis OTs») y un `defaultHref` que apunta a su **padre lógico real**; si hay más de una entrada, el botón usa el historial y `defaultHref` solo es el respaldo. Prohibido que la etiqueta diga una cosa y la ruta lleve a otra.
+- **UI-N3 — Rutas desconocidas** con sesión vuelven al home del modo, no al login (implementado: comodín `**` dentro de cada modo).
+- **Plantilla antes que invención:** toda pantalla nueva parte de una de las plantillas de §5.1.
 - **Máx. 2 niveles de contenedor** (tarjeta › fila). Prohibido tarjeta dentro de tarjeta.
 - **Si una tarjeta navega, es `<a>` o `<button>`.** **UI-A3** (automática): nada de `div/article/li` con `(click)`.
-- **Tres KPI de colores como estructura de página** (hero-metric): prohibido.
+- **Tres KPI de colores como estructura de página** (hero-metric): prohibido **salvo** que cada cifra venga del backend (condición, no prohibición absoluta; renegociado 2026-11-23). Sin dato real, no se pinta.
 - **Composición por rol:** cliente = una OT activa grande + historial colapsado · técnico = cola *ahora / próximo / después* (distancia, ventana horaria; la urgencia manda, el dinero es secundario) · proveedor = bandeja con plazo visible (la facturación es dato de contexto).
 - **Un botón, una ruta.** No dupliques el mismo destino con dos controles en la misma pantalla (ej.: "Mis liquidaciones" apareció como tarjeta y como botón).
 
@@ -139,13 +157,27 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 | Tarjeta | `.cd-card` | padding 16; ver trampas de Ionic (§8) |
 | Píldora de estado | `.cd-chip`, `status-badge` | 12 px, tinta sobre tinte, texto siempre |
 | Chip de prioridad | `.cd-chip`, `shared/ui/priority-chip` | 12 px, tinta sobre tinte y texto siempre: `Alta` (rojo/`cerrada`), `Media` (cian/`curso`), `Baja` (verde/`ok`); valor por defecto `Media` |
-| CTA | `.cd-cta` | ≥48 px (obj. 52), frase, nunca mayúsculas |
+| CTA | `.cd-cta` | `min-height` 48 px (52 en footer fijo), frase, nunca mayúsculas; estado de carga = spinner + verbo («Guardando…») + `aria-busy` |
 | Campo | `.cd-form ion-item` | etiqueta visible, ≥48 px, error con `aria-describedby` |
 | Vacío / carga / error | `shared/ui`: `empty-state`, `skeleton`, `loading`, `error-alert` | **obligatorios** en toda lista (UI-X6) |
 | Timeline | `shared/ui/service-timeline` | nodos con etiqueta |
 | Modal | `.cd-modal*` | foco atrapado, Escape cierra |
 
-**Regla de organización única:** todas las pantallas principales (panel de cliente, mis órdenes, mi cuenta) usan `cd-page` con esta jerarquía: **eyebrow → título → resumen → filtros → cards → CTA**, adaptada al contenido (UI-T5: el título de pantalla no lleva eyebrow encima; los eyebrows son de sección). Mi cuenta no tiene CTA de pie: sus acciones siguen junto a su sección, sin inventar un footer.
+**Regla de organización única:** todas las pantallas de **tab** (panel, mis órdenes, cuenta, radar, mis OTs, gestión, insumos, documentos) usan `cd-page` con esta jerarquía: **barra de marca → título → resumen → filtros → cards → CTA**, adaptada al contenido. La barra de marca (`cd-marca`) es chrome de AppBar y va primero; el título de pantalla no lleva eyebrow encima (UI-T5); los eyebrows son solo de sección. Las pantallas sin CTA de pie (cuenta, colas) mantienen sus acciones junto a su sección, sin inventar un footer.
+
+### 5.1 Plantillas de pantalla (homogeneidad)
+
+Cada pantalla nueva o migrada elige **una**; no mezcla ni inventa estructura.
+
+| Plantilla | Cuándo | Estructura | Estados obligatorios |
+|---|---|---|---|
+| **Cola** (lista de trabajo) | panel, radar, mis OTs, insumos, documentos, liquidaciones | `cd-page` + `cd-marca` + resumen/filtros + tarjetas (`<a>`/`<button>`) + `ion-refresher` | skeleton con la forma de la lista · vacío (1 línea + 1 acción) · error + reintentar |
+| **Detalle** (una OT, un acta) | seguimiento, ejecución, diagnóstico, pago | `ion-header.cd-header` con `ion-back-button` (UI-N2) + héroe compacto (código + chip de estado) + secciones en tarjetas + **CTA en `cd-footer`** si hay acción | skeleton de la OT · error de carga + reintentar · estado vacío de cada sección |
+| **Formulario** | cuenta, perfil técnico, calificar | `cd-header` + `.cd-form` (etiqueta visible, error con `aria-describedby`/`aria-invalid`) + **guardar en `cd-footer`** | cargando · error de guardado junto al campo · éxito explícito |
+| **Asistente** | solicitar servicio | pasos con `Continuar` fijo en footer, hint «Desliza para volver», progreso real (nunca falso) | por paso: validación inline |
+| **Auth / salida** | login, registro, solo-web | sin tabs; layout centrado; `--cd-shell-max` | error inline `role="alert"`, bloqueo de doble envío |
+
+El estado actual de cada pantalla frente a su plantilla está en `docs/design/NAVEGACION.md` §3; las brechas se cierran **una pantalla por commit**.
 
 **Regla de tarjeta de orden:** toda tarjeta de orden (panel de cliente y mis órdenes) debe mostrar el chip de prioridad en el hueco `.cd-ot__prioridad` de la cabecera, con el dato real del backend o `Media` cuando no venga (`?? 'MEDIA'`). El color nunca va solo: siempre lleva su etiqueta.
 
@@ -167,7 +199,7 @@ Toda pantalla con datos remotos implementa los 8 estados: default, hover, `focus
 | Estado | `aria-pressed` en toggles, `role="switch"`+`aria-checked`, `aria-live="polite"` en contadores/vencimientos, `aria-busy` en acciones asíncronas |
 | Errores | `role="alert"` + `aria-describedby` + `aria-invalid` |
 | Imágenes | `alt` real |
-| Movimiento | `prefers-reduced-motion` respetado; un solo indicador "live" por pantalla |
+| Movimiento | `prefers-reduced-motion` respetado; un solo indicador "live" por pantalla: el pulso del chip de modo activo en `cd-marca` (renegociado 2026-11-23); ningún otro elemento pulsa |
 | Texto del sistema | debe seguir usable con la fuente del teléfono al 130–150 % (probar; evitar `nowrap` sobre texto de usuario) |
 | Contraste | texto normal ≥4.5:1; `scripts/auditar-contraste.mjs` |
 
@@ -221,6 +253,8 @@ Toda pantalla con datos remotos implementa los 8 estados: default, hover, `focus
 | Build móvil | `npm run mobile:build` | no compila |
 | Render por tamaño | `node scripts/ui-audit.mjs` (Playwright, ver cabecera) | desborde, <12 px, target <44, texto recortado, pestaña cortada en 320/360/390/430/768 |
 
+Playwright: `playwright-core` está en `devDependencies`; el navegador se instala una vez con `npx playwright-core install chromium`. Corrida del 2026-11-23 sobre las 13 rutas × 5 anchos: **65 pantallas, 0 hallazgos**.
+
 Reglas del verificador: `frontend/scripts/check-ui-rules.mjs` (IDs `UI-T1…UI-L2`). Baseline: `frontend/scripts/ui-rules.baseline.json` (solo baja con `npm run ui:check -- --update`, y solo si bajó).
 
 **Wiring que no se puede saltar:** `premobile:build` y `premobile:test` ejecutan `ui:check`; el CI (`.github/workflows/frontend-ci.yml`) lo ejecuta en `build-and-test` y `mobile-build`; el hook `.githooks/pre-commit` lo ejecuta antes de cada commit (activar: `git config core.hooksPath .githooks`).
@@ -239,6 +273,8 @@ Para ver pantallas con sesión en local: backend en `http://localhost:8090`, `MO
 - [ ] Estados cargando / vacío / error presentes si hay datos remotos.
 - [ ] Copy nuevo en tuteo, sin términos argentinos; spec actualizado si cambió el texto.
 - [ ] Accesibilidad: foco visible, `aria-*` de §6, iconos decorativos `aria-hidden`.
+- [ ] Navegación: la pantalla tiene entrada desde un tab o su padre, su volver lleva al padre real, y `docs/design/NAVEGACION.md` (§1–§3) está actualizado (UI-N1/N2).
+- [ ] La pantalla usa una plantilla de §5.1 con sus estados obligatorios; la acción primaria de detalle/formulario va en `cd-footer`.
 - [ ] Una sola acción primaria rellena; sin tarjeta dentro de tarjeta; sin botón duplicado.
 - [ ] No se tocó `backend/` ni `frontend/src` (web) salvo que la tarea lo pida.
 - [ ] `MOBILE_API_ORIGIN` restaurado si se cambió; nada de secretos en el commit.
@@ -266,12 +302,15 @@ Prototipos en `docs/design/dark-ops/<carpeta>/` (`code.html`, a veces `screen.pn
 
 Flujo de solicitud (3 pasos): CTA `Continuar` → `Continuar a revisión` → `Solicitar técnico`; categoría = tarjeta vertical sin truncar con check 24×24 y selección por `ion-radio-group`; descripción con dictado ≥44×48 (Web Speech con fallback a teclado); ubicación = una tarjeta `ion-item button` ≥64 px; sin sección de evidencia fotográfica ni "Próximamente"; hint `Desliza para volver`; CTA fijo 52 px con helper de 12 px encima.
 
-Paridad web↔móvil y qué es solo-web (admin/contable): `docs/mobile-paridad.md` (mantener al agregar pantallas). Renegociación de reglas frente a los diseños Stitch 2026-11-22 (qué se aplica hoy, qué exige backend, qué se renegocia): `docs/design/renovacion-reglas-stitch.md`.
+Mapa de navegación por rol, huecos de funcionalidad, lo bloqueado por backend y decisiones pendientes: [`docs/design/NAVEGACION.md`](docs/design/NAVEGACION.md). Paridad web↔móvil y qué es solo-web (admin/contable): `docs/mobile-paridad.md`. Las reglas renegociadas frente a Stitch ya viven en §0.1 y en la regla afectada; `docs/design/renovacion-reglas-stitch.md` queda como historia.
 
 ---
 
-## 13. Estado conocido (2026-11-12)
+## 13. Estado conocido (2026-11-23)
 
-- Hecho y medido con Playwright (13 pantallas × 5 anchos, sin desbordes): base global, gutter, tarjetas, fuentes ≥12 px, Mi cuenta, tarjetas de servicio, banner offline.
+- Hecho y medido con Playwright (13 rutas × 5 anchos, 0 hallazgos): base global, gutter, tarjetas, fuentes ≥12 px, Mi cuenta, tarjetas de servicio, banner offline.
+- Pasada de coherencia 2026-11-23: CSS base que estaba dentro de `prefers-reduced-motion` restituido, tab bar con `aria-current`, safe-area unificada (UI-S1 móvil = 0), comodín de rutas por modo, CTAs de ejecución y perfil técnico en `cd-footer`, Panel técnico y Radar en `cd-page`, acceso a «Mi perfil técnico» desde Cuenta.
+- D1 (tab «Mis equipos») y D2 (monto real de la visita en A6) aplicados; D3/D4 resueltas como honesto-vacío y sin pantalla.
+- **Pendiente de homogeneidad y de funcionalidad:** ver `docs/design/NAVEGACION.md` §2 (huecos) y §3 (brechas por pantalla).
 - Deuda abierta con dueño en `docs/design/TAREAS-UI.md`: estados de carga/vacío/error, migración a tuteo, títulos mono→Grotesk, señal de scroll en filtros, teclado virtual, prueba en Android real, pantallas sin datos de seed, Public Sans, Tailwind CDN en prototipos. (`<cd-page>` y el split de `styles.css` ya están hechos: TU-01/TU-02.)
 - Historial de decisiones y auditorías anteriores: `docs/design/_archivo/` y `odd/tasks/ui-dark-ops-pass.md`, `odd/tasks/ionic-stitch-fidelity.md`.

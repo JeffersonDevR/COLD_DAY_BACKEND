@@ -22,7 +22,7 @@ contabilidad siguen en la web (pantalla `solo-web`). Eso no es una falta: es dis
 |---|---|---|---|
 | Login | `/login` | `login` | ✅ |
 | Registro (3 roles) | `/registro` | `registro` | ✅ |
-| Recuperar contraseña | `/recuperar` | `recuperar` | ✅ |
+| Recuperar contraseña | `/recuperar` | — | ❌ falta en móvil (ver NAVEGACION.md F1) |
 | Completar perfil cliente | `/perfil/agregar` | dentro de `solicitar-servicio` | ✅ (flujo distinto: el perfil se crea al confirmar la solicitud) |
 | Dispatcher de rol | `/panel` | `modo.guards` + `cuenta` | ✅ (por guard, sin pantalla) |
 | Panel cliente | `/cliente/panel` | `cliente/panel` | ✅ |
@@ -31,7 +31,7 @@ contabilidad siguen en la web (pantalla `solo-web`). Eso no es una falta: es dis
 | Diagnóstico y presupuesto | `/cliente/ot/:id/diagnostico` | `cliente/ot/:id/diagnostico` | ✅ |
 | Pago y acta | `/cliente/ot/:id/pago` | `cliente/ot/:id/pago` | ✅ |
 | Calificar servicio | `/cliente/ot/:id/calificar` | `cliente/ot/:id/calificar` | ✅ |
-| **Mis equipos** | `/cliente/equipos` | `cliente/equipos` | 🟡 placeholder |
+| **Mis equipos** | `/cliente/equipos` | `cliente/equipos` | ✅ (pantalla real: `pages/equipos`) |
 | Panel técnico | `/tecnico/panel` | `tecnico/ots` | ✅ |
 | Radar de ofertas | `/tecnico/ofertas` | `tecnico/radar` | ✅ |
 | Ejecución de OT | `/tecnico/ejecucion/:id` | `tecnico/ejecucion/:id` | ✅ |
@@ -53,8 +53,10 @@ contabilidad siguen en la web (pantalla `solo-web`). Eso no es una falta: es dis
 |---|---|---|
 | Cuenta | `/cuenta`, `*/cuenta` | Datos de sesión + selector de modo (los 3 roles, deshabilitados con explicación si no aplica) |
 | Usá la web | `/solo-web` | Salida explicada para admin/contable en vez de un 403 |
-| Shell de tabs | `/<modo>` | Navegación por modo (cliente 3, técnico 3, proveedor 3) |
+| Shell de tabs | `/<modo>` | Navegación por modo (cliente 3, técnico 4, proveedor 3) |
 | Placeholder | leaf sin pantalla | Inventario de lo que falta, con copy y tab ya fijados |
+
+> **Nota 2026-11-23:** la tabla de arriba se corrigió para recuperar contraseña y Mis equipos. El mapa de navegación completo y los huecos vigentes viven en `docs/design/NAVEGACION.md`; esta sección queda como referencia histórica de paridad con la web.
 
 ## Qué falta, en orden de necesidad
 
