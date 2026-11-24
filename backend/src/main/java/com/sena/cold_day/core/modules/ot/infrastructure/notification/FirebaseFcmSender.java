@@ -55,7 +55,9 @@ public class FirebaseFcmSender implements FcmSender {
                     return;
                 }
                 // Sin el token ni el cuerpo: no se loguean datos del usuario.
-                log.warn("Fallo el envio push: {}", error.getClass().getSimpleName());
+                String codigo = error instanceof FirebaseMessagingException fme
+                        ? String.valueOf(fme.getMessagingErrorCode()) : "n/a";
+                log.warn("Fallo el envio push: {} codigo={}", error.getClass().getSimpleName(), codigo);
             }
         }, MoreExecutors.directExecutor());
     }

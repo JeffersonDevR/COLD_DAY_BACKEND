@@ -14,6 +14,34 @@
     </p>
   }
 
+  @if (tecnico() && ubicacionApagada()) {
+    <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="radar-ubicacion-apagada">
+      <h2 class="cd-alerta__titulo">Activa tu ubicación</h2>
+      <p class="cd-alerta__texto">
+        Sin tu ubicación no podemos mostrarte las órdenes que están cerca de ti.
+      </p>
+      <ion-button
+        class="cd-cta"
+        [disabled]="activandoUbicacion()"
+        (click)="activarUbicacion()"
+        data-testid="radar-activar-ubicacion"
+      >
+        <ion-icon slot="start" name="navigate-outline" aria-hidden="true"></ion-icon>
+        Activar ubicación
+      </ion-button>
+    </section>
+  }
+
+  @if (tecnico() && !ubicacionApagada() && ubicacionMotivo(); as motivo) {
+    <section class="cd-alerta cd-alerta--error" role="alert" data-testid="radar-ubicacion-error">
+      <h2 class="cd-alerta__titulo">No podemos leer tu ubicación</h2>
+      <p class="cd-alerta__texto">{{ motivo }}</p>
+      <ion-button class="cd-cta" (click)="reintentarUbicacion()" data-testid="radar-ubicacion-reintentar">
+        Reintentar
+      </ion-button>
+    </section>
+  }
+
   @if (tecnico() && !validacionAprobada()) {
     <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="radar-no-habilitado">
       <h2 class="cd-alerta__titulo">Todavía no puedes tomar ofertas</h2>

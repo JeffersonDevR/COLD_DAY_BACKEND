@@ -55,14 +55,7 @@ const MENSAJES_LOGIN: Record<number, string> = {
         </div>
 
         <header class="cd-auth__brand">
-          <svg class="cd-logo" viewBox="0 0 48 48" aria-hidden="true">
-            <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-              <path d="M24 7v34M9.3 15.5l29.4 17M9.3 32.5l29.4-17" />
-              <path d="M24 7l-3.5 3.5M24 7l3.5 3.5M24 41l-3.5-3.5M24 41l3.5-3.5" />
-              <path d="M9.3 15.5l1.2 4.7M9.3 15.5l4.8-.8M38.7 32.5l-1.2-4.7M38.7 32.5l-4.8.8" />
-              <path d="M9.3 32.5l4.8.8M9.3 32.5l1.2-4.7M38.7 15.5l-4.8-.8M38.7 15.5l-1.2 4.7" />
-            </g>
-          </svg>
+          <span class="cd-logo" aria-hidden="true"><span class="cd-logo__copo"></span></span>
           <h1 class="cd-wordmark">Cold Day</h1>
           <p class="cd-tagline">Operaciones en frío, en tiempo real.</p>
         </header>

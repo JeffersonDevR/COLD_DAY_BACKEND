@@ -230,7 +230,7 @@ public class TecnicoController {
     public TecnicoApiResponse actualizarMiPerfil(@AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody MiPerfilTecnicoApiRequest request) {
         TecnicoResponse updated = actualizarMiPerfil.actualizar(principal.usuarioId(),
-                new MiPerfilTecnicoRequest(request.categoriasServicio()));
+                new MiPerfilTecnicoRequest(request.categoriasServicio(), request.numeroIdentificacion()));
         return TecnicoApiResponse.from(updated);
     }
 

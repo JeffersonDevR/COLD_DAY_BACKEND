@@ -54,7 +54,7 @@ public class TecnicoJpaEntity {
     @Column(name = "usuario_id", nullable = false, unique = true)
     private Long usuarioId;
 
-    @Column(name = "numero_identificacion", nullable = false, unique = true)
+    @Column(name = "numero_identificacion", unique = true)
     private String numeroIdentificacion;
 
     @Convert(converter = CategoriaServicioJsonConverter.class)

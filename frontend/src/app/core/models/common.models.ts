@@ -232,8 +232,9 @@ export interface ProveedorRequest {
   correo: string;
   password: string;
   telefono?: string;
-  razonSocial: string;
-  nit: string;
+  /** Opcionales en el alta: se completan desde el expediente del proveedor. */
+  razonSocial?: string;
+  nit?: string;
   aceptaHabeasData: boolean;
 }
 

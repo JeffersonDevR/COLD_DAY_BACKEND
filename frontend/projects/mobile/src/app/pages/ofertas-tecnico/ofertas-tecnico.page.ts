@@ -27,11 +27,14 @@ import {
   TecnicoResponse,
 } from '@core/models/common.models';
 import { SseService } from '@core/service/sse.service';
+import { mensajeErrorGeolocation } from '@core/service/geolocation.service';
+import { TecnicoPresenciaService } from '@core/service/tecnico-presencia.service';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { categoriaLabel } from '@core/ui/labels';
 import { iconoCategoria as iconoDeCategoria } from '../../core/icono-categoria';
+import { MobileGeolocationService } from '../../core/geolocation-native';
 import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
@@ -70,12 +73,19 @@ export class OfertasTecnicoPage implements OnInit {
   private readonly router = inject(Router);
   private readonly sse = inject(SseService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly presencia = inject(TecnicoPresenciaService);
+  private readonly geolocation = inject(MobileGeolocationService);
 
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
   readonly ofertas = signal<OfertaTecnicoResponse[]>([]);
   readonly cargando = signal(true);
   readonly errorCarga = signal(false);
   readonly loadingOt = signal<string | null>(null);
+  readonly activandoUbicacion = signal(false);
+
+  /** Sin reporte de ubicación el backend no te incluye en ninguna oferta: se avisa aquí. */
+  readonly ubicacionApagada = computed(() => this.presencia.modo() === 'apagada');
+  readonly ubicacionMotivo = computed(() => this.presencia.motivo());
 
   /** Auxiliares por OT; 0 = aceptar sin ayudantes. */
   private readonly auxiliaresPorOt = signal<Record<string, number>>({});
@@ -90,6 +100,33 @@ export class OfertasTecnicoPage implements OnInit {
   readonly bloqueadoPorLiquidacion = computed(
     () => this.tecnico()?.estadoOperativo === 'BLOQUEADO_POR_LIQUIDACION',
   );
+
+  /**
+   * Pide el permiso del sistema (en nativo) y recién entonces enciende el
+   * reporte: sin permiso el watch del WebView falla en silencio.
+   */
+  activarUbicacion(): void {
+    if (this.activandoUbicacion()) return;
+    this.activandoUbicacion.set(true);
+    this.geolocation.obtenerPosicion().subscribe({
+      next: () => {
+        this.activandoUbicacion.set(false);
+        this.presencia.activar();
+        void this.toast.info(
+          'Ubicación activada',
+          'Ya puedes recibir ofertas de clientes cerca de ti.',
+        );
+      },
+      error: (err: unknown) => {
+        this.activandoUbicacion.set(false);
+        void this.toast.error('No pudimos activar tu ubicación', mensajeErrorGeolocation(err));
+      },
+    });
+  }
+
+  reintentarUbicacion(): void {
+    this.presencia.reintentar();
+  }
 
   ngOnInit(): void {
     cargarTecnicoAutenticado(

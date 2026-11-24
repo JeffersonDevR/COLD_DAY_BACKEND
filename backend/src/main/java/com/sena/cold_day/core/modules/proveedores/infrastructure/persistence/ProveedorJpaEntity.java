@@ -47,10 +47,10 @@ public class ProveedorJpaEntity {
     @Column(name = "usuario_id", nullable = false, unique = true)
     private Long usuarioId;
 
-    @Column(name = "razon_social", nullable = false)
+    @Column(name = "razon_social")
     private String razonSocial;
 
-    @Column(name = "nit", nullable = false, unique = true, length = 50)
+    @Column(name = "nit", unique = true, length = 50)
     private String nit;
 
     @Column(name = "telefono", length = 30)

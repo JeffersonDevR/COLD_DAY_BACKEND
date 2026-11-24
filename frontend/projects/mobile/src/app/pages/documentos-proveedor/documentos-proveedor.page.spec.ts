@@ -13,8 +13,13 @@ import { DocumentosProveedorPage } from './documentos-proveedor.page';
 function setup({
   documentos = [] as DocumentoProveedorResponse[],
   estado = 'PENDIENTE' as 'PENDIENTE' | 'APROBADO' | 'RECHAZADO',
+  razonSocial = 'Suministros del Norte',
+  nit = '900123456-1',
 } = {}) {
+  const perfil = { id: 'PROV-1', razonSocial, nit, activo: true, estadoValidacion: estado };
   const api = {
+    getMiPerfil: vi.fn(() => of(perfil)),
+    completarMiPerfil: vi.fn((r: string, n: string) => of({ ...perfil, razonSocial: r, nit: n })),
     getMisDocumentos: vi.fn(() => of(documentos)),
     registrarDocumento: vi.fn(() => of({ id: 1, tipo: 'RUT' })),
   };
@@ -45,6 +50,30 @@ function texto(fixture: ComponentFixture<DocumentosProveedorPage>): string {
 
 describe('DocumentosProveedorPage (C2)', () => {
   afterEach(() => TestBed.resetTestingModule());
+
+  it('no pide los datos de la empresa si ya están completos', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('[data-testid="datos-empresa"]')).toBeNull();
+  });
+
+  it('pide razón social y NIT mientras faltan y los guarda', () => {
+    const { fixture, api, toast } = setup({ razonSocial: '', nit: '' });
+    expect(fixture.nativeElement.querySelector('[data-testid="datos-empresa"]')).toBeTruthy();
+
+    fixture.componentInstance.datosForm.setValue({ razonSocial: ' Frío SAS ', nit: '900-1' });
+    fixture.componentInstance.guardarDatos();
+    fixture.detectChanges();
+
+    expect(api.completarMiPerfil).toHaveBeenCalledWith('Frío SAS', '900-1');
+    expect(toast.success).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="datos-empresa"]')).toBeNull();
+  });
+
+  it('no guarda los datos de la empresa con el formulario vacío', () => {
+    const { fixture, api } = setup({ razonSocial: '', nit: '' });
+    fixture.componentInstance.guardarDatos();
+    expect(api.completarMiPerfil).not.toHaveBeenCalled();
+  });
 
   it('explica el estado de validación de la sesión', () => {
     const { fixture } = setup({ estado: 'APROBADO' });

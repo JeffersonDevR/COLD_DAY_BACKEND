@@ -59,12 +59,6 @@ public class Proveedor {
         if (usuarioId == null) {
             throw new IllegalArgumentException("El proveedor requiere un usuario vinculado");
         }
-        if (razonSocial == null || razonSocial.isBlank()) {
-            throw new IllegalArgumentException("La razon social es requerida");
-        }
-        if (nit == null || nit.isBlank()) {
-            throw new IllegalArgumentException("El NIT es requerido");
-        }
         Proveedor proveedor = new Proveedor();
         proveedor.id = ProveedorId.nueva();
         proveedor.usuarioId = usuarioId;
@@ -167,6 +161,21 @@ public class Proveedor {
         if (!estadoValidacion.estaAprobado()) {
             throw new ProveedorNoValidadoException(id, estadoValidacion);
         }
+    }
+
+    /**
+     * Completa la identidad comercial. El registro ya no la pide, asi que nace
+     * vacia y se llena desde la app; una vez puesta no puede quedar en blanco.
+     */
+    public void completarDatosComerciales(String razonSocial, String nit) {
+        if (razonSocial == null || razonSocial.isBlank()) {
+            throw new IllegalArgumentException("La razon social es requerida");
+        }
+        if (nit == null || nit.isBlank()) {
+            throw new IllegalArgumentException("El NIT es requerido");
+        }
+        this.razonSocial = razonSocial;
+        this.nit = nit;
     }
 
     public void reemplazarCategorias(Set<String> categorias) {

@@ -18,13 +18,11 @@ import {
   IonInput,
   IonItem,
   IonList,
-  IonSelect,
-  IonSelectOption,
   IonSpinner,
 } from '@ionic/angular';
 import { EMPTY, Observable, catchError, switchMap, tap } from 'rxjs';
 import { mensajeErrorAccion } from '@core/alertas/mensaje-error';
-import { CategoriaServicio, TipoCliente, TokenResponse } from '@core/models/common.models';
+import { TokenResponse } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
 import { ClientesApi } from '@core/service/clientes-api';
 import { ProveedorRegistroService } from '@core/service/proveedor-registro.service';
@@ -47,35 +45,12 @@ const ROLES: readonly OpcionRol[] = [
   { valor: 'PROVEEDOR', etiqueta: 'Proveedor', nota: 'Vendo insumos' },
 ];
 
-/**
- * `TecnicoApiRequest.categoriasServicio` es `@NotEmpty` en el backend, así que
- * la especialidad NO es opcional: el default espeja el de la web (dos líneas
- * preseleccionadas) y el formulario exige al menos una.
- */
-const ESPECIALIDADES: readonly { valor: CategoriaServicio; etiqueta: string }[] = [
-  { valor: 'AIRE_ACONDICIONADO', etiqueta: 'Aire acondicionado' },
-  { valor: 'REFRIGERACION', etiqueta: 'Refrigeración' },
-  { valor: 'ELECTRICIDAD', etiqueta: 'Electricidad' },
-  { valor: 'LAVADORAS', etiqueta: 'Lavadoras' },
-  { valor: 'CAMARAS_VIGILANCIA', etiqueta: 'Cámaras de vigilancia' },
-];
-
-const ESPECIALIDADES_POR_DEFECTO: readonly CategoriaServicio[] = [
-  'AIRE_ACONDICIONADO',
-  'REFRIGERACION',
-];
-
 type CampoRegistro =
   | 'nombre'
   | 'correo'
   | 'telefono'
   | 'password'
-  | 'confirmacion'
-  | 'calle'
-  | 'ciudad'
-  | 'numeroIdentificacion'
-  | 'razonSocial'
-  | 'nit';
+  | 'confirmacion';
 
 /** Copy de campo obligatorio: la etiqueta sola no dice qué escribir. */
 const REQUERIDO: Record<CampoRegistro, string> = {
@@ -84,11 +59,6 @@ const REQUERIDO: Record<CampoRegistro, string> = {
   telefono: 'Ingresá tu teléfono.',
   password: 'Elegí una contraseña.',
   confirmacion: 'Repetí la contraseña.',
-  calle: 'Ingresá la calle de tu dirección.',
-  ciudad: 'Ingresá tu ciudad.',
-  numeroIdentificacion: 'Ingresá tu número de identificación.',
-  razonSocial: 'Ingresá la razón social de tu empresa.',
-  nit: 'Ingresá el NIT de tu empresa.',
 };
 
 /** Confirmación: debe coincidir con `password` en todo momento. */
@@ -105,12 +75,6 @@ interface FormularioAlta {
   telefono: string;
   password: string;
   confirmacion: string;
-  tipoCliente: TipoCliente;
-  calle: string;
-  ciudad: string;
-  numeroIdentificacion: string;
-  razonSocial: string;
-  nit: string;
   aceptaHabeasData: boolean;
 }
 
@@ -135,8 +99,6 @@ interface FormularioAlta {
     IonInput,
     IonItem,
     IonList,
-    IonSelect,
-    IonSelectOption,
     IonSpinner,
   ],
   template: `
@@ -156,14 +118,7 @@ interface FormularioAlta {
         </div>
 
         <header class="cd-auth__brand">
-          <svg class="cd-logo" viewBox="0 0 48 48" aria-hidden="true">
-            <g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-              <path d="M24 7v34M9.3 15.5l29.4 17M9.3 32.5l29.4-17" />
-              <path d="M24 7l-3.5 3.5M24 7l3.5 3.5M24 41l-3.5-3.5M24 41l3.5-3.5" />
-              <path d="M9.3 15.5l1.2 4.7M9.3 15.5l4.8-.8M38.7 32.5l-1.2-4.7M38.7 32.5l-4.8.8" />
-              <path d="M9.3 32.5l4.8.8M9.3 32.5l1.2-4.7M38.7 15.5l-4.8-.8M38.7 15.5l-1.2 4.7" />
-            </g>
-          </svg>
+          <span class="cd-logo" aria-hidden="true"><span class="cd-logo__copo"></span></span>
           <h1 class="cd-wordmark">Cold Day</h1>
           <p class="cd-tagline">Creá tu cuenta y operá en frío, en tiempo real.</p>
         </header>
@@ -238,7 +193,7 @@ interface FormularioAlta {
                 formControlName="password"
                 [type]="verPassword() ? 'text' : 'password'"
                 autocomplete="new-password"
-                label="Contraseña (mínimo 6 caracteres)"
+                label="Contraseña (mínimo 8 caracteres)"
                 labelPlacement="stacked"
                 data-testid="password"
               ></ion-input>
@@ -277,134 +232,6 @@ interface FormularioAlta {
             ></ion-icon>
           </ion-button>
 
-          @if (rol() === 'CLIENTE') {
-            <fieldset class="cd-section" data-testid="campos-cliente">
-              <legend class="cd-section__titulo">Tus datos de servicio</legend>
-              <ion-list lines="none" class="cd-form">
-                <ion-item>
-                  <ion-select
-                    formControlName="tipoCliente"
-                    label="Tipo de cliente"
-                    labelPlacement="stacked"
-                    interface="popover"
-                    data-testid="tipo-cliente"
-                  >
-                    <ion-select-option value="B2C">Persona (B2C)</ion-select-option>
-                    <ion-select-option value="B2B">Empresa (B2B)</ion-select-option>
-                  </ion-select>
-                </ion-item>
-
-                <ion-item>
-                  <ion-input
-                    formControlName="calle"
-                    autocomplete="address-line1"
-                    label="Calle y número"
-                    labelPlacement="stacked"
-                    data-testid="calle"
-                  ></ion-input>
-                </ion-item>
-                @if (mensajeCampo('calle'); as error) {
-                  <p class="cd-field-error" data-testid="error-calle">{{ error }}</p>
-                }
-
-                <ion-item>
-                  <ion-input
-                    formControlName="ciudad"
-                    autocomplete="address-level2"
-                    label="Ciudad"
-                    labelPlacement="stacked"
-                    data-testid="ciudad"
-                  ></ion-input>
-                </ion-item>
-                @if (mensajeCampo('ciudad'); as error) {
-                  <p class="cd-field-error" data-testid="error-ciudad">{{ error }}</p>
-                }
-              </ion-list>
-              <p class="cd-ayuda">Usamos esta dirección para asignarte técnicos cerca tuyo.</p>
-            </fieldset>
-          }
-
-          @if (rol() === 'TECNICO') {
-            <fieldset class="cd-section" data-testid="campos-tecnico">
-              <legend class="cd-section__titulo">Perfil técnico</legend>
-              <ion-list lines="none" class="cd-form">
-                <ion-item>
-                  <ion-input
-                    formControlName="numeroIdentificacion"
-                    label="Número de identificación"
-                    labelPlacement="stacked"
-                    data-testid="numero-identificacion"
-                  ></ion-input>
-                </ion-item>
-                @if (mensajeCampo('numeroIdentificacion'); as error) {
-                  <p class="cd-field-error" data-testid="error-identificacion">{{ error }}</p>
-                }
-              </ion-list>
-
-              <p class="cd-ayuda">Especialidades (elegí al menos una)</p>
-              <div class="cd-chips">
-                @for (esp of especialidadesDisponibles; track esp.valor) {
-                  <button
-                    type="button"
-                    class="cd-chip"
-                    [class.cd-chip--activo]="tieneEspecialidad(esp.valor)"
-                    [attr.aria-pressed]="tieneEspecialidad(esp.valor)"
-                    [attr.data-testid]="'especialidad-' + esp.valor.toLowerCase()"
-                    (click)="alternarEspecialidad(esp.valor)"
-                  >
-                    {{ esp.etiqueta }}
-                  </button>
-                }
-              </div>
-              @if (!especialidadesValidas()) {
-                <p class="cd-field-error" data-testid="error-especialidades">
-                  Elegí al menos una especialidad.
-                </p>
-              }
-
-              <p class="cd-ayuda">
-                Tu cédula y tus certificaciones pasan por validación administrativa antes de
-                operar. Podés cargarlas después de crear la cuenta.
-              </p>
-            </fieldset>
-          }
-
-          @if (rol() === 'PROVEEDOR') {
-            <fieldset class="cd-section" data-testid="campos-proveedor">
-              <legend class="cd-section__titulo">Datos comerciales</legend>
-              <ion-list lines="none" class="cd-form">
-                <ion-item>
-                  <ion-input
-                    formControlName="razonSocial"
-                    autocomplete="organization"
-                    label="Razón social"
-                    labelPlacement="stacked"
-                    data-testid="razon-social"
-                  ></ion-input>
-                </ion-item>
-                @if (mensajeCampo('razonSocial'); as error) {
-                  <p class="cd-field-error" data-testid="error-razon-social">{{ error }}</p>
-                }
-
-                <ion-item>
-                  <ion-input
-                    formControlName="nit"
-                    label="NIT"
-                    labelPlacement="stacked"
-                    data-testid="nit"
-                  ></ion-input>
-                </ion-item>
-                @if (mensajeCampo('nit'); as error) {
-                  <p class="cd-field-error" data-testid="error-nit">{{ error }}</p>
-                }
-              </ion-list>
-              <p class="cd-ayuda">
-                Tu cuenta nace en estado PENDIENTE: podés cargar documentos, pero no aceptar
-                pedidos de insumos hasta que un administrador la valide.
-              </p>
-            </fieldset>
-          }
-
           <ion-checkbox
             formControlName="aceptaHabeasData"
             labelPlacement="end"
@@ -439,7 +266,7 @@ interface FormularioAlta {
             class="cd-cta cd-cta--xl"
             data-testid="crear-cuenta"
             [attr.aria-busy]="loading()"
-            [disabled]="loading() || registroForm.invalid || !especialidadesValidas()"
+            [disabled]="loading() || registroForm.invalid"
           >
             @if (loading()) {
               <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
@@ -470,12 +297,8 @@ export class RegistroPage {
   private readonly router = inject(Router);
 
   protected readonly roles = ROLES;
-  protected readonly especialidadesDisponibles = ESPECIALIDADES;
 
   protected readonly rol = signal<RolAlta>('CLIENTE');
-  protected readonly especialidades = signal<CategoriaServicio[]>([
-    ...ESPECIALIDADES_POR_DEFECTO,
-  ]);
   protected readonly loading = signal(false);
   protected readonly verPassword = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -495,18 +318,12 @@ export class RegistroPage {
     }),
     password: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(6)],
+      validators: [Validators.required, Validators.minLength(8)],
     }),
     confirmacion: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, contrasenasDistintas],
     }),
-    tipoCliente: new FormControl<TipoCliente>('B2C', { nonNullable: true }),
-    calle: new FormControl('', { nonNullable: true }),
-    ciudad: new FormControl('', { nonNullable: true }),
-    numeroIdentificacion: new FormControl('', { nonNullable: true }),
-    razonSocial: new FormControl('', { nonNullable: true }),
-    nit: new FormControl('', { nonNullable: true }),
     aceptaHabeasData: new FormControl(false, {
       nonNullable: true,
       validators: [Validators.requiredTrue],
@@ -514,7 +331,6 @@ export class RegistroPage {
   });
 
   constructor() {
-    this.aplicarRequisitos('CLIENTE');
     // La confirmación depende de la contraseña: al cambiarla se revalida.
     this.registroForm.controls.password.valueChanges
       .pipe(takeUntilDestroyed())
@@ -527,37 +343,10 @@ export class RegistroPage {
     if (this.rol() === rol || this.loading()) return;
     this.rol.set(rol);
     this.error.set(null);
-    this.aplicarRequisitos(rol);
-    for (const campo of [
-      'calle',
-      'ciudad',
-      'numeroIdentificacion',
-      'razonSocial',
-      'nit',
-    ] as const) {
-      this.registroForm.controls[campo].markAsUntouched();
-    }
   }
 
   protected alternarPassword(): void {
     this.verPassword.update((visible) => !visible);
-  }
-
-  protected tieneEspecialidad(categoria: CategoriaServicio): boolean {
-    return this.especialidades().includes(categoria);
-  }
-
-  protected alternarEspecialidad(categoria: CategoriaServicio): void {
-    const actuales = this.especialidades();
-    this.especialidades.set(
-      actuales.includes(categoria)
-        ? actuales.filter((item) => item !== categoria)
-        : [...actuales, categoria],
-    );
-  }
-
-  protected especialidadesValidas(): boolean {
-    return this.rol() !== 'TECNICO' || this.especialidades().length > 0;
   }
 
   protected mensajeCampo(campo: CampoRegistro): string | null {
@@ -567,7 +356,7 @@ export class RegistroPage {
     if (control.hasError('email')) return 'Ese correo no parece válido.';
     if (control.hasError('contrasenasDistintas')) return 'Las contraseñas no coinciden.';
     if (control.hasError('minlength')) {
-      if (campo === 'password') return 'La contraseña necesita al menos 6 caracteres.';
+      if (campo === 'password') return 'La contraseña necesita al menos 8 caracteres.';
       if (campo === 'telefono') return 'El teléfono necesita al menos 7 números.';
       return 'Usá al menos 3 caracteres.';
     }
@@ -576,7 +365,7 @@ export class RegistroPage {
 
   protected enviar(): void {
     if (this.loading()) return;
-    if (this.registroForm.invalid || !this.especialidadesValidas()) {
+    if (this.registroForm.invalid) {
       this.registroForm.markAllAsTouched();
       return;
     }
@@ -599,8 +388,6 @@ export class RegistroPage {
             correo: datos.correo,
             password: datos.password,
             telefono: datos.telefono,
-            razonSocial: datos.razonSocial,
-            nit: datos.nit,
             aceptaHabeasData: datos.aceptaHabeasData,
           })
           .pipe(
@@ -608,8 +395,8 @@ export class RegistroPage {
               this.proveedorRegistro.guardar({
                 id: proveedor.id,
                 usuarioId: proveedor.usuarioId,
-                razonSocial: proveedor.razonSocial,
-                nit: proveedor.nit,
+                razonSocial: proveedor.razonSocial ?? '',
+                nit: proveedor.nit ?? '',
                 estadoValidacion: proveedor.estadoValidacion ?? 'PENDIENTE',
               }),
             ),
@@ -620,9 +407,6 @@ export class RegistroPage {
           correo: datos.correo,
           password: datos.password,
           telefono: datos.telefono,
-          numeroIdentificacion: datos.numeroIdentificacion,
-          categoriasServicio: this.especialidades(),
-          certificaciones: [],
           aceptaHabeasData: datos.aceptaHabeasData,
         });
       default:
@@ -631,9 +415,6 @@ export class RegistroPage {
           correo: datos.correo,
           password: datos.password,
           telefono: datos.telefono,
-          tipoCliente: datos.tipoCliente,
-          calle: datos.calle,
-          ciudad: datos.ciudad,
           aceptaHabeasData: datos.aceptaHabeasData,
         });
     }
@@ -693,22 +474,5 @@ export class RegistroPage {
     const mensaje = mensajeErrorAccion(err, { 409: copyConflictoAlta(rol) });
     this.error.set(mensaje);
     void this.toast.error('No pudimos crear la cuenta', mensaje);
-  }
-
-  private aplicarRequisitos(rol: RolAlta): void {
-    this.exigir('calle', rol === 'CLIENTE');
-    this.exigir('ciudad', rol === 'CLIENTE');
-    this.exigir('numeroIdentificacion', rol === 'TECNICO');
-    this.exigir('razonSocial', rol === 'PROVEEDOR');
-    this.exigir('nit', rol === 'PROVEEDOR');
-  }
-
-  private exigir(
-    campo: 'calle' | 'ciudad' | 'numeroIdentificacion' | 'razonSocial' | 'nit',
-    requerido: boolean,
-  ): void {
-    const control = this.registroForm.controls[campo];
-    control.setValidators(requerido ? [Validators.required] : []);
-    control.updateValueAndValidity({ emitEvent: false });
   }
 }

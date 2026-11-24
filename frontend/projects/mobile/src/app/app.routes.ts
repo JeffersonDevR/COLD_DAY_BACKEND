@@ -2,6 +2,7 @@ import type { Type } from '@angular/core';
 import type { Route, Routes } from '@angular/router';
 import { MODOS, ModoApp } from './modo/modo';
 import { authGuardMobile, modoActualGuard, modoGuard } from './modo/modo.guards';
+import { perfilTecnicoCompletoGuard } from './modo/perfil-tecnico-completo.guard';
 
 interface Pantalla {
   readonly title: string;
@@ -191,6 +192,7 @@ const modoRoute = (modo: ModoApp): Route => ({
   path: modo.toLowerCase(),
   title: `${ETIQUETA_MODO[modo]} · Cold Day`,
   canActivate: [authGuardMobile, modoGuard(modo)],
+  canActivateChild: modo === 'TECNICO' ? [perfilTecnicoCompletoGuard] : [],
   data: { modo },
   loadComponent: () => import('./pages/modo-tabs/modo-tabs.page').then((m) => m.ModoTabsPage),
   children: [

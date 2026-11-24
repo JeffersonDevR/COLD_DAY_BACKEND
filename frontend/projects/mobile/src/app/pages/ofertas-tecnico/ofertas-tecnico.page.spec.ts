@@ -2,11 +2,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter, Router } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
-import { of, Subject, throwError } from 'rxjs';
+import { signal } from '@angular/core';
+import { Observable, of, Subject, throwError } from 'rxjs';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { OfertaTecnicoResponse, OtResponse, TecnicoResponse } from '@core/models/common.models';
 import { SseService, OfertaCreada } from '@core/service/sse.service';
 import { TecnicosApi } from '@core/service/tecnicos-api';
+import { TecnicoPresenciaService } from '@core/service/tecnico-presencia.service';
+import { MobileGeolocationService } from '../../core/geolocation-native';
 import { MobileToastService } from '../../core/toast.service';
 import { OfertasTecnicoPage } from './ofertas-tecnico.page';
 
@@ -54,7 +57,11 @@ function oferta(overrides: Partial<OfertaTecnicoResponse> = {}): OfertaTecnicoRe
 function setup({
   tecnicoApi,
   ofertasApi,
+  ubicacionApagada = false,
+  posicion = of({ latitud: 7.89, longitud: -72.5 }),
 }: {
+  ubicacionApagada?: boolean;
+  posicion?: Observable<{ latitud: number; longitud: number }>;
   tecnicoApi?: { getMiPerfil?: Stub };
   ofertasApi?: { getOfertasParaTecnico?: Stub; aceptarOferta?: Stub };
 } = {}) {
@@ -64,6 +71,13 @@ function setup({
     aceptarOferta: ofertasApi?.aceptarOferta ?? vi.fn(() => of(true)),
   };
   const toast = { success: vi.fn(), info: vi.fn(), warning: vi.fn(), error: vi.fn() };
+  const presencia = {
+    modo: signal(ubicacionApagada ? 'apagada' : 'compartiendo'),
+    motivo: signal<string | null>(null),
+    activar: vi.fn(),
+    reintentar: vi.fn(),
+  };
+  const geolocation = { obtenerPosicion: vi.fn(() => posicion) };
   const sse = { abrirOfertasTecnico: vi.fn(() => new Subject<OfertaCreada>()) };
 
   TestBed.configureTestingModule({
@@ -74,6 +88,8 @@ function setup({
       provideRouter([]),
       { provide: TecnicosApi, useValue: api },
       { provide: SseService, useValue: sse },
+      { provide: TecnicoPresenciaService, useValue: presencia },
+      { provide: MobileGeolocationService, useValue: geolocation },
       { provide: MobileToastService, useValue: toast },
     ],
   });
@@ -85,7 +101,7 @@ function setup({
     TestBed.createComponent(OfertasTecnicoPage);
   fixture.detectChanges();
 
-  return { fixture, api, toast, navigate };
+  return { fixture, api, toast, navigate, presencia, geolocation };
 }
 
 function texto(fixture: ComponentFixture<OfertasTecnicoPage>): string {
@@ -94,6 +110,38 @@ function texto(fixture: ComponentFixture<OfertasTecnicoPage>): string {
 
 describe('OfertasTecnicoPage (B1)', () => {
   afterEach(() => TestBed.resetTestingModule());
+
+  it('avisa que sin ubicación no hay ofertas cercanas y la activa tras pedir el permiso', () => {
+    const { fixture, presencia, geolocation } = setup({ ubicacionApagada: true });
+    const boton = fixture.nativeElement.querySelector(
+      '[data-testid="radar-activar-ubicacion"]',
+    ) as HTMLElement;
+    expect(boton).toBeTruthy();
+
+    fixture.componentInstance.activarUbicacion();
+
+    expect(geolocation.obtenerPosicion).toHaveBeenCalled();
+    expect(presencia.activar).toHaveBeenCalled();
+  });
+
+  it('no activa el reporte si el permiso de ubicación se niega', () => {
+    const { fixture, presencia, toast } = setup({
+      ubicacionApagada: true,
+      posicion: throwError(() => new Error('Permiso de ubicación denegado.')),
+    });
+
+    fixture.componentInstance.activarUbicacion();
+
+    expect(presencia.activar).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it('no muestra el aviso de ubicación cuando ya se está compartiendo', () => {
+    const { fixture } = setup();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="radar-ubicacion-apagada"]'),
+    ).toBeNull();
+  });
 
   it('muestra la oferta con distancia y vencimiento', () => {
     const { fixture } = setup();

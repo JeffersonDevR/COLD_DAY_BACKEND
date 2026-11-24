@@ -26,6 +26,11 @@ public class DispositivoPushRepositoryAdapter implements DispositivoPushReposito
     }
 
     @Override
+    public void registrar(Long usuarioId, String token, String plataforma) {
+        springData.upsert(usuarioId, token, plataforma);
+    }
+
+    @Override
     public Optional<DispositivoPush> buscarPorToken(String token) {
         return springData.findByToken(token).map(DispositivoPushJpaEntity::toDomain);
     }

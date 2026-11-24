@@ -263,7 +263,10 @@ export class TecnicosApi {
    * id en la ruta ni en el cuerpo. Devuelve el perfil actualizado ya mapeado al
    * modelo de vista.
    */
-  actualizarMisEspecialidades(categorias: CategoriaServicio[]): Observable<TecnicoResponse> {
+  actualizarMisEspecialidades(
+    categorias: CategoriaServicio[],
+    numeroIdentificacion?: string,
+  ): Observable<TecnicoResponse> {
     if (this.apiConfig.useMocks()) {
       const tecnico = this.mockDb.tecnicos().find(t => t.id === MOCK_TECNICO_PROPIO_ID);
       if (!tecnico) {
@@ -273,6 +276,7 @@ export class TecnicosApi {
         ...tecnico,
         categorias,
         categoriasServicio: categorias,
+        ...(numeroIdentificacion ? { numeroIdentificacion, cedula: numeroIdentificacion } : {}),
       };
       this.mockDb.tecnicos.update(list =>
         list.map(t => (t.id === MOCK_TECNICO_PROPIO_ID ? actualizado : t)),
@@ -282,6 +286,7 @@ export class TecnicosApi {
     return this.http
       .put<TecnicoApiResponse>(this.apiConfig.url('/tecnicos/me/perfil'), {
         categoriasServicio: categorias,
+        ...(numeroIdentificacion ? { numeroIdentificacion } : {}),
       })
       .pipe(map(aTecnicoResponse));
   }

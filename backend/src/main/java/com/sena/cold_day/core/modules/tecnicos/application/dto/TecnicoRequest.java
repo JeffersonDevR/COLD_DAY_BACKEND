@@ -13,7 +13,7 @@ public record TecnicoRequest(
         @Email String correo,
         @NotBlank String password,
         String telefono,
-        @NotBlank String numeroIdentificacion,
+        String numeroIdentificacion,
         String fotoUrl,
         Set<CategoriaServicio> categoriasServicio,
         Set<Certificacion> certificaciones,

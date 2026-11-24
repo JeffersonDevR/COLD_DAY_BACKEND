@@ -7,7 +7,6 @@ import { Observable, of, throwError } from 'rxjs';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { AuthService } from '@core/service/auth.service';
 import {
-  CategoriaServicio,
   ProveedorResponse,
   TokenResponse,
 } from '@core/models/common.models';
@@ -39,7 +38,6 @@ interface RegistroPageInternals {
   readonly rol: WritableSignal<string>;
   enviar(): void;
   cambiarRol(rol: 'CLIENTE' | 'TECNICO' | 'PROVEEDOR'): void;
-  alternarEspecialidad(categoria: CategoriaServicio): void;
   alternarPassword(): void;
 }
 
@@ -107,21 +105,12 @@ const base = {
 };
 
 function llenarCliente(page: RegistroPageInternals, extra: Record<string, unknown> = {}) {
-  page.registroForm.patchValue({
-    ...base,
-    calle: 'Calle 10 # 5-20',
-    ciudad: 'Cúcuta',
-    ...extra,
-  });
+  page.registroForm.patchValue({ ...base, ...extra });
 }
 
 function llenarTecnico(page: RegistroPageInternals) {
   page.cambiarRol('TECNICO');
-  page.registroForm.patchValue({
-    ...base,
-    correo: 'tecnico@coldday.co',
-    numeroIdentificacion: '1098765001',
-  });
+  page.registroForm.patchValue({ ...base, correo: 'tecnico@coldday.co' });
 }
 
 function llenarProveedor(page: RegistroPageInternals) {
@@ -130,8 +119,6 @@ function llenarProveedor(page: RegistroPageInternals) {
     ...base,
     nombre: 'Juan Pérez',
     correo: 'proveedor@coldday.co',
-    razonSocial: 'Suministros del Norte S.A.S.',
-    nit: '900123456-1',
   });
 }
 
@@ -144,34 +131,35 @@ describe('RegistroPage móvil', () => {
     TestBed.resetTestingModule();
   });
 
-  it('arranca como cliente y solo muestra los campos de cliente', () => {
+  it('arranca como cliente y no pide datos de servicio en ningún rol', () => {
     const { fixture, page } = setup();
 
     expect(page.rol()).toBe('CLIENTE');
-    expect(campo(fixture, 'campos-cliente')).not.toBeNull();
-    expect(campo(fixture, 'tipo-cliente')).not.toBeNull();
-    expect(campo(fixture, 'calle')).not.toBeNull();
-    expect(campo(fixture, 'ciudad')).not.toBeNull();
-    expect(campo(fixture, 'campos-tecnico')).toBeNull();
-    expect(campo(fixture, 'campos-proveedor')).toBeNull();
+    for (const testId of [
+      'campos-cliente',
+      'campos-tecnico',
+      'campos-proveedor',
+      'calle',
+      'ciudad',
+      'numero-identificacion',
+      'nit',
+    ]) {
+      expect(campo(fixture, testId)).toBeNull();
+    }
   });
 
-  it('el selector de rol cambia el set de campos', () => {
+  it('el selector de rol cambia de rol sin agregar campos', () => {
     const { fixture, page } = setup();
 
     (campo(fixture, 'rol-tecnico') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(page.rol()).toBe('TECNICO');
-    expect(campo(fixture, 'campos-tecnico')).not.toBeNull();
-    expect(campo(fixture, 'numero-identificacion')).not.toBeNull();
-    expect(campo(fixture, 'campos-cliente')).toBeNull();
+    expect(campo(fixture, 'campos-tecnico')).toBeNull();
 
     (campo(fixture, 'rol-proveedor') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(page.rol()).toBe('PROVEEDOR');
-    expect(campo(fixture, 'campos-proveedor')).not.toBeNull();
-    expect(campo(fixture, 'nit')).not.toBeNull();
-    expect(campo(fixture, 'campos-tecnico')).toBeNull();
+    expect(campo(fixture, 'campos-proveedor')).toBeNull();
   });
 
   it('con campos vacíos no llama al backend y muestra los errores de campo', () => {
@@ -183,11 +171,19 @@ describe('RegistroPage móvil', () => {
     expect(clientesApi.registrarCliente).not.toHaveBeenCalled();
     expect(page.error()).toBeNull();
     expect(campo(fixture, 'error-nombre')?.textContent).toContain('Ingresá tu nombre');
-    expect(campo(fixture, 'error-calle')?.textContent).toContain('calle');
     expect(campo(fixture, 'error-habeas')?.textContent).toContain('tratamiento de datos');
   });
 
-  it('cliente: crea la cuenta con el DTO del endpoint atómico y adopta la sesión', () => {
+  it('exige contraseña de 8 caracteres, como el backend', () => {
+    const { page, clientesApi } = setup();
+    llenarCliente(page, { password: 'abc1234', confirmacion: 'abc1234' });
+
+    page.enviar();
+
+    expect(clientesApi.registrarCliente).not.toHaveBeenCalled();
+  });
+
+  it('cliente: crea la cuenta solo con los datos de acceso y adopta la sesión', () => {
     const { page, clientesApi, usuariosApi, auth, toast, navigate } = setup();
     llenarCliente(page);
 
@@ -198,9 +194,6 @@ describe('RegistroPage móvil', () => {
       correo: 'ana@coldday.co',
       password: 'secreto1',
       telefono: '3001234567',
-      tipoCliente: 'B2C',
-      calle: 'Calle 10 # 5-20',
-      ciudad: 'Cúcuta',
       aceptaHabeasData: true,
     });
     expect(usuariosApi.login).toHaveBeenCalledWith('ana@coldday.co', 'secreto1');
@@ -210,30 +203,7 @@ describe('RegistroPage móvil', () => {
     expect(page.loading()).toBe(false);
   });
 
-  it('cliente: respeta el tipo de cliente B2B', () => {
-    const { page, clientesApi } = setup();
-    llenarCliente(page, { tipoCliente: 'B2B' });
-
-    page.enviar();
-
-    expect(clientesApi.registrarCliente).toHaveBeenCalledWith(
-      expect.objectContaining({ tipoCliente: 'B2B' }),
-    );
-  });
-
-  it('técnico: exige identificación antes de llamar al backend', () => {
-    const { fixture, page, tecnicosApi } = setup();
-    llenarTecnico(page);
-    page.registroForm.patchValue({ numeroIdentificacion: '' });
-
-    page.enviar();
-    fixture.detectChanges();
-
-    expect(tecnicosApi.registrar).not.toHaveBeenCalled();
-    expect(campo(fixture, 'error-identificacion')?.textContent).toContain('identificación');
-  });
-
-  it('técnico: envía especialidades y certificaciones vacías como la web', () => {
+  it('técnico: se registra sin cédula ni especialidades', () => {
     const { page, tecnicosApi, navigate } = setup({ home: '/tecnico/radar' });
     llenarTecnico(page);
 
@@ -244,32 +214,12 @@ describe('RegistroPage móvil', () => {
       correo: 'tecnico@coldday.co',
       password: 'secreto1',
       telefono: '3001234567',
-      numeroIdentificacion: '1098765001',
-      categoriasServicio: ['AIRE_ACONDICIONADO', 'REFRIGERACION'],
-      certificaciones: [],
       aceptaHabeasData: true,
     });
     expect(navigate).toHaveBeenCalledWith('/tecnico/radar');
   });
 
-  it('técnico: sin especialidades no envía y avisa', () => {
-    const { fixture, page, tecnicosApi } = setup();
-    llenarTecnico(page);
-
-    page.alternarEspecialidad('AIRE_ACONDICIONADO');
-    page.alternarEspecialidad('REFRIGERACION');
-    fixture.detectChanges();
-
-    expect(campo(fixture, 'error-especialidades')?.textContent).toContain(
-      'al menos una especialidad',
-    );
-
-    page.enviar();
-
-    expect(tecnicosApi.registrar).not.toHaveBeenCalled();
-  });
-
-  it('proveedor: crea la identidad comercial sin pedir dirección y aterriza en su expediente', () => {
+  it('proveedor: se registra sin razón social ni NIT y aterriza en su expediente', () => {
     const { page, proveedoresApi, proveedorRegistro, navigate } = setup({
       home: '/proveedor/insumos',
     });
@@ -282,8 +232,6 @@ describe('RegistroPage móvil', () => {
       correo: 'proveedor@coldday.co',
       password: 'secreto1',
       telefono: '3001234567',
-      razonSocial: 'Suministros del Norte S.A.S.',
-      nit: '900123456-1',
       aceptaHabeasData: true,
     });
     expect(proveedorRegistro.guardar).toHaveBeenCalledWith({

@@ -72,8 +72,45 @@ export class DocumentosProveedorPage implements OnInit {
     fechaVencimiento: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
 
+  /** Datos comerciales: el alta ya no los pide, se completan aquí. `null` mientras carga. */
+  readonly datosCompletos = signal<boolean | null>(null);
+  readonly guardandoDatos = signal(false);
+  readonly datosForm = new FormGroup({
+    razonSocial: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    nit: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+  });
+
   ngOnInit(): void {
     this.cargar();
+    this.cargarPerfil();
+  }
+
+  private cargarPerfil(): void {
+    this.proveedoresApi.getMiPerfil().subscribe({
+      next: (perfil) => {
+        this.datosCompletos.set(perfil.razonSocial.trim() !== '' && perfil.nit.trim() !== '');
+        if (perfil.estadoValidacion) this.estadoValidacion.set(perfil.estadoValidacion);
+      },
+      // Sin lectura no se bloquea nada: el formulario solo aparece si sabemos que faltan.
+      error: () => this.datosCompletos.set(true),
+    });
+  }
+
+  guardarDatos(): void {
+    if (this.datosForm.invalid || this.guardandoDatos()) return;
+    const { razonSocial, nit } = this.datosForm.getRawValue();
+    this.guardandoDatos.set(true);
+    this.proveedoresApi.completarMiPerfil(razonSocial.trim(), nit.trim()).subscribe({
+      next: () => {
+        this.guardandoDatos.set(false);
+        this.datosCompletos.set(true);
+        void this.toast.success('Datos guardados', 'Ya puedes declarar tus documentos.');
+      },
+      error: (err: Error) => {
+        this.guardandoDatos.set(false);
+        void avisarErrorAccion(this.toast, 'No se pudieron guardar los datos', err);
+      },
+    });
   }
 
   private cargar(): void {

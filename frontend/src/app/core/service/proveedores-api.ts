@@ -61,6 +61,29 @@ export class ProveedoresApi {
       .pipe(map(aProveedorResponse));
   }
 
+  /** GET /api/proveedores/me: perfil propio (estado de validación y datos comerciales). */
+  getMiPerfil(): Observable<ProveedorResponse> {
+    if (this.apiConfig.useMocks()) {
+      const id = this.mockDb.proveedorEnSesion();
+      return of<ProveedorResponse>({
+        id, razonSocial: '', nit: '', activo: true, estadoValidacion: 'PENDIENTE',
+      }).pipe(delay(200));
+    }
+    return this.http
+      .get<ProveedorApiResponse>(this.apiConfig.url('/proveedores/me'))
+      .pipe(map(aProveedorResponse));
+  }
+
+  /** PUT /api/proveedores/me/perfil: completa razón social y NIT, que el alta ya no pide. */
+  completarMiPerfil(razonSocial: string, nit: string): Observable<ProveedorResponse> {
+    if (this.apiConfig.useMocks()) {
+      return this.getMiPerfil().pipe(map(p => ({ ...p, razonSocial, nit })));
+    }
+    return this.http
+      .put<ProveedorApiResponse>(this.apiConfig.url('/proveedores/me/perfil'), { razonSocial, nit })
+      .pipe(map(aProveedorResponse));
+  }
+
   /**
    * GET /api/proveedores/me/documentos: el backend resuelve el proveedor desde
    * el JWT, asi que esta llamada solo puede devolver el expediente propio.
