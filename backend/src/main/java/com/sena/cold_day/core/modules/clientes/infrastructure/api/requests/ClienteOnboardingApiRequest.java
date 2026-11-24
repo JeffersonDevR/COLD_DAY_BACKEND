@@ -13,7 +13,8 @@ import jakarta.validation.constraints.Size;
  * Alta pública de cliente: crea el Usuario (rol CLIENTE) y su perfil en una sola
  * transacción (mismo patrón que {@code /api/tecnicos}). Por eso incluye la
  * identidad y no un {@code usuarioId}.
- * {@code barrio} y {@code ubicacion} son opcionales.
+ * {@code tipoCliente}, {@code calle}, {@code ciudad}, {@code barrio} y {@code ubicacion} son opcionales:
+ * el registro es minimo y la direccion se captura al crear la OT.
  */
 public record ClienteOnboardingApiRequest(
         @NotBlank String nombre,
@@ -21,9 +22,9 @@ public record ClienteOnboardingApiRequest(
         @NotBlank @Size(min = 8, max = 72) String password,
         String telefono,
         String fotoUrl,
-        @NotNull TipoCliente tipoCliente,
-        @NotBlank String calle,
-        @NotBlank String ciudad,
+        TipoCliente tipoCliente,
+        String calle,
+        String ciudad,
         String barrio,
         Point ubicacion,
         @NotNull Boolean aceptaHabeasData) {

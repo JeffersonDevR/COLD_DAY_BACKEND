@@ -74,10 +74,10 @@ class ProveedorApiIT {
 
     @Test
     void rejectsInvalidSupplierDataWith400AndCreatesNothing() throws Exception {
-        // Missing razonSocial and nit.
+        // Missing nombre: razonSocial and nit are no longer required at registration.
         mockMvc.perform(post("/api/proveedores").header("Authorization", bearer(adminJwt()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nombre\":\"Ana\",\"correo\":\"prov.b@coldday.com.co\",\"password\":\"secreto123\","
+                .content("{\"correo\":\"prov.b@coldday.com.co\",\"password\":\"secreto123\","
                         + "\"aceptaHabeasData\":true}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors").isNotEmpty());

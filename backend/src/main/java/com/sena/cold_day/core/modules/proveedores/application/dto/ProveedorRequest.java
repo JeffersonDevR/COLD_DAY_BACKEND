@@ -15,7 +15,7 @@ public record ProveedorRequest(
         @NotBlank @Email String correo,
         @NotBlank String password,
         String telefono,
-        @NotBlank String razonSocial,
-        @NotBlank String nit,
+        String razonSocial,
+        String nit,
         boolean aceptaHabeasData) {
 }

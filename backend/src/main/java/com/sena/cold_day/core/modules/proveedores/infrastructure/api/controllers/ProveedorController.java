@@ -11,17 +11,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sena.cold_day.core.modules.proveedores.application.dto.ProveedorResponse;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.GestionarDocumentacionProveedorUseCase;
+import com.sena.cold_day.core.modules.proveedores.application.usecases.GestionarMiPerfilProveedorUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.ListarProveedoresUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.RegistrarProveedorUseCase;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.DocumentoProveedorApiRequest;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.MiPerfilProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.ProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.ValidacionProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.DocumentoProveedorApiResponse;
@@ -67,10 +70,13 @@ public class ProveedorController {
     private final ListarProveedoresUseCase listarProveedores;
     private final GestionarDocumentacionProveedorUseCase documentacion;
     private final AutorizacionPropietario autorizacion;
+    private final GestionarMiPerfilProveedorUseCase miPerfil;
 
     @SuppressWarnings("java:S107") // Superficie REST cohesiva de /api/proveedores; dividir rompería la cohesión por recurso.
     public ProveedorController(RegistrarProveedorUseCase registrar, ListarProveedoresUseCase listarProveedores,
-            GestionarDocumentacionProveedorUseCase documentacion, AutorizacionPropietario autorizacion) {
+            GestionarDocumentacionProveedorUseCase documentacion, AutorizacionPropietario autorizacion,
+            GestionarMiPerfilProveedorUseCase miPerfil) {
+        this.miPerfil = miPerfil;
         this.registrar = registrar;
         this.listarProveedores = listarProveedores;
         this.documentacion = documentacion;
@@ -94,6 +100,22 @@ public class ProveedorController {
         ProveedorResponse created = registrar.registrar(request.toApplicationRequest());
         return ResponseEntity.created(URI.create("/api/proveedores/" + created.id()))
                 .body(ProveedorApiResponse.from(created));
+    }
+
+    /** Perfil del proveedor autenticado; la identidad sale solo del principal. */
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('PROVEEDOR')")
+    public ProveedorApiResponse miPerfil(@AuthenticationPrincipal AuthenticatedUser principal) {
+        return ProveedorApiResponse.from(miPerfil.obtener(principal.usuarioId()));
+    }
+
+    /** Completa razon social y NIT, que el registro ya no pide. */
+    @PutMapping("/me/perfil")
+    @PreAuthorize("hasRole('PROVEEDOR')")
+    public ProveedorApiResponse completarMiPerfil(@AuthenticationPrincipal AuthenticatedUser principal,
+            @Valid @RequestBody MiPerfilProveedorApiRequest request) {
+        return ProveedorApiResponse.from(
+                miPerfil.completarDatos(principal.usuarioId(), request.razonSocial(), request.nit()));
     }
 
     @GetMapping

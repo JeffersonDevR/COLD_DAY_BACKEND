@@ -41,6 +41,9 @@ public class ActualizarMiPerfilTecnicoUseCase {
         Usuario usuario = usuarioRepository.buscarPorId(new UsuarioId(tecnico.getUsuarioId()))
                 .orElseThrow(() -> new PerfilTecnicoNoEncontradoException(usuarioId.valor()));
         tecnico.actualizarEspecialidades(request.categoriasServicio());
+        if (request.numeroIdentificacion() != null && !request.numeroIdentificacion().isBlank()) {
+            tecnico.actualizarPerfil(request.numeroIdentificacion());
+        }
         tecnicoRepository.save(tecnico);
         return mapper.toResponse(usuario, tecnico);
     }

@@ -285,7 +285,7 @@ class TecnicosUseCaseTest {
         when(repository.save(any(Tecnico.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = actualizarMiPerfil.actualizar(new UsuarioId(5L),
-                new MiPerfilTecnicoRequest(Set.of(CategoriaServicio.ELECTRICIDAD)));
+                new MiPerfilTecnicoRequest(Set.of(CategoriaServicio.ELECTRICIDAD), null));
 
         assertThat(response.categoriasServicio()).containsExactly(CategoriaServicio.ELECTRICIDAD);
         verify(repository).save(existing);
@@ -300,7 +300,7 @@ class TecnicosUseCaseTest {
         when(usuarioRepository.buscarPorId(new UsuarioId(5L))).thenReturn(Optional.of(usuario(5L)));
 
         assertThatThrownBy(() -> actualizarMiPerfil.actualizar(new UsuarioId(5L),
-                new MiPerfilTecnicoRequest(Set.of())))
+                new MiPerfilTecnicoRequest(Set.of(), null)))
                 .isInstanceOf(EspecialidadesRequeridasException.class);
     }
 
@@ -309,7 +309,7 @@ class TecnicosUseCaseTest {
         when(repository.findByUsuarioIdAndActivoTrue(5L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> actualizarMiPerfil.actualizar(new UsuarioId(5L),
-                new MiPerfilTecnicoRequest(Set.of(CategoriaServicio.ELECTRICIDAD))))
+                new MiPerfilTecnicoRequest(Set.of(CategoriaServicio.ELECTRICIDAD), null)))
                 .isInstanceOf(PerfilTecnicoNoEncontradoException.class);
     }
 }

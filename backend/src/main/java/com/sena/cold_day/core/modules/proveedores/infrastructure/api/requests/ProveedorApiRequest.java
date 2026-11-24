@@ -28,8 +28,8 @@ public record ProveedorApiRequest(
         @NotBlank @Email String correo,
         @NotBlank @Size(min = 8, max = 72) String password,
         String telefono,
-        @NotBlank String razonSocial,
-        @NotBlank String nit,
+        String razonSocial,
+        String nit,
         @NotNull Boolean aceptaHabeasData) {
 
     public ProveedorApiRequest {

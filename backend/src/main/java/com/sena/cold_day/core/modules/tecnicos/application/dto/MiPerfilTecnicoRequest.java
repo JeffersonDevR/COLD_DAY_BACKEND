@@ -9,5 +9,5 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServ
  * {@link TecnicoRequest}: identity fields (name, email, password) are out of
  * scope for the authenticated technician's own profile edit.
  */
-public record MiPerfilTecnicoRequest(Set<CategoriaServicio> categoriasServicio) {
+public record MiPerfilTecnicoRequest(Set<CategoriaServicio> categoriasServicio, String numeroIdentificacion) {
 }

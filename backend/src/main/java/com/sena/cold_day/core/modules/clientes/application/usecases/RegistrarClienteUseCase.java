@@ -8,6 +8,7 @@ import com.sena.cold_day.core.modules.clientes.application.mappers.ClienteMapper
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.exception.ClienteDuplicadoException;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.DireccionPrincipal;
+import com.sena.cold_day.core.modules.clientes.domain.valueobjects.TipoCliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.events.UsuarioRegistrado;
@@ -57,9 +58,12 @@ public class RegistrarClienteUseCase {
                 request.nombre(), request.correo(), request.password(), request.telefono(),
                 request.fotoUrl(), Rol.CLIENTE, request.aceptaHabeasData(), passwordEncoder));
 
+        boolean sinDireccion = (request.calle() == null || request.calle().isBlank())
+                && (request.ciudad() == null || request.ciudad().isBlank());
         Cliente cliente = clienteRepository.save(Cliente.registrar(
-                usuario.getUsuarioId(), request.tipoCliente(),
-                DireccionPrincipal.con(request.calle(), request.ciudad(), request.barrio(), request.ubicacion())));
+                usuario.getUsuarioId(), request.tipoCliente() == null ? TipoCliente.B2C : request.tipoCliente(),
+                sinDireccion ? null
+                        : DireccionPrincipal.con(request.calle(), request.ciudad(), request.barrio(), request.ubicacion())));
 
         events.publishEvent(new UsuarioRegistrado(usuario.getId(), Rol.CLIENTE));
         return clienteMapper.toResponse(usuario, cliente);

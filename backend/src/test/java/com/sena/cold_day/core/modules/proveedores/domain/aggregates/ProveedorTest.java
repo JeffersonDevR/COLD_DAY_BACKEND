@@ -42,15 +42,30 @@ class ProveedorTest {
     }
 
     @Test
-    void requiresRazonSocial() {
-        assertThatThrownBy(() -> Proveedor.crear(7L, "  ", "900123456-1", null, null, null, Set.of()))
+    void nacenSinDatosComercialesYSeCompletanDespues() {
+        Proveedor proveedor = Proveedor.crear(7L, null, null, null, null, null, Set.of());
+
+        assertThat(proveedor.getRazonSocial()).isNull();
+        assertThat(proveedor.getNit()).isNull();
+
+        proveedor.completarDatosComerciales("Suministros del Norte", "900123456-1");
+
+        assertThat(proveedor.getRazonSocial()).isEqualTo("Suministros del Norte");
+        assertThat(proveedor.getNit()).isEqualTo("900123456-1");
+    }
+
+    @Test
+    void completarRequiereRazonSocial() {
+        Proveedor proveedor = Proveedor.crear(7L, null, null, null, null, null, Set.of());
+        assertThatThrownBy(() -> proveedor.completarDatosComerciales("  ", "900123456-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("razon social");
     }
 
     @Test
-    void requiresNit() {
-        assertThatThrownBy(() -> Proveedor.crear(7L, "Suministros del Norte", null, null, null, null, Set.of()))
+    void completarRequiereNit() {
+        Proveedor proveedor = Proveedor.crear(7L, null, null, null, null, null, Set.of());
+        assertThatThrownBy(() -> proveedor.completarDatosComerciales("Suministros del Norte", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("NIT");
     }
