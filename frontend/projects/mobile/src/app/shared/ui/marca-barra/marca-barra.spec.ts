@@ -34,6 +34,13 @@ describe('MarcaBarraComponent', () => {
     expect(texto).toContain('Técnico');
   });
 
+  it('dibuja el copo del logotipo propio en vez del icono genérico', () => {
+    const { fixture } = setup({ pantalla: 'Radar' });
+
+    expect(fixture.nativeElement.querySelector('.cd-marca__logo .cd-marca__copo')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('ion-icon[name="snow-outline"]')).toBeNull();
+  });
+
   it('oculta el chip cuando no hay contexto', () => {
     const { fixture } = setup({ pantalla: 'Mi cuenta', chip: '' });
 

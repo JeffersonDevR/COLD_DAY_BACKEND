@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { IonIcon } from '@ionic/angular';
 
 /**
  * Barra de marca del sistema (Stitch): identidad Cold Day · Ops, etiqueta de
@@ -12,12 +11,11 @@ import { IonIcon } from '@ionic/angular';
 @Component({
   selector: 'cd-marca',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonIcon],
   template: `
     <div class="cd-marca" [attr.data-testid]="testId() ?? null">
       <div class="cd-marca__identidad">
         <span class="cd-marca__logo" aria-hidden="true">
-          <ion-icon aria-hidden="true" name="snow-outline"></ion-icon>
+          <span class="cd-marca__copo"></span>
         </span>
         <div>
           <p class="cd-marca__nombre">Cold Day · Ops</p>
