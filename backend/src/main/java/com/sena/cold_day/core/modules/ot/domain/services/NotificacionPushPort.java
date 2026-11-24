@@ -17,4 +17,13 @@ public interface NotificacionPushPort {
 
     /** Notifies the client that dispatch ended without a technician. */
     void notificarCliente(ClienteId clienteId, Ot ot, String mensaje);
+
+    /** Notifies the client that the technician sent the budget for approval. */
+    void notificarPresupuestoEnviado(ClienteId clienteId, Ot ot);
+
+    /** Notifies the client that a technician accepted the order. */
+    void notificarOtAceptada(ClienteId clienteId, Ot ot);
+
+    /** Notifies the technician that the client approved the budget. */
+    void notificarPresupuestoAprobado(TecnicoId tecnicoId, Ot ot);
 }

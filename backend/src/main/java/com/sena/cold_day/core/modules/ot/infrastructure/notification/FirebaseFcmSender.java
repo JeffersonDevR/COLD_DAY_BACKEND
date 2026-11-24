@@ -22,9 +22,6 @@ public class FirebaseFcmSender implements FcmSender {
 
     private static final Logger log = LoggerFactory.getLogger(FirebaseFcmSender.class);
 
-    /** Mismo id que crea la app en core/push.ts (importancia alta). */
-    static final String CANAL_ANDROID = "ofertas";
-
     private final FirebaseMessaging messaging;
 
     public FirebaseFcmSender(FirebaseMessaging messaging) {
@@ -32,14 +29,14 @@ public class FirebaseFcmSender implements FcmSender {
     }
 
     @Override
-    public void enviar(String token, String titulo, String cuerpo, Map<String, String> datos,
+    public void enviar(String token, CanalPush canal, String titulo, String cuerpo, Map<String, String> datos,
             Consumer<String> tokenInvalido) {
         Message mensaje = Message.builder()
                 .setToken(token)
                 .setNotification(Notification.builder().setTitle(titulo).setBody(cuerpo).build())
                 .setAndroidConfig(AndroidConfig.builder()
                         .setPriority(AndroidConfig.Priority.HIGH)
-                        .setNotification(AndroidNotification.builder().setChannelId(CANAL_ANDROID).build())
+                        .setNotification(AndroidNotification.builder().setChannelId(canal.id()).build())
                         .build())
                 .putAllData(datos)
                 .build();

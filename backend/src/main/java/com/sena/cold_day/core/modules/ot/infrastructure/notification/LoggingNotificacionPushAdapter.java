@@ -32,4 +32,19 @@ public class LoggingNotificacionPushAdapter implements NotificacionPushPort {
     public void notificarCliente(ClienteId clienteId, Ot ot, String mensaje) {
         log.info("Notificacion al cliente: cliente={} ot={} mensaje={}", clienteId, ot.getId(), mensaje);
     }
+
+    @Override
+    public void notificarPresupuestoEnviado(ClienteId clienteId, Ot ot) {
+        log.info("Presupuesto enviado: cliente={} ot={}", clienteId, ot.getId());
+    }
+
+    @Override
+    public void notificarOtAceptada(ClienteId clienteId, Ot ot) {
+        log.info("OT aceptada por un tecnico: cliente={} ot={}", clienteId, ot.getId());
+    }
+
+    @Override
+    public void notificarPresupuestoAprobado(TecnicoId tecnicoId, Ot ot) {
+        log.info("Presupuesto aprobado: tecnico={} ot={}", tecnicoId, ot.getId());
+    }
 }
