@@ -1369,8 +1369,8 @@ export class MockDbService {
     const nuevo: ProveedorResponse = {
       id: `PROV-${Date.now().toString().slice(-4)}`,
       usuarioId: Date.now(),
-      razonSocial: req.razonSocial,
-      nit: req.nit,
+      razonSocial: req.razonSocial ?? '',
+      nit: req.nit ?? '',
       telefono: req.telefono,
       activo: true,
       creadoEn: new Date().toISOString().slice(0, 10),

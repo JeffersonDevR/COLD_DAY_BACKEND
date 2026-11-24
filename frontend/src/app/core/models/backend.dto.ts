@@ -120,9 +120,10 @@ export interface ClienteApiRequest {
   password: string;
   telefono?: string;
   fotoUrl?: string;
-  tipoCliente: TipoCliente;
-  calle: string;
-  ciudad: string;
+  /** Opcionales en el alta: la dirección se captura al crear la OT; el tipo nace B2C. */
+  tipoCliente?: TipoCliente;
+  calle?: string;
+  ciudad?: string;
   barrio?: string;
   ubicacion?: Point;
   aceptaHabeasData: boolean;
@@ -164,7 +165,7 @@ export interface TecnicoApiResponse {
   nombre: string;
   correo: string;
   telefono: string | null;
-  numeroIdentificacion: string;
+  numeroIdentificacion: string | null;
   fotoUrl: string | null;
   categoriasServicio: CategoriaServicio[];
   estadoOperativo: EstadoOperativo;
@@ -204,9 +205,10 @@ export interface TecnicoApiRequest {
   correo: string;
   password: string;
   telefono?: string;
-  numeroIdentificacion: string;
+  /** Opcionales en el alta: cédula y especialidades se piden al entrar a la app. */
+  numeroIdentificacion?: string;
   fotoUrl?: string;
-  categoriasServicio: CategoriaServicio[];
+  categoriasServicio?: CategoriaServicio[];
   certificaciones?: CertificacionApi[];
   aceptaHabeasData: boolean;
 }
@@ -259,8 +261,8 @@ export interface ProveedorApiRequest {
   correo: string;
   password: string;
   telefono?: string;
-  razonSocial: string;
-  nit: string;
+  razonSocial?: string;
+  nit?: string;
   aceptaHabeasData: boolean;
 }
 
@@ -268,8 +270,9 @@ export interface ProveedorApiRequest {
 export interface ProveedorApiResponse {
   id: string;
   usuarioId: number;
-  razonSocial: string;
-  nit: string;
+  /** `null` hasta que el proveedor completa sus datos comerciales. */
+  razonSocial: string | null;
+  nit: string | null;
   telefono: string | null;
   activo: boolean;
   creadoEn: string | null;

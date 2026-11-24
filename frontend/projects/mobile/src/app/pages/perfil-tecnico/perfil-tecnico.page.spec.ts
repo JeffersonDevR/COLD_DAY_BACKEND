@@ -14,6 +14,7 @@ function tecnico(overrides: Partial<TecnicoResponse> = {}): TecnicoResponse {
   return {
     id: 'tec-1',
     nombre: 'Lucas Vega',
+    numeroIdentificacion: '1098765001',
     correo: 'lucas@coldday.com',
     estadoValidacion: 'APROBADO',
     categoriasServicio: ['AIRE_ACONDICIONADO'],
@@ -81,7 +82,33 @@ describe('PerfilTecnicoPage (B4)', () => {
     expect(api.actualizarMisEspecialidades).toHaveBeenCalledWith([
       'REFRIGERACION',
       'AIRE_ACONDICIONADO',
-    ]);
+    ], undefined);
+  });
+
+  it('pide la cédula mientras falta y no deja guardar sin ella', () => {
+    const { fixture, api } = setup({ perfil: tecnico({ numeroIdentificacion: undefined }) });
+    expect(fixture.nativeElement.querySelector('[data-testid="campo-cedula"]')).toBeTruthy();
+
+    fixture.componentInstance.toggleCategoria('REFRIGERACION');
+    fixture.detectChanges();
+    fixture.componentInstance.guardar();
+
+    expect(api.actualizarMisEspecialidades).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="cedula-error"]')).toBeTruthy();
+  });
+
+  it('envía la cédula junto con las especialidades cuando falta', () => {
+    const { fixture, api } = setup({ perfil: tecnico({ numeroIdentificacion: undefined }) });
+    fixture.componentInstance.cedula.set(' 1098765001 ');
+    fixture.detectChanges();
+    fixture.componentInstance.guardar();
+
+    expect(api.actualizarMisEspecialidades).toHaveBeenCalledWith(['AIRE_ACONDICIONADO'], '1098765001');
+  });
+
+  it('no vuelve a pedir la cédula una vez guardada', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('[data-testid="campo-cedula"]')).toBeNull();
   });
 
   it('bloquea guardar sin ninguna especialidad', () => {

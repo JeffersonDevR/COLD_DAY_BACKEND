@@ -5,7 +5,7 @@
     </ion-buttons>
     <div class="cd-hero cd-hero--compacto">
       <h1 class="cd-headline">Mi perfil</h1>
-      <p class="cd-hero__nota">Especialidades, validación y documentos</p>
+      <p class="cd-hero__nota">Cédula, especialidades y validación</p>
     </div>
   </ion-toolbar>
 </ion-header>
@@ -13,6 +13,15 @@
 <ion-content class="ion-padding">
   @if (cargando()) {
     <cd-skeleton label="Cargando tu perfil" testId="perfil-cargando" />
+  }
+
+  @if (completando && !cargando()) {
+    <section class="cd-alerta cd-alerta--espera" role="status" data-testid="completar-perfil">
+      <h2 class="cd-alerta__titulo">Completa tu perfil</h2>
+      <p class="cd-alerta__texto">
+        Necesitamos tu cédula y tus especialidades para enviarte ofertas cerca de ti.
+      </p>
+    </section>
   }
 
   @if (tecnico(); as t) {
@@ -34,8 +43,8 @@
           @if (t.telefono) {
             <div><dt>Teléfono</dt><dd>{{ t.telefono }}</dd></div>
           }
-          @if (t.numeroIdentificacion) {
-            <div><dt>Identificación</dt><dd>{{ t.numeroIdentificacion }}</dd></div>
+          @if (cedulaGuardada()) {
+            <div><dt>Identificación</dt><dd>{{ cedulaGuardada() }}</dd></div>
           }
           @if (t.reputacion !== undefined) {
             <div><dt>Reputación</dt><dd>{{ t.reputacion }} / 5</dd></div>
@@ -49,6 +58,26 @@
         </dl>
       </ion-card-content>
     </ion-card>
+
+    @if (pideCedula()) {
+      <ion-card class="cd-card">
+        <ion-card-content>
+          <h2 class="cd-card__titulo">Cédula</h2>
+          <p class="cd-muted">La usamos para validar tu cuenta. No se puede repetir en otra cuenta.</p>
+          <ion-input
+            label="Número de identificación"
+            labelPlacement="stacked"
+            inputmode="numeric"
+            [value]="cedula()"
+            (ionInput)="alEscribirCedula($event)"
+            data-testid="campo-cedula"
+          ></ion-input>
+          @if (cedulaFalta()) {
+            <p class="cd-field-error" data-testid="cedula-error">Ingresa tu número de cédula.</p>
+          }
+        </ion-card-content>
+      </ion-card>
+    }
 
     <ion-card class="cd-card">
       <ion-card-content>
@@ -87,7 +116,7 @@
     expand="block"
     class="cd-cta"
     [attr.aria-busy]="guardando()"
-    [disabled]="seleccionVacia() || guardando() || !hayCambios()"
+    [disabled]="seleccionVacia() || cedulaFalta() || guardando() || !hayCambios()"
     (click)="guardar()"
     data-testid="guardar-especialidades"
   >
@@ -95,7 +124,7 @@
       <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
       <span class="cd-cta__loading">Guardando…</span>
     } @else {
-      Guardar especialidades
+      Guardar perfil
     }
   </ion-button>
 </ion-footer>

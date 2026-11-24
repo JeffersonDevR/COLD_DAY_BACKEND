@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   IonBackButton,
   IonButton,
@@ -8,6 +9,7 @@ import {
   IonContent,
   IonFooter,
   IonHeader,
+  IonInput,
   IonSpinner,
   IonToolbar,
 } from '@ionic/angular';
@@ -20,6 +22,8 @@ import { TecnicosApi } from '@core/service/tecnicos-api';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { categoriaLabel, estadoValidacionLabel } from '@core/ui/labels';
 import { MobileToastService } from '../../core/toast.service';
+import { PerfilTecnicoEstado, perfilTecnicoCompleto } from '../../modo/perfil-tecnico-completo.guard';
+import { TokenStorageService } from '@core/service/token-storage.service';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 const ORDEN_CATEGORIAS: CategoriaServicio[] = [
@@ -43,6 +47,7 @@ const ORDEN_CATEGORIAS: CategoriaServicio[] = [
     IonCardContent,
     IonContent,
     IonHeader,
+    IonInput,
     IonSpinner,
     IonToolbar,
     SkeletonComponent,
@@ -52,10 +57,20 @@ const ORDEN_CATEGORIAS: CategoriaServicio[] = [
 export class PerfilTecnicoPage implements OnInit {
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(MobileToastService);
+  private readonly router = inject(Router);
+  private readonly estado = inject(PerfilTecnicoEstado);
+  private readonly tokens = inject(TokenStorageService);
+  /** Llegó desde el gate: el perfil está incompleto y hay que terminarlo para operar. */
+  readonly completando = inject(ActivatedRoute).snapshot.queryParamMap.has('completar');
 
   readonly tecnico = signal<TecnicoResponse | undefined>(undefined);
   readonly cargando = signal(true);
   readonly guardando = signal(false);
+  /** Cédula tecleada; solo se pide mientras el servidor no tenga una. */
+  readonly cedula = signal('');
+  readonly cedulaGuardada = computed(() => (this.tecnico()?.numeroIdentificacion ?? '').trim());
+  readonly pideCedula = computed(() => this.tecnico() !== undefined && this.cedulaGuardada() === '');
+  readonly cedulaFalta = computed(() => this.pideCedula() && this.cedula().trim() === '');
   readonly seleccion = signal<Set<CategoriaServicio>>(new Set());
   private readonly categoriasServidor = signal<Set<CategoriaServicio>>(new Set());
 
@@ -64,6 +79,7 @@ export class PerfilTecnicoPage implements OnInit {
   readonly hayCambios = computed(() => {
     const actuales = this.seleccion();
     const base = this.categoriasServidor();
+    if (this.pideCedula() && this.cedula().trim() !== '') return true;
     if (actuales.size !== base.size) return true;
     for (const categoria of actuales) {
       if (!base.has(categoria)) return true;
@@ -95,6 +111,10 @@ export class PerfilTecnicoPage implements OnInit {
     );
   }
 
+  alEscribirCedula(evento: Event): void {
+    this.cedula.set(String((evento as CustomEvent<{ value?: string | null }>).detail?.value ?? ''));
+  }
+
   etiquetaCategoria(categoria: CategoriaServicio): string {
     return categoriaLabel(categoria);
   }
@@ -116,22 +136,27 @@ export class PerfilTecnicoPage implements OnInit {
   }
 
   guardar(): void {
-    if (this.seleccionVacia() || this.guardando() || !this.hayCambios()) return;
+    if (this.seleccionVacia() || this.cedulaFalta() || this.guardando() || !this.hayCambios()) return;
 
     const categorias = ORDEN_CATEGORIAS.filter((categoria) => this.seleccion().has(categoria));
     this.guardando.set(true);
-    this.tecnicosApi.actualizarMisEspecialidades(categorias).subscribe({
+    const cedula = this.pideCedula() ? this.cedula().trim() : undefined;
+    this.tecnicosApi.actualizarMisEspecialidades(categorias, cedula).subscribe({
       next: (actualizado) => {
         this.guardando.set(false);
         this.tecnico.set(actualizado);
         const base = actualizado.categoriasServicio ?? actualizado.categorias ?? [];
         this.categoriasServidor.set(new Set(base));
         this.seleccion.set(new Set(base));
-        void this.toast.success('Especialidades actualizadas', 'Tus especialidades quedaron guardadas.');
+        void this.toast.success('Perfil actualizado', 'Tus datos quedaron guardados.');
+        if (perfilTecnicoCompleto(actualizado)) {
+          this.estado.marcarCompleto(this.tokens.currentToken() ?? null);
+          if (this.completando) void this.router.navigateByUrl('/tecnico/radar');
+        }
       },
       error: (err: Error) => {
         this.guardando.set(false);
-        void avisarErrorAccion(this.toast, 'No se pudieron guardar las especialidades', err);
+        void avisarErrorAccion(this.toast, 'No se pudo guardar tu perfil', err);
       },
     });
   }

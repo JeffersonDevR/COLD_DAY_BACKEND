@@ -152,10 +152,10 @@ export class ClientesApi {
         correo: request.correo,
         telefono: request.telefono ?? null,
         fotoUrl: request.fotoUrl ?? null,
-        tipoCliente: request.tipoCliente,
+        tipoCliente: request.tipoCliente ?? 'B2C',
         direccion: {
-          calle: request.calle,
-          ciudad: request.ciudad,
+          calle: request.calle ?? '',
+          ciudad: request.ciudad ?? '',
           barrio: request.barrio ?? null,
           ubicacion: request.ubicacion ?? null,
         },

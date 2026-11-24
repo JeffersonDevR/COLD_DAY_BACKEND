@@ -26,6 +26,45 @@
     <p class="cd-alerta__texto" data-testid="estado-explicacion">{{ explicacionEstado() }}</p>
   </section>
 
+  @if (datosCompletos() === false) {
+    <ion-card class="cd-card" data-testid="datos-empresa">
+      <ion-card-content>
+        <h2 class="cd-card__titulo">Datos de tu empresa</h2>
+        <p class="cd-muted">Necesitamos tu razón social y tu NIT para validar tu cuenta.</p>
+        <form [formGroup]="datosForm" class="cd-form" (ngSubmit)="guardarDatos()">
+          <ion-input
+            formControlName="razonSocial"
+            autocomplete="organization"
+            label="Razón social"
+            labelPlacement="stacked"
+            data-testid="campo-razon-social"
+          ></ion-input>
+          <ion-input
+            formControlName="nit"
+            label="NIT"
+            labelPlacement="stacked"
+            data-testid="campo-nit"
+          ></ion-input>
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            type="submit"
+            [attr.aria-busy]="guardandoDatos()"
+            [disabled]="datosForm.invalid || guardandoDatos()"
+            data-testid="guardar-datos"
+          >
+            @if (guardandoDatos()) {
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Guardando…</span>
+            } @else {
+              Guardar datos
+            }
+          </ion-button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  }
+
   @if (cargando()) {
     <cd-skeleton label="Cargando documentos" testId="documentos-cargando" />
   }
