@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -27,13 +27,13 @@ import { RolAlta, copyConflictoAlta } from './registro-copy';
 interface OpcionRol {
   readonly valor: RolAlta;
   readonly etiqueta: string;
-  readonly nota: string;
+  readonly descripcion: string;
 }
 
 const ROLES: readonly OpcionRol[] = [
-  { valor: 'CLIENTE', etiqueta: 'Cliente', nota: 'Necesito un servicio' },
-  { valor: 'TECNICO', etiqueta: 'Técnico', nota: 'Presto servicios' },
-  { valor: 'PROVEEDOR', etiqueta: 'Proveedor', nota: 'Vendo insumos' },
+  { valor: 'CLIENTE', etiqueta: 'Cliente', descripcion: 'Necesito un servicio.' },
+  { valor: 'TECNICO', etiqueta: 'Técnico', descripcion: 'Presto servicios técnicos.' },
+  { valor: 'PROVEEDOR', etiqueta: 'Proveedor', descripcion: 'Vendo insumos.' },
 ];
 
 type CampoRegistro = 'nombre' | 'correo' | 'telefono' | 'password';
@@ -88,23 +88,26 @@ interface FormularioAlta {
           <ion-icon class="cd-auth__shield" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
         </div>
 
-        <section class="cd-segment" role="group" aria-label="Tipo de cuenta">
-          @for (opcion of roles; track opcion.valor) {
-            <button
-              type="button"
-              class="cd-segment__opcion"
-              [class.cd-segment__opcion--activa]="rol() === opcion.valor"
-              [attr.aria-pressed]="rol() === opcion.valor"
-              [attr.data-testid]="'rol-' + opcion.valor.toLowerCase()"
-              (click)="cambiarRol(opcion.valor)"
-            >
-              <span class="cd-segment__titulo">{{ opcion.etiqueta }}</span>
-              <span class="cd-segment__nota">{{ opcion.nota }}</span>
-            </button>
-          }
-        </section>
-
         <form class="cd-auth__form cd-card" [formGroup]="registroForm" (ngSubmit)="enviar()" novalidate>
+          <div class="cd-rol" role="group" aria-labelledby="rol-etiqueta">
+            <p class="cd-rol__etiqueta" id="rol-etiqueta">Soy…</p>
+            <div class="cd-rol__chips">
+              @for (opcion of roles; track opcion.valor) {
+                <button
+                  type="button"
+                  class="cd-chip cd-chip--opcion"
+                  [class.cd-chip--activo]="rol() === opcion.valor"
+                  [attr.aria-pressed]="rol() === opcion.valor"
+                  [attr.data-testid]="'rol-' + opcion.valor.toLowerCase()"
+                  (click)="cambiarRol(opcion.valor)"
+                >{{ opcion.etiqueta }}</button>
+              }
+            </div>
+            <p class="cd-ayuda" data-testid="rol-descripcion" aria-live="polite">
+              {{ descripcionRol() }}
+            </p>
+          </div>
+
           <ion-list lines="none" class="cd-form">
             <ion-item>
               <ion-icon slot="start" name="person-outline" aria-hidden="true"></ion-icon>
@@ -247,6 +250,9 @@ export class RegistroPage {
   protected readonly roles = ROLES;
 
   protected readonly rol = signal<RolAlta>('CLIENTE');
+  protected readonly descripcionRol = computed(
+    () => ROLES.find((opcion) => opcion.valor === this.rol())?.descripcion ?? '',
+  );
   protected readonly loading = signal(false);
   protected readonly verPassword = signal(false);
   protected readonly error = signal<string | null>(null);

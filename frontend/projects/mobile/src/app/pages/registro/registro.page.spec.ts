@@ -351,4 +351,51 @@ describe('RegistroPage móvil', () => {
 
     expect(campo(fixture, 'ir-login')?.getAttribute('href')).toBe('/login');
   });
+
+  it('el selector de rol es un campo dentro del formulario, no un menú aparte', () => {
+    const { fixture } = setup();
+
+    for (const rol of ['cliente', 'tecnico', 'proveedor']) {
+      const chip = campo(fixture, `rol-${rol}`) as HTMLButtonElement;
+      expect(chip.tagName).toBe('BUTTON');
+      expect(chip.closest('form')).not.toBeNull();
+    }
+    expect(fixture.nativeElement.querySelector('.cd-segment')).toBeNull();
+  });
+
+  it('el selector está rotulado «Soy…» y expone el rol activo con aria-pressed', () => {
+    const { fixture, page } = setup();
+    const grupo = fixture.nativeElement.querySelector('[role="group"]') as HTMLElement;
+
+    expect(grupo.textContent).toContain('Soy');
+    expect((campo(fixture, 'rol-cliente') as HTMLElement).getAttribute('aria-pressed')).toBe('true');
+
+    page.cambiarRol('TECNICO');
+    fixture.detectChanges();
+    expect((campo(fixture, 'rol-cliente') as HTMLElement).getAttribute('aria-pressed')).toBe('false');
+    expect((campo(fixture, 'rol-tecnico') as HTMLElement).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('una línea de ayuda cambia con el rol elegido', () => {
+    const { fixture, page } = setup();
+    const ayuda = () => campo(fixture, 'rol-descripcion')?.textContent?.trim();
+
+    expect(ayuda()).toBe('Necesito un servicio.');
+    page.cambiarRol('TECNICO');
+    fixture.detectChanges();
+    expect(ayuda()).toBe('Presto servicios técnicos.');
+    page.cambiarRol('PROVEEDOR');
+    fixture.detectChanges();
+    expect(ayuda()).toBe('Vendo insumos.');
+  });
+
+  it('cambiar de rol conserva lo ya escrito', () => {
+    const { fixture, page } = setup();
+    page.registroForm.patchValue({ nombre: 'Ana Pérez' });
+
+    page.cambiarRol('PROVEEDOR');
+    fixture.detectChanges();
+
+    expect(page.registroForm.value['nombre']).toBe('Ana Pérez');
+  });
 });

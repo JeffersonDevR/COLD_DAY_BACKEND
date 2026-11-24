@@ -3208,10 +3208,6 @@ flex: 0 0 auto;
 }
 
 /* 3. Rejillas: 1fr tiene min-width:auto y la columna se estira con el texto. */
-.cd-segment {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .cd-metricas {
 display: grid;
   grid-template-columns: repeat(3, 1fr);
