@@ -34,6 +34,9 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   // Ubicación del cliente: es telemetría del formulario y la página la ignora
   // a propósito (no debe bloquear la creación de la OT).
   /\/api\/clientes\/me\/ubicacion$/,
+  // Ubicación del técnico: telemetría en segundo plano, una por lectura del GPS.
+  // Un toast por tick sería ruido; el tracking explica el motivo (sin perfil activo).
+  /\/api\/tecnicos\/me\/ubicacion$/,
   // A6 — Seguimiento de OT: la pantalla es la única voz (banner con
   // Reintentar para la carga, toast propio para las acciones, silencio para
   // el sondeo y el stream).

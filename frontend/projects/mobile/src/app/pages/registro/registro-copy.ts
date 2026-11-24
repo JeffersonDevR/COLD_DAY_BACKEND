@@ -24,6 +24,6 @@ export function copyConflictoAlta(rol: RolAlta): string {
   }
   const campo = CAMPO_UNICO_POR_ROL[rol];
   return campo
-    ? `Ya existe una cuenta con ese correo o ${campo} ya está registrado. Revisá los datos o iniciá sesión si ya tenés cuenta.`
-    : 'Ya existe una cuenta con ese correo o un dato único ya registrado. Revisá los datos o iniciá sesión si ya tenés cuenta.';
+    ? `Ya existe una cuenta con ese correo o ${campo} ya está registrado. Revisa los datos o inicia sesión si ya tienes cuenta.`
+    : 'Ya existe una cuenta con ese correo o un dato único ya registrado. Revisa los datos o inicia sesión si ya tienes cuenta.';
 }

@@ -128,8 +128,8 @@ export class LiquidacionesTecnicoPage implements OnInit {
     return estadoLiquidacionLabel(estado);
   }
 
-  etiquetaMedio(medio: LiquidacionResponse['medioPago']): string {
-    return medioPagoLabel(medio);
+  etiquetaMedio(medio?: LiquidacionResponse['medioPago']): string {
+    return medio ? medioPagoLabel(medio) : '—';
   }
 
   /** Tono del chip, con las clases `cd-chip--*` del sistema de diseño. */

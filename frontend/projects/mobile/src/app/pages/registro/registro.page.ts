@@ -1,14 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn,
-  Validators,
-} from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
   IonButton,
@@ -36,37 +27,23 @@ import { RolAlta, copyConflictoAlta } from './registro-copy';
 interface OpcionRol {
   readonly valor: RolAlta;
   readonly etiqueta: string;
-  readonly nota: string;
+  readonly descripcion: string;
 }
 
 const ROLES: readonly OpcionRol[] = [
-  { valor: 'CLIENTE', etiqueta: 'Cliente', nota: 'Necesito un servicio' },
-  { valor: 'TECNICO', etiqueta: 'Técnico', nota: 'Presto servicios' },
-  { valor: 'PROVEEDOR', etiqueta: 'Proveedor', nota: 'Vendo insumos' },
+  { valor: 'CLIENTE', etiqueta: 'Cliente', descripcion: 'Necesito un servicio.' },
+  { valor: 'TECNICO', etiqueta: 'Técnico', descripcion: 'Presto servicios técnicos.' },
+  { valor: 'PROVEEDOR', etiqueta: 'Proveedor', descripcion: 'Vendo insumos.' },
 ];
 
-type CampoRegistro =
-  | 'nombre'
-  | 'correo'
-  | 'telefono'
-  | 'password'
-  | 'confirmacion';
+type CampoRegistro = 'nombre' | 'correo' | 'telefono' | 'password';
 
 /** Copy de campo obligatorio: la etiqueta sola no dice qué escribir. */
 const REQUERIDO: Record<CampoRegistro, string> = {
-  nombre: 'Ingresá tu nombre completo.',
-  correo: 'Ingresá tu correo.',
-  telefono: 'Ingresá tu teléfono.',
-  password: 'Elegí una contraseña.',
-  confirmacion: 'Repetí la contraseña.',
-};
-
-/** Confirmación: debe coincidir con `password` en todo momento. */
-const contrasenasDistintas: ValidatorFn = (
-  control: AbstractControl,
-): ValidationErrors | null => {
-  const password = control.parent?.get('password')?.value;
-  return control.value === password ? null : { contrasenasDistintas: true };
+  nombre: 'Ingresa tu nombre completo.',
+  correo: 'Ingresa tu correo.',
+  telefono: 'Ingresa tu teléfono.',
+  password: 'Elige una contraseña.',
 };
 
 interface FormularioAlta {
@@ -74,7 +51,6 @@ interface FormularioAlta {
   correo: string;
   telefono: string;
   password: string;
-  confirmacion: string;
   aceptaHabeasData: boolean;
 }
 
@@ -112,34 +88,26 @@ interface FormularioAlta {
           <ion-icon class="cd-auth__shield" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
         </div>
 
-        <div class="cd-auth__ops">
-          <span class="cd-auth__ops-marca">Cold Day · Ops CO</span>
-          <span class="cd-auth__ops-fase">Fase registro</span>
-        </div>
-
-        <header class="cd-auth__brand">
-          <span class="cd-logo" aria-hidden="true"><span class="cd-logo__copo"></span></span>
-          <h1 class="cd-wordmark">Cold Day</h1>
-          <p class="cd-tagline">Creá tu cuenta y operá en frío, en tiempo real.</p>
-        </header>
-
-        <section class="cd-segment" role="group" aria-label="Tipo de cuenta">
-          @for (opcion of roles; track opcion.valor) {
-            <button
-              type="button"
-              class="cd-segment__opcion"
-              [class.cd-segment__opcion--activa]="rol() === opcion.valor"
-              [attr.aria-pressed]="rol() === opcion.valor"
-              [attr.data-testid]="'rol-' + opcion.valor.toLowerCase()"
-              (click)="cambiarRol(opcion.valor)"
-            >
-              <span class="cd-segment__titulo">{{ opcion.etiqueta }}</span>
-              <span class="cd-segment__nota">{{ opcion.nota }}</span>
-            </button>
-          }
-        </section>
-
         <form class="cd-auth__form cd-card" [formGroup]="registroForm" (ngSubmit)="enviar()" novalidate>
+          <div class="cd-rol" role="group" aria-labelledby="rol-etiqueta">
+            <p class="cd-rol__etiqueta" id="rol-etiqueta">Soy…</p>
+            <div class="cd-rol__chips">
+              @for (opcion of roles; track opcion.valor) {
+                <button
+                  type="button"
+                  class="cd-chip cd-chip--opcion"
+                  [class.cd-chip--activo]="rol() === opcion.valor"
+                  [attr.aria-pressed]="rol() === opcion.valor"
+                  [attr.data-testid]="'rol-' + opcion.valor.toLowerCase()"
+                  (click)="cambiarRol(opcion.valor)"
+                >{{ opcion.etiqueta }}</button>
+              }
+            </div>
+            <p class="cd-ayuda" data-testid="rol-descripcion" aria-live="polite">
+              {{ descripcionRol() }}
+            </p>
+          </div>
+
           <ion-list lines="none" class="cd-form">
             <ion-item>
               <ion-icon slot="start" name="person-outline" aria-hidden="true"></ion-icon>
@@ -193,44 +161,29 @@ interface FormularioAlta {
                 formControlName="password"
                 [type]="verPassword() ? 'text' : 'password'"
                 autocomplete="new-password"
-                label="Contraseña (mínimo 8 caracteres)"
+                label="Contraseña (mínimo 8)"
                 labelPlacement="stacked"
                 data-testid="password"
               ></ion-input>
+              <ion-button
+                slot="end"
+                fill="clear"
+                type="button"
+                class="cd-auth__ojo"
+                [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                data-testid="toggle-password"
+                (click)="alternarPassword()"
+              >
+                <ion-icon
+                  [name]="verPassword() ? 'eye-off-outline' : 'eye-outline'"
+                  aria-hidden="true"
+                ></ion-icon>
+              </ion-button>
             </ion-item>
             @if (mensajeCampo('password'); as error) {
               <p class="cd-field-error" data-testid="error-password">{{ error }}</p>
             }
-
-            <ion-item>
-              <ion-icon slot="start" name="lock-closed-outline" aria-hidden="true"></ion-icon>
-              <ion-input
-                formControlName="confirmacion"
-                [type]="verPassword() ? 'text' : 'password'"
-                autocomplete="new-password"
-                label="Repetí la contraseña"
-                labelPlacement="stacked"
-                data-testid="confirmacion"
-              ></ion-input>
-            </ion-item>
-            @if (mensajeCampo('confirmacion'); as error) {
-              <p class="cd-field-error" data-testid="error-confirmacion">{{ error }}</p>
-            }
           </ion-list>
-
-          <ion-button
-            fill="clear"
-            type="button"
-            class="cd-auth__ojo"
-            [attr.aria-label]="verPassword() ? 'Ocultar contraseñas' : 'Mostrar contraseñas'"
-            data-testid="toggle-password"
-            (click)="alternarPassword()"
-          >
-            <ion-icon
-              [name]="verPassword() ? 'eye-off-outline' : 'eye-outline'"
-              aria-hidden="true"
-            ></ion-icon>
-          </ion-button>
 
           <ion-checkbox
             formControlName="aceptaHabeasData"
@@ -239,17 +192,15 @@ interface FormularioAlta {
             class="cd-legal"
             data-testid="habeas"
           >
-            Autorizo el tratamiento de mis datos personales de acuerdo con la
-            <strong>Ley 1581 de 2012 (Habeas Data)</strong> de Colombia y la política de
-            privacidad de COLD DAY S.A.S. para fines operativos de intermediación técnica y
-            geolocalización.
+            Autorizo el tratamiento de mis datos personales según la
+            <strong>Ley 1581 de 2012 (Habeas Data)</strong>.
           </ion-checkbox>
           @if (
             registroForm.controls.aceptaHabeasData.touched &&
             registroForm.controls.aceptaHabeasData.invalid
           ) {
             <p class="cd-field-error" data-testid="error-habeas">
-              Debés aceptar el tratamiento de datos para continuar.
+              Debes aceptar el tratamiento de datos para continuar.
             </p>
           }
 
@@ -278,8 +229,8 @@ interface FormularioAlta {
         </form>
 
         <p class="cd-auth__link">
-          ¿Ya tenés cuenta?
-          <a routerLink="/login" data-testid="ir-login">Ingresá</a>
+          ¿Ya tienes cuenta?
+          <a routerLink="/login" data-testid="ir-login">Ingresa</a>
         </p>
       </main>
     </ion-content>
@@ -299,6 +250,9 @@ export class RegistroPage {
   protected readonly roles = ROLES;
 
   protected readonly rol = signal<RolAlta>('CLIENTE');
+  protected readonly descripcionRol = computed(
+    () => ROLES.find((opcion) => opcion.valor === this.rol())?.descripcion ?? '',
+  );
   protected readonly loading = signal(false);
   protected readonly verPassword = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -320,24 +274,11 @@ export class RegistroPage {
       nonNullable: true,
       validators: [Validators.required, Validators.minLength(8)],
     }),
-    confirmacion: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, contrasenasDistintas],
-    }),
     aceptaHabeasData: new FormControl(false, {
       nonNullable: true,
       validators: [Validators.requiredTrue],
     }),
   });
-
-  constructor() {
-    // La confirmación depende de la contraseña: al cambiarla se revalida.
-    this.registroForm.controls.password.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe(() =>
-        this.registroForm.controls.confirmacion.updateValueAndValidity({ emitEvent: false }),
-      );
-  }
 
   protected cambiarRol(rol: RolAlta): void {
     if (this.rol() === rol || this.loading()) return;
@@ -354,11 +295,10 @@ export class RegistroPage {
     if (!control.touched || control.valid) return null;
     if (control.hasError('required')) return REQUERIDO[campo];
     if (control.hasError('email')) return 'Ese correo no parece válido.';
-    if (control.hasError('contrasenasDistintas')) return 'Las contraseñas no coinciden.';
     if (control.hasError('minlength')) {
       if (campo === 'password') return 'La contraseña necesita al menos 8 caracteres.';
       if (campo === 'telefono') return 'El teléfono necesita al menos 7 números.';
-      return 'Usá al menos 3 caracteres.';
+      return 'Usa al menos 3 caracteres.';
     }
     return null;
   }

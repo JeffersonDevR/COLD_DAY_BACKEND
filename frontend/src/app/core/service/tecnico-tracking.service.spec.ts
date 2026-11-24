@@ -3,6 +3,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { TecnicoTrackingService } from './tecnico-tracking.service';
 import { GeolocationService } from './geolocation.service';
 import { TecnicosApi } from './tecnicos-api';
+import { ApiHttpError } from '../alertas/api-http.error';
 import { Point } from '../models/common.models';
 
 /**
@@ -144,6 +145,30 @@ describe('TecnicoTrackingService', () => {
     service.iniciar();
     expect(() => posiciones.next({ latitud: 1, longitud: 2 })).not.toThrow();
     expect(service.ultimaPosicion()).toEqual({ latitud: 1, longitud: 2 });
+  });
+
+  it('sin perfil de técnico activo (404) deja de reportar y explica el motivo', () => {
+    const service = setup();
+    actualizarUbicacion.mockReturnValue(throwError(() => new ApiHttpError('no existe', 404)));
+    service.iniciar();
+
+    posiciones.next({ latitud: 1, longitud: 2 });
+
+    expect(service.activo()).toBe(false);
+    expect(posiciones.observers.length).toBe(0);
+    expect(service.motivo()).toContain('perfil de técnico activo');
+    expect(actualizarUbicacion).toHaveBeenCalledTimes(1);
+  });
+
+  it('un fallo de red o del servidor no detiene el reporte', () => {
+    const service = setup();
+    actualizarUbicacion.mockReturnValue(throwError(() => new ApiHttpError('caído', 500)));
+    service.iniciar();
+
+    posiciones.next({ latitud: 1, longitud: 2 });
+
+    expect(service.activo()).toBe(true);
+    expect(service.motivo()).toBeNull();
   });
 
   describe('gate por visibilidad de la pestaña', () => {

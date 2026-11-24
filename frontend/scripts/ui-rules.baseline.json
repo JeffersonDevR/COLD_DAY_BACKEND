@@ -39,10 +39,10 @@
     "web": 660
   },
   "UI-S1": {
-    "mobile": 3
+    "mobile": 0
   },
   "UI-L1": {
-    "mobile": 12,
+    "mobile": 5,
     "web": 19
   },
   "UI-L2": {

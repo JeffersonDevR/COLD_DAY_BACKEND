@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { EMPTY, Subscription, switchMap, throttleTime } from 'rxjs';
+import { ApiHttpError } from '../alertas/api-http.error';
 import { GeolocationService, mensajeErrorGeolocation } from './geolocation.service';
 import { Point } from '../models/common.models';
 import { TecnicosApi } from './tecnicos-api';
@@ -92,9 +93,18 @@ export class TecnicoTrackingService {
     this.tecnicosApi
       .actualizarUbicacion({ latitud: punto.latitud, longitud: punto.longitud })
       .subscribe({
-        error: () => {
-          // Aquí solo puede fallar la subida puntual (sin conexión o sin perfil);
-          // el watch sigue vivo y se reintenta en el próximo tick. Un error del
+        error: (err: unknown) => {
+          // 404: la cuenta no tiene un perfil de técnico activo. Reintentar en
+          // cada tick solo repite el mismo fallo, así que se detiene y se explica.
+          if (err instanceof ApiHttpError && err.status === 404) {
+            this.detener();
+            this.motivo.set(
+              'Tu cuenta no tiene un perfil de técnico activo, así que no podemos reportar tu ubicación.',
+            );
+            return;
+          }
+          // Cualquier otro fallo es puntual (sin conexión o servidor caído): el
+          // watch sigue vivo y se reintenta en el próximo tick. Un error del
           // propio watch es distinto: corta la suscripción y detiene el tracking.
         },
       });

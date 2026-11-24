@@ -173,43 +173,33 @@ section.cd-card + section.cd-card {
   color: var(--cd-danger-ink);
 }
 
-/* A2 — selector de rol: tres opciones con su explicación, estilo segmento. */
-.cd-segment {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.35rem;
-  padding: 0.25rem;
-  background: var(--cd-well);
-  border: 1px solid var(--cd-surface-border);
-  border-radius: var(--cd-radius-control);
+/* A2 — selector de rol: campo «Soy…» dentro del formulario, con chips y una línea de ayuda. */
+.cd-rol {
+  margin: 0 0 0.75rem;
 }
 
-.cd-segment__opcion {
-  display: grid;
-  gap: 0.1rem;
-  padding: 0.55rem 0.3rem;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: calc(var(--cd-radius-control) - 2px);
-  color: var(--cd-muted);
-  font: inherit;
-  text-align: center;
-}
-
-.cd-segment__opcion--activa {
-  color: var(--ion-text-color);
-  background: rgba(34, 211, 238, 0.12);
-  border-color: rgba(34, 211, 238, 0.45);
-}
-
-.cd-segment__titulo {
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.cd-segment__nota {
+.cd-rol__etiqueta {
+  margin: 0 0 0.35rem;
   font-size: 0.75rem;
-  line-height: 1.2;
+  font-weight: 600;
+  color: var(--cd-muted);
+}
+
+/* Tres chips iguales en una fila; minmax(0,1fr) evita el desborde (DESIGN §8.5). */
+.cd-rol__chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.cd-rol__chips .cd-chip {
+  justify-content: center;
+  min-height: 44px;
+  padding-inline: 0.5rem;
+}
+
+.cd-rol > .cd-ayuda {
+  margin: 0.35rem 0 0;
 }
 
 /* A2 — bloque por rol (datos de cliente, perfil técnico, datos comerciales). */
@@ -284,6 +274,8 @@ section.cd-card + section.cd-card {
 }
 
 .cd-legal::part(label) {
+  white-space: normal;
+  text-overflow: clip;
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--cd-muted);

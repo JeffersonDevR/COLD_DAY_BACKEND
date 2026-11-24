@@ -2034,12 +2034,16 @@ button.cd-ot.cd-ot--proxima {
 
 /* Chips de disponibilidad: target táctil completo (el chip base mide ~34 px). */
 .cd-estado__chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
   margin: 0.25rem 0 0;
 }
 
 .cd-estado__chips .cd-chip {
+  justify-content: center;
   min-height: 44px;
-  padding-inline: 1rem;
+  padding-inline: 0.5rem;
 }
 
 .cd-estado > .cd-accion {
@@ -2444,6 +2448,52 @@ button.cd-ot.cd-oferta-panel {
   margin-bottom: 0.75rem;
 }
 
+/* Tarjeta de lista de Gestión (liquidación, documento): fondo y borde vienen de
+   .cd-card; aquí solo ritmo interno. Sin text-transform: la fecha no se capitaliza. */
+.cd-liq {
+  margin: 0 0 0.75rem;
+}
+
+.cd-liq__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cd-liq__cabecera > :first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.cd-liq__cabecera > .cd-chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.cd-liq__etiqueta {
+  margin: 0.75rem 0 0.15rem;
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+}
+
+.cd-liq__monto {
+  margin: 0;
+  font-family: var(--cd-font-head);
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cd-text-1);
+}
+
+.cd-liq__meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--cd-muted);
+  overflow-wrap: anywhere;
+}
+
 .cd-desglose__nota--ok {
   color: var(--cd-success-soft);
 }
@@ -2834,11 +2884,11 @@ ion-header:not(.cd-header) {
   --min-height: 48px;
   --padding-start: 0.75rem;
   --inner-padding-end: 0.5rem;
-  --padding-top: 0.3rem;
-  --padding-bottom: 0.3rem;
+  --padding-top: 0;
+  --padding-bottom: 0;
   border: 1px solid var(--cd-surface-border);
   border-radius: 8px;
-  margin-bottom: 0.55rem;
+  margin-bottom: 0.35rem;
   overflow: hidden;
 }
 
@@ -2863,13 +2913,14 @@ ion-header:not(.cd-header) {
 }
 
 .cd-form .label-text {
-  font-family: 'Space Mono', monospace;
-  font-size: 0.8rem;
+  font-family: var(--cd-font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
   letter-spacing: 0;
   line-height: 1.35;
   white-space: normal;
   text-overflow: clip;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--cd-muted);
 }
 
@@ -3157,10 +3208,6 @@ flex: 0 0 auto;
 }
 
 /* 3. Rejillas: 1fr tiene min-width:auto y la columna se estira con el texto. */
-.cd-segment {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .cd-metricas {
 display: grid;
   grid-template-columns: repeat(3, 1fr);

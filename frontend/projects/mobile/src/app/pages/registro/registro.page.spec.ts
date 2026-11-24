@@ -39,6 +39,7 @@ interface RegistroPageInternals {
   enviar(): void;
   cambiarRol(rol: 'CLIENTE' | 'TECNICO' | 'PROVEEDOR'): void;
   alternarPassword(): void;
+  readonly verPassword: () => boolean;
 }
 
 function setup(opts: {
@@ -100,7 +101,6 @@ const base = {
   correo: 'ana@coldday.co',
   telefono: '3001234567',
   password: 'secreto1',
-  confirmacion: 'secreto1',
   aceptaHabeasData: true,
 };
 
@@ -170,13 +170,13 @@ describe('RegistroPage móvil', () => {
 
     expect(clientesApi.registrarCliente).not.toHaveBeenCalled();
     expect(page.error()).toBeNull();
-    expect(campo(fixture, 'error-nombre')?.textContent).toContain('Ingresá tu nombre');
+    expect(campo(fixture, 'error-nombre')?.textContent).toContain('Ingresa tu nombre completo');
     expect(campo(fixture, 'error-habeas')?.textContent).toContain('tratamiento de datos');
   });
 
   it('exige contraseña de 8 caracteres, como el backend', () => {
     const { page, clientesApi } = setup();
-    llenarCliente(page, { password: 'abc1234', confirmacion: 'abc1234' });
+    llenarCliente(page, { password: 'abc1234' });
 
     page.enviar();
 
@@ -297,17 +297,6 @@ describe('RegistroPage móvil', () => {
     expect(page.loading()).toBe(false);
   });
 
-  it('contraseñas distintas bloquean el alta y se explican', () => {
-    const { fixture, page, clientesApi } = setup();
-    llenarCliente(page, { confirmacion: 'otra-clave' });
-
-    page.enviar();
-    fixture.detectChanges();
-
-    expect(clientesApi.registrarCliente).not.toHaveBeenCalled();
-    expect(campo(fixture, 'error-confirmacion')?.textContent).toContain('no coinciden');
-  });
-
   it('sin aceptar Habeas Data no se crea la cuenta', () => {
     const { page, clientesApi } = setup();
     llenarCliente(page, { aceptaHabeasData: false });
@@ -317,23 +306,96 @@ describe('RegistroPage móvil', () => {
     expect(clientesApi.registrarCliente).not.toHaveBeenCalled();
   });
 
-  it('el toggle de contraseñas afecta a los dos campos y se anuncia por aria-label', () => {
+  it('no pide repetir la contraseña', () => {
+    const { fixture, page } = setup();
+
+    expect(campo(fixture, 'confirmacion')).toBeNull();
+    expect('confirmacion' in page.registroForm.controls).toBe(false);
+  });
+
+  it('el ojo vive dentro del campo de contraseña y cambia su tipo', () => {
     const { fixture, page } = setup();
     const toggle = campo(fixture, 'toggle-password') as HTMLButtonElement;
 
+    expect(toggle.closest('ion-item')).toBe(campo(fixture, 'password')!.closest('ion-item'));
     expect(toggle.getAttribute('aria-label')).toContain('Mostrar');
-    expect(toggle.querySelector('ion-icon')).not.toBeNull();
     toggle.click();
     fixture.detectChanges();
     expect(toggle.getAttribute('aria-label')).toContain('Ocultar');
-    page.alternarPassword();
+    expect(page.verPassword()).toBe(true);
+  });
+
+  it('el ojo no envía el formulario', () => {
+    const { fixture, page, clientesApi } = setup();
+    llenarCliente(page);
+
+    (campo(fixture, 'toggle-password') as HTMLButtonElement).click();
     fixture.detectChanges();
-    expect(toggle.getAttribute('aria-label')).toContain('Mostrar');
+
+    expect(clientesApi.registrarCliente).not.toHaveBeenCalled();
+  });
+
+  it('el copy del registro está en tuteo', () => {
+    const { fixture, page } = setup();
+
+    page.enviar();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toMatch(
+      /(Ingresá|Elegí|Repetí|Debés|Creá|tenés)/,
+    );
   });
 
   it('ofrece el enlace al login', () => {
     const { fixture } = setup();
 
     expect(campo(fixture, 'ir-login')?.getAttribute('href')).toBe('/login');
+  });
+
+  it('el selector de rol es un campo dentro del formulario, no un menú aparte', () => {
+    const { fixture } = setup();
+
+    for (const rol of ['cliente', 'tecnico', 'proveedor']) {
+      const chip = campo(fixture, `rol-${rol}`) as HTMLButtonElement;
+      expect(chip.tagName).toBe('BUTTON');
+      expect(chip.closest('form')).not.toBeNull();
+    }
+    expect(fixture.nativeElement.querySelector('.cd-segment')).toBeNull();
+  });
+
+  it('el selector está rotulado «Soy…» y expone el rol activo con aria-pressed', () => {
+    const { fixture, page } = setup();
+    const grupo = fixture.nativeElement.querySelector('[role="group"]') as HTMLElement;
+
+    expect(grupo.textContent).toContain('Soy');
+    expect((campo(fixture, 'rol-cliente') as HTMLElement).getAttribute('aria-pressed')).toBe('true');
+
+    page.cambiarRol('TECNICO');
+    fixture.detectChanges();
+    expect((campo(fixture, 'rol-cliente') as HTMLElement).getAttribute('aria-pressed')).toBe('false');
+    expect((campo(fixture, 'rol-tecnico') as HTMLElement).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('una línea de ayuda cambia con el rol elegido', () => {
+    const { fixture, page } = setup();
+    const ayuda = () => campo(fixture, 'rol-descripcion')?.textContent?.trim();
+
+    expect(ayuda()).toBe('Necesito un servicio.');
+    page.cambiarRol('TECNICO');
+    fixture.detectChanges();
+    expect(ayuda()).toBe('Presto servicios técnicos.');
+    page.cambiarRol('PROVEEDOR');
+    fixture.detectChanges();
+    expect(ayuda()).toBe('Vendo insumos.');
+  });
+
+  it('cambiar de rol conserva lo ya escrito', () => {
+    const { fixture, page } = setup();
+    page.registroForm.patchValue({ nombre: 'Ana Pérez' });
+
+    page.cambiarRol('PROVEEDOR');
+    fixture.detectChanges();
+
+    expect(page.registroForm.value['nombre']).toBe('Ana Pérez');
   });
 });
