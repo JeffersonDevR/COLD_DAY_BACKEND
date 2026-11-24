@@ -20,7 +20,7 @@
     <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="validacion-pendiente">
       <h2 class="cd-alerta__titulo">Validación en curso</h2>
       <p class="cd-alerta__texto">
-        Cuando el equipo apruebe tus documentos vas a poder aceptar ofertas. Mientras tanto puedes completar tu perfil.
+        Podrás aceptar ofertas cuando aprueben tus documentos.
       </p>
     </section>
   }
@@ -36,13 +36,13 @@
         <p class="cd-muted">
           @switch (modoUbicacion()) {
             @case ('ejecutando') {
-              Reportando automáticamente por la OT en curso.
+              Reportando por la OT en curso.
             }
             @case ('compartiendo') {
-              Tus ofertas llegan a los clientes cercanos.
+              Visible para clientes cercanos.
             }
             @default {
-              Ubicación apagada: no aparecerás en las ofertas.
+              Apagada: no recibes ofertas.
             }
           }
         </p>
@@ -58,13 +58,6 @@
         data-testid="switch-ubicacion"
       ></ion-toggle>
     </div>
-
-    @if (switchBloqueado()) {
-      <p class="cd-ayuda cd-ubicacion__nota" data-testid="switch-bloqueado">
-        <ion-icon name="sync-outline" aria-hidden="true"></ion-icon>
-        Se mantiene activo mientras tienes una OT en curso.
-      </p>
-    }
 
     @if (ubicacionMotivo(); as motivo) {
       <section class="cd-alerta cd-alerta--error" role="alert" data-testid="ubicacion-motivo">
@@ -82,7 +75,7 @@
         <section class="cd-alerta cd-alerta--error" role="alert" data-testid="bloqueado-liquidacion">
           <h2 class="cd-alerta__titulo">Operación bloqueada</h2>
           <p class="cd-alerta__texto">
-            Tienes liquidaciones pendientes. Revisa el tab Gestión y registra la consignación desde la web para volver a tomar servicios.
+            Liquidación pendiente. Registra la consignación en la web para tomar servicios.
           </p>
         </section>
       } @else {
@@ -98,7 +91,7 @@
             >{{ opcion.etiqueta }}</button>
           }
         </div>
-        <p class="cd-ayuda">Con una OT en curso no puedes cambiar la disponibilidad.</p>
+        <p class="cd-ayuda">Bloqueada con una OT en curso.</p>
       }
     </div>
   </section>
@@ -202,7 +195,6 @@
           <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
           {{ orden.direccion }}
         </span>
-        <span class="cd-ayuda">Toca para abrir la ejecución</span>
       </button>
     }
   }

@@ -142,7 +142,7 @@ describe('DiagnosticoPage móvil (A7)', () => {
       otApi: { getOtById: vi.fn(() => of(ot({ diagnostico: {} }))) },
     });
 
-    expect(texto(fixture)).toContain('El técnico todavía no cargó el dictamen');
+    expect(texto(fixture)).toContain('Sin dictamen del técnico aún.');
   });
 
   it('sin presupuesto las filas muestran "Por confirmar" y el aviso honesto', () => {

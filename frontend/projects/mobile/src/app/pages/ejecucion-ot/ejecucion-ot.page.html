@@ -48,7 +48,7 @@
         <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="visita-pendiente">
           <h2 class="cd-alerta__titulo">Visita pendiente de pago</h2>
           <p class="cd-alerta__texto">
-            El cliente debe pagar la visita antes de que puedas iniciar el desplazamiento.
+            Esperando el pago de la visita para iniciar el desplazamiento.
           </p>
         </section>
       }
@@ -142,7 +142,7 @@
                 </div>
               } @else {
                 <p class="cd-ayuda" data-testid="catalogo-sin-resultados">
-                  Sin resultados en el catálogo. Agrégalo manualmente abajo.
+                  Sin resultados. Agrégalo manualmente.
                 </p>
               }
             }
@@ -217,7 +217,7 @@
     @if (orden.estado === 'FINALIZADA') {
       <section class="cd-alerta cd-alerta--ok" role="status" data-testid="ot-finalizada">
         <h2 class="cd-alerta__titulo">Servicio finalizado</h2>
-        <p class="cd-alerta__texto">El cliente ya puede ver el acta y calificar el servicio.</p>
+        <p class="cd-alerta__texto">Acta enviada al cliente.</p>
       </section>
       <ion-button expand="block" class="cd-cta" (click)="irAlPanel()">Volver a Mis OTs</ion-button>
     }

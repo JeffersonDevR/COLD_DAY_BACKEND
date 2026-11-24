@@ -52,8 +52,7 @@
       <section class="cd-alerta cd-alerta--info" role="status" data-testid="calificar-no-finalizada">
         <h2 class="cd-alerta__titulo">Todavía no podés calificar</h2>
         <p class="cd-alerta__texto">
-          La calificación se habilita cuando el servicio está finalizado. Estado actual:
-          {{ etiquetaEstado(orden.estado) }}.
+          Podrás calificar cuando el servicio termine. Estado: {{ etiquetaEstado(orden.estado) }}.
         </p>
       </section>
     }
@@ -61,15 +60,13 @@
     @if (yaCalificada()) {
       <section class="cd-alerta cd-alerta--ok" role="status" data-testid="calificar-ya-hecha">
         <h2 class="cd-alerta__titulo">Ya calificaste este servicio</h2>
-        <p class="cd-alerta__texto">Solo se registra una reseña por orden de trabajo.</p>
+        <p class="cd-alerta__texto">Ya calificaste esta orden.</p>
       </section>
     }
 
     <ion-card class="cd-card">
       <ion-card-content>
         <h2 class="cd-headline">¿Cómo fue el servicio?</h2>
-        <p class="cd-muted">Elegí de 1 a 5 estrellas. Sin puntaje no se puede enviar.</p>
-
         <div class="cd-estrellas" role="group" aria-label="Puntaje del servicio">
           @for (n of [1, 2, 3, 4, 5]; track n) {
             <button

@@ -121,9 +121,7 @@
       <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="acta-no-finalizada">
         <h2 class="cd-alerta__titulo">El acta se registra al finalizar el servicio</h2>
         <p class="cd-alerta__texto">
-          La orden está en estado {{ etiquetaEstado(orden.estado) }}. Cuando el técnico
-          cierre el servicio vas a poder firmar el acta desde acá; hasta entonces
-          el botón queda deshabilitado.
+          Podrás firmar el acta cuando el técnico cierre el servicio. Estado: {{ etiquetaEstado(orden.estado) }}.
         </p>
       </section>
     }
@@ -212,7 +210,7 @@
             </p>
           } @else {
             <p class="cd-muted cd-acta__sin-firma">
-              Sin firmar — aún no hay acta registrada
+              Sin acta registrada.
             </p>
           }
         </div>

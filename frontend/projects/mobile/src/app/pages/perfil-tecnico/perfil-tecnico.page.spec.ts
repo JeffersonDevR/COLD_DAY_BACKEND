@@ -93,9 +93,9 @@ describe('PerfilTecnicoPage (B4)', () => {
     expect(api.actualizarMisEspecialidades).not.toHaveBeenCalled();
   });
 
-  it('remite los documentos al tab Gestión (agrupados con liquidaciones)', () => {
+  it('no repite aquí los documentos: viven en el tab Gestión, sin párrafo explicativo', () => {
     const { fixture } = setup();
-    expect(texto(fixture)).toContain('tab Gestión');
+    expect(texto(fixture)).not.toContain('tab Gestión');
     expect(fixture.nativeElement.querySelector('[data-testid="documentos-vacio"]')).toBeNull();
   });
 

@@ -143,7 +143,7 @@ describe('LiquidacionesTecnicoPage (B5)', () => {
     expect(texto(fixture)).toContain('Liquidaciones');
     expect(texto(fixture)).toContain('Documentos');
     expect(texto(fixture)).toContain('Matrícula CONTE');
-    expect(texto(fixture)).toContain('usa la web');
+    expect(texto(fixture)).toContain('Sube o renueva documentos desde la web.');
   });
 
   it('muestra el estado vacío de documentos', () => {
