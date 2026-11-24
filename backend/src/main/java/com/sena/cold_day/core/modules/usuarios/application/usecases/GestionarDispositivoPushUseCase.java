@@ -1,11 +1,8 @@
 package com.sena.cold_day.core.modules.usuarios.application.usecases;
 
-import java.time.Instant;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sena.cold_day.core.modules.usuarios.domain.aggregates.DispositivoPush;
 import com.sena.cold_day.core.modules.usuarios.domain.repository.DispositivoPushRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
@@ -25,11 +22,7 @@ public class GestionarDispositivoPushUseCase {
 
     @Transactional
     public void registrar(UsuarioId usuarioId, String token, String plataforma) {
-        Instant ahora = Instant.now();
-        DispositivoPush dispositivo = dispositivos.buscarPorToken(token)
-                .map(existente -> existente.reasignar(usuarioId.valor(), plataforma, ahora))
-                .orElseGet(() -> DispositivoPush.nuevo(usuarioId.valor(), token, plataforma, ahora));
-        dispositivos.save(dispositivo);
+        dispositivos.registrar(usuarioId.valor(), token, plataforma);
     }
 
     /** Idempotente: borrar un token que ya no existe (o ajeno) no es un error. */

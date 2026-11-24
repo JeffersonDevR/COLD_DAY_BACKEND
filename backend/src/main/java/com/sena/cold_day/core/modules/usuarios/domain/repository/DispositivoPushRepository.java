@@ -10,6 +10,9 @@ public interface DispositivoPushRepository {
 
     DispositivoPush save(DispositivoPush dispositivo);
 
+    /** Alta o reasignacion atomica (upsert por token). */
+    void registrar(Long usuarioId, String token, String plataforma);
+
     Optional<DispositivoPush> buscarPorToken(String token);
 
     /** Tokens de un usuario; acotado por el limite de dispositivos (BE-P1). */
