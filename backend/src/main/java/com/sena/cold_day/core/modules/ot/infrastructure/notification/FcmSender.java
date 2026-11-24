@@ -10,6 +10,6 @@ public interface FcmSender {
      * Envia sin bloquear al llamador. {@code tokenInvalido} se invoca si FCM
      * informa que el token ya no existe (app desinstalada, token rotado).
      */
-    void enviar(String token, String titulo, String cuerpo, Map<String, String> datos,
+    void enviar(String token, CanalPush canal, String titulo, String cuerpo, Map<String, String> datos,
             Consumer<String> tokenInvalido);
 }

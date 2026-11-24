@@ -33,8 +33,46 @@ export interface PushConfig {
 
 export const PUSH: PushConfig = { habilitado: true };
 
-/** Canal Android de alta prioridad para ofertas y cambios de la OT. */
-export const CANAL_PUSH = 'ofertas';
+/** Canal Android de notificaciones: un canal no cambia de sonido una vez creado, por eso hay uno por rol y evento. */
+export interface CanalPush {
+  /** Mismo id que `CanalPush.java` en el backend: si difieren, el aviso pierde el sonido. */
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  /** Archivo en `android/app/src/main/res/raw` (con extensión). */
+  readonly sound: string;
+}
+
+/**
+ * Canales de alta prioridad. Sonidos: Interface Sounds de Kenney (CC0),
+ * `switch_006` para avisos de seguimiento y `switch_007` para lo nuevo.
+ */
+export const CANALES_PUSH: readonly CanalPush[] = [
+  {
+    id: 'ot_nueva_tec',
+    name: 'Ofertas nuevas',
+    description: 'Ofertas de servicio cerca de ti',
+    sound: 'switch_007.ogg',
+  },
+  {
+    id: 'ot_update_tec',
+    name: 'Cambios en tu orden',
+    description: 'Novedades de la orden de trabajo en curso',
+    sound: 'switch_006.ogg',
+  },
+  {
+    id: 'ot_nueva_cli',
+    name: 'Presupuesto y técnico',
+    description: 'Cuando llega un presupuesto o un técnico acepta tu orden',
+    sound: 'switch_006.ogg',
+  },
+  {
+    id: 'ot_update_cli',
+    name: 'Cambios en tu solicitud',
+    description: 'Otras novedades de tu solicitud de servicio',
+    sound: 'switch_007.ogg',
+  },
+];
 
 const RUTA_PERMITIDA = /^\/(cliente|tecnico|proveedor)\/[A-Za-z0-9/_:-]{1,120}$/;
 
@@ -72,13 +110,16 @@ export class PushNotificacionesService {
         return;
       }
       this.escuchar();
-      await PushNotifications.createChannel({
-        id: CANAL_PUSH,
-        name: 'Ofertas y órdenes',
-        description: 'Ofertas nuevas y cambios en tus órdenes de trabajo',
-        importance: 5,
-        visibility: 1,
-      });
+      for (const canal of CANALES_PUSH) {
+        await PushNotifications.createChannel({
+          id: canal.id,
+          name: canal.name,
+          description: canal.description,
+          sound: canal.sound,
+          importance: 5,
+          visibility: 1,
+        });
+      }
       await PushNotifications.register();
     } catch {
       // Sin Firebase o sin permiso: la app sigue con avisos en primer plano.

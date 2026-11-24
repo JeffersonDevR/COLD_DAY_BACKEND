@@ -132,6 +132,7 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     ) as HTMLButtonElement;
 
     expect(texto(fixture)).toContain('Próxima orden de trabajo');
+    expect(texto(fixture)).not.toContain('Toca para abrir la ejecución');
     expect(destacada.className).toContain('cd-ot--proxima');
 
     destacada.click();
@@ -213,7 +214,7 @@ describe('PanelTecnicoPageMobile (B2)', () => {
       presencia: presenciaStub({ modo: signal('compartiendo'), compartirUbicacion: signal(true) }),
     });
     expect(texto(activa.fixture)).toContain('Compartiendo ubicación');
-    expect(texto(activa.fixture)).toContain('Tus ofertas llegan a los clientes cercanos');
+    expect(texto(activa.fixture)).toContain('Visible para clientes cercanos.');
   });
 
   it('muestra las ofertas activas con conteo real y abre el radar', () => {

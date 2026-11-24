@@ -521,6 +521,15 @@ transition-duration: 0.01ms;
   color: var(--ion-color-primary);
 }
 
+/* Copo del logotipo: máscara sobre currentColor para que siga el tema. */
+.cd-marca__copo {
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: currentColor;
+  -webkit-mask: url('/logo-copo.svg') center / contain no-repeat;
+  mask: url('/logo-copo.svg') center / contain no-repeat;
+}
+
 .cd-marca__nombre {
   margin: 0;
   font-family: var(--cd-font-headline);
