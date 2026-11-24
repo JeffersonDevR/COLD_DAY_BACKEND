@@ -300,4 +300,48 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     expect(texto(fixture)).toContain('Dentro de tu radio');
     expect(texto(fixture)).not.toContain('A 0 km');
   });
+
+  it('no repite que la cuenta está habilitada', () => {
+    const { fixture } = setup();
+
+    expect(texto(fixture)).not.toContain('para recibir órdenes');
+  });
+
+  it('con la cuenta pendiente habla solo la alerta, no el subtítulo', () => {
+    const { fixture } = setup({
+      tecnicoApi: { getMiPerfil: vi.fn(() => of(tecnico({ estadoValidacion: 'PENDIENTE' }))) },
+    });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="validacion-pendiente"]')).toBeTruthy();
+    expect(texto(fixture)).not.toContain('para recibir órdenes');
+  });
+
+  it('la visibilidad en el radar no es un chip aparte', () => {
+    const { fixture } = setup({
+      presencia: presenciaStub({
+        modo: signal('compartiendo'),
+        compartirUbicacion: signal(true),
+        reportando: signal(true),
+      }),
+    });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="radar-visible"]')).toBeNull();
+    expect(texto(fixture)).not.toContain('Visible en el radar');
+  });
+
+  it('no muestra la nota fija de bloqueo con una OT en curso', () => {
+    const { fixture } = setup();
+
+    expect(texto(fixture)).not.toContain('Bloqueada con una OT en curso');
+  });
+
+  it('sin técnico cargado no pinta undefined ni subtítulo', () => {
+    const { fixture } = setup({
+      tecnicoApi: { getMiPerfil: vi.fn(() => of(undefined)) },
+    });
+
+    expect(texto(fixture)).toContain('Tu panel de técnico');
+    expect(texto(fixture)).not.toContain('undefined');
+    expect(texto(fixture)).not.toContain('para recibir órdenes');
+  });
 });

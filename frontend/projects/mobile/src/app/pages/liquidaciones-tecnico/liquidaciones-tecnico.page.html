@@ -59,25 +59,22 @@
   }
 
   @for (liq of liquidaciones(); track liq.id) {
-    <article class="cd-ot" [attr.data-testid]="'liquidacion-' + liq.id">
-      <div class="cd-ot__cabecera">
-        <div class="cd-ot__titulos">
-          <p class="cd-ot__codigo">{{ liq.otCodigo ?? 'Servicio' }}</p>
-          <p class="cd-ot__categoria">
-            {{ fecha(liq.fechaRegistro) }} · {{ etiquetaMedio(liq.medioPago) }}
-          </p>
-        </div>
-        <div class="cd-chips">
-          <span class="cd-chip cd-chip--{{ tonoEstado(liq.estado) }}" [attr.data-testid]="'estado-' + liq.id">
-            {{ etiquetaEstado(liq.estado) }}
-          </span>
-        </div>
+    <article class="cd-card cd-liq" [attr.data-testid]="'liquidacion-' + liq.id">
+      <div class="cd-liq__cabecera">
+        <p class="cd-ot__codigo">{{ liq.otCodigo ?? 'Servicio' }}</p>
+        <span class="cd-chip cd-chip--{{ tonoEstado(liq.estado) }}" [attr.data-testid]="'estado-' + liq.id">
+          {{ etiquetaEstado(liq.estado) }}
+        </span>
       </div>
 
-      <p class="cd-ot__descripcion">
-        <strong>Comisión a transferir: $ {{ cop(liq.comision) }} COP</strong>
+      <p class="cd-liq__etiqueta">Comisión a transferir</p>
+      <p class="cd-liq__monto" [attr.data-testid]="'comision-' + liq.id">
+        $ {{ cop(liq.comision) }} COP
       </p>
-      <p class="cd-muted">Servicio total: $ {{ cop(liq.montoServicio) }} COP</p>
+      <p class="cd-liq__meta" [attr.data-testid]="'meta-' + liq.id">
+        {{ fecha(liq.fechaRegistro) }} · {{ etiquetaMedio(liq.medioPago) }}
+      </p>
+      <p class="cd-liq__meta">Servicio total: $ {{ cop(liq.montoServicio) }} COP</p>
 
       @if (liq.motivoRechazo) {
         <p class="cd-alerta__texto" [attr.data-testid]="'motivo-' + liq.id">
@@ -97,12 +94,12 @@
     />
   } @else {
     @for (documento of documentos(); track documento.id) {
-      <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">
-        <div class="cd-ot__cabecera">
+      <article class="cd-card cd-liq" [attr.data-testid]="'documento-' + documento.id">
+        <div class="cd-liq__cabecera">
           <div>
             <p class="cd-ot__codigo">{{ documento.nombre || etiquetaDocumento(documento.tipo) }}</p>
             @if (documento.fechaVencimiento) {
-              <p class="cd-ot__categoria">Vence {{ documento.fechaVencimiento }}</p>
+              <p class="cd-liq__meta">Vence {{ documento.fechaVencimiento }}</p>
             }
           </div>
           <span class="cd-chip cd-chip--{{ tonoDocumento(documento) }}">
@@ -110,7 +107,7 @@
           </span>
         </div>
         @if (documento.observaciones) {
-          <p class="cd-ot__descripcion">{{ documento.observaciones }}</p>
+          <p class="cd-liq__meta">{{ documento.observaciones }}</p>
         }
       </article>
     }

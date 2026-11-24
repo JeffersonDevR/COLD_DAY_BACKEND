@@ -1,6 +1,5 @@
 <cd-page
   [titulo]="tecnico() ? 'Hola, ' + tecnico()!.nombre : 'Tu panel de técnico'"
-  [subtitulo]="validacionAprobada() ? 'Cuenta habilitada para recibir órdenes' : 'Tu cuenta todavía no está habilitada para recibir órdenes'"
   tituloTestId="tecnico-nombre"
 >
   <ion-header class="cd-header" cdHeader>
@@ -46,9 +45,6 @@
             }
           }
         </p>
-        @if (radarVisible()) {
-          <span class="cd-chip cd-chip--ok" role="status" data-testid="radar-visible">Visible en el radar</span>
-        }
       </div>
       <ion-toggle
         [checked]="compartirUbicacion()"
@@ -91,7 +87,6 @@
             >{{ opcion.etiqueta }}</button>
           }
         </div>
-        <p class="cd-ayuda">Bloqueada con una OT en curso.</p>
       }
     </div>
   </section>

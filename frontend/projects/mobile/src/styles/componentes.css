@@ -284,6 +284,8 @@ section.cd-card + section.cd-card {
 }
 
 .cd-legal::part(label) {
+  white-space: normal;
+  text-overflow: clip;
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--cd-muted);

@@ -154,11 +154,11 @@ Principios (resumen de `PRODUCT.md`): el registro es la verdad · estados honest
 | AppBar / header | `.cd-header` | sticky, ≥56 px, safe-area arriba |
 | Footer con CTA | `.cd-footer` | fijo, zona del pulgar, safe-area abajo, helper 12 px encima |
 | Tab bar | `ion-tab-bar.cd-tab-bar` | ≥44 px por tab, etiqueta en frase 12 px, `aria-current` |
-| Tarjeta | `.cd-card` | padding 16; ver trampas de Ionic (§8) |
+| Tarjeta | `.cd-card` | padding 16; ver trampas de Ionic (§8). Cada elemento repetido de una lista de datos (liquidación, documento) es una tarjeta con fondo y borde propios. *Justificación 2026-11-24: en Gestión `article.cd-ot` no tenía fondo ni borde y no se distinguía dónde acababa una liquidación y empezaba otra.* |
 | Píldora de estado | `.cd-chip`, `status-badge` | 12 px, tinta sobre tinte, texto siempre |
 | Chip de prioridad | `.cd-chip`, `shared/ui/priority-chip` | 12 px, tinta sobre tinte y texto siempre: `Alta` (rojo/`cerrada`), `Media` (cian/`curso`), `Baja` (verde/`ok`); valor por defecto `Media` |
 | CTA | `.cd-cta` | `min-height` 48 px (52 en footer fijo), frase, nunca mayúsculas; estado de carga = spinner + verbo («Guardando…») + `aria-busy` |
-| Campo | `.cd-form ion-item` | etiqueta visible, ≥48 px, error con `aria-describedby` |
+| Campo | `.cd-form ion-item` | etiqueta visible, ≥48 px, error con `aria-describedby`. El control que revela o limpia el valor (ojo de contraseña) va dentro del campo, en `slot="end"`, nunca como botón suelto. *Justificación 2026-11-24: Registro lo dejó suelto y quedaba lejos de su campo; el login ya lo hacía bien.* |
 | Vacío / carga / error | `shared/ui`: `empty-state`, `skeleton`, `loading`, `error-alert` | **obligatorios** en toda lista (UI-X6) |
 | Timeline | `shared/ui/service-timeline` | nodos con etiqueta |
 | Modal | `.cd-modal*` | foco atrapado, Escape cierra |
