@@ -55,10 +55,34 @@ public class FirebaseFcmSender implements FcmSender {
                     return;
                 }
                 // Sin el token ni el cuerpo: no se loguean datos del usuario.
-                String codigo = error instanceof FirebaseMessagingException fme
-                        ? String.valueOf(fme.getMessagingErrorCode()) : "n/a";
-                log.warn("Fallo el envio push: {} codigo={}", error.getClass().getSimpleName(), codigo);
+                log.warn("Fallo el envio push: {}", describirFallo(error));
             }
         }, MoreExecutors.directExecutor());
+    }
+
+    private static final int MAX_MENSAJE = 300;
+
+    /**
+     * Descripcion diagnostica del fallo: sin el codigo FCM (null en errores de
+     * autenticacion o de API deshabilitada) el unico dato util es el codigo de
+     * error de Google y su mensaje (p. ej. PERMISSION_DENIED + "API not enabled").
+     * El mensaje se acota; el token y el cuerpo del push nunca entran aqui.
+     */
+    static String describirFallo(Throwable error) {
+        StringBuilder texto = new StringBuilder(error.getClass().getSimpleName());
+        if (error instanceof FirebaseMessagingException fme) {
+            texto.append(" errorCode=").append(fme.getErrorCode())
+                    .append(" fcmCode=").append(fme.getMessagingErrorCode());
+        }
+        String mensaje = error.getMessage();
+        if (mensaje != null && !mensaje.isBlank()) {
+            texto.append(" mensaje=").append(
+                    mensaje.length() > MAX_MENSAJE ? mensaje.substring(0, MAX_MENSAJE) + "..." : mensaje);
+        }
+        Throwable causa = error.getCause();
+        if (causa != null) {
+            texto.append(" causa=").append(causa.getClass().getSimpleName());
+        }
+        return texto.toString();
     }
 }
