@@ -131,6 +131,8 @@ describe('mobileErrorInterceptor', () => {
       'http://api.test/api/ot',
       'http://api.test/api/clientes/perfil',
       'http://api.test/api/clientes/me/ubicacion',
+      // Ubicación del técnico: telemetría en segundo plano; el tracking explica el motivo.
+      'http://api.test/api/tecnicos/me/ubicacion',
       'http://api.test/api/config/maps',
       'http://api.test/api/maps/geocode',
       // A6 — la pantalla es la única voz de estas rutas.
