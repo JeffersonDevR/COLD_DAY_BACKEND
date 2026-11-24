@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { CANAL_PUSH, PUSH, PushNotificacionesService, rutaDeNotificacion } from './push';
+import { CANALES_PUSH, PUSH, PushNotificacionesService, rutaDeNotificacion } from './push';
 
 describe('rutaDeNotificacion', () => {
   it('acepta rutas propias de un modo', () => {
@@ -30,7 +30,21 @@ describe('PushNotificacionesService', () => {
 
   it('queda habilitado ahora que existe Firebase', () => {
     expect(PUSH.habilitado).toBe(true);
-    expect(CANAL_PUSH).toBe('ofertas');
+  });
+
+  it('los canales coinciden con los ids del backend y usan los dos sonidos', () => {
+    // Contrato con CanalPush.java: un id distinto deja el push sin sonido propio.
+    expect(CANALES_PUSH.map((c) => c.id)).toEqual([
+      'ot_nueva_tec',
+      'ot_update_tec',
+      'ot_nueva_cli',
+      'ot_update_cli',
+    ]);
+    expect(new Set(CANALES_PUSH.map((c) => c.sound))).toEqual(
+      new Set(['switch_006.ogg', 'switch_007.ogg']),
+    );
+    expect(CANALES_PUSH.find((c) => c.id === 'ot_nueva_tec')?.sound).toBe('switch_007.ogg');
+    expect(CANALES_PUSH.find((c) => c.id === 'ot_nueva_cli')?.sound).toBe('switch_006.ogg');
   });
 
   it('activar es no-op fuera de nativo o deshabilitado', async () => {
