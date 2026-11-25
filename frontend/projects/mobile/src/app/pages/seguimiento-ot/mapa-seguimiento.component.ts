@@ -13,23 +13,22 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { IonButton, IonIcon, IonSpinner } from '@ionic/angular';
-import { GoogleMapsLoaderService } from '@core/service/google-maps-loader';
+import { MAPA_MOTOR } from '@core/maps/mapa-motor.token';
+import type { Coordenada, EscenaMapa, MapaInstancia } from '@core/maps/mapa-motor';
+import { decodificarPolyline } from '@core/maps/polyline';
 import { MapaConfigService } from '@core/service/mapa-config.service';
 import { rutaLocal } from '@core/service/distancia-local';
-import { decodificarRuta } from '@core/service/polyline-ruta';
-import { MAPA_ESTILOS } from '@core/service/mapa-estilos';
 import { Point } from '@core/models/common.models';
 
 /**
- * A6 — Mapa de seguimiento (WebView + Google Maps JavaScript).
+ * A6 — Mapa de seguimiento (WebView).
  *
- * El navegador embebe el mismo loader que la web (`GoogleMapsLoaderService`):
- * la browser key sale de la configuración inyectada en build o de
- * `GET /api/config/maps`, nunca de una clave nueva. El mapa dibuja UN par de
+ * No conoce al proveedor de mapas: dibuja a través del motor `MAPA_MOTOR`
+ * (Google hoy; el backend elige el proveedor con `GET /api/config/maps`). El mapa dibuja UN par de
  * marcadores (técnico y punto de servicio) y UNA polilínea entre ambos: la
  * geometría real por calles si llegó por `rutaCodificada`, si no la recta.
  *
- * Degradación honesta: si Maps no carga (proxy caído, key rechazada para
+ * Degradación honesta: si el mapa no carga (proxy caído, key rechazada para
  * `capacitor://localhost`, sin red) el bloque completo se reemplaza por una
  * tarjeta con "Reintentar mapa" y el resto de la pantalla sigue funcionando.
  * Sin posición del técnico no se dibuja nada: mejor un mapa vacío que un dato
@@ -65,9 +64,9 @@ import { Point } from '@core/models/common.models';
     </div>
 
     <div class="cd-map__lienzo">
-      @if (mapsLoader.isLoaded()) {
+      @if (motor.listo()) {
         @if (mostrarMapa()) {
-          <!-- El canvas lo ocupa Google Maps de forma imperativa. -->
+          <!-- El canvas lo ocupa el motor de mapa de forma imperativa. -->
           <div #mapaEl class="cd-map__canvas" role="application"
                aria-label="Mapa con la ubicación del técnico y el punto de servicio"
                data-testid="mapa-canvas"></div>
@@ -78,7 +77,7 @@ import { Point } from '@core/models/common.models';
             <p class="cd-map__vacio-texto">El mapa aparece en cuanto reporte su ubicación.</p>
           </div>
         }
-      } @else if (mapsLoader.isLoading() || reintentando()) {
+      } @else if (motor.cargando() || reintentando()) {
         <div class="cd-map__cargando" data-testid="mapa-cargando">
           <ion-spinner name="dots"></ion-spinner>
           <p class="cd-map__vacio-texto">Cargando mapa…</p>
@@ -88,7 +87,7 @@ import { Point } from '@core/models/common.models';
           <ion-icon name="map-outline" aria-hidden="true"></ion-icon>
           <p class="cd-map__fallback-titulo">Mapa no disponible</p>
           <p class="cd-map__vacio-texto">
-            No pudimos cargar Google Maps en esta sesión (puede ser la conexión o la
+            No pudimos cargar el mapa en esta sesión (puede ser la conexión o la
             configuración de la clave). La distancia y la ETA siguen visibles acá abajo.
           </p>
           <ion-button size="small" data-testid="mapa-reintentar"
@@ -104,7 +103,7 @@ import { Point } from '@core/models/common.models';
   `,
 })
 export class MapaSeguimientoComponent {
-  readonly mapsLoader = inject(GoogleMapsLoaderService);
+  readonly motor = inject(MAPA_MOTOR);
   private readonly mapaConfig = inject(MapaConfigService);
   private readonly platformId = inject(PLATFORM_ID);
 
@@ -122,10 +121,7 @@ export class MapaSeguimientoComponent {
   private elementoActual: HTMLDivElement | null = null;
   /** `true` tras el primer fitBounds del par técnico-destino (no se re-encaja). */
   private limitesAjustados = false;
-  private mapa: google.maps.Map | null = null;
-  private marcadorTecnico: google.maps.Marker | null = null;
-  private marcadorDestino: google.maps.Marker | null = null;
-  private polyline: google.maps.Polyline | null = null;
+  private instancia: MapaInstancia | null = null;
 
   readonly isBrowser = isPlatformBrowser(this.platformId);
 
@@ -140,7 +136,7 @@ export class MapaSeguimientoComponent {
   });
 
   /** Centro: el punto medio de la ruta, para ver técnico y destino a la vez. */
-  private readonly centro = computed<google.maps.LatLngLiteral>(() => {
+  private readonly centro = computed<Coordenada>(() => {
     const tecnico = this.posicionTecnico();
     const destino = this.destino();
     if (tecnico && destino) {
@@ -172,7 +168,7 @@ export class MapaSeguimientoComponent {
   constructor() {
     afterNextRender(() => {
       if (this.isBrowser) {
-        void this.mapsLoader.init();
+        void this.motor.cargar();
       }
     });
 
@@ -180,7 +176,7 @@ export class MapaSeguimientoComponent {
     // sincroniza con cada sondeo (posición, geometría). La app es zoneless:
     // Google toca el DOM por su cuenta sin pasar por el scheduler.
     effect(() => {
-      if (!this.mapsLoader.isLoaded()) return;
+      if (!this.motor.listo()) return;
       const el = this.mapaEl()?.nativeElement;
       if (!el) return;
       if (el !== this.elementoActual) {
@@ -197,148 +193,69 @@ export class MapaSeguimientoComponent {
     if (this.reintentando()) return;
     this.reintentando.set(true);
     try {
-      await this.mapsLoader.reintentar();
+      await this.motor.reintentar();
     } finally {
       this.reintentando.set(false);
     }
   }
 
   private sincronizarMapa(el: HTMLDivElement): void {
-    this.mapa ??= new google.maps.Map(el, this.opcionesMapa());
+    const zoom = this.mapaConfig.zoom();
+    this.instancia ??= this.motor.crear(el, {
+      centro: this.centro(),
+      zoom,
+      zoomMin: zoom - 2,
+      zoomMax: 18,
+      limites: this.mapaConfig.bounds(),
+    });
 
     const tecnico = this.posicionTecnico();
     const destino = this.destino();
-    const tecnicoPos = tecnico ? { lat: tecnico.latitud, lng: tecnico.longitud } : null;
-    const destinoPos = destino ? { lat: destino.latitud, lng: destino.longitud } : null;
+    const tecnicoPos: Coordenada | null = tecnico ? { lat: tecnico.latitud, lng: tecnico.longitud } : null;
+    const destinoPos: Coordenada | null = destino ? { lat: destino.latitud, lng: destino.longitud } : null;
 
-    this.marcadorTecnico = this.sincronizarMarcador(
-      this.marcadorTecnico,
-      tecnicoPos,
-      this.tecnicoNombre(),
-      opcionesMarcadorTecnico(),
-    );
-    this.marcadorDestino = this.sincronizarMarcador(
-      this.marcadorDestino,
-      destinoPos,
-      this.destinoNombre(),
-      opcionesMarcadorDestino(),
-    );
-
+    const escena: EscenaMapa = { marcadores: [], lineas: [] };
+    if (tecnicoPos) {
+      escena.marcadores.push({
+        id: 'tecnico',
+        posicion: tecnicoPos,
+        titulo: this.tecnicoNombre(),
+        estilo: 'tecnico',
+      });
+    }
+    if (destinoPos) {
+      escena.marcadores.push({
+        id: 'destino',
+        posicion: destinoPos,
+        titulo: this.destinoNombre(),
+        estilo: 'destino',
+      });
+    }
     // La ruta: geometría real por calles si se pudo decodificar; si no, la recta.
     const puntos =
-      decodificarRuta(this.rutaCodificada()) ??
+      decodificarPolyline(this.rutaCodificada()) ??
       (tecnicoPos && destinoPos ? [tecnicoPos, destinoPos] : null);
-    if (puntos && puntos.length >= 2) {
-      if (this.polyline) {
-        this.polyline.setPath(puntos);
-      } else {
-        this.polyline = new google.maps.Polyline({
-          path: puntos,
-          strokeColor: '#22d3ee',
-          strokeOpacity: 0.9,
-          strokeWeight: 3,
-        });
-        this.polyline.setMap(this.mapa);
+    if (puntos) {
+      escena.lineas.push({ id: 'ruta', puntos });
+    }
+    this.instancia.actualizar(escena);
+
+    if (tecnicoPos && destinoPos) {
+      // Encaja técnico y destino la primera vez que hay par: con centro y
+      // zoom fijos el marcador lejano quedaba fuera del encuadre y la línea
+      // parecía no conectar. Después el usuario conserva su zoom.
+      if (!this.limitesAjustados) {
+        this.limitesAjustados = true;
+        this.instancia.ajustarA([tecnicoPos, destinoPos], 48);
       }
     } else {
-      this.polyline?.setMap(null);
-      this.polyline = null;
+      this.limitesAjustados = false;
+      this.instancia.centrarEn(this.centro());
     }
-
-    if (this.mapa) {
-      if (tecnicoPos && destinoPos) {
-        // Encaja técnico y destino la primera vez que hay par: con centro y
-        // zoom fijos el marcador lejano quedaba fuera del encuadre y la línea
-        // parecía no conectar. Después el usuario conserva su zoom.
-        if (!this.limitesAjustados) {
-          this.limitesAjustados = true;
-          const limites = new google.maps.LatLngBounds();
-          limites.extend(tecnicoPos);
-          limites.extend(destinoPos);
-          this.mapa.fitBounds(limites, 48);
-        }
-      } else {
-        this.limitesAjustados = false;
-        this.mapa.setCenter(this.centro());
-      }
-    }
-  }
-
-  private sincronizarMarcador(
-    actual: google.maps.Marker | null,
-    posicion: google.maps.LatLngLiteral | null,
-    titulo: string,
-    opciones: google.maps.MarkerOptions,
-  ): google.maps.Marker | null {
-    if (!posicion) {
-      actual?.setMap(null);
-      return null;
-    }
-    if (actual) {
-      actual.setPosition(posicion);
-      actual.setTitle(titulo);
-      return actual;
-    }
-    const marcador = new google.maps.Marker({ ...opciones, position: posicion, title: titulo });
-    marcador.setMap(this.mapa);
-    return marcador;
-  }
-
-  private opcionesMapa(): google.maps.MapOptions {
-    const zoom = this.mapaConfig.zoom();
-    return {
-      zoom,
-      minZoom: zoom - 2,
-      maxZoom: 18,
-      streetViewControl: false,
-      mapTypeControl: false,
-      fullscreenControl: false,
-      zoomControl: true,
-      styles: MAPA_ESTILOS,
-      restriction: {
-        latLngBounds: this.mapaConfig.bounds(),
-        strictBounds: true,
-      },
-    };
   }
 
   private descartarMapa(): void {
-    this.polyline?.setMap(null);
-    this.polyline = null;
-    this.marcadorTecnico?.setMap(null);
-    this.marcadorTecnico = null;
-    this.marcadorDestino?.setMap(null);
-    this.marcadorDestino = null;
-    this.mapa = null;
+    this.instancia?.destruir();
+    this.instancia = null;
   }
-}
-
-/** Marcador cian (Stitch "primary") para el técnico. */
-function opcionesMarcadorTecnico(): google.maps.MarkerOptions {
-  return {
-    icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: '#22d3ee',
-      fillOpacity: 1,
-      strokeColor: '#04121a',
-      strokeWeight: 2,
-    },
-    zIndex: 2,
-  };
-}
-
-/** Marcador ámbar (Stitch "secondary") para el punto de servicio. */
-function opcionesMarcadorDestino(): google.maps.MarkerOptions {
-  return {
-    icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: '#f59e0b',
-      fillOpacity: 1,
-      strokeColor: '#1a1204',
-      strokeWeight: 2,
-    },
-    zIndex: 1,
-  };
 }
