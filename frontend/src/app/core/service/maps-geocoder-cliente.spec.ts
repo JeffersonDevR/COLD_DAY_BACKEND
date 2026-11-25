@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { MapsGeocoderCliente } from './maps-geocoder-cliente';
 import { GoogleMapsLoaderService } from './google-maps-loader';
+import { GEOCODIFICADOR_CLIENTE } from '../maps/geocodificador.token';
+import { GeocodificadorCliente } from '../maps/geocodificador';
 
 describe('MapsGeocoderCliente', () => {
   let geocodeSpy: ReturnType<typeof vi.fn>;
@@ -47,6 +49,13 @@ describe('MapsGeocoderCliente', () => {
 
   afterEach(() => {
     delete (globalThis as any).google;
+  });
+
+  it('es el GeocodificadorCliente por defecto de la app', () => {
+    const porDefecto = TestBed.inject(GEOCODIFICADOR_CLIENTE);
+
+    expect(porDefecto).toBeInstanceOf(MapsGeocoderCliente);
+    expect(porDefecto).toBeInstanceOf(GeocodificadorCliente);
   });
 
   it('geocodificar mapea el resultado de Google al contrato del front', async () => {

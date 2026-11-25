@@ -4,6 +4,7 @@ import { switchMap } from 'rxjs/operators';
 import { GoogleMapsLoaderService } from './google-maps-loader';
 import { DireccionApiResponse, SugerenciaApiResponse } from '../models/backend.dto';
 import { Point } from '../models/common.models';
+import { GeocodificadorCliente } from '../maps/geocodificador';
 
 /**
  * Geocodificación 100% en el navegador usando la MISMA key de navegador con la
@@ -21,7 +22,7 @@ import { Point } from '../models/common.models';
 @Injectable({
   providedIn: 'root',
 })
-export class MapsGeocoderCliente {
+export class MapsGeocoderCliente extends GeocodificadorCliente {
   private readonly mapsLoader = inject(GoogleMapsLoaderService);
 
   /** Sesgo de ~25 km alrededor de Cúcuta para priorizar sugerencias locales. */
