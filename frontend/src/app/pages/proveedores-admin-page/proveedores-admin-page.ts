@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
@@ -13,6 +13,8 @@ import { CargaError } from '../../shared/carga-error/carga-error';
  * Reintentar no sirve, así que el mensaje debe decir qué hacer.
  */
 const MENSAJES_VALIDACION: Record<number, string> = {
+  // El backend responde 400 (DocumentacionProveedorIncompleta): sin documentos o con alguno vencido.
+  400: 'El proveedor no tiene documentos cargados o alguno está vencido. Pídele que suba su documentación vigente antes de validarlo.',
   409: 'El expediente del proveedor no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.',
   404: 'El proveedor ya no está registrado. Actualiza la lista e inténtalo de nuevo.',
 };
@@ -35,6 +37,8 @@ export class ProveedoresAdminPage {
   private readonly toast = inject(ToastService);
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
+  /** Bandeja de trabajo: un proveedor ya aprobado no tiene nada por decidir, así que sale de la lista. */
+  readonly pendientes = computed(() => this.proveedores().filter((p) => p.estadoValidacion !== 'APROBADO'));
   readonly proveedorARechazar = signal<ProveedorResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 

@@ -60,7 +60,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
   ],
   template: `
     <cd-page>
-      <ion-header class="ion-no-border" cdHeader>
+      <ion-header class="cd-header" cdHeader>
         <ion-toolbar>
           <cd-marca pantalla="Mis equipos" chip="Cliente" />
         </ion-toolbar>
@@ -100,7 +100,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
         @for (equipo of equipos(); track equipo.categoria) {
           <ion-card class="cd-ot cd-ot--orden" data-testid="equipo">
             <ion-card-content>
-              <div class="cd-ot__cabecera">
+              <div class="cd-ot__cabecera cd-equipo__cabecera">
                 <div class="cd-equipo__identidad">
                   <span class="cd-equipo__icono" aria-hidden="true">
                     <ion-icon aria-hidden="true" [name]="iconoCategoria(equipo.categoria)"></ion-icon>

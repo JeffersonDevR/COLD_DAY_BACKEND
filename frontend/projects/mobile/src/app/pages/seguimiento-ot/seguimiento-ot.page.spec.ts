@@ -15,6 +15,9 @@ import { signal } from '@angular/core';
 import { MobileToastService } from '../../core/toast.service';
 import { SeguimientoOtPage } from './seguimiento-ot.page';
 import { GoogleMapsLoaderService } from '@core/service/google-maps-loader';
+import { MAPA_MOTOR } from '@core/maps/mapa-motor.token';
+import { MapaConfigService } from '@core/service/mapa-config.service';
+import type { EscenaMapa, MapaInstancia, MapaMotor } from '@core/maps/mapa-motor';
 
 /** Vista del componente con lo que ejercitan los tests (miembros protected). */
 interface SeguimientoInternos {
@@ -60,11 +63,13 @@ function setup({
   clientesApi,
   sse,
   loader,
+  motor,
 }: {
   otApi?: { getOtById?: Stub; getTecnicoUbicacion?: Stub; estimarTarifa?: Stub };
   clientesApi?: { cancelarOt?: Stub; abrirDisputa?: Stub; pagarVisita?: Stub };
   sse?: { abrirOtStream: ReturnType<typeof vi.fn> };
   loader?: ReturnType<typeof loaderMapaStub>;
+  motor?: MapaMotor;
 } = {}) {
   const getOtById = otApi?.getOtById ?? vi.fn(() => of(ot({})));
   const getTecnicoUbicacion = otApi?.getTecnicoUbicacion ?? vi.fn(() => of(null));
@@ -104,12 +109,16 @@ function setup({
       { provide: MobileToastService, useValue: toast },
       // Maps nunca carga en jsdom: el bloque de mapa queda en su tarjeta honesta.
       { provide: GoogleMapsLoaderService, useValue: loaderStub },
+      ...(motor ? [{ provide: MAPA_MOTOR, useValue: motor }] : []),
     ],
   });
 
   TestBed.overrideComponent(SeguimientoOtPage, {
     set: { providers: [{ provide: RutaSeguimientoService, useValue: rutaStub }] },
   });
+
+  // La config del mapa llega del backend: en el test no hay red y se resuelve de inmediato.
+  vi.spyOn(TestBed.inject(MapaConfigService), 'cargar').mockResolvedValue(undefined as never);
 
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
@@ -670,7 +679,10 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     const { fixture } = setup({ loader });
 
     // La página real instancia el hijo con el loader stubbeado: sin Maps, el
-    // bloque de mapa es una tarjeta honesta con salida.
+    // bloque de mapa es una tarjeta honesta con salida. Primero llega la config
+    // (mientras tanto dice "Cargando mapa…") y luego el motor falla.
+    await fixture.whenStable();
+    fixture.detectChanges();
     const fallback = fixture.nativeElement.querySelector('[data-testid="mapa-fallback"]') as HTMLElement;
     expect(fallback).not.toBeNull();
 
@@ -680,5 +692,113 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     expect(loader.reintentar).toHaveBeenCalledTimes(1);
     // El resto de los bloques sigue funcionando.
     expect(fixture.nativeElement.querySelector('[data-testid="timeline-pasos"]')).not.toBeNull();
+  });
+
+  describe('mapa con motor', () => {
+    const POLYLINE_VALIDO = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
+
+    function motorFalso() {
+      const instancia = {
+        actualizar: vi.fn<(escena: EscenaMapa) => void>(),
+        ajustarA: vi.fn(),
+        centrarEn: vi.fn(),
+        destruir: vi.fn(),
+      } satisfies MapaInstancia;
+      const motor = {
+        nombre: 'falso',
+        listo: signal(true),
+        cargando: signal(false),
+        cargar: vi.fn(() => Promise.resolve(true)),
+        reintentar: vi.fn(() => Promise.resolve(true)),
+        crear: vi.fn(() => instancia),
+      };
+      return { motor: motor as unknown as MapaMotor, crear: motor.crear, instancia };
+    }
+
+    async function montar(ruta: string | null) {
+      const { motor, crear, instancia } = motorFalso();
+      const montaje = setup({
+        motor,
+        otApi: {
+          getOtById: vi.fn(() => of(ot({ estado: 'EN_CAMINO', punto: PUNTO }))),
+          getTecnicoUbicacion: vi.fn(() => of(UBICACION_TECNICO)),
+        },
+      });
+      montaje.rutaStub.rutaCodificada.set(ruta);
+      montaje.fixture.detectChanges();
+      await montaje.fixture.whenStable();
+      montaje.fixture.detectChanges();
+      return { ...montaje, crear, instancia };
+    }
+
+    function ultimaEscena(instancia: { actualizar: Stub }): EscenaMapa {
+      const llamadas = instancia.actualizar.mock.calls;
+      return llamadas[llamadas.length - 1][0] as EscenaMapa;
+    }
+
+    it('dibuja técnico y destino y la ruta real cuando el polyline es válido', async () => {
+      const { crear, instancia } = await montar(POLYLINE_VALIDO);
+
+      expect(crear).toHaveBeenCalledTimes(1);
+      const escena = ultimaEscena(instancia);
+      expect(escena.marcadores.map((m) => m.id)).toEqual(['tecnico', 'destino']);
+      expect(escena.lineas).toHaveLength(1);
+      expect(escena.lineas[0].puntos).toHaveLength(3);
+      expect(instancia.ajustarA).toHaveBeenCalledTimes(1);
+    });
+
+    it('si la posición desaparece y vuelve, suelta el mapa viejo y vuelve a encuadrar', async () => {
+      const { page, fixture, crear, instancia } = await montar(POLYLINE_VALIDO);
+      expect(instancia.ajustarA).toHaveBeenCalledTimes(1);
+
+      page.tecnicoUbicacion.set(null);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(instancia.destruir).toHaveBeenCalledTimes(1);
+
+      page.tecnicoUbicacion.set(UBICACION_TECNICO);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(crear).toHaveBeenCalledTimes(2);
+      expect(instancia.ajustarA).toHaveBeenCalledTimes(2);
+    });
+
+    it('al destruir la pantalla suelta el mapa', async () => {
+      const { fixture, instancia } = await montar(POLYLINE_VALIDO);
+      expect(instancia.destruir).not.toHaveBeenCalled();
+
+      fixture.destroy();
+
+      expect(instancia.destruir).toHaveBeenCalledTimes(1);
+    });
+
+    it('con un polyline corrupto cae a la recta técnico→destino', async () => {
+      const { instancia } = await montar('basura');
+
+      const linea = ultimaEscena(instancia).lineas[0];
+      expect(linea.puntos).toEqual([
+        { lat: UBICACION_TECNICO.latitud, lng: UBICACION_TECNICO.longitud },
+        { lat: PUNTO.latitud, lng: PUNTO.longitud },
+      ]);
+    });
+
+    it('sin posición del técnico no crea el mapa', async () => {
+      const { motor, crear } = motorFalso();
+      const { fixture } = setup({
+        motor,
+        otApi: {
+          getOtById: vi.fn(() => of(ot({ estado: 'EN_CAMINO', punto: PUNTO }))),
+          getTecnicoUbicacion: vi.fn(() => of(null)),
+        },
+      });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(crear).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('[data-testid="mapa-sin-posicion"]')).not.toBeNull();
+    });
   });
 });

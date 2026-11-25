@@ -62,6 +62,12 @@ Diseño: `docs/superpowers/specs/2026-11-25-proveedores-broadcast-radio-eta-desi
 - Móvil: el proveedor fija su ubicación (`PUT /api/proveedores/me/ubicacion`), acepta con ETA, despacha y entrega; el técnico ve ETA y estado en Repuestos. La consola web acepta con el ETA sugerido y gana el botón Despachar.
 - **Deuda declarada:** (1) el ETA no tiene sanción: si vence sin despachar solo se avisa al técnico por push, no se re-difunde; (2) los proveedores ya registrados deben fijar su ubicación al entrar (sin ella no reciben solicitudes); (3) distancia en línea recta, sin ruta ni tráfico; (4) velocidad promedio, tope del ETA, radios y ventanas son valores por defecto de `app.insumos.*`, no política de producto; (5) sin SSE para el proveedor: push más recarga de la pantalla.
 
+### 2.6 Mapas con proveedor intercambiable — **M** (IMPLEMENTADO 2026-11-25, solo core y móvil)
+
+Diseño: `docs/superpowers/specs/2026-11-25-mapas-proveedor-intercambiable-design.md`. Plan: `docs/superpowers/plans/2026-11-25-mapas-proveedor-intercambiable.md`.
+- El mapa móvil de seguimiento y el geocodificador del cliente ya no usan `google.maps` directo: hablan con `MapaMotor` (`core/maps`) y `GeocodificadorCliente`. El motor lo elige el backend con `proveedor` en `GET /api/config/maps`; ausente o desconocido = Google. Para sumar Mapbox: un `MapaMotor` nuevo + su caso en `MAPA_MOTOR`.
+- **Deuda declarada:** (1) los tres componentes de la web (`mapa-radar`, `mapa-seguimiento`, `selector-ubicacion-mapa`) siguen con `@angular/google-maps` y `GoogleMapsLoaderService` por decisión de alcance; (2) falta `MapboxMotor` (front) y un `MapboxMapsAdapter` en backend que implemente `MapsPort` (`app.maps.provider`); (3) el backend aún no publica el campo `proveedor`; (4) antes de migrar: calidad de geocodificación con direcciones reales de Cúcuta, costos y límites vigentes de Mapbox, y WebGL en el WebView de Android objetivo; (5) `MAPA_ESTILOS` y el ícono de marcador son detalle del motor Google y tendrán su equivalente en el de Mapbox.
+
 ## 3. Pendientes acumulados de la sesión
 
 - [ ] **Locale de fechas**: la app no registra `LOCALE_ID` → todas las fechas salen en `en-US` ("Oct 21, 2026, 3:30:00 PM") dentro de textos en español. Fix de 1 línea (`registerLocaleData` + `LOCALE_ID` es-CO) pero cambia el render de fechas de **toda** la app: decisión tuya.

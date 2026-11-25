@@ -68,6 +68,31 @@ describe('MapaConfigService', () => {
     expect(service.apiKey()).toBe('');
   });
 
+  it('toma el proveedor de mapas del backend, recortado y en minúsculas', async () => {
+    const carga = service.cargar();
+
+    http.expectOne('/api/config/maps').flush({ proveedor: ' Mapbox ' });
+    await carga;
+
+    expect(service.proveedor()).toBe('mapbox');
+  });
+
+  it('usa google si el backend no manda proveedor, lo manda vacío o no responde', async () => {
+    const sinCampo = service.cargar();
+    http.expectOne('/api/config/maps').flush({ proveedor: '  ' });
+    await sinCampo;
+    expect(service.proveedor()).toBe('google');
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const otro = TestBed.inject(MapaConfigService);
+    const http2 = TestBed.inject(HttpTestingController);
+    const caida = otro.cargar();
+    http2.expectOne('/api/config/maps').flush('nope', { status: 500, statusText: 'Error' });
+    await caida;
+    expect(otro.proveedor()).toBe('google');
+  });
+
   it('completa lo que el backend no envía con los valores por defecto', async () => {
     const carga = service.cargar();
 

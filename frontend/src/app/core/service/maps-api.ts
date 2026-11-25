@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, Observable, of } from 'rxjs';
 import { delay, switchMap } from 'rxjs/operators';
 import { ApiConfig } from './api.config';
-import { MapsGeocoderCliente } from './maps-geocoder-cliente';
+import { GEOCODIFICADOR_CLIENTE } from '../maps/geocodificador.token';
 import {
   DireccionApiResponse,
   EstadoMapsApiResponse,
@@ -39,7 +39,7 @@ const POLYLINE_MOCK_CUCUTA =
 export class MapsApi {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfig);
-  private readonly geocoder = inject(MapsGeocoderCliente);
+  private readonly geocoder = inject(GEOCODIFICADOR_CLIENTE);
 
   estado(): Observable<EstadoMapsApiResponse> {
     if (this.apiConfig.useMocks()) {

@@ -9,7 +9,7 @@
       </div>
 
       <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
-        <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Proveedores registrados</h2>
+        <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Proveedores por validar</h2>
         @if (errorCarga()) {
           <div class="mb-4">
             <app-carga-error
@@ -21,7 +21,7 @@
           <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Cargando proveedores…</p>
         } @else {
           <div class="divide-y divide-slate-200/70 dark:divide-slate-700/70">
-            @for (prov of proveedores(); track prov.id) {
+            @for (prov of pendientes(); track prov.id) {
               <div class="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div>
                   <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ prov.razonSocial }}</p>
@@ -42,23 +42,19 @@
                     {{ prov.activo ? 'ACTIVO' : 'INACTIVO' }}
                   </span>
 
-                  @if (prov.estadoValidacion === 'APROBADO') {
-                    <span class="text-[11px] font-semibold text-slate-400">Validado</span>
-                  } @else {
-                    <button type="button" (click)="abrirModalRechazo(prov)"
-                      class="px-3.5 py-1.5 rounded-xl border border-rose-300 text-rose-600 hover:bg-rose-50 font-bold text-xs transition-colors">
-                      Rechazar
-                    </button>
-                    <button type="button" (click)="aprobar(prov)"
-                      class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1">
-                      <i class="pi pi-check text-xs"></i>
-                      Aprobar
-                    </button>
-                  }
+                  <button type="button" (click)="abrirModalRechazo(prov)"
+                    class="px-3.5 py-1.5 rounded-xl border border-rose-300 text-rose-600 hover:bg-rose-50 font-bold text-xs transition-colors">
+                    Rechazar
+                  </button>
+                  <button type="button" (click)="aprobar(prov)"
+                    class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1">
+                    <i class="pi pi-check text-xs"></i>
+                    Aprobar
+                  </button>
                 </div>
               </div>
             } @empty {
-              <p class="text-xs text-slate-500 py-3">Aún no hay proveedores registrados.</p>
+              <p class="text-xs text-slate-500 py-3">No hay proveedores pendientes de validación.</p>
             }
           </div>
         }

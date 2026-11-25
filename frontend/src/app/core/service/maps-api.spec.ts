@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom, of } from 'rxjs';
 import { MapsApi } from './maps-api';
-import { MapsGeocoderCliente } from './maps-geocoder-cliente';
+import { GEOCODIFICADOR_CLIENTE } from '../maps/geocodificador.token';
 import { ApiConfig } from './api.config';
 
 describe('MapsApi', () => {
@@ -30,7 +30,7 @@ describe('MapsApi', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MapsGeocoderCliente, useValue: geocoder },
+        { provide: GEOCODIFICADOR_CLIENTE, useValue: geocoder },
       ],
     });
     api = TestBed.inject(MapsApi);

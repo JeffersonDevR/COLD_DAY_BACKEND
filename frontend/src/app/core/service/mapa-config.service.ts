@@ -44,6 +44,8 @@ export interface MapaConfig {
 /** Respuesta del backend; cada bloque puede venir incompleto o ausente. */
 interface ConfigMapaApiResponse {
   apiKey?: string | null;
+  /** Motor de mapa a usar (`google`, `mapbox`…). Si falta, se usa Google. */
+  proveedor?: string | null;
   centro?: Partial<MapaCentro>;
   bounds?: Partial<MapaBounds>;
   zoom?: number;
@@ -93,6 +95,9 @@ export class MapaConfigService {
    */
   readonly apiKey = signal<string>('');
 
+  /** Proveedor de mapas que publica el backend; `google` mientras no diga otro. */
+  readonly proveedor = signal<string>('google');
+
   /**
    * Pide la configuración al backend UNA sola vez (las llamadas siguientes
    * reutilizan la misma promesa). Si el backend no responde, se conserva el
@@ -114,6 +119,10 @@ export class MapaConfigService {
       const key = (respuesta?.apiKey ?? '').trim();
       if (key) {
         this.apiKey.set(key);
+      }
+      const proveedor = (respuesta?.proveedor ?? '').trim().toLowerCase();
+      if (proveedor) {
+        this.proveedor.set(proveedor);
       }
     } catch {
       // Sin backend (mock, offline o caído): se sigue con el respaldo.
