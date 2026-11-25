@@ -11,11 +11,8 @@ import {
   logOutOutline,
   refreshOutline,
 } from 'ionicons/icons';
-import { of, throwError, never } from 'rxjs';
-import { ApiHttpError } from '@core/alertas/api-http.error';
 import { AuthService } from '@core/service/auth.service';
 import { Rol, UsuarioResponse } from '@core/models/common.models';
-import { SolicitudesPerfilApi } from '@core/service/solicitudes-perfil-api';
 import { ModoApp } from '../../modo/modo';
 import { ModoService } from '../../modo/modo.service';
 import { CuentaPage } from './cuenta.page';
@@ -39,15 +36,12 @@ const usuario: UsuarioResponse = {
   activo: true,
 };
 
-type Respuesta = 'ok' | 'duplicado' | 'error' | 'pendiente';
-
 function setup(
   opts: {
     disponibles: ModoApp[];
     actual: ModoApp | null;
     rolPrimario?: Rol;
     nombre?: string;
-    respuesta?: Respuesta;
   },
 ) {
   const auth = {
@@ -60,31 +54,17 @@ function setup(
     modosDisponibles: signal<ModoApp[]>(opts.disponibles),
     cambiarModo: vi.fn(),
   };
-  const solicitar = vi.fn(() => {
-    switch (opts.respuesta) {
-      case 'duplicado':
-        return throwError(() => new ApiHttpError('Ya existe', 409));
-      case 'error':
-        return throwError(() => new ApiHttpError('Sin red', 0));
-      case 'pendiente':
-        return never();
-      default:
-        return of(undefined);
-    }
-  });
-
   TestBed.configureTestingModule({
     providers: [
       provideIonicAngular(),
       { provide: AuthService, useValue: auth },
       { provide: ModoService, useValue: modos },
-      { provide: SolicitudesPerfilApi, useValue: { solicitar } },
     ],
   });
 
   const fixture: ComponentFixture<CuentaPage> = TestBed.createComponent(CuentaPage);
   fixture.detectChanges();
-  return { fixture, auth, modos, solicitar };
+  return { fixture, auth, modos };
 }
 
 const boton = (fixture: ComponentFixture<CuentaPage>, testId: string) =>
@@ -168,7 +148,7 @@ describe('CuentaPage', () => {
     });
 
     expect(fixture.nativeElement.querySelector('[data-testid="cuenta-gating"]')).toBeNull();
-    expect(texto(fixture, 'modo-bloqueado-cliente')).toContain('No disponible');
+    expect(texto(fixture, 'modo-bloqueado-cliente')).toContain('Pídelo al admin');
   });
 
   it('el técnico llega a su perfil (especialidades) desde Cuenta', () => {
@@ -190,133 +170,18 @@ describe('CuentaPage', () => {
     expect(boton(fixture, 'cuenta-perfil-tecnico')).toBeNull();
   });
 
-  it('valida el perfil y la motivación antes de enviar', () => {
-    const { fixture, solicitar } = setup({
-      disponibles: ['TECNICO'],
-      actual: 'TECNICO',
-      rolPrimario: 'TECNICO',
-    });
-
-    boton(fixture, 'agregar-cliente').click();
-    fixture.detectChanges();
-    boton(fixture, 'solicitar-perfil').click();
-    fixture.detectChanges();
-
-    expect(texto(fixture, 'error-motivacion')).toContain('Cuéntanos por qué');
-    expect(solicitar).not.toHaveBeenCalled();
-  });
-
-  it('agrega perfiles desde filas y abre el formulario preseleccionado', () => {
+  it('un técnico al que le faltan perfiles no ve Agregar perfil ni el formulario de solicitud', () => {
     const { fixture } = setup({
       disponibles: ['TECNICO'],
       actual: 'TECNICO',
       rolPrimario: 'TECNICO',
     });
+    const html = fixture.nativeElement as HTMLElement;
 
-    expect(boton(fixture, 'agregar-cliente')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('[data-testid="agregar-tecnico"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="formulario-perfil"]')).toBeNull();
-
-    boton(fixture, 'agregar-cliente').click();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('[data-testid="formulario-perfil"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('[data-testid="solicitar-perfil"]')).toBeTruthy();
-    // La fila desaparece mientras el formulario está abierto.
-    expect(fixture.nativeElement.querySelector('[data-testid="agregar-cliente"]')).toBeNull();
-  });
-
-  it('rechaza una motivación demasiado corta', () => {
-    const { fixture, solicitar } = setup({
-      disponibles: ['TECNICO'],
-      actual: 'TECNICO',
-      rolPrimario: 'TECNICO',
-    });
-    const page = fixture.componentInstance;
-    page.cambiarPerfil('CLIENTE');
-    page.cambiarMotivacion('corto');
-    fixture.detectChanges();
-
-    page.enviar();
-    fixture.detectChanges();
-
-    expect(texto(fixture, 'error-motivacion')).toContain('al menos 10 caracteres');
-    expect(solicitar).not.toHaveBeenCalled();
-  });
-
-  it('envía el body del contrato y muestra el estado de éxito', () => {
-    const { fixture, solicitar } = setup({
-      disponibles: ['TECNICO'],
-      actual: 'TECNICO',
-      rolPrimario: 'TECNICO',
-    });
-    const page = fixture.componentInstance;
-    page.cambiarPerfil('CLIENTE');
-    page.cambiarMotivacion('  También quiero pedir servicios  ');
-    fixture.detectChanges();
-
-    page.enviar();
-    fixture.detectChanges();
-
-    expect(solicitar).toHaveBeenCalledWith({
-      perfilDeseado: 'CLIENTE',
-      motivacion: 'También quiero pedir servicios',
-    });
-    expect(texto(fixture, 'solicitud-exito')).toContain('Solicitud enviada');
-    expect(fixture.nativeElement.querySelector('[data-testid="formulario-perfil"]')).toBeNull();
-  });
-
-  it('muestra el esqueleto mientras se envía', () => {
-    const { fixture } = setup({
-      disponibles: ['TECNICO'],
-      actual: 'TECNICO',
-      rolPrimario: 'TECNICO',
-      respuesta: 'pendiente',
-    });
-    const page = fixture.componentInstance;
-    page.cambiarPerfil('CLIENTE');
-    page.cambiarMotivacion('También quiero pedir servicios');
-
-    page.enviar();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('[data-testid="solicitud-enviando"]')).not.toBeNull();
-  });
-
-  it('muestra un mensaje específico cuando ya hay una solicitud abierta', () => {
-    const { fixture } = setup({
-      disponibles: ['TECNICO'],
-      actual: 'TECNICO',
-      rolPrimario: 'TECNICO',
-      respuesta: 'duplicado',
-    });
-    const page = fixture.componentInstance;
-    page.cambiarPerfil('CLIENTE');
-    page.cambiarMotivacion('También quiero pedir servicios');
-
-    page.enviar();
-    fixture.detectChanges();
-
-    expect(texto(fixture, 'solicitud-duplicada')).toContain('Ya tienes una solicitud abierta');
-  });
-
-  it('muestra un error con reintento cuando falla el envío', () => {
-    const { fixture, solicitar } = setup({
-      disponibles: ['TECNICO'],
-      actual: 'TECNICO',
-      rolPrimario: 'TECNICO',
-      respuesta: 'error',
-    });
-    const page = fixture.componentInstance;
-    page.cambiarPerfil('CLIENTE');
-    page.cambiarMotivacion('También quiero pedir servicios');
-
-    page.enviar();
-    fixture.detectChanges();
-
-    expect(texto(fixture, 'solicitud-error')).toContain('No pudimos enviar tu solicitud');
-    boton(fixture, 'solicitud-reintentar').click();
-    expect(solicitar).toHaveBeenCalledTimes(2);
+    expect(html.querySelector('[data-testid="cuenta-agregar-perfil"]')).toBeNull();
+    expect(html.querySelector('[data-testid="formulario-perfil"]')).toBeNull();
+    expect(html.querySelector('[data-testid="solicitar-perfil"]')).toBeNull();
+    expect(html.textContent).not.toContain('Agregar perfil');
   });
 
   it('muestra cuántos perfiles tiene habilitados la cuenta', () => {
