@@ -127,12 +127,12 @@
     </cd-empty-state>
   }
   <!-- La primera de la cola: la orden que se trabaja ahora (§4, urgencia manda). -->
-  @if (proximaOt(); as orden) {
-    <h2 class="cd-section__titulo cd-section__titulo--bloque">Próxima orden de trabajo</h2>
+  @if (otActiva(); as orden) {
+    <h2 class="cd-section__titulo cd-section__titulo--bloque">Orden de trabajo activa</h2>
 
     <button
       type="button"
-      class="cd-ot cd-ot--proxima"
+      class="cd-ot cd-ot--activa"
       [attr.data-testid]="'ot-' + orden.id"
       (click)="abrirOt(orden.id)"
     >
@@ -149,27 +149,27 @@
         {{ orden.direccion }}
       </span>
       @if (orden.clienteNombre || orden.barrio) {
-        <span class="cd-proxima__contexto">
+        <span class="cd-activa__contexto">
           @if (orden.clienteNombre; as cliente) {
-            <span class="cd-proxima__spec">
+            <span class="cd-activa__spec">
               <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
               {{ cliente }}
             </span>
           }
           @if (orden.barrio) {
-            <span class="cd-proxima__spec">
+            <span class="cd-activa__spec">
               <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
               {{ orden.barrio }}
             </span>
           }
         </span>
       }
-      <span class="cd-proxima__cta">Abrir ejecución</span>
+      <span class="cd-activa__cta">Abrir ejecución</span>
     </button>
   }
 
   @if (restoOts().length > 0) {
-    <h2 class="cd-section__titulo cd-section__titulo--bloque">Siguientes órdenes</h2>
+    <h2 class="cd-section__titulo cd-section__titulo--bloque">Otras órdenes</h2>
 
     @for (orden of restoOts(); track orden.id) {
       <button

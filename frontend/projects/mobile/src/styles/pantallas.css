@@ -1917,12 +1917,12 @@ button.cd-ot .cd-ot__direccion {
   font-variant-numeric: tabular-nums;
 }
 
-/* B0 — Próxima orden: la primera de la cola destacada con borde de acción.
+/* B0 — Orden de trabajo activa: la primera de la cola destacada con borde de acción.
    El CTA es un asiento visual dentro del botón-tarjeta (no anidado).
    La especificidad button.cd-ot es necesaria: `button.cd-ot` (0,1,1) pinta
-   fondo transparente y borde 0; con solo `.cd-ot--proxima` (0,1,0) la tarjeta
+   fondo transparente y borde 0; con solo `.cd-ot--activa` (0,1,0) la tarjeta
    destacada quedaba plana. */
-button.cd-ot.cd-ot--proxima {
+button.cd-ot.cd-ot--activa {
   padding: 1rem;
   background: var(--cd-surface);
   border: 1px solid var(--cd-action);
@@ -1932,7 +1932,7 @@ button.cd-ot.cd-ot--proxima {
 /* Fila de specs hundida (Stitch B0 "Key Specs Grid"): cliente y barrio con
    icono, solo datos reales del DTO. Distancia y hora no se pintan: el backend
    no las expone para la OT asignada (no inventar). */
-.cd-proxima__contexto {
+.cd-activa__contexto {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1rem;
@@ -1945,7 +1945,7 @@ button.cd-ot.cd-ot--proxima {
   color: var(--cd-text-2);
 }
 
-.cd-proxima__spec {
+.cd-activa__spec {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1953,13 +1953,13 @@ button.cd-ot.cd-ot--proxima {
   overflow-wrap: anywhere;
 }
 
-.cd-proxima__spec ion-icon {
+.cd-activa__spec ion-icon {
   flex: 0 0 auto;
   font-size: 1rem;
   color: var(--cd-text-3);
 }
 
-.cd-proxima__cta {
+.cd-activa__cta {
   display: flex;
   align-items: center;
   justify-content: center;

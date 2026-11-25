@@ -120,7 +120,7 @@ export class PanelTecnicoPageMobile implements OnInit {
   });
 
   /** La primera de la cola: la orden en la que se trabaja ahora (§4). */
-  readonly proximaOt = computed(() => this.misOts()[0] ?? null);
+  readonly otActiva = computed(() => this.misOts()[0] ?? null);
   readonly restoOts = computed(() => this.misOts().slice(1));
 
   readonly modoUbicacion = computed(() => this.presencia.modo());
