@@ -7,6 +7,8 @@ describe('rutaDeNotificacion', () => {
   it('acepta rutas propias de un modo', () => {
     expect(rutaDeNotificacion({ ruta: '/tecnico/radar' })).toBe('/tecnico/radar');
     expect(rutaDeNotificacion({ ruta: '/cliente/ot/abc-123' })).toBe('/cliente/ot/abc-123');
+    expect(rutaDeNotificacion({ ruta: '/proveedor/insumos' })).toBe('/proveedor/insumos');
+    expect(rutaDeNotificacion({ ruta: '/tecnico/ejecucion/abc-123' })).toBe('/tecnico/ejecucion/abc-123');
   });
 
   it('rechaza rutas ajenas, relativas o con escape', () => {
@@ -39,6 +41,7 @@ describe('PushNotificacionesService', () => {
       'ot_update_tec',
       'ot_nueva_cli',
       'ot_update_cli',
+      'insumo_nuevo_prov',
     ]);
     expect(new Set(CANALES_PUSH.map((c) => c.sound))).toEqual(
       new Set(['switch_006.ogg', 'switch_007.ogg']),

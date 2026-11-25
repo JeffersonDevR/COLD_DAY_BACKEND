@@ -234,6 +234,14 @@
           @for (item of solicitud.items; track $index) {
             <p class="cd-ot__descripcion">{{ item.cantidad }} × {{ item.descripcion }}</p>
           }
+          @if (solicitud.etaMinutos && (solicitud.estado === 'ASIGNADO' || solicitud.estado === 'DESPACHADO')) {
+            <p class="cd-ayuda" [attr.data-testid]="'insumo-eta-' + solicitud.id">
+              El proveedor se comprometió a llegar en {{ solicitud.etaMinutos }} min
+              @if (solicitud.distanciaKm != null) {
+                · a {{ solicitud.distanciaKm.toFixed(1) }} km
+              }
+            </p>
+          }
         </article>
       }
     }

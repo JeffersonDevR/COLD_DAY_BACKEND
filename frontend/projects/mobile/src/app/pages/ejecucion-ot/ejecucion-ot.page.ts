@@ -386,6 +386,8 @@ export class EjecucionOtPage implements OnInit {
         return 'Solicitado';
       case 'ASIGNADO':
         return 'Asignado';
+      case 'DESPACHADO':
+        return 'Despachado';
       case 'ENTREGADO':
         return 'Entregado';
       case 'SIN_PROVEEDOR':

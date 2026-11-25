@@ -72,6 +72,12 @@ export const CANALES_PUSH: readonly CanalPush[] = [
     description: 'Otras novedades de tu solicitud de servicio',
     sound: 'switch_007.ogg',
   },
+  {
+    id: 'insumo_nuevo_prov',
+    name: 'Solicitudes de repuestos',
+    description: 'Pedidos de repuestos cerca de tu zona',
+    sound: 'switch_007.ogg',
+  },
 ];
 
 const RUTA_PERMITIDA = /^\/(cliente|tecnico|proveedor)\/[A-Za-z0-9/_:-]{1,120}$/;
