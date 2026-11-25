@@ -59,10 +59,35 @@ public class RequerimientoInsumoRepositoryAdapter implements RequerimientoInsumo
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<RequerimientoInsumo> buscarEscalables(Instant ahora) {
+        return repository.buscarEscalables(EstadoRequerimiento.SOLICITADO, ahora).stream()
+                .map(RequerimientoInsumoJpaEntity::toDomain).toList();
+    }
+
+    @Override
     @Transactional
-    public int intentarAsignar(RequerimientoInsumoId id, Instant ahora) {
+    public int escalarSiAbierto(RequerimientoInsumoId id, double radioKm, Instant ventanaExpiraEn) {
+        return repository.escalarSiAbierto(id.valor(), radioKm, ventanaExpiraEn, EstadoRequerimiento.SOLICITADO);
+    }
+
+    @Override
+    @Transactional
+    public int marcarEtaAvisado(RequerimientoInsumoId id, Instant ahora) {
+        return repository.marcarEtaAvisado(id.valor(), ahora, EstadoRequerimiento.ASIGNADO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RequerimientoInsumo> buscarEtaVencidos(Instant ahora) {
+        return repository.buscarEtaVencidos(ahora).stream().map(RequerimientoInsumoJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional
+    public int intentarAsignar(RequerimientoInsumoId id, Instant ahora, int etaMinutos, Double distanciaKm) {
         return repository.asignarSiDisponible(id.valor(), ahora,
-                EstadoRequerimiento.SOLICITADO, EstadoRequerimiento.ASIGNADO);
+                EstadoRequerimiento.SOLICITADO, EstadoRequerimiento.ASIGNADO, etaMinutos, distanciaKm);
     }
 
     @Override

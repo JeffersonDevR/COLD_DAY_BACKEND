@@ -79,16 +79,171 @@ class RequerimientoInsumoRepositoryTest {
     }
 
     @Test
+    void persistsAndRereadsDestinoRadioEtaAndDespachadoState() {
+        RequerimientoInsumo nuevo = RequerimientoInsumo.crear(otId, tecnicoId,
+                List.of(new InsumoLinea("Filtro secadora", 2)), "obs", AHORA, AHORA.plusSeconds(900),
+                new com.sena.cold_day.core.shared.domain.Point(4.65, -74.1), 10.0, AHORA.plusSeconds(225));
+        RequerimientoInsumo saved = requerimientos.save(nuevo);
+
+        saved.escalar(15.0, AHORA.plusSeconds(450));
+        saved = requerimientos.save(saved);
+        assertThat(saved.getRadioKm()).isEqualTo(15.0);
+
+        saved.asignar(40, 12.5, AHORA.plusSeconds(60));
+        saved.despachar(AHORA.plusSeconds(120));
+        saved.marcarEtaAvisado(AHORA.plusSeconds(3000));
+        requerimientos.save(saved);
+
+        assertThat(requerimientos.buscarPorId(saved.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.DESPACHADO);
+            assertThat(found.getDestino()).isEqualTo(new com.sena.cold_day.core.shared.domain.Point(4.65, -74.1));
+            assertThat(found.getRadioKm()).isEqualTo(15.0);
+            assertThat(found.getVentanaExpiraEn()).isEqualTo(AHORA.plusSeconds(450));
+            assertThat(found.getEtaMinutos()).isEqualTo(40);
+            assertThat(found.getDistanciaKm()).isEqualTo(12.5);
+            assertThat(found.getAceptadaEn()).isEqualTo(AHORA.plusSeconds(60));
+            assertThat(found.getDespachadaEn()).isEqualTo(AHORA.plusSeconds(120));
+            assertThat(found.getEtaAvisoEn()).isEqualTo(AHORA.plusSeconds(3000));
+        });
+    }
+
+    @Test
+    void buscarEscalablesReturnsOnlyOpenRadiusRequestsWhoseWindowClosedAndThatAreStillAlive() {
+        var destino = new com.sena.cold_day.core.shared.domain.Point(4.65, -74.1);
+        RequerimientoInsumo debido = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId,
+                List.of(new InsumoLinea("Filtro", 1)), null, AHORA.minusSeconds(300), AHORA.plusSeconds(600), destino,
+                10.0, AHORA.minusSeconds(1)));
+        requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, List.of(new InsumoLinea("Filtro", 1)), null,
+                AHORA.minusSeconds(300), AHORA.plusSeconds(600), destino, 10.0, AHORA.plusSeconds(100)));
+        requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, List.of(new InsumoLinea("Filtro", 1)), null,
+                AHORA.minusSeconds(900), AHORA.minusSeconds(1), destino, 25.0, AHORA.minusSeconds(100)));
+        requerimientos.save(crearRequerimiento(AHORA.minusSeconds(300), AHORA.plusSeconds(600)));
+
+        assertThat(requerimientos.buscarEscalables(AHORA)).extracting(RequerimientoInsumo::getId)
+                .containsExactly(debido.getId());
+    }
+
+    @Test
+    void buscarEtaVencidosReturnsOnlyAssignedRequestsWhoseEtaElapsedAndWereNotWarned() {
+        List<InsumoLinea> lineas = List.of(new InsumoLinea("Filtro", 1));
+        RequerimientoInsumo vencido = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null,
+                AHORA.minusSeconds(7200), AHORA.plusSeconds(600)));
+        vencido.asignar(30, 5.0, AHORA.minusSeconds(3600));
+        vencido = requerimientos.save(vencido);
+
+        RequerimientoInsumo enTiempo = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null,
+                AHORA.minusSeconds(7200), AHORA.plusSeconds(600)));
+        enTiempo.asignar(120, 5.0, AHORA.minusSeconds(60));
+        requerimientos.save(enTiempo);
+
+        RequerimientoInsumo yaAvisado = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null,
+                AHORA.minusSeconds(7200), AHORA.plusSeconds(600)));
+        yaAvisado.asignar(30, 5.0, AHORA.minusSeconds(3600));
+        yaAvisado.marcarEtaAvisado(AHORA.minusSeconds(10));
+        requerimientos.save(yaAvisado);
+
+        RequerimientoInsumo despachado = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null,
+                AHORA.minusSeconds(7200), AHORA.plusSeconds(600)));
+        despachado.asignar(30, 5.0, AHORA.minusSeconds(3600));
+        despachado.despachar(AHORA.minusSeconds(3000));
+        requerimientos.save(despachado);
+
+        requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null, AHORA.minusSeconds(7200),
+                AHORA.plusSeconds(600)));
+
+        assertThat(requerimientos.buscarEtaVencidos(AHORA)).extracting(RequerimientoInsumo::getId)
+                .containsExactly(vencido.getId());
+    }
+
+    @Test
+    void escalarSiAbiertoWidensAnOpenRequestButNeverOverwritesAnAcceptedOne() {
+        var destino = new com.sena.cold_day.core.shared.domain.Point(4.65, -74.1);
+        List<InsumoLinea> lineas = List.of(new InsumoLinea("Filtro", 1));
+        RequerimientoInsumo abierto = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null,
+                AHORA.minusSeconds(300), AHORA.plusSeconds(600), destino, 10.0, AHORA.minusSeconds(1)));
+        RequerimientoInsumo aceptado = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null,
+                AHORA.minusSeconds(300), AHORA.plusSeconds(600), destino, 10.0, AHORA.minusSeconds(1)));
+        // A supplier wins between the sweep's SELECT and its write.
+        assertThat(requerimientos.intentarAsignar(aceptado.getId(), AHORA, 40, 6.0)).isEqualTo(1);
+
+        assertThat(requerimientos.escalarSiAbierto(abierto.getId(), 15.0, AHORA.plusSeconds(225))).isEqualTo(1);
+        assertThat(requerimientos.escalarSiAbierto(aceptado.getId(), 15.0, AHORA.plusSeconds(225))).isZero();
+
+        assertThat(requerimientos.buscarPorId(abierto.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getRadioKm()).isEqualTo(15.0);
+            assertThat(found.getVentanaExpiraEn()).isEqualTo(AHORA.plusSeconds(225));
+        });
+        assertThat(requerimientos.buscarPorId(aceptado.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
+            assertThat(found.getEtaMinutos()).isEqualTo(40);
+            assertThat(found.getRadioKm()).isEqualTo(10.0);
+        });
+    }
+
+    @Test
+    void marcarEtaAvisadoIsClaimedOnlyOnceAndNeverForADispatchedRequest() {
+        List<InsumoLinea> lineas = List.of(new InsumoLinea("Filtro", 1));
+        RequerimientoInsumo asignado = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas, null,
+                AHORA.minusSeconds(7200), AHORA.plusSeconds(600)));
+        asignado.asignar(30, 5.0, AHORA.minusSeconds(3600));
+        asignado = requerimientos.save(asignado);
+        RequerimientoInsumo despachado = requerimientos.save(RequerimientoInsumo.crear(otId, tecnicoId, lineas,
+                null, AHORA.minusSeconds(7200), AHORA.plusSeconds(600)));
+        despachado.asignar(30, 5.0, AHORA.minusSeconds(3600));
+        despachado.despachar(AHORA.minusSeconds(60));
+        despachado = requerimientos.save(despachado);
+
+        assertThat(requerimientos.marcarEtaAvisado(asignado.getId(), AHORA)).isEqualTo(1);
+        assertThat(requerimientos.marcarEtaAvisado(asignado.getId(), AHORA)).isZero();
+        assertThat(requerimientos.marcarEtaAvisado(despachado.getId(), AHORA)).isZero();
+
+        assertThat(requerimientos.buscarPorId(asignado.getId()))
+                .hasValueSatisfying(found -> assertThat(found.getEtaAvisoEn()).isEqualTo(AHORA));
+        assertThat(requerimientos.buscarPorId(despachado.getId()))
+                .hasValueSatisfying(found -> assertThat(found.getEtaAvisoEn()).isNull());
+    }
+
+    @Test
+    void legacyRowWithoutRadiusFieldsIsReadWithNulls() {
+        RequerimientoInsumo saved = requerimientos.save(crearRequerimiento(AHORA, AHORA.plusSeconds(600)));
+
+        assertThat(requerimientos.buscarPorId(saved.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getRadioKm()).isNull();
+            assertThat(found.getDestino()).isNull();
+            assertThat(found.getVentanaExpiraEn()).isNull();
+            assertThat(found.getEtaMinutos()).isNull();
+        });
+    }
+
+    @Test
+    void ofertaPersistsDistanceAndSuggestedEta() {
+        RequerimientoInsumo req = requerimientos.save(crearRequerimiento(AHORA, AHORA.plusSeconds(600)));
+        ProveedorId proveedorId = fx.proveedorId();
+
+        OfertaInsumo oferta = ofertas.save(OfertaInsumo.crear(req.getId(), proveedorId, AHORA,
+                AHORA.plusSeconds(600), 7.5, 15));
+
+        assertThat(ofertas.buscarPorId(oferta.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getDistanciaKm()).isEqualTo(7.5);
+            assertThat(found.getEtaSugeridoMinutos()).isEqualTo(15);
+        });
+    }
+
+    @Test
     void asignarSiDisponibleWinsOnlyOnce() {
         RequerimientoInsumo req = requerimientos.save(crearRequerimiento(AHORA, AHORA.plusSeconds(600)));
 
-        int ganador = requerimientos.intentarAsignar(req.getId(), AHORA);
-        int repetido = requerimientos.intentarAsignar(req.getId(), AHORA);
+        int ganador = requerimientos.intentarAsignar(req.getId(), AHORA, 40, 12.5);
+        int repetido = requerimientos.intentarAsignar(req.getId(), AHORA, 40, 12.5);
 
         assertThat(ganador).isEqualTo(1);
         assertThat(repetido).isZero();
-        assertThat(requerimientos.buscarPorId(req.getId()))
-                .hasValueSatisfying(found -> assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO));
+        assertThat(requerimientos.buscarPorId(req.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
+            assertThat(found.getEtaMinutos()).isEqualTo(40);
+            assertThat(found.getDistanciaKm()).isEqualTo(12.5);
+            assertThat(found.getAceptadaEn()).isEqualTo(AHORA);
+        });
     }
 
     @Test
@@ -96,7 +251,7 @@ class RequerimientoInsumoRepositoryTest {
         RequerimientoInsumo req = requerimientos.save(
                 crearRequerimiento(AHORA.minusSeconds(10), AHORA.minusSeconds(1)));
 
-        assertThat(requerimientos.intentarAsignar(req.getId(), AHORA)).isZero();
+        assertThat(requerimientos.intentarAsignar(req.getId(), AHORA, 40, 12.5)).isZero();
         assertThat(requerimientos.buscarPorId(req.getId()))
                 .hasValueSatisfying(found -> assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO));
     }

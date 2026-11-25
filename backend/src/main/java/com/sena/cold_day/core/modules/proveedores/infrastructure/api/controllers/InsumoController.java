@@ -6,19 +6,24 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sena.cold_day.core.modules.proveedores.application.usecases.AceptarInsumoUseCase;
+import com.sena.cold_day.core.modules.proveedores.application.usecases.DespacharInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.EntregarInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.ListarSolicitudesProveedorUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.RechazarInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoId;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.AceptarInsumoApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.OfertaInsumoApiResponse;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.SolicitudInsumoApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
+
+import jakarta.validation.Valid;
 
 /**
  * Supplier-side insumo dispatch surface (design "API Contracts"). The acting
@@ -38,13 +43,15 @@ public class InsumoController {
     private final ListarSolicitudesProveedorUseCase listar;
     private final AceptarInsumoUseCase aceptar;
     private final RechazarInsumoUseCase rechazar;
+    private final DespacharInsumoUseCase despachar;
     private final EntregarInsumoUseCase entregar;
 
     public InsumoController(ListarSolicitudesProveedorUseCase listar, AceptarInsumoUseCase aceptar,
-            RechazarInsumoUseCase rechazar, EntregarInsumoUseCase entregar) {
+            RechazarInsumoUseCase rechazar, DespacharInsumoUseCase despachar, EntregarInsumoUseCase entregar) {
         this.listar = listar;
         this.aceptar = aceptar;
         this.rechazar = rechazar;
+        this.despachar = despachar;
         this.entregar = entregar;
     }
 
@@ -61,8 +68,9 @@ public class InsumoController {
     @PostMapping("/insumos/{ofertaId}/aceptar")
     @PreAuthorize("hasRole('PROVEEDOR')")
     public SolicitudInsumoApiResponse aceptar(@AuthenticationPrincipal AuthenticatedUser principal,
-            @PathVariable OfertaInsumoId ofertaId) {
-        return SolicitudInsumoApiResponse.from(aceptar.aceptar(principal.usuarioId(), ofertaId));
+            @PathVariable OfertaInsumoId ofertaId, @Valid @RequestBody AceptarInsumoApiRequest request) {
+        return SolicitudInsumoApiResponse.from(
+                aceptar.aceptar(principal.usuarioId(), ofertaId, request.etaMinutos()));
     }
 
     /** Explicit decline (spec disp.R5): records {@code RECHAZADO} without binding. */
@@ -71,6 +79,14 @@ public class InsumoController {
     public OfertaInsumoApiResponse rechazar(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OfertaInsumoId ofertaId) {
         return OfertaInsumoApiResponse.from(rechazar.rechazar(principal.usuarioId(), ofertaId), null);
+    }
+
+    /** The winning supplier sends the order out; delivery is only possible after this. */
+    @PostMapping("/insumos/{id}/despachar")
+    @PreAuthorize("hasRole('PROVEEDOR')")
+    public SolicitudInsumoApiResponse despachar(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable RequerimientoInsumoId id) {
+        return SolicitudInsumoApiResponse.from(despachar.despachar(principal.usuarioId(), id));
     }
 
     /** Delivery confirmation by the winning supplier (spec disp.R7, design AD8). */

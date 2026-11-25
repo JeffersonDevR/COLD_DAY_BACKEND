@@ -3,8 +3,10 @@ package com.sena.cold_day.core.modules.proveedores.application.usecases;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Clock;
@@ -31,6 +33,8 @@ import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoEl
 import com.sena.cold_day.core.modules.proveedores.domain.repository.OfertaInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.RequerimientoInsumoRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.services.NotificacionInsumoPort;
+import com.sena.cold_day.core.modules.proveedores.domain.services.CalculadoraEtaInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.InsumoLinea;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoEstado;
@@ -53,21 +57,48 @@ class AceptarInsumoUseCaseTest {
     private static final UUID OT_ID = UUID.randomUUID();
     private static final UUID TECNICO_ID = UUID.randomUUID();
     private static final long USUARIO_ID = 42L;
+    private static final int ETA_MINUTOS = 45;
+    private static final Double DISTANCIA_KM = 12.5;
 
     @Mock RequerimientoInsumoRepository requerimientoRepository;
     @Mock OfertaInsumoRepository ofertaRepository;
     @Mock ProveedorRepository proveedorRepository;
+    @Mock NotificacionInsumoPort notificacion;
 
     private AceptarInsumoUseCase useCase;
 
     @BeforeEach
     void setUp() {
         useCase = new AceptarInsumoUseCase(requerimientoRepository, ofertaRepository, proveedorRepository,
-                Clock.fixed(AHORA, ZoneOffset.UTC));
+                new CalculadoraEtaInsumo(30.0, 240), notificacion, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 
     @Test
     void theWinnerAssignsTheRequestAndInvalidatesEverySibling() {
+        Proveedor proveedor = proveedorActivo();
+        RequerimientoInsumo solicitado = requerimientoSolicitado();
+        OfertaInsumo oferta = OfertaInsumo.crear(solicitado.getId(), proveedor.getId(), AHORA, EXPIRA,
+                DISTANCIA_KM, 25);
+        when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
+        when(ofertaRepository.buscarPorId(oferta.getId())).thenReturn(Optional.of(oferta));
+        when(requerimientoRepository.buscarPorId(solicitado.getId()))
+                .thenReturn(Optional.of(solicitado))
+                .thenReturn(Optional.of(requerimientoAsignado(solicitado.getId())));
+        when(requerimientoRepository.intentarAsignar(solicitado.getId(), AHORA, ETA_MINUTOS, DISTANCIA_KM))
+                .thenReturn(1);
+        when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
+
+        RequerimientoInsumo resultado = useCase.aceptar(new UsuarioId(USUARIO_ID), oferta.getId(), ETA_MINUTOS);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
+        verify(requerimientoRepository).intentarAsignar(solicitado.getId(), AHORA, ETA_MINUTOS, DISTANCIA_KM);
+        verify(ofertaRepository).intentarAceptar(oferta.getId(), AHORA);
+        verify(ofertaRepository).invalidarPendientesDe(solicitado.getId(), OfertaInsumoEstado.CANCELADA, AHORA);
+        verify(notificacion).notificarAceptada(resultado);
+    }
+
+    @Test
+    void aFailingNotifierNeverChangesTheOutcomeOfTheAcceptance() {
         Proveedor proveedor = proveedorActivo();
         RequerimientoInsumo solicitado = requerimientoSolicitado();
         OfertaInsumo oferta = OfertaInsumo.crear(solicitado.getId(), proveedor.getId(), AHORA, EXPIRA);
@@ -76,15 +107,13 @@ class AceptarInsumoUseCaseTest {
         when(requerimientoRepository.buscarPorId(solicitado.getId()))
                 .thenReturn(Optional.of(solicitado))
                 .thenReturn(Optional.of(requerimientoAsignado(solicitado.getId())));
-        when(requerimientoRepository.intentarAsignar(solicitado.getId(), AHORA)).thenReturn(1);
+        when(requerimientoRepository.intentarAsignar(solicitado.getId(), AHORA, ETA_MINUTOS, null)).thenReturn(1);
         when(ofertaRepository.intentarAceptar(oferta.getId(), AHORA)).thenReturn(1);
+        org.mockito.Mockito.doThrow(new IllegalStateException("push caido")).when(notificacion).notificarAceptada(any());
 
-        RequerimientoInsumo resultado = useCase.aceptar(new UsuarioId(USUARIO_ID), oferta.getId());
+        RequerimientoInsumo resultado = useCase.aceptar(new UsuarioId(USUARIO_ID), oferta.getId(), ETA_MINUTOS);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
-        verify(requerimientoRepository).intentarAsignar(solicitado.getId(), AHORA);
-        verify(ofertaRepository).intentarAceptar(oferta.getId(), AHORA);
-        verify(ofertaRepository).invalidarPendientesDe(solicitado.getId(), OfertaInsumoEstado.CANCELADA, AHORA);
     }
 
     @Test
@@ -95,9 +124,9 @@ class AceptarInsumoUseCaseTest {
         when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
         when(ofertaRepository.buscarPorId(oferta.getId())).thenReturn(Optional.of(oferta));
         when(requerimientoRepository.buscarPorId(solicitado.getId())).thenReturn(Optional.of(solicitado));
-        when(requerimientoRepository.intentarAsignar(solicitado.getId(), AHORA)).thenReturn(0);
+        when(requerimientoRepository.intentarAsignar(solicitado.getId(), AHORA, ETA_MINUTOS, null)).thenReturn(0);
 
-        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), oferta.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), oferta.getId(), ETA_MINUTOS))
                 .isInstanceOf(OfertaInsumoNoDisponibleException.class);
 
         verify(ofertaRepository, never()).intentarAceptar(any(), any());
@@ -109,7 +138,7 @@ class AceptarInsumoUseCaseTest {
     void anUnknownSupplierCannotAccept() {
         when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), OfertaInsumoId.nueva()))
+        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), OfertaInsumoId.nueva(), ETA_MINUTOS))
                 .isInstanceOf(ProveedorNoElegibleException.class);
 
         verify(ofertaRepository, never()).buscarPorId(any());
@@ -121,7 +150,7 @@ class AceptarInsumoUseCaseTest {
         inactivo.desactivar();
         when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(inactivo));
 
-        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), OfertaInsumoId.nueva()))
+        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), OfertaInsumoId.nueva(), ETA_MINUTOS))
                 .isInstanceOf(ProveedorNoElegibleException.class);
 
         verify(ofertaRepository, never()).buscarPorId(any());
@@ -136,10 +165,10 @@ class AceptarInsumoUseCaseTest {
         when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
         when(ofertaRepository.buscarPorId(expirada.getId())).thenReturn(Optional.of(expirada));
 
-        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), expirada.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), expirada.getId(), ETA_MINUTOS))
                 .isInstanceOf(OfertaInsumoNoDisponibleException.class);
 
-        verify(requerimientoRepository, never()).intentarAsignar(any(), any());
+        verify(requerimientoRepository, never()).intentarAsignar(any(), any(), anyInt(), any());
     }
 
     @Test
@@ -153,10 +182,10 @@ class AceptarInsumoUseCaseTest {
         when(ofertaRepository.buscarPorId(oferta.getId())).thenReturn(Optional.of(oferta));
         when(requerimientoRepository.buscarPorId(oferta.getRequerimientoId())).thenReturn(Optional.of(vencido));
 
-        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), oferta.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), oferta.getId(), ETA_MINUTOS))
                 .isInstanceOf(OfertaInsumoNoDisponibleException.class);
 
-        verify(requerimientoRepository, never()).intentarAsignar(any(), any());
+        verify(requerimientoRepository, never()).intentarAsignar(any(), any(), anyInt(), any());
     }
 
     @Test
@@ -166,10 +195,24 @@ class AceptarInsumoUseCaseTest {
         when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
         when(ofertaRepository.buscarPorId(ajena.getId())).thenReturn(Optional.of(ajena));
 
-        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), ajena.getId()))
+        assertThatThrownBy(() -> useCase.aceptar(new UsuarioId(USUARIO_ID), ajena.getId(), ETA_MINUTOS))
                 .isInstanceOf(OfertaInsumoNoDisponibleException.class);
 
-        verify(requerimientoRepository, never()).intentarAsignar(any(), any());
+        verify(requerimientoRepository, never()).intentarAsignar(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void anEtaOutsideTheAllowedRangeIsRejectedBeforeAnythingIsTouched() {
+        OfertaInsumoId ofertaId = OfertaInsumoId.nueva();
+        UsuarioId usuario = new UsuarioId(USUARIO_ID);
+
+        for (int etaInvalido : new int[] { 0, -5, 241 }) {
+            assertThatThrownBy(() -> useCase.aceptar(usuario, ofertaId, etaInvalido))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("entre 1 y 240");
+        }
+
+        verifyNoInteractions(proveedorRepository, ofertaRepository, requerimientoRepository);
     }
 
     /** An eligible supplier: active AND documentary validation approved (AD7). */

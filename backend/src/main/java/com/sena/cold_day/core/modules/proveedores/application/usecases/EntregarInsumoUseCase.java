@@ -3,6 +3,8 @@ package com.sena.cold_day.core.modules.proveedores.application.usecases;
 import java.time.Clock;
 import java.time.Instant;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +15,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.exception.Requerimiento
 import com.sena.cold_day.core.modules.proveedores.domain.repository.OfertaInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.RequerimientoInsumoRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.services.NotificacionInsumoPort;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoEstado;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
@@ -28,16 +31,21 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 @Service
 public class EntregarInsumoUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(EntregarInsumoUseCase.class);
+
     private final RequerimientoInsumoRepository requerimientoRepository;
     private final OfertaInsumoRepository ofertaRepository;
     private final ProveedorRepository proveedorRepository;
+    private final NotificacionInsumoPort notificacion;
     private final Clock clock;
 
     public EntregarInsumoUseCase(RequerimientoInsumoRepository requerimientoRepository,
-            OfertaInsumoRepository ofertaRepository, ProveedorRepository proveedorRepository, Clock clock) {
+            OfertaInsumoRepository ofertaRepository, ProveedorRepository proveedorRepository,
+            NotificacionInsumoPort notificacion, Clock clock) {
         this.requerimientoRepository = requerimientoRepository;
         this.ofertaRepository = ofertaRepository;
         this.proveedorRepository = proveedorRepository;
+        this.notificacion = notificacion;
         this.clock = clock;
     }
 
@@ -57,7 +65,10 @@ public class EntregarInsumoUseCase {
         }
 
         requerimiento.marcarEntregado(ahora);
-        return requerimientoRepository.save(requerimiento);
+        RequerimientoInsumo entregado = requerimientoRepository.save(requerimiento);
+        NotificacionBestEffort.ejecutar(() -> notificacion.notificarEntregada(entregado), log,
+                "la entrega de " + entregado.getId());
+        return entregado;
     }
 
     /**

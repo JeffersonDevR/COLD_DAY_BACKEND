@@ -29,6 +29,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.sena.cold_day.core.modules.proveedores.application.usecases.AceptarInsumoUseCase;
+import com.sena.cold_day.core.modules.proveedores.application.usecases.DespacharInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.EntregarInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.ExpirarInsumosUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.SolicitarInsumoUseCase;
@@ -86,6 +87,11 @@ class InsumoApiIT {
     private UUID otId;
     private UUID tecnicoId;
     private static final List<InsumoLinea> LINEAS = List.of(new InsumoLinea("Filtro secadora", 2));
+    // Punto de entrega y proveedores a ~2 km: dentro del radio inicial de 10 km.
+    private static final com.sena.cold_day.core.shared.domain.Point DESTINO =
+            new com.sena.cold_day.core.shared.domain.Point(4.6097, -74.0817);
+    private static final com.sena.cold_day.core.shared.domain.Point CERCA =
+            new com.sena.cold_day.core.shared.domain.Point(4.6277, -74.0817);
 
     @TestConfiguration
     static class RelojFijo {
@@ -98,6 +104,7 @@ class InsumoApiIT {
 
     @Autowired SolicitarInsumoUseCase solicitar;
     @Autowired AceptarInsumoUseCase aceptar;
+    @Autowired DespacharInsumoUseCase despachar;
     @Autowired EntregarInsumoUseCase entregar;
     @Autowired ExpirarInsumosUseCase expirar;
     @Autowired RequerimientoInsumoRepository requerimientos;
@@ -128,7 +135,7 @@ class InsumoApiIT {
         Proveedor segundo = crearProveedorActivo("900-2", "prov.2@example.com");
         crearProveedorInactivo("900-3", "prov.3@example.com");
 
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, "Compresor ruidoso").orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, "Compresor ruidoso").orElseThrow();
         assertThat(req.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO);
 
         // AD7: only the two active suppliers receive an offer.
@@ -136,7 +143,7 @@ class InsumoApiIT {
         assertThat(pendientes).hasSize(2);
 
         OfertaInsumo dePrimero = ofertaDe(pendientes, primero.getId());
-        RequerimientoInsumo asignado = aceptar.aceptar(new UsuarioId(primero.getUsuarioId()), dePrimero.getId());
+        RequerimientoInsumo asignado = aceptar.aceptar(new UsuarioId(primero.getUsuarioId()), dePrimero.getId(), 30);
 
         assertThat(asignado.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
         assertThat(ofertas.buscarPorId(dePrimero.getId())).hasValueSatisfying(
@@ -144,6 +151,7 @@ class InsumoApiIT {
         assertThat(ofertas.buscarPorId(ofertaDe(pendientes, segundo.getId()).getId())).hasValueSatisfying(
                 oferta -> assertThat(oferta.getEstado()).isEqualTo(OfertaInsumoEstado.CANCELADA));
 
+        despachar.despachar(new UsuarioId(primero.getUsuarioId()), req.getId());
         RequerimientoInsumo entregado = entregar.entregar(new UsuarioId(primero.getUsuarioId()), req.getId());
         assertThat(entregado.getEstado()).isEqualTo(EstadoRequerimiento.ENTREGADO);
         assertThat(entregado.getResueltaEn()).isEqualTo(AHORA);
@@ -154,11 +162,11 @@ class InsumoApiIT {
         crearProveedorActivo("900-4", "prov.4@example.com");
         Proveedor inactivo = crearProveedorInactivo("900-5", "prov.5@example.com");
 
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
         OfertaInsumo delInactivo = ofertas.save(
                 OfertaInsumo.crear(req.getId(), inactivo.getId(), AHORA, EXPIRA));
 
-        assertThatThrownBy(() -> aceptar.aceptar(new UsuarioId(inactivo.getUsuarioId()), delInactivo.getId()))
+        assertThatThrownBy(() -> aceptar.aceptar(new UsuarioId(inactivo.getUsuarioId()), delInactivo.getId(), 30))
                 .isInstanceOf(ProveedorNoElegibleException.class);
 
         assertThat(requerimientos.buscarPorId(req.getId())).hasValueSatisfying(
@@ -168,13 +176,30 @@ class InsumoApiIT {
     }
 
     @Test
-    void zeroEligibleSuppliersResolveToSinProveedorWithoutBlockingTheOt() {
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
+    void zeroEligibleSuppliersLeaveTheRequestOpenForEscalationAndExpireToSinProveedor() {
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
 
-        assertThat(req.getEstado()).isEqualTo(EstadoRequerimiento.SIN_PROVEEDOR);
+        // Nobody in the 10 km ring is not a failure: the sweep widens the radius, and only the expiry resolves it.
+        assertThat(req.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO);
         assertThat(ofertas.listarPendientesPorRequerimiento(req.getId())).isEmpty();
-        assertThat(requerimientos.buscarPorId(req.getId())).hasValueSatisfying(
-                found -> assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.SIN_PROVEEDOR));
+    }
+
+    @Test
+    void onlySuppliersInsideTheRadiusWithLocationGetAnOfferAndTheyCarryDistanceAndEta() {
+        Proveedor cerca = crearProveedorActivo("900-20", "prov.20@example.com");
+        // ~16 km north of the destination: outside the initial 10 km ring.
+        crearProveedorAprobadoEn("900-21", "prov.21@example.com",
+                new com.sena.cold_day.core.shared.domain.Point(4.6097 + 0.1439, -74.0817));
+        crearProveedorAprobadoEn("900-22", "prov.22@example.com", null);
+
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
+
+        List<OfertaInsumo> pendientes = ofertas.listarPendientesPorRequerimiento(req.getId());
+        assertThat(pendientes).hasSize(1);
+        assertThat(pendientes.get(0).getProveedorId()).isEqualTo(cerca.getId());
+        assertThat(pendientes.get(0).getDistanciaKm()).isBetween(1.8, 2.2);
+        assertThat(pendientes.get(0).getEtaSugeridoMinutos()).isEqualTo(4);
+        assertThat(pendientes.get(0).getExpiraEn()).isEqualTo(req.getExpiraEn());
     }
 
     @Test
@@ -206,7 +231,7 @@ class InsumoApiIT {
     @Test
     void supplierListsItsPendingSolicitudesOverHttp() throws Exception {
         Proveedor primero = crearProveedorActivo("901-1", "http.prov.1@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, "Compresor ruidoso").orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, "Compresor ruidoso").orElseThrow();
 
         mockMvc.perform(get("/api/proveedores/me/solicitudes")
                         .header("Authorization", bearer(jwt(primero))))
@@ -230,17 +255,21 @@ class InsumoApiIT {
     void firstAcceptWinsOverHttpAndTheLoserGets409() throws Exception {
         Proveedor primero = crearProveedorActivo("901-2", "http.prov.2@example.com");
         Proveedor segundo = crearProveedorActivo("901-3", "http.prov.3@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
         OfertaInsumo dePrimero = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
         OfertaInsumo deSegundo = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), segundo.getId());
 
         mockMvc.perform(post("/api/insumos/" + dePrimero.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(primero))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("ASIGNADO"));
 
         // disp.S3.2: the sibling offer lost the gate -> 409 and is invalidated.
         mockMvc.perform(post("/api/insumos/" + deSegundo.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(segundo))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
@@ -250,9 +279,63 @@ class InsumoApiIT {
     }
 
     @Test
+    void acceptWithAnInvalidEtaIs400AndNothingChanges() throws Exception {
+        Proveedor primero = crearProveedorActivo("901-20", "http.prov.20@example.com");
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
+        OfertaInsumo oferta = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
+
+        for (String body : new String[] { "{\"etaMinutos\":0}", "{\"etaMinutos\":-3}", "{\"etaMinutos\":241}",
+                "{\"etaMinutos\":null}", "{}" }) {
+            mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                            .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body)
+                            .header("Authorization", bearer(jwt(primero))))
+                    .andExpect(status().isBadRequest());
+        }
+
+        assertThat(requerimientos.buscarPorId(req.getId())).hasValueSatisfying(found -> {
+            assertThat(found.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO);
+            assertThat(found.getEtaMinutos()).isNull();
+        });
+        assertThat(ofertas.buscarPorId(oferta.getId())).hasValueSatisfying(
+                found -> assertThat(found.getEstado()).isEqualTo(OfertaInsumoEstado.PENDIENTE));
+    }
+
+    @Test
+    void acceptStoresTheEtaAndTheListingKeepsTheAcceptedOfferWhileTheSiblingDisappears() throws Exception {
+        Proveedor primero = crearProveedorActivo("901-21", "http.prov.21@example.com");
+        Proveedor segundo = crearProveedorActivo("901-22", "http.prov.22@example.com");
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
+        OfertaInsumo dePrimero = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
+
+        mockMvc.perform(post("/api/insumos/" + dePrimero.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":45}")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ASIGNADO"))
+                .andExpect(jsonPath("$.etaMinutos").value(45))
+                .andExpect(jsonPath("$.distanciaKm").isNumber())
+                .andExpect(jsonPath("$.aceptadaEn").isNotEmpty());
+
+        mockMvc.perform(get("/api/proveedores/me/solicitudes").header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].estado").value("ACEPTADA"))
+                .andExpect(jsonPath("$[0].requerimiento.estado").value("ASIGNADO"))
+                .andExpect(jsonPath("$[0].requerimiento.etaMinutos").value(45))
+                .andExpect(jsonPath("$[0].distanciaKm").isNumber())
+                .andExpect(jsonPath("$[0].etaSugeridoMinutos").value(4));
+
+        // The sibling offer was cancelled: it is no longer actionable and not listed.
+        mockMvc.perform(get("/api/proveedores/me/solicitudes").header("Authorization", bearer(jwt(segundo))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     void supplierRejectsOverHttpAndIsNotBound() throws Exception {
         Proveedor primero = crearProveedorActivo("901-4", "http.prov.4@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
         OfertaInsumo oferta = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
 
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/rechazar")
@@ -268,7 +351,7 @@ class InsumoApiIT {
     void winningSupplierDeliversOverHttpAndAnotherSupplierIsForbidden() throws Exception {
         Proveedor primero = crearProveedorActivo("901-5", "http.prov.5@example.com");
         Proveedor segundo = crearProveedorActivo("901-6", "http.prov.6@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
         OfertaInsumo dePrimero = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), primero.getId());
 
         // disp.S7.1: a supplier that did not win the request cannot confirm delivery.
@@ -278,8 +361,31 @@ class InsumoApiIT {
                 .andExpect(jsonPath("$.status").value(403));
 
         mockMvc.perform(post("/api/insumos/" + dePrimero.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(primero))))
                 .andExpect(status().isOk());
+
+        // Delivering without dispatching first is a conflict, never a silent skip.
+        mockMvc.perform(post("/api/insumos/" + req.getId().valor() + "/entregar")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isConflict());
+
+        // Another supplier cannot dispatch it either.
+        mockMvc.perform(post("/api/insumos/" + req.getId().valor() + "/despachar")
+                        .header("Authorization", bearer(jwt(segundo))))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/insumos/" + req.getId().valor() + "/despachar")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("DESPACHADO"))
+                .andExpect(jsonPath("$.despachadaEn").isNotEmpty());
+
+        // Dispatching twice is a conflict.
+        mockMvc.perform(post("/api/insumos/" + req.getId().valor() + "/despachar")
+                        .header("Authorization", bearer(jwt(primero))))
+                .andExpect(status().isConflict());
 
         mockMvc.perform(post("/api/insumos/" + req.getId().valor() + "/entregar")
                         .header("Authorization", bearer(jwt(primero))))
@@ -290,12 +396,14 @@ class InsumoApiIT {
     @Test
     void anUnlinkedSupplierIsForbiddenOverHttp() throws Exception {
         Proveedor activo = crearProveedorActivo("901-7", "http.prov.7@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
         OfertaInsumo oferta = ofertaDe(ofertas.listarPendientesPorRequerimiento(req.getId()), activo.getId());
         Long huerfano = crearUsuario("http.prov.huerfano@example.com");
 
         // A PROVEEDOR account with no linked Proveedor cannot act (spec disp.R3, AD7).
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwtDeRol(huerfano, Rol.PROVEEDOR))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403));
@@ -306,6 +414,8 @@ class InsumoApiIT {
         Proveedor activo = crearProveedorActivo("901-8", "http.prov.8@example.com");
 
         mockMvc.perform(post("/api/insumos/" + UUID.randomUUID() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(activo))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
@@ -346,7 +456,16 @@ class InsumoApiIT {
      */
     private Proveedor crearProveedorActivo(String nit, String correo) {
         Proveedor proveedor = Proveedor.crear(crearUsuario(correo), "Suministros " + nit, nit, "3105550001",
-                null, null, Set.of());
+                null, CERCA, Set.of());
+        proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1),
+                List.of(new DocumentoProveedor(1L, proveedor.getId(), "RUT", LocalDate.of(2027, 1, 1))));
+        return proveedores.save(proveedor);
+    }
+
+    private Proveedor crearProveedorAprobadoEn(String nit, String correo,
+            com.sena.cold_day.core.shared.domain.Point ubicacion) {
+        Proveedor proveedor = Proveedor.crear(crearUsuario(correo), "Suministros " + nit, nit, "3105550001",
+                null, ubicacion, Set.of());
         proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1),
                 List.of(new DocumentoProveedor(1L, proveedor.getId(), "RUT", LocalDate.of(2027, 1, 1))));
         return proveedores.save(proveedor);

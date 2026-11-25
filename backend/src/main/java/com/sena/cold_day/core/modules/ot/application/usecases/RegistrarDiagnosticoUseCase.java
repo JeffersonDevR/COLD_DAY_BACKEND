@@ -21,6 +21,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * RF-F1-11: the assigned technician records the detected fault and the budget
@@ -59,6 +60,9 @@ public class RegistrarDiagnosticoUseCase {
             throw new TecnicoNoAsignadoException(otId, tecnico.getId());
         }
 
+        // Resolved before any write: with lines and no location anywhere nothing is persisted.
+        Point destino = DestinoInsumos.resolver(ot, tecnico, request.insumos());
+
         Instant ahora = clock.instant();
         Diagnostico diagnostico = new Diagnostico(request.fallaDetectada(), request.observaciones(), ahora);
         Presupuesto presupuesto = new Presupuesto(request.costoManoObra(), request.costoRepuestos(), ahora);
@@ -69,7 +73,7 @@ public class RegistrarDiagnosticoUseCase {
 
         // spec disp.R1/AD5: the insumo lines live in the despacho tables, not in
         // the diagnóstico JSON column; zero lines create no request and never fail.
-        solicitarInsumo.solicitar(guardada.getId().valor(), tecnico.getId().valor(), request.insumos(),
+        solicitarInsumo.solicitar(guardada.getId().valor(), tecnico.getId().valor(), destino, request.insumos(),
                 request.observaciones());
         return OtResponse.fromDomain(guardada);
     }

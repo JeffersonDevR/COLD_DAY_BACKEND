@@ -257,6 +257,8 @@ class ProveedorDocumentacionApiIT {
         // Before the decision: the supplier is active and holds a live offer, and it
         // is still refused — proving the gate, not the eligibility rule, is the blocker.
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(proveedor))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403));
@@ -269,6 +271,8 @@ class ProveedorDocumentacionApiIT {
 
         // Same supplier, same offer, now accepted.
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(proveedor))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("ASIGNADO"));
@@ -297,6 +301,8 @@ class ProveedorDocumentacionApiIT {
 
         // A rejected supplier is as unable to operate as a pending one.
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(proveedor))))
                 .andExpect(status().isForbidden());
 
@@ -340,6 +346,8 @@ class ProveedorDocumentacionApiIT {
                 .andExpect(jsonPath("$.status").value(400));
 
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(proveedor))))
                 .andExpect(status().isForbidden());
     }
@@ -364,6 +372,8 @@ class ProveedorDocumentacionApiIT {
                 intacto -> assertThat(intacto.getEstadoValidacion())
                         .isEqualTo(EstadoValidacionProveedor.PENDIENTE));
         mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", bearer(jwt(proveedor))))
                 .andExpect(status().isForbidden());
     }
@@ -416,13 +426,19 @@ class ProveedorDocumentacionApiIT {
     // Helpers
     // ------------------------------------------------------------------
 
-    /** A live offer for {@code proveedor}, produced by a real broadcast. */
+    /**
+     * A live offer for {@code proveedor} on a real request. The broadcast itself only
+     * reaches approved suppliers with a location, so a supplier that is not yet approved
+     * (the case these tests exercise) is given its offer directly: what is under test is
+     * the gate at accept time, not the eligibility of the broadcast.
+     */
     private OfertaInsumo ofertaPara(Proveedor proveedor) {
         RequerimientoInsumo requerimiento = solicitar
-                .solicitar(fx.ot(UUID.randomUUID()), fx.tecnico(UUID.randomUUID()), LINEAS, "Filtro secadora")
+                .solicitar(fx.ot(UUID.randomUUID()), fx.tecnico(UUID.randomUUID()),
+                        new com.sena.cold_day.core.shared.domain.Point(4.6097, -74.0817), LINEAS, "Filtro secadora")
                 .orElseThrow();
-        return ofertas.listarPendientesPorRequerimiento(requerimiento.getId()).stream()
-                .filter(oferta -> oferta.getProveedorId().equals(proveedor.getId())).findFirst().orElseThrow();
+        return ofertas.save(OfertaInsumo.crear(requerimiento.getId(), proveedor.getId(),
+                requerimiento.getCreadaEn(), requerimiento.getExpiraEn()));
     }
 
     /** A supplier created exactly as the admin endpoint creates it: PENDIENTE. */

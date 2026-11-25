@@ -4,7 +4,8 @@ package com.sena.cold_day.core.modules.proveedores.domain.valueobjects;
  * Lifecycle of an insumo request raised from a technician's diagnóstico (spec
  * disp.R1/R3/R6/R7, design "State Machines").
  *
- * <p>{@code SOLICITADO -> ASIGNADO -> ENTREGADO} is the happy path and
+ * <p>{@code SOLICITADO -> ASIGNADO -> DESPACHADO -> ENTREGADO} is the happy path
+ * (the winning supplier commits an ETA on accept, dispatches, then delivers) and
  * {@code SOLICITADO -> SIN_PROVEEDOR} is the negative branch when the broadcast
  * finds zero eligible suppliers. {@code SIN_PROVEEDOR} is terminal-but-retriable:
  * the request stays unresolved and the OT lifecycle is never blocked.
@@ -17,6 +18,7 @@ public enum EstadoRequerimiento {
 
     SOLICITADO,
     ASIGNADO,
+    DESPACHADO,
     ENTREGADO,
     SIN_PROVEEDOR;
 

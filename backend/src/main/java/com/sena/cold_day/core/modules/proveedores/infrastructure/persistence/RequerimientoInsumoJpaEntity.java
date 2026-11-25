@@ -9,6 +9,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Requerimient
 import com.sena.cold_day.core.modules.proveedores.domain.entities.RequerimientoInsumoItem;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -69,6 +70,33 @@ public class RequerimientoInsumoJpaEntity {
     @Column(name = "resuelta_en")
     private Instant resueltaEn;
 
+    @Column(name = "radio_km")
+    private Double radioKm;
+
+    @Column(name = "ventana_expira_en")
+    private Instant ventanaExpiraEn;
+
+    @Column(name = "destino_latitud")
+    private Double destinoLatitud;
+
+    @Column(name = "destino_longitud")
+    private Double destinoLongitud;
+
+    @Column(name = "eta_minutos")
+    private Integer etaMinutos;
+
+    @Column(name = "distancia_km")
+    private Double distanciaKm;
+
+    @Column(name = "aceptada_en")
+    private Instant aceptadaEn;
+
+    @Column(name = "despachada_en")
+    private Instant despachadaEn;
+
+    @Column(name = "eta_aviso_en")
+    private Instant etaAvisoEn;
+
     // Lines are immutable by domain contract, so they are written only on insert.
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "requerimiento_id", nullable = false)
@@ -103,13 +131,27 @@ public class RequerimientoInsumoJpaEntity {
         this.creadaEn = source.getCreadaEn();
         this.expiraEn = source.getExpiraEn();
         this.resueltaEn = source.getResueltaEn();
+        this.radioKm = source.getRadioKm();
+        this.ventanaExpiraEn = source.getVentanaExpiraEn();
+        Point destino = source.getDestino();
+        this.destinoLatitud = destino == null ? null : destino.latitud();
+        this.destinoLongitud = destino == null ? null : destino.longitud();
+        this.etaMinutos = source.getEtaMinutos();
+        this.distanciaKm = source.getDistanciaKm();
+        this.aceptadaEn = source.getAceptadaEn();
+        this.despachadaEn = source.getDespachadaEn();
+        this.etaAvisoEn = source.getEtaAvisoEn();
     }
 
     public RequerimientoInsumo toDomain() {
         List<RequerimientoInsumoItem> domainItems = items == null
                 ? new ArrayList<>()
                 : items.stream().map(RequerimientoInsumoItemJpaEntity::toDomain).toList();
+        Point destino = destinoLatitud == null || destinoLongitud == null
+                ? null
+                : new Point(destinoLatitud, destinoLongitud);
         return RequerimientoInsumo.reconstituir(RequerimientoInsumoId.desde(id), otId, tecnicoId, estado,
-                observaciones, domainItems, creadaEn, expiraEn, resueltaEn);
+                observaciones, domainItems, creadaEn, expiraEn, resueltaEn, destino, radioKm, ventanaExpiraEn,
+                etaMinutos, distanciaKm, aceptadaEn, despachadaEn, etaAvisoEn);
     }
 }

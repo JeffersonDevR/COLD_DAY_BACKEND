@@ -17,6 +17,8 @@ public interface SpringDataOfertaInsumoRepository extends JpaRepository<OfertaIn
     List<OfertaInsumoJpaEntity> findByRequerimientoIdAndEstadoOrderByCreadaEnAsc(UUID requerimientoId,
             OfertaInsumoEstado estado);
 
+    List<OfertaInsumoJpaEntity> findByRequerimientoId(UUID requerimientoId);
+
     List<OfertaInsumoJpaEntity> findByProveedorId(UUID proveedorId);
 
     List<OfertaInsumoJpaEntity> findByProveedorIdAndEstadoIn(UUID proveedorId,

@@ -6,7 +6,7 @@ package com.sena.cold_day.core.modules.ot.infrastructure.notification;
  * de Android no se puede cambiar una vez creado. Un id distinto aqui deja el
  * aviso sin el sonido propio.
  */
-enum CanalPush {
+public enum CanalPush {
 
     /** Tecnico: nueva oferta de OT. */
     OT_NUEVA_TEC("ot_nueva_tec"),
@@ -15,7 +15,9 @@ enum CanalPush {
     /** Cliente: presupuesto enviado o tecnico asignado. */
     OT_NUEVA_CLI("ot_nueva_cli"),
     /** Cliente: otras actualizaciones de su OT. */
-    OT_UPDATE_CLI("ot_update_cli");
+    OT_UPDATE_CLI("ot_update_cli"),
+    /** Proveedor: nueva solicitud de repuestos a su alcance. */
+    INSUMO_NUEVO_PROV("insumo_nuevo_prov");
 
     private final String id;
 

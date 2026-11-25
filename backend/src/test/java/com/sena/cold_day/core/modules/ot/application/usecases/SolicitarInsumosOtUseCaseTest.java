@@ -25,6 +25,7 @@ import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.SolicitudInsumosInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.UbicacionDestinoInsumosException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
@@ -38,6 +39,7 @@ import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperati
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * Guards of the "repuestos a posteriori" trigger (roadmap 2.4): the OT must
@@ -51,6 +53,7 @@ class SolicitarInsumosOtUseCaseTest {
 
     private static final UsuarioId USUARIO_ID = new UsuarioId(77L);
     private static final List<InsumoLinea> LINEAS = List.of(new InsumoLinea("Filtro secadora", 2));
+    private static final Point DESTINO = new Point(4.6, -74.0);
 
     @Mock OtRepository otRepository;
     @Mock TecnicoRepository tecnicoRepository;
@@ -70,7 +73,7 @@ class SolicitarInsumosOtUseCaseTest {
         OtId otId = nuevaOt(EstadoOt.EN_REPARACION, tecnicoId);
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID.valor()))
                 .thenReturn(Optional.of(tecnico(tecnicoId)));
-        when(solicitarInsumo.solicitar(otId.valor(), tecnicoId.valor(), LINEAS, "Compresor"))
+        when(solicitarInsumo.solicitar(otId.valor(), tecnicoId.valor(), DESTINO, LINEAS, "Compresor"))
                 .thenReturn(Optional.of(requerimiento));
 
         Optional<RequerimientoInsumo> resultado = useCase.solicitar(USUARIO_ID, otId, LINEAS, "Compresor");
@@ -87,7 +90,7 @@ class SolicitarInsumosOtUseCaseTest {
         when(otRepository.buscarPorId(otId)).thenReturn(Optional.of(ot(otId, estado, tecnicoId)));
         when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID.valor()))
                 .thenReturn(Optional.of(tecnico(tecnicoId)));
-        when(solicitarInsumo.solicitar(otId.valor(), tecnicoId.valor(), LINEAS, null))
+        when(solicitarInsumo.solicitar(otId.valor(), tecnicoId.valor(), DESTINO, LINEAS, null))
                 .thenReturn(Optional.of(requerimiento));
 
         assertThat(useCase.solicitar(USUARIO_ID, otId, LINEAS, null)).isPresent();
@@ -121,7 +124,7 @@ class SolicitarInsumosOtUseCaseTest {
         assertThatThrownBy(() -> useCase.solicitar(USUARIO_ID, otId, LINEAS, null))
                 .isInstanceOf(TecnicoNoAsignadoException.class);
 
-        verify(solicitarInsumo, never()).solicitar(any(), any(), anyList(), any());
+        verify(solicitarInsumo, never()).solicitar(any(), any(), any(), anyList(), any());
     }
 
     @Test
@@ -133,6 +136,38 @@ class SolicitarInsumosOtUseCaseTest {
 
         assertThatThrownBy(() -> useCase.solicitar(USUARIO_ID, otId, LINEAS, null))
                 .isInstanceOf(PerfilTecnicoNoEncontradoException.class);
+
+        verifyNoInteractions(solicitarInsumo);
+    }
+
+    @Test
+    void usesTheTechnicianLocationWhenTheOtHasNone() {
+        TecnicoId tecnicoId = new TecnicoId(UUID.randomUUID());
+        Point delTecnico = new Point(4.7, -74.1);
+        OtId otId = OtId.nueva();
+        Ot sinUbicacion = Ot.reconstituir(otId, null, tecnicoId, null, "No enciende", List.of(), "Calle 1", null,
+                EstadoOt.EN_REPARACION, 10.0, null, null, null, null, null, null, null, null, null);
+        when(otRepository.buscarPorId(otId)).thenReturn(Optional.of(sinUbicacion));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID.valor()))
+                .thenReturn(Optional.of(tecnicoEn(tecnicoId, delTecnico)));
+        when(solicitarInsumo.solicitar(otId.valor(), tecnicoId.valor(), delTecnico, LINEAS, null))
+                .thenReturn(Optional.of(requerimiento));
+
+        assertThat(useCase.solicitar(USUARIO_ID, otId, LINEAS, null)).isPresent();
+    }
+
+    @Test
+    void withoutAnyLocationItIsRejectedAndNothingIsDispatched() {
+        TecnicoId tecnicoId = new TecnicoId(UUID.randomUUID());
+        OtId otId = OtId.nueva();
+        Ot sinUbicacion = Ot.reconstituir(otId, null, tecnicoId, null, "No enciende", List.of(), "Calle 1", null,
+                EstadoOt.EN_REPARACION, 10.0, null, null, null, null, null, null, null, null, null);
+        when(otRepository.buscarPorId(otId)).thenReturn(Optional.of(sinUbicacion));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID.valor()))
+                .thenReturn(Optional.of(tecnico(tecnicoId)));
+
+        assertThatThrownBy(() -> useCase.solicitar(USUARIO_ID, otId, LINEAS, null))
+                .isInstanceOf(UbicacionDestinoInsumosException.class);
 
         verifyNoInteractions(solicitarInsumo);
     }
@@ -158,9 +193,15 @@ class SolicitarInsumosOtUseCaseTest {
 
     private Ot ot(OtId id, EstadoOt estado, TecnicoId tecnicoId) {
         return Ot.reconstituir(id, null, tecnicoId, null,
-                "No enciende", List.of(), "Calle 1", null, estado, 10.0,
+                "No enciende", List.of(), "Calle 1", DESTINO, estado, 10.0,
                 null, null, null, null, null,
                 null, null, null, null);
+    }
+
+    private Tecnico tecnicoEn(TecnicoId id, Point ubicacion) {
+        return Tecnico.reconstituir(id, USUARIO_ID.valor(), "ID-" + id, java.util.Set.of(),
+                EstadoOperativo.DISPONIBLE, EstadoValidacion.APROBADO, null, java.util.Set.of(),
+                true, ubicacion, false, null);
     }
 
     private Tecnico tecnico(TecnicoId id) {

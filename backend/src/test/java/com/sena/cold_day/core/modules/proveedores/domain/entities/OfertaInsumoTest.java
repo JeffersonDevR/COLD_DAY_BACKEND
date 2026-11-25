@@ -38,6 +38,28 @@ class OfertaInsumoTest {
     }
 
     @Test
+    void crearConDistanciaGuardaDistanciaYEtaSugerido() {
+        OfertaInsumo oferta = OfertaInsumo.crear(RequerimientoInsumoId.nueva(), ProveedorId.nueva(), AHORA, EXPIRA,
+                7.5, 15);
+
+        assertThat(oferta.getDistanciaKm()).isEqualTo(7.5);
+        assertThat(oferta.getEtaSugeridoMinutos()).isEqualTo(15);
+        assertThat(crear().getDistanciaKm()).isNull();
+        assertThat(crear().getEtaSugeridoMinutos()).isNull();
+    }
+
+    @Test
+    void crearConDistanciaRechazaValoresInvalidos() {
+        RequerimientoInsumoId requerimientoId = RequerimientoInsumoId.nueva();
+        ProveedorId proveedorId = ProveedorId.nueva();
+
+        assertThatThrownBy(() -> OfertaInsumo.crear(requerimientoId, proveedorId, AHORA, EXPIRA, -1.0, 10))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> OfertaInsumo.crear(requerimientoId, proveedorId, AHORA, EXPIRA, 1.0, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void creacionRequiereDatosObligatorios() {
         RequerimientoInsumoId requerimientoId = RequerimientoInsumoId.nueva();
         ProveedorId proveedorId = ProveedorId.nueva();
