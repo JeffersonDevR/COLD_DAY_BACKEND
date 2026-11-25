@@ -44,6 +44,8 @@ Commits: `7bf5d87` (P0.1), `61930f2` (P0.2), `7ebe196` (P0.3), `147a329` (P0.4).
 
 ## P1 — Documentos (lo que bloquea que técnico y proveedor operen)
 
+**Estado 2026-11-25: P1.1, P1.2 y P1.3 fase A HECHOS** (commits `2f37df9`, `5f33be9`, `279b5a6` y el de proveedor). Se creó un componente de lista y uno de formulario compartidos por técnico y proveedor, y `documentos-vigencia` en `core` (vencido, por vencer a 30 días, vigente). **Pendiente:** P1.3 fase B (backend: expedición, estado y rechazo por documento, migración `V22`) y subir el archivo real (P3.2). Decisiones mías a confirmar: ventana de aviso de 30 días y vencimiento opcional para la empresa.
+
 ### P1.1 Técnico: documentos visibles de primeras, liquidaciones en desplegable — **M**
 - **Hoy:** `pages/liquidaciones-tecnico/liquidaciones-tecnico.page.html` (la pestaña "Gestión") pone las liquidaciones arriba y los documentos al final, con "Sube o renueva documentos desde la web".
 - **Arreglo:** documentos primero, con un aviso destacado si hay alguno vencido, por vencer o rechazado. Las liquidaciones pasan a un `ion-accordion-group` cerrado por defecto; el encabezado del acordeón ya resume ("$ X por consignar · N en verificación") para no esconder el bloqueo por deuda.
