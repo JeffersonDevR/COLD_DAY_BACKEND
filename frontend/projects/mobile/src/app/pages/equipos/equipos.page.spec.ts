@@ -74,6 +74,26 @@ function texto(fixture: ComponentFixture<MobileEquiposPage>): string {
 describe('MobileEquiposPage (A10)', () => {
   afterEach(() => TestBed.resetTestingModule());
 
+  it('marca En curso el equipo que tiene órdenes activas y no el que ya cerró todo', () => {
+    const { fixture } = setup({
+      ots: [
+        ot({ id: 'a', categoriaServicio: 'AIRE_ACONDICIONADO', estado: 'EN_CAMINO' }),
+        ot({ id: 'b', categoriaServicio: 'AIRE_ACONDICIONADO', estado: 'FINALIZADA' }),
+        ot({ id: 'c', categoriaServicio: 'ELECTRICIDAD', estado: 'FINALIZADA' }),
+        ot({ id: 'd', categoriaServicio: 'LAVADORAS', estado: 'SIN_TECNICOS_DISPONIBLES' }),
+      ],
+    });
+
+    const tarjetas = Array.from(
+      fixture.nativeElement.querySelectorAll('[data-testid="equipo"]') as NodeListOf<HTMLElement>,
+    );
+    const conCurso = tarjetas.filter((t) => t.querySelector('[data-testid="equipo-en-curso"]'));
+
+    expect(tarjetas).toHaveLength(3);
+    expect(conCurso).toHaveLength(1);
+    expect(conCurso[0].textContent).toContain('1 en curso');
+  });
+
   it('agrupa por categoría y muestra la falla de la última OT', () => {
     const { fixture } = setup({
       ots: [

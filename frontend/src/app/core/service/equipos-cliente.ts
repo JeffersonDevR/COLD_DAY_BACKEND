@@ -1,4 +1,5 @@
 import type { CategoriaServicio, EstadoOt, OtResponse, Prioridad } from '../models/common.models';
+import { esOtActiva } from './ots-cliente';
 
 /**
  * Un "equipo" del cliente: la categoría de servicio que ya fue intervenida,
@@ -18,6 +19,8 @@ export interface EquipoCliente {
   etiqueta: string;
   /** Cantidad de órdenes registradas para esa categoría. */
   intervenciones: number;
+  /** Cuántas de esas órdenes siguen activas (el cliente todavía espera algo). */
+  activas: number;
   ultimaOtId: string;
   codigoOt: string;
   descripcionFalla: string;
@@ -64,6 +67,7 @@ export function agruparEquipos(ots: readonly OtResponse[]): EquipoCliente[] {
         categoria,
         etiqueta: etiquetaCategoria(categoria),
         intervenciones: ordenes.length,
+        activas: ordenes.filter(esOtActiva).length,
         ultimaOtId: ultima.id,
         codigoOt: ultima.codigo ?? 'Sin código',
         descripcionFalla: ultima.descripcionFalla,

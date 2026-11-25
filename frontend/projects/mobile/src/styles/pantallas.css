@@ -1690,6 +1690,13 @@ button.cd-ot .cd-ot__direccion {
   flex: 1 1 100%;
 }
 
+.cd-equipo__conteo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .cd-oferta__icono,
 .cd-equipo__icono {
   display: inline-flex;
