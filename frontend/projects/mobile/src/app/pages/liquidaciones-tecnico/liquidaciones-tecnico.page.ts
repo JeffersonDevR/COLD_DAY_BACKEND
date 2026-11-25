@@ -1,15 +1,29 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
+  IonButton,
+  IonCard,
+  IonCardContent,
   IonHeader,
+  IonIcon,
   IonRefresher,
   IonRefresherContent,
   IonToolbar,
 } from '@ionic/angular';
+import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { DocumentoTecnico, LiquidacionResponse, TipoDocumentoTecnico } from '@core/models/common.models';
 import { LiquidacionApi } from '@core/service/liquidacion-api';
+import { ResumenVigencia, resumenVigencia } from '@core/service/documentos-vigencia';
 import { cargarTecnicoAutenticado } from '@core/service/tecnico-sesion';
 import { TecnicosApi } from '@core/service/tecnicos-api';
-import { documentoLabel, estadoLiquidacionLabel, medioPagoLabel } from '@core/ui/labels';
+import {
+  documentoLabel,
+  estadoLiquidacionLabel,
+  estadoValidacionLabel,
+  medioPagoLabel,
+} from '@core/ui/labels';
+import { MobileToastService } from '../../core/toast.service';
+import { DocumentoFormComponent, DeclaracionDocumento, OpcionTipoDocumento } from '../../shared/ui/documento-form/documento-form';
+import { DocumentoVista, DocumentosListaComponent } from '../../shared/ui/documentos-lista/documentos-lista';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
@@ -26,7 +40,13 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
  * cada servicio.
  *
  * Los documentos de validación viven acá junto a la plata (petición del dueño
- * 2026-11-23): el perfil queda para identidad y especialidades.
+ * 2026-11-23): el perfil queda para identidad y especialidades. Los documentos
+ * van primero (lo que el técnico necesita para operar) y las liquidaciones en un
+ * plegable; lo urgente de cada bloque (deuda por consignar, documentos vencidos)
+ * se avisa arriba, fuera del plegable.
+ *
+ * El técnico declara sus documentos desde la app (tipo y fechas, como en la web):
+ * el backend no recibe el archivo.
  *
  * El endpoint ya devuelve `otCodigo`, así que la lista se lee sin mostrar UUID.
  */
@@ -34,8 +54,14 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
   selector: 'app-liquidaciones-tecnico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonButton,
+    IonCard,
+    IonCardContent,
     IonHeader,
+    IonIcon,
     PageComponent,
+    DocumentoFormComponent,
+    DocumentosListaComponent,
     IonRefresher,
     IonRefresherContent,
     IonToolbar,
@@ -49,6 +75,25 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 export class LiquidacionesTecnicoPage implements OnInit {
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly liquidacionApi = inject(LiquidacionApi);
+  private readonly toast = inject(MobileToastService);
+
+  /** Tipos que el técnico puede declarar (el heredado `ANTECEDENTES` ya no se ofrece). */
+  readonly tiposDocumento: readonly OpcionTipoDocumento[] = (
+    [
+      'CEDULA',
+      'ANTECEDENTES_POLICIA',
+      'CERTIFICACION_CONTE',
+      'CERTIFICACION_SENA',
+      'MATRICULA_CONTE',
+      'RUT',
+      'OTRO',
+    ] as const
+  ).map((valor) => ({ valor, etiqueta: documentoLabel(valor) }));
+
+  private readonly tecnicoId = signal<string | null>(null);
+  readonly mostrarFormulario = signal(false);
+  readonly guardandoDocumento = signal(false);
+  readonly liquidacionesAbiertas = signal(false);
 
   readonly liquidaciones = signal<LiquidacionResponse[]>([]);
   readonly cargando = signal(true);
@@ -56,6 +101,22 @@ export class LiquidacionesTecnicoPage implements OnInit {
 
   /** Documentos de validación del técnico (antes vivían en el perfil). */
   readonly documentos = signal<DocumentoTecnico[]>([]);
+
+  readonly documentosVista = computed<DocumentoVista[]>(() =>
+    this.documentos().map((documento) => ({
+      id: documento.id,
+      titulo: documento.tipo ? documentoLabel(documento.tipo) : documento.nombre,
+      expedicion: documento.fechaExpedicion,
+      vencimiento: documento.fechaVencimiento,
+      estadoTexto: estadoValidacionLabel(documento.estadoValidacion),
+      estadoTono: this.tonoDocumento(documento) as DocumentoVista['estadoTono'],
+      observaciones: documento.observaciones,
+    })),
+  );
+
+  readonly resumenDocumentos = computed<ResumenVigencia>(() =>
+    resumenVigencia(this.documentos().map((d) => ({ fechaVencimiento: d.fechaVencimiento }))),
+  );
 
   /** Comisión que el técnico todavía tiene que consignar. */
   readonly porConsignar = computed(() =>
@@ -73,10 +134,70 @@ export class LiquidacionesTecnicoPage implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+    this.cargarDocumentos();
+  }
+
+  private cargarDocumentos(): void {
     this.tecnicosApi.getMisDocumentos().subscribe({
       next: (documentos) => this.documentos.set(documentos),
       error: () => this.documentos.set([]),
     });
+  }
+
+  alternarFormulario(): void {
+    this.mostrarFormulario.update((abierto) => !abierto);
+  }
+
+  alternarLiquidaciones(): void {
+    this.liquidacionesAbiertas.update((abiertas) => !abiertas);
+  }
+
+  /** "1 vencido y 2 por vencer", para el aviso de arriba. */
+  textoAvisoDocumentos(resumen: ResumenVigencia): string {
+    const partes: string[] = [];
+    if (resumen.vencidos > 0) {
+      partes.push(`${resumen.vencidos} ${resumen.vencidos === 1 ? 'vencido' : 'vencidos'}`);
+    }
+    if (resumen.porVencer > 0) {
+      partes.push(`${resumen.porVencer} por vencer`);
+    }
+    return `Tienes ${partes.join(' y ')}. Renuévalos para no perder la validación.`;
+  }
+
+  declararDocumento(declaracion: DeclaracionDocumento): void {
+    const tecnicoId = this.tecnicoId();
+    if (!declaracion.fechaExpedicion) {
+      void this.toast.warning('Falta la fecha de expedición', 'Indica cuándo se expidió el documento.');
+      return;
+    }
+    if (!tecnicoId) {
+      void this.toast.error('No pudimos declarar el documento', 'No encontramos tu perfil de técnico.');
+      return;
+    }
+    if (this.guardandoDocumento()) return;
+
+    this.guardandoDocumento.set(true);
+    // El backend guarda tipo y fechas; el archivo no viaja (cadena vacía).
+    this.tecnicosApi
+      .subirDocumento(
+        tecnicoId,
+        declaracion.tipo as TipoDocumentoTecnico,
+        '',
+        declaracion.fechaExpedicion,
+        declaracion.fechaVencimiento,
+      )
+      .subscribe({
+        next: () => {
+          this.guardandoDocumento.set(false);
+          this.mostrarFormulario.set(false);
+          this.cargarDocumentos();
+          void this.toast.success('Documento declarado', 'Un administrador va a revisar tu expediente.');
+        },
+        error: (err: Error) => {
+          this.guardandoDocumento.set(false);
+          void avisarErrorAccion(this.toast, 'No se pudo declarar el documento', err);
+        },
+      });
   }
 
   /**
@@ -104,6 +225,7 @@ export class LiquidacionesTecnicoPage implements OnInit {
           this.fallar(alTerminar);
           return;
         }
+        this.tecnicoId.set(tecnico.id);
         this.liquidacionApi.getLiquidacionesPorTecnico(tecnico.id).subscribe({
           next: (lista) => {
             this.liquidaciones.set(lista);

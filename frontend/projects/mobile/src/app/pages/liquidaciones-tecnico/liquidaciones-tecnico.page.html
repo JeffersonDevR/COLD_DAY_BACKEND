@@ -1,6 +1,6 @@
 <cd-page
   titulo="Gestión"
-  subtitulo="Tu plata y tus papeles: liquidaciones y documentos en un solo lugar."
+  subtitulo="Tus papeles y tu plata: documentos primero, liquidaciones debajo."
 >
   <ion-header class="cd-header" cdHeader>
     <ion-toolbar>
@@ -26,93 +26,145 @@
     />
   }
 
-  <h2 class="cd-section__titulo cd-section__titulo--bloque">Liquidaciones</h2>
-
-  @if (!cargando()) {
-    <section
-      class="cd-alerta cd-alerta--{{ porConsignar() > 0 ? 'aviso' : 'ok' }}"
-      role="status"
-      data-testid="resumen-liquidaciones"
-    >
-      <h2 class="cd-alerta__titulo">Comisión por consignar</h2>
+  <!-- Lo que bloquea o vence va arriba, a la vista: no se esconde en un plegable. -->
+  @if (!cargando() && porConsignar() > 0) {
+    <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="aviso-consignacion">
+      <h2 class="cd-alerta__titulo">Tienes comisión por consignar</h2>
       <p class="cd-alerta__texto">
-        <strong data-testid="comision-pendiente">$ {{ cop(porConsignar()) }} COP</strong>
-      </p>
-      @if (porConsignar() > 0) {
-        <p class="cd-alerta__texto" data-testid="nota-consignacion">
-          Registra la consignación en la web. Hasta entonces no puedes tomar servicios.
-        </p>
-      }
-      <p class="cd-muted" data-testid="conteos-liquidaciones">
-        {{ enVerificacion() }} en verificación · {{ aprobadas() }} aprobadas
+        <strong>$ {{ cop(porConsignar()) }} COP</strong>. Regístrala en la web: hasta entonces no puedes tomar servicios.
       </p>
     </section>
   }
 
-  @if (!cargando() && !fallo() && liquidaciones().length === 0) {
-    <cd-empty-state
-      titulo="Todavía no tienes liquidaciones"
-      texto="Cada servicio finalizado que cobres en efectivo genera una liquidación con la comisión de la plataforma."
-      icono="cash-outline"
-      testId="liquidaciones-vacio"
-    />
-  }
-
-  @for (liq of liquidaciones(); track liq.id) {
-    <article class="cd-card cd-liq" [attr.data-testid]="'liquidacion-' + liq.id">
-      <div class="cd-liq__cabecera">
-        <p class="cd-ot__codigo">{{ liq.otCodigo ?? 'Servicio' }}</p>
-        <span class="cd-chip cd-chip--{{ tonoEstado(liq.estado) }}" [attr.data-testid]="'estado-' + liq.id">
-          {{ etiquetaEstado(liq.estado) }}
-        </span>
-      </div>
-
-      <p class="cd-liq__etiqueta">Comisión a transferir</p>
-      <p class="cd-liq__monto" [attr.data-testid]="'comision-' + liq.id">
-        $ {{ cop(liq.comision) }} COP
-      </p>
-      <p class="cd-liq__meta" [attr.data-testid]="'meta-' + liq.id">
-        {{ fecha(liq.fechaRegistro) }} · {{ etiquetaMedio(liq.medioPago) }}
-      </p>
-      <p class="cd-liq__meta">Servicio total: $ {{ cop(liq.montoServicio) }} COP</p>
-
-      @if (liq.motivoRechazo) {
-        <p class="cd-alerta__texto" [attr.data-testid]="'motivo-' + liq.id">
-          Motivo del rechazo: {{ liq.motivoRechazo }}
-        </p>
-      }
-    </article>
-  }
-
-  <!-- Documentos de validación: agrupados con la plata (petición del dueño). -->
-  <h2 class="cd-section__titulo cd-section__titulo--bloque">Documentos</h2>
-  @if (documentos().length === 0) {
-    <cd-empty-state
-      titulo="Sin documentos cargados"
-      texto="La carga de documentos se hace desde la web: la app todavía no tiene cámara ni subida de archivos."
-      testId="documentos-vacio"
-    />
-  } @else {
-    @for (documento of documentos(); track documento.id) {
-      <article class="cd-card cd-liq" [attr.data-testid]="'documento-' + documento.id">
-        <div class="cd-liq__cabecera">
-          <div>
-            <p class="cd-ot__codigo">{{ documento.nombre || etiquetaDocumento(documento.tipo) }}</p>
-            @if (documento.fechaVencimiento) {
-              <p class="cd-liq__meta">Vence {{ documento.fechaVencimiento }}</p>
-            }
-          </div>
-          <span class="cd-chip cd-chip--{{ tonoDocumento(documento) }}">
-            {{ documento.estadoValidacion }}
-          </span>
-        </div>
-        @if (documento.observaciones) {
-          <p class="cd-liq__meta">{{ documento.observaciones }}</p>
-        }
-      </article>
+  @if (resumenDocumentos(); as resumen) {
+    @if (resumen.vencidos > 0 || resumen.porVencer > 0) {
+      <section
+        class="cd-alerta cd-alerta--{{ resumen.vencidos > 0 ? 'error' : 'aviso' }}"
+        role="status"
+        data-testid="aviso-documentos"
+      >
+        <h2 class="cd-alerta__titulo">Revisa tus documentos</h2>
+        <p class="cd-alerta__texto">{{ textoAvisoDocumentos(resumen) }}</p>
+      </section>
     }
   }
-  <p class="cd-ayuda">
-    Sube o renueva documentos desde la web.
-  </p>
+
+  <section data-testid="seccion-documentos">
+    <h2 class="cd-section__titulo cd-section__titulo--bloque">Documentos</h2>
+
+    @if (documentos().length === 0) {
+      <cd-empty-state
+        titulo="Sin documentos declarados"
+        texto="Declara tu cédula y tus certificaciones para que un administrador valide tu cuenta."
+        icono="document-text-outline"
+        testId="documentos-vacio"
+      />
+    } @else {
+      <cd-documentos-lista [documentos]="documentosVista()" />
+    }
+
+    <ion-button
+      expand="block"
+      fill="outline"
+      (click)="alternarFormulario()"
+      data-testid="declarar-documento"
+    >
+      <ion-icon slot="start" name="add-outline" aria-hidden="true"></ion-icon>
+      {{ mostrarFormulario() ? 'Cancelar' : 'Declarar documento' }}
+    </ion-button>
+
+    @if (mostrarFormulario()) {
+      <ion-card class="cd-card">
+        <ion-card-content>
+          <cd-documento-form
+            [tipos]="tiposDocumento"
+            [pideExpedicion]="true"
+            [guardando]="guardandoDocumento()"
+            (declarar)="declararDocumento($event)"
+          />
+          <p class="cd-ayuda">
+            Declaras el tipo y las fechas. Todavía no se sube el archivo: un administrador revisa tu expediente.
+          </p>
+        </ion-card-content>
+      </ion-card>
+    }
+  </section>
+
+  <section data-testid="seccion-liquidaciones">
+    <h2 class="cd-section__titulo cd-section__titulo--bloque">Liquidaciones</h2>
+
+    <button
+      type="button"
+      class="cd-desplegable__cabecera"
+      [attr.aria-expanded]="liquidacionesAbiertas()"
+      aria-controls="liquidaciones-contenido"
+      (click)="alternarLiquidaciones()"
+      data-testid="liquidaciones-toggle"
+    >
+      <span class="cd-desplegable__titulos">
+        <span class="cd-card__titulo">Comisión por consignar</span>
+        <span class="cd-desplegable__resumen" data-testid="liquidaciones-resumen">
+          $ {{ cop(porConsignar()) }} COP · {{ enVerificacion() }} en verificación · {{ aprobadas() }} aprobadas
+        </span>
+      </span>
+      <ion-icon
+        [name]="liquidacionesAbiertas() ? 'chevron-up-outline' : 'chevron-down-outline'"
+        aria-hidden="true"
+      ></ion-icon>
+    </button>
+
+    <div
+      id="liquidaciones-contenido"
+      class="cd-desplegable__contenido"
+      [hidden]="!liquidacionesAbiertas()"
+      data-testid="liquidaciones-contenido"
+    >
+      @if (!cargando()) {
+        <section class="cd-alerta cd-alerta--ok" role="status" data-testid="resumen-liquidaciones">
+          <h2 class="cd-alerta__titulo">Comisión por consignar</h2>
+          <p class="cd-alerta__texto">
+            <strong data-testid="comision-pendiente">$ {{ cop(porConsignar()) }} COP</strong>
+          </p>
+          <p class="cd-muted" data-testid="conteos-liquidaciones">
+            {{ enVerificacion() }} en verificación · {{ aprobadas() }} aprobadas
+          </p>
+        </section>
+      }
+
+      @if (!cargando() && !fallo() && liquidaciones().length === 0) {
+        <cd-empty-state
+          titulo="Todavía no tienes liquidaciones"
+          texto="Cada servicio finalizado que cobres en efectivo genera una liquidación con la comisión de la plataforma."
+          icono="cash-outline"
+          testId="liquidaciones-vacio"
+        />
+      }
+
+      @for (liq of liquidaciones(); track liq.id) {
+        <article class="cd-card cd-liq" [attr.data-testid]="'liquidacion-' + liq.id">
+          <div class="cd-liq__cabecera">
+            <p class="cd-ot__codigo">{{ liq.otCodigo ?? 'Servicio' }}</p>
+            <span class="cd-chip cd-chip--{{ tonoEstado(liq.estado) }}" [attr.data-testid]="'estado-' + liq.id">
+              {{ etiquetaEstado(liq.estado) }}
+            </span>
+          </div>
+
+          <p class="cd-liq__etiqueta">Comisión a transferir</p>
+          <p class="cd-liq__monto" [attr.data-testid]="'comision-' + liq.id">
+            $ {{ cop(liq.comision) }} COP
+          </p>
+          <p class="cd-liq__meta" [attr.data-testid]="'meta-' + liq.id">
+            {{ fecha(liq.fechaRegistro) }} · {{ etiquetaMedio(liq.medioPago) }}
+          </p>
+          <p class="cd-liq__meta">Servicio total: $ {{ cop(liq.montoServicio) }} COP</p>
+
+          @if (liq.motivoRechazo) {
+            <p class="cd-alerta__texto" [attr.data-testid]="'motivo-' + liq.id">
+              Motivo del rechazo: {{ liq.motivoRechazo }}
+            </p>
+          }
+        </article>
+      }
+    </div>
+  </section>
 </cd-page>
