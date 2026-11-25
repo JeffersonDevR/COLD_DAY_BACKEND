@@ -114,6 +114,9 @@ describe('labels', () => {
       ['RUT', 'RUT'],
       ['OTRO', 'Otro'],
       ['CERTIFICADO', 'Certificado'],
+      ['CAMARA_COMERCIO', 'Cámara de Comercio'],
+      ['CEDULA_REPRESENTANTE', 'Cédula del representante legal'],
+      ['CERTIFICACION_BANCARIA', 'Certificación bancaria'],
     ];
     casos.forEach(([tipo, etiqueta]) => expect(documentoLabel(tipo)).toBe(etiqueta));
   });

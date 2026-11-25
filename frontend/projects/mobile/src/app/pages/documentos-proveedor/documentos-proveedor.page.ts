@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   IonButton,
@@ -19,15 +19,23 @@ import {
   EstadoValidacionProveedor,
   TipoDocumentoProveedor,
 } from '@core/models/common.models';
+import { ResumenVigencia, resumenVigencia } from '@core/service/documentos-vigencia';
 import { ProveedorRegistroService } from '@core/service/proveedor-registro.service';
 import { ProveedoresApi } from '@core/service/proveedores-api';
 import { documentoLabel } from '@core/ui/labels';
 import { MobileToastService } from '../../core/toast.service';
+import { DeclaracionDocumento, DocumentoFormComponent, OpcionTipoDocumento } from '../../shared/ui/documento-form/documento-form';
+import { DocumentoVista, DocumentosListaComponent } from '../../shared/ui/documentos-lista/documentos-lista';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
-/** C2 — Provider documents: metadata only (no upload exists in the backend). */
+/**
+ * C2 — Documentos de la empresa (proveedor): tipo y vencimiento, sin archivo (el
+ * backend no lo recibe). Usa la misma lista y el mismo formulario que el técnico;
+ * cambian los tipos (de empresa) y que el vencimiento es opcional, porque el RUT
+ * o la certificación bancaria pueden no vencer.
+ */
 @Component({
   selector: 'app-documentos-proveedor',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,10 +48,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     IonHeader,
     IonIcon,
     IonInput,
-    IonSelect,
-    IonSelectOption,
     IonSpinner,
     IonToolbar,
+    DocumentoFormComponent,
+    DocumentosListaComponent,
     SkeletonComponent,
     EmptyStateComponent,
     MarcaBarraComponent,
@@ -64,13 +72,22 @@ export class DocumentosProveedorPage implements OnInit {
     this.registro.estadoValidacion(),
   );
 
-  readonly docForm = new FormGroup({
-    tipo: new FormControl<TipoDocumentoProveedor>('RUT', {
-      nonNullable: true,
-      validators: [Validators.required],
-    }),
-    fechaVencimiento: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-  });
+  /** Tipos que una empresa puede declarar (los heredados `CEDULA` y `CERTIFICADO` ya no se ofrecen). */
+  readonly tiposDocumento: readonly OpcionTipoDocumento[] = (
+    ['RUT', 'CAMARA_COMERCIO', 'CEDULA_REPRESENTANTE', 'CERTIFICACION_BANCARIA', 'OTRO'] as const
+  ).map((valor) => ({ valor, etiqueta: documentoLabel(valor) }));
+
+  readonly documentosVista = computed<DocumentoVista[]>(() =>
+    this.documentos().map((documento) => ({
+      id: String(documento.id),
+      titulo: documentoLabel(documento.tipo as TipoDocumentoProveedor),
+      vencimiento: documento.fechaVencimiento,
+    })),
+  );
+
+  readonly resumenDocumentos = computed<ResumenVigencia>(() =>
+    resumenVigencia(this.documentos().map((d) => ({ fechaVencimiento: d.fechaVencimiento }))),
+  );
 
   /** Datos comerciales: el alta ya no los pide, se completan aquí. `null` mientras carga. */
   readonly datosCompletos = signal<boolean | null>(null);
@@ -131,16 +148,14 @@ export class DocumentosProveedorPage implements OnInit {
     this.mostrarForm.update((visible) => !visible);
   }
 
-  registrar(): void {
-    if (this.docForm.invalid || this.guardando()) return;
+  registrar(declaracion: DeclaracionDocumento): void {
+    if (this.guardando()) return;
 
-    const valor = this.docForm.getRawValue();
     this.guardando.set(true);
-    this.proveedoresApi.registrarDocumento(valor.tipo, valor.fechaVencimiento).subscribe({
+    this.proveedoresApi.registrarDocumento(declaracion.tipo, declaracion.fechaVencimiento).subscribe({
       next: () => {
         this.guardando.set(false);
         this.mostrarForm.set(false);
-        this.docForm.reset({ tipo: 'RUT', fechaVencimiento: '' });
         this.cargar();
         void this.toast.success(
           'Documento declarado',
@@ -152,6 +167,18 @@ export class DocumentosProveedorPage implements OnInit {
         void avisarErrorAccion(this.toast, 'No se pudo declarar el documento', err);
       },
     });
+  }
+
+  /** "1 vencido y 2 por vencer", para el aviso de arriba. */
+  textoAvisoDocumentos(resumen: ResumenVigencia): string {
+    const partes: string[] = [];
+    if (resumen.vencidos > 0) {
+      partes.push(`${resumen.vencidos} ${resumen.vencidos === 1 ? 'vencido' : 'vencidos'}`);
+    }
+    if (resumen.porVencer > 0) {
+      partes.push(`${resumen.porVencer} por vencer`);
+    }
+    return `Tienes ${partes.join(' y ')}. Renuévalos para no perder la validación.`;
   }
 
   explicacionEstado(): string {

@@ -247,7 +247,19 @@ export interface ProveedorRequest {
 export type EstadoValidacionProveedor = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 
 /** Tipo de documento declarado por el proveedor (solo metadata, sin archivo). */
-export type TipoDocumentoProveedor = 'RUT' | 'CEDULA' | 'CERTIFICADO' | 'OTRO';
+/**
+ * Tipos de documento de una empresa. `CEDULA` y `CERTIFICADO` son los heredados:
+ * ya no se ofrecen al declarar, pero pueden venir de filas viejas.
+ * El backend guarda el tipo como texto libre.
+ */
+export type TipoDocumentoProveedor =
+  | 'RUT'
+  | 'CAMARA_COMERCIO'
+  | 'CEDULA_REPRESENTANTE'
+  | 'CERTIFICACION_BANCARIA'
+  | 'CEDULA'
+  | 'CERTIFICADO'
+  | 'OTRO';
 
 /** Documento del expediente: el backend es metadata-only, no hay upload. */
 export interface DocumentoProveedorResponse {
