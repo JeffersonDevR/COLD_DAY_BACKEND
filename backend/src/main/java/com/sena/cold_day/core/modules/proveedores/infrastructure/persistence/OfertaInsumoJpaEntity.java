@@ -59,6 +59,12 @@ public class OfertaInsumoJpaEntity {
     @Column(name = "resuelta_en")
     private Instant resueltaEn;
 
+    @Column(name = "distancia_km")
+    private Double distanciaKm;
+
+    @Column(name = "eta_sugerido_minutos")
+    private Integer etaSugeridoMinutos;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -78,12 +84,14 @@ public class OfertaInsumoJpaEntity {
         this.creadaEn = source.getCreadaEn();
         this.expiraEn = source.getExpiraEn();
         this.resueltaEn = source.getResueltaEn();
+        this.distanciaKm = source.getDistanciaKm();
+        this.etaSugeridoMinutos = source.getEtaSugeridoMinutos();
     }
 
     public OfertaInsumo toDomain() {
         return OfertaInsumo.reconstituir(OfertaInsumoId.desde(id),
                 requerimientoId == null ? null : RequerimientoInsumoId.desde(requerimientoId),
                 proveedorId == null ? null : ProveedorId.desde(proveedorId),
-                estado, creadaEn, expiraEn, resueltaEn);
+                estado, creadaEn, expiraEn, resueltaEn, distanciaKm, etaSugeridoMinutos);
     }
 }

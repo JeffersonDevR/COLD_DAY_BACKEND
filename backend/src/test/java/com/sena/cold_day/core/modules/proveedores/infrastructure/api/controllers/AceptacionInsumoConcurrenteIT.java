@@ -80,6 +80,11 @@ class AceptacionInsumoConcurrenteIT {
     private UUID otId;
     private UUID tecnicoId;
     private static final List<InsumoLinea> LINEAS = List.of(new InsumoLinea("Filtro secadora", 2));
+    // Punto de entrega y proveedores a ~2 km: dentro del radio inicial de 10 km.
+    private static final com.sena.cold_day.core.shared.domain.Point DESTINO =
+            new com.sena.cold_day.core.shared.domain.Point(4.6097, -74.0817);
+    private static final com.sena.cold_day.core.shared.domain.Point CERCA =
+            new com.sena.cold_day.core.shared.domain.Point(4.6277, -74.0817);
 
     @TestConfiguration
     static class RelojFijo {
@@ -117,7 +122,7 @@ class AceptacionInsumoConcurrenteIT {
     void twoSimultaneousHttpAcceptsResolveToExactlyOneWinner() throws Exception {
         Proveedor primero = crearProveedorActivo("910-1", "conc.prov.1@example.com");
         Proveedor segundo = crearProveedorActivo("910-2", "conc.prov.2@example.com");
-        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), LINEAS, null).orElseThrow();
+        RequerimientoInsumo req = solicitar.solicitar(otId(), tecnicoId(), DESTINO, LINEAS, null).orElseThrow();
         OfertaInsumo dePrimero = ofertaDe(req, primero.getId());
         OfertaInsumo deSegundo = ofertaDe(req, segundo.getId());
 
@@ -159,6 +164,8 @@ class AceptacionInsumoConcurrenteIT {
         listos.countDown();
         disparar.await(10, TimeUnit.SECONDS);
         return mockMvc.perform(post("/api/insumos/" + oferta.getId().valor() + "/aceptar")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"etaMinutos\":30}")
                         .header("Authorization", "Bearer " + token))
                 .andReturn().getResponse().getStatus();
     }
@@ -180,7 +187,7 @@ class AceptacionInsumoConcurrenteIT {
     /** Active AND documentary validation approved: the full eligibility gate (AD7). */
     private Proveedor crearProveedorActivo(String nit, String correo) {
         Proveedor proveedor = Proveedor.crear(crearUsuario(correo), "Suministros " + nit, nit, "3105550001",
-                null, null, Set.of());
+                null, CERCA, Set.of());
         proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1),
                 List.of(new DocumentoProveedor(1L, proveedor.getId(), "RUT", LocalDate.of(2027, 1, 1))));
         return proveedores.save(proveedor);

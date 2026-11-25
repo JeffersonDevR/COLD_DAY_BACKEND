@@ -11,6 +11,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.services.TransicionesRe
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.InsumoLinea;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * Root aggregate of an insumo request raised from a technician's diagnóstico
@@ -32,17 +33,40 @@ public class RequerimientoInsumo {
     private Instant creadaEn;
     private Instant expiraEn;
     private Instant resueltaEn;
+    // Radius dispatch (design 2026-11-25). All nullable: legacy rows predate V21
+    // and simply never escalate; they expire as before.
+    private Point destino;
+    private Double radioKm;
+    private Instant ventanaExpiraEn;
+    private Integer etaMinutos;
+    private Double distanciaKm;
+    private Instant aceptadaEn;
+    private Instant despachadaEn;
+    private Instant etaAvisoEn;
 
     private RequerimientoInsumo() {
     }
 
     /**
-     * Creates a request as {@code SOLICITADO} with a server-authoritative expiry
-     * (trigger: diagnóstico with insumos, actor: assigned TECNICO). At least one
-     * line is required: zero insumos create no request (spec disp.R1).
+     * Request without radius dispatch data (never escalates). Equivalent to a row
+     * that predates V21; production dispatch uses the radius overload below.
      */
     public static RequerimientoInsumo crear(UUID otId, UUID tecnicoId, List<InsumoLinea> lineas,
             String observaciones, Instant creadaEn, Instant expiraEn) {
+        return crear(otId, tecnicoId, lineas, observaciones, creadaEn, expiraEn, null, null, null);
+    }
+
+    /**
+     * Creates a request as {@code SOLICITADO} with a server-authoritative expiry
+     * (trigger: diagnóstico with insumos, actor: assigned TECNICO). At least one
+     * line is required: zero insumos create no request (spec disp.R1). When
+     * {@code radioKm} is given the request is broadcast by radius around
+     * {@code destino} and re-evaluated when {@code ventanaExpiraEn} passes.
+     */
+    @SuppressWarnings("java:S107") // Constructor de fabrica del agregado: cada argumento es un dato obligatorio distinto del requerimiento.
+    public static RequerimientoInsumo crear(UUID otId, UUID tecnicoId, List<InsumoLinea> lineas,
+            String observaciones, Instant creadaEn, Instant expiraEn, Point destino, Double radioKm,
+            Instant ventanaExpiraEn) {
         if (otId == null) {
             throw new IllegalArgumentException("La orden de trabajo es requerida");
         }
@@ -74,15 +98,37 @@ public class RequerimientoInsumo {
         }
         requerimiento.creadaEn = creadaEn;
         requerimiento.expiraEn = expiraEn;
+        requerimiento.destino = destino;
+        requerimiento.radioKm = radioKm;
+        requerimiento.ventanaExpiraEn = ventanaExpiraEn;
         return requerimiento;
+    }
+
+    /** Reconstitution of a row without radius dispatch data. */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado.
+    public static RequerimientoInsumo reconstituir(RequerimientoInsumoId id, UUID otId, UUID tecnicoId,
+            EstadoRequerimiento estado, String observaciones, List<RequerimientoInsumoItem> items,
+            Instant creadaEn, Instant expiraEn, Instant resueltaEn) {
+        return reconstituir(id, otId, tecnicoId, estado, observaciones, items, creadaEn, expiraEn, resueltaEn,
+                null, null, null, null, null, null, null, null);
     }
 
     /** Reconstitution from persistence: restores the full aggregate state. */
     @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo del agregado. Un objeto parametro ocultaria el mapeo con RequerimientoInsumoJpaEntity.
     public static RequerimientoInsumo reconstituir(RequerimientoInsumoId id, UUID otId, UUID tecnicoId,
             EstadoRequerimiento estado, String observaciones, List<RequerimientoInsumoItem> items,
-            Instant creadaEn, Instant expiraEn, Instant resueltaEn) {
+            Instant creadaEn, Instant expiraEn, Instant resueltaEn, Point destino, Double radioKm,
+            Instant ventanaExpiraEn, Integer etaMinutos, Double distanciaKm, Instant aceptadaEn,
+            Instant despachadaEn, Instant etaAvisoEn) {
         RequerimientoInsumo requerimiento = new RequerimientoInsumo();
+        requerimiento.destino = destino;
+        requerimiento.radioKm = radioKm;
+        requerimiento.ventanaExpiraEn = ventanaExpiraEn;
+        requerimiento.etaMinutos = etaMinutos;
+        requerimiento.distanciaKm = distanciaKm;
+        requerimiento.aceptadaEn = aceptadaEn;
+        requerimiento.despachadaEn = despachadaEn;
+        requerimiento.etaAvisoEn = etaAvisoEn;
         requerimiento.id = id;
         requerimiento.otId = otId;
         requerimiento.tecnicoId = tecnicoId;
@@ -99,6 +145,46 @@ public class RequerimientoInsumo {
     public void asignar() {
         TransicionesRequerimiento.validar(estado, EstadoRequerimiento.ASIGNADO);
         this.estado = EstadoRequerimiento.ASIGNADO;
+    }
+
+    /**
+     * Accept with the ETA the supplier commits to (actor: PROVEEDOR). The atomic
+     * gate lives in the repository; this keeps the in-memory aggregate coherent.
+     */
+    public void asignar(int etaMinutos, Double distanciaKm, Instant ahora) {
+        if (etaMinutos < 1) {
+            throw new IllegalArgumentException("El ETA debe ser de al menos 1 minuto");
+        }
+        TransicionesRequerimiento.validar(estado, EstadoRequerimiento.ASIGNADO);
+        this.estado = EstadoRequerimiento.ASIGNADO;
+        this.etaMinutos = etaMinutos;
+        this.distanciaKm = distanciaKm;
+        this.aceptadaEn = ahora;
+    }
+
+    /** The winning supplier sends the order out (actor: PROVEEDOR). */
+    public void despachar(Instant ahora) {
+        TransicionesRequerimiento.validar(estado, EstadoRequerimiento.DESPACHADO);
+        this.estado = EstadoRequerimiento.DESPACHADO;
+        this.despachadaEn = ahora;
+    }
+
+    /** Widens the broadcast radius while the request is still open (actor: SISTEMA). */
+    public void escalar(double nuevoRadioKm, Instant nuevaVentanaExpiraEn) {
+        if (estado != EstadoRequerimiento.SOLICITADO) {
+            throw new IllegalStateException("Solo se puede escalar un requerimiento SOLICITADO, estado actual: "
+                    + estado);
+        }
+        if (nuevoRadioKm <= 0 || nuevaVentanaExpiraEn == null) {
+            throw new IllegalArgumentException("El radio y la ventana son requeridos");
+        }
+        this.radioKm = nuevoRadioKm;
+        this.ventanaExpiraEn = nuevaVentanaExpiraEn;
+    }
+
+    /** Records that the technician was warned the committed ETA elapsed. */
+    public void marcarEtaAvisado(Instant ahora) {
+        this.etaAvisoEn = ahora;
     }
 
     /** Delivery confirmed at the technician's location (actor: PROVEEDOR). */
@@ -161,5 +247,37 @@ public class RequerimientoInsumo {
 
     public Instant getResueltaEn() {
         return resueltaEn;
+    }
+
+    public Point getDestino() {
+        return destino;
+    }
+
+    public Double getRadioKm() {
+        return radioKm;
+    }
+
+    public Instant getVentanaExpiraEn() {
+        return ventanaExpiraEn;
+    }
+
+    public Integer getEtaMinutos() {
+        return etaMinutos;
+    }
+
+    public Double getDistanciaKm() {
+        return distanciaKm;
+    }
+
+    public Instant getAceptadaEn() {
+        return aceptadaEn;
+    }
+
+    public Instant getDespachadaEn() {
+        return despachadaEn;
+    }
+
+    public Instant getEtaAvisoEn() {
+        return etaAvisoEn;
     }
 }

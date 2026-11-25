@@ -28,6 +28,7 @@ import com.sena.cold_day.core.modules.ot.application.dto.OtResponse;
 import com.sena.cold_day.core.modules.ot.domain.aggregates.Ot;
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
+import com.sena.cold_day.core.modules.ot.domain.exception.UbicacionDestinoInsumosException;
 import com.sena.cold_day.core.modules.ot.domain.repository.OtRepository;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.EstadoOt;
 import com.sena.cold_day.core.modules.ot.domain.valueobjects.OtId;
@@ -83,7 +84,8 @@ class RegistrarDiagnosticoUseCaseTest {
         assertThat(response.presupuesto().costoManoObra()).isEqualByComparingTo("120000.00");
         assertThat(response.presupuesto().costoRepuestos()).isEqualByComparingTo("350000.00");
         // No lines declared: the dispatch is handed an empty list and creates nothing.
-        verify(solicitarInsumo).solicitar(ot.getId().valor(), tecnico.getId().valor(), List.of(), "Revisado en sitio");
+        verify(solicitarInsumo).solicitar(ot.getId().valor(), tecnico.getId().valor(), ot.getUbicacion(), List.of(),
+                "Revisado en sitio");
     }
 
     @Test
@@ -99,8 +101,27 @@ class RegistrarDiagnosticoUseCaseTest {
                 new DiagnosticoRequest("Compresor averiado", "Revisado en sitio", new BigDecimal("120000.00"),
                         new BigDecimal("350000.00"), lineas));
 
-        verify(solicitarInsumo).solicitar(ot.getId().valor(), tecnico.getId().valor(), lineas,
+        verify(solicitarInsumo).solicitar(ot.getId().valor(), tecnico.getId().valor(), ot.getUbicacion(), lineas,
                 "Revisado en sitio");
+    }
+
+    @Test
+    void registrarWithLinesAndNoLocationAnywhereIsRejectedAndPersistsNothing() {
+        Tecnico tecnico = tecnico();
+        Ot sinUbicacion = Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnico.getId(),
+                CategoriaServicio.REFRIGERACION, "No enciende", List.of(), "Calle 1", null, EstadoOt.EN_CAMINO, 10.0,
+                AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null, null);
+        when(otRepository.buscarPorId(sinUbicacion.getId())).thenReturn(Optional.of(sinUbicacion));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        var otId = sinUbicacion.getId();
+        var request = new DiagnosticoRequest("Falla", "obs", BigDecimal.ONE, BigDecimal.ONE,
+                List.of(new InsumoLinea("Filtro secadora", 2)));
+
+        assertThatThrownBy(() -> useCase.registrar(PRINCIPAL, otId, request))
+                .isInstanceOf(UbicacionDestinoInsumosException.class);
+
+        verify(otRepository, never()).save(any());
+        verify(solicitarInsumo, never()).solicitar(any(), any(), any(), any(), any());
     }
 
     @Test

@@ -270,6 +270,12 @@ export interface ProveedorResponse {
    * administrador lo aprueba (`exigirValidado()`).
    */
   estadoValidacion?: EstadoValidacionProveedor;
+  /**
+   * Donde opera el proveedor. Sin ubicacion no recibe solicitudes de repuestos:
+   * el aviso se reparte por radio alrededor del lugar de la entrega.
+   */
+  latitud?: number;
+  longitud?: number;
 }
 
 /**
@@ -294,7 +300,7 @@ export interface InsumoSolicitud {
 }
 
 /** Estados raíz del despacho de insumos (EstadoRequerimiento.java). */
-export type EstadoRequerimiento = 'SOLICITADO' | 'ASIGNADO' | 'ENTREGADO' | 'SIN_PROVEEDOR';
+export type EstadoRequerimiento = 'SOLICITADO' | 'ASIGNADO' | 'DESPACHADO' | 'ENTREGADO' | 'SIN_PROVEEDOR';
 
 /**
  * Estados por oferta del despacho (OfertaInsumoEstado.java). El literal de
@@ -317,6 +323,14 @@ export interface SolicitudInsumoResponse {
   creadaEn?: string;
   expiraEn?: string;
   resueltaEn?: string;
+  /** Minutos que el proveedor ganador prometio al aceptar. */
+  etaMinutos?: number;
+  /** Distancia en linea recta del proveedor ganador al lugar de la entrega. */
+  distanciaKm?: number;
+  aceptadaEn?: string;
+  despachadaEn?: string;
+  /** Radio de difusion vigente (10 a 25 km). */
+  radioKm?: number;
 }
 
 /**
@@ -332,6 +346,10 @@ export interface OfertaInsumoResponse {
   creadaEn?: string;
   expiraEn?: string;
   resueltaEn?: string;
+  /** Distancia del proveedor al lugar de la entrega. */
+  distanciaKm?: number;
+  /** ETA sugerido a partir de esa distancia; el proveedor lo ajusta al aceptar. */
+  etaSugeridoMinutos?: number;
   requerimiento: SolicitudInsumoResponse | null;
 }
 

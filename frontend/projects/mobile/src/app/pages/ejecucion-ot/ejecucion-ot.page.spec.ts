@@ -5,7 +5,7 @@ import { provideIonicAngular } from '@ionic/angular';
 import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { ApiHttpError } from '@core/alertas/api-http.error';
-import { OtResponse } from '@core/models/common.models';
+import { OtResponse, SolicitudInsumoResponse } from '@core/models/common.models';
 import { SseService } from '@core/service/sse.service';
 import { TecnicoPresenciaService } from '@core/service/tecnico-presencia.service';
 import { TecnicosApi } from '@core/service/tecnicos-api';
@@ -96,6 +96,45 @@ function texto(fixture: ComponentFixture<EjecucionOtPage>): string {
 
 describe('EjecucionOtPage (B3)', () => {
   afterEach(() => TestBed.resetTestingModule());
+
+  const solicitudInsumo = (overrides: Partial<SolicitudInsumoResponse> = {}): SolicitudInsumoResponse => ({
+    id: 'req1',
+    otId: 'ot1',
+    tecnicoId: 'tec1',
+    estado: 'SOLICITADO',
+    items: [{ descripcion: 'Gas R410A 900g', cantidad: 2 }],
+    ...overrides,
+  });
+
+  it('muestra el ETA comprometido y el estado de un pedido despachado', () => {
+    const { fixture } = setup({
+      tecnicos: {
+        getInsumosOt: vi.fn(() =>
+          of([solicitudInsumo({ estado: 'DESPACHADO', etaMinutos: 35, distanciaKm: 7.5 })]),
+        ),
+      },
+    });
+    expect(texto(fixture)).toContain('Despachado');
+    const eta = fixture.nativeElement.querySelector('[data-testid="insumo-eta-req1"]');
+    expect(eta.textContent).toContain('35 min');
+    expect(eta.textContent).toContain('7.5 km');
+  });
+
+  it('sin ETA muestra solo el estado', () => {
+    const { fixture } = setup({
+      tecnicos: { getInsumosOt: vi.fn(() => of([solicitudInsumo({ estado: 'SOLICITADO' })])) },
+    });
+    expect(texto(fixture)).toContain('Solicitado');
+    expect(fixture.nativeElement.querySelector('[data-testid="insumo-eta-req1"]')).toBeNull();
+  });
+
+  it('un pedido sin proveedor lo dice y no promete tiempos', () => {
+    const { fixture } = setup({
+      tecnicos: { getInsumosOt: vi.fn(() => of([solicitudInsumo({ estado: 'SIN_PROVEEDOR' })])) },
+    });
+    expect(texto(fixture)).toContain('Sin proveedor');
+    expect(fixture.nativeElement.querySelector('[data-testid="insumo-eta-req1"]')).toBeNull();
+  });
 
   it('muestra la orden y su estado', () => {
     const { fixture } = setup();

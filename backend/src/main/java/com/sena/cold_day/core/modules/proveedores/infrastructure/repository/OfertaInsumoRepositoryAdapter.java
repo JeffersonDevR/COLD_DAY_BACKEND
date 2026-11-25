@@ -3,6 +3,8 @@ package com.sena.cold_day.core.modules.proveedores.infrastructure.repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,14 @@ public class OfertaInsumoRepositoryAdapter implements OfertaInsumoRepository {
     @Transactional(readOnly = true)
     public Optional<OfertaInsumo> buscarPorId(OfertaInsumoId id) {
         return repository.findById(id.valor()).map(OfertaInsumoJpaEntity::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<ProveedorId> proveedoresOfertados(RequerimientoInsumoId requerimientoId) {
+        return repository.findByRequerimientoId(requerimientoId.valor()).stream()
+                .map(oferta -> ProveedorId.desde(oferta.getProveedorId()))
+                .collect(Collectors.toSet());
     }
 
     @Override

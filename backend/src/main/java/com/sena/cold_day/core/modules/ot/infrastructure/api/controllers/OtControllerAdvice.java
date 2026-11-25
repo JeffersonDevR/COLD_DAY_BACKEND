@@ -19,6 +19,7 @@ import com.sena.cold_day.core.modules.ot.domain.exception.OtAccesoNoPermitidoExc
 import com.sena.cold_day.core.modules.ot.domain.exception.OtNoEncontradoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.PagoVisitaInvalidoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.SolicitudInsumosInvalidaException;
+import com.sena.cold_day.core.modules.ot.domain.exception.UbicacionDestinoInsumosException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TecnicoNoAsignadoException;
 import com.sena.cold_day.core.modules.ot.domain.exception.TransicionOtInvalidaException;
 import com.sena.cold_day.core.modules.ot.domain.exception.VisitaNoPagadaException;
@@ -78,6 +79,12 @@ public class OtControllerAdvice {
     @ExceptionHandler(SolicitudInsumosInvalidaException.class)
     ResponseEntity<ApiError> handleSolicitudInsumosInvalida(SolicitudInsumosInvalidaException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** No OT or technician location to broadcast the parts request around: nothing is written. */
+    @ExceptionHandler(UbicacionDestinoInsumosException.class)
+    ResponseEntity<ApiError> handleUbicacionDestinoInsumos(UbicacionDestinoInsumosException exception) {
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, exception);
     }
 
     /** Authenticated but not the assigned technician / not the owning client. */

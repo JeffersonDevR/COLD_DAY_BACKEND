@@ -3,7 +3,7 @@
     <cd-marca pantalla="Portal de proveedor" chip="Proveedor" />
     <div class="cd-hero cd-hero--compacto">
       <h1 class="cd-headline">Solicitudes de insumos</h1>
-      <p class="cd-hero__nota">Acepta, rechaza o confirma entregas de repuestos.</p>
+      <p class="cd-hero__nota">Acepta con tu tiempo de llegada, despacha y confirma entregas de repuestos.</p>
       @if (solicitudesPorGestionar() > 0) {
         <p class="cd-hero__nota cd-bandeja__conteo" data-testid="solicitudes-conteo">
           {{ solicitudesPorGestionar() }}
@@ -17,6 +17,27 @@
 <ion-content class="ion-padding">
   @if (cargando()) {
     <cd-skeleton label="Cargando solicitudes" testId="solicitudes-cargando" />
+  }
+
+  @if (sinUbicacion()) {
+    <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="sin-ubicacion">
+      <h2 class="cd-alerta__titulo">Fija dónde operas</h2>
+      <p class="cd-alerta__texto">Sin tu ubicación no te llegan solicitudes cercanas.</p>
+      <ion-button
+        class="cd-cta"
+        data-testid="fijar-ubicacion"
+        [attr.aria-busy]="fijandoUbicacion()"
+        [disabled]="fijandoUbicacion()"
+        (click)="fijarUbicacion()"
+      >
+        @if (fijandoUbicacion()) {
+          <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+          <span class="cd-cta__loading">Guardando…</span>
+        } @else {
+          Fijar mi ubicación
+        }
+      </ion-button>
+    </section>
   }
 
   @if (validacionBloquea()) {
@@ -72,21 +93,67 @@
         }
       }
 
-      @if (oferta.estado === 'PENDIENTE') {
+      @if (oferta.distanciaKm != null) {
+        <p class="cd-ayuda" data-testid="distancia">A {{ oferta.distanciaKm.toFixed(1) }} km del lugar de entrega</p>
+      }
+      @if (oferta.estado === 'ACEPTADA' && oferta.requerimiento?.etaMinutos; as eta) {
+        <p class="cd-ayuda" data-testid="eta-comprometido">Te comprometiste a llegar en {{ eta }} min</p>
+      }
+
+      @if (oferta.estado === 'PENDIENTE' && ofertaAceptando() === oferta.id) {
+        <div class="cd-eta" [attr.data-testid]="'eta-form-' + oferta.id">
+          <label class="cd-rechazo__label" [attr.for]="'eta-' + oferta.id">¿En cuántos minutos llegas?</label>
+          <input
+            class="cd-textarea"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="240"
+            [id]="'eta-' + oferta.id"
+            [value]="etaTexto()"
+            (input)="onEta($event)"
+            [attr.aria-invalid]="etaTexto() !== '' && !etaValido() ? 'true' : null"
+            [attr.data-testid]="'eta-input-' + oferta.id"
+          />
+          <p class="cd-field-hint">Entre 1 y 240 minutos. Es el tiempo en que te comprometes a llegar.</p>
+          <div class="cd-ot__acciones">
+            <ion-button
+              class="cd-cta"
+              [attr.aria-busy]="accionEnCurso() === oferta.id"
+              [disabled]="!etaValido() || accionEnCurso() === oferta.id"
+              (click)="confirmarAceptar(oferta)"
+              [attr.data-testid]="'eta-confirmar-' + oferta.id"
+            >
+              @if (accionEnCurso() === oferta.id) {
+                <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+                <span class="cd-cta__loading">Aceptando…</span>
+              } @else {
+                Aceptar y comprometer mi tiempo
+              }
+            </ion-button>
+            <ion-button
+              fill="clear"
+              color="medium"
+              [disabled]="accionEnCurso() === oferta.id"
+              (click)="cancelarAceptar()"
+              [attr.data-testid]="'eta-cancelar-' + oferta.id"
+            >
+              Cancelar
+            </ion-button>
+          </div>
+        </div>
+      }
+
+      @if (oferta.estado === 'PENDIENTE' && ofertaAceptando() !== oferta.id) {
         <div class="cd-ot__acciones">
           <ion-button
             class="cd-cta"
             [attr.aria-busy]="accionEnCurso() === oferta.id"
             [disabled]="accionEnCurso() === oferta.id"
-            (click)="aceptar(oferta)"
+            (click)="abrirAceptar(oferta)"
             [attr.data-testid]="'aceptar-' + oferta.id"
           >
-            @if (accionEnCurso() === oferta.id) {
-              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
-              <span class="cd-cta__loading">Aceptando…</span>
-            } @else {
-              Aceptar
-            }
+            Aceptar
           </ion-button>
           <ion-button
             fill="outline"
@@ -100,7 +167,27 @@
         </div>
       }
 
-      @if (oferta.estado === 'ACEPTADA' && oferta.requerimiento?.estado !== 'ENTREGADO') {
+      @if (oferta.estado === 'ACEPTADA' && oferta.requerimiento?.estado === 'ASIGNADO') {
+        <div class="cd-ot__acciones">
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            [attr.aria-busy]="accionEnCurso() === oferta.id"
+            [disabled]="accionEnCurso() === oferta.id"
+            (click)="despachar(oferta)"
+            [attr.data-testid]="'despachar-' + oferta.id"
+          >
+            @if (accionEnCurso() === oferta.id) {
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Despachando…</span>
+            } @else {
+              Despachar pedido
+            }
+          </ion-button>
+        </div>
+      }
+
+      @if (oferta.estado === 'ACEPTADA' && oferta.requerimiento?.estado === 'DESPACHADO') {
         <div class="cd-ot__acciones">
           <ion-button
             expand="block"

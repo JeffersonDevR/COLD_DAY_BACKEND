@@ -45,6 +45,8 @@ function respuestaAlta(overrides: Partial<ProveedorApiResponse> = {}): Proveedor
     activo: true,
     creadoEn: '2026-09-14T10:00:00Z',
     estadoValidacion: 'PENDIENTE',
+    latitud: null,
+    longitud: null,
     ...overrides,
   };
 }

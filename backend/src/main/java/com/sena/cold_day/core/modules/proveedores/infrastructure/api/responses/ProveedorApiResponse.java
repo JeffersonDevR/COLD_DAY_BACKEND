@@ -10,12 +10,13 @@ import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoVali
  * exposed.
  */
 public record ProveedorApiResponse(String id, Long usuarioId, String razonSocial, String nit,
-        String telefono, boolean activo, String creadoEn, EstadoValidacionProveedor estadoValidacion) {
+        String telefono, boolean activo, String creadoEn, EstadoValidacionProveedor estadoValidacion,
+        Double latitud, Double longitud) {
 
     public static ProveedorApiResponse from(ProveedorResponse response) {
         return new ProveedorApiResponse(String.valueOf(response.id()), response.usuarioId(), response.razonSocial(),
                 response.nit(), response.telefono(), response.activo(),
                 response.creadoEn() == null ? null : response.creadoEn().toString(),
-                response.estadoValidacion());
+                response.estadoValidacion(), response.latitud(), response.longitud());
     }
 }

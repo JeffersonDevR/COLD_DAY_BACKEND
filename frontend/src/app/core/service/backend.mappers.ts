@@ -347,6 +347,8 @@ export function aProveedorResponse(dto: ProveedorApiResponse): ProveedorResponse
     activo: dto.activo,
     creadoEn: dto.creadoEn ?? undefined,
     estadoValidacion: dto.estadoValidacion,
+    latitud: dto.latitud ?? undefined,
+    longitud: dto.longitud ?? undefined,
   };
 }
 
@@ -364,6 +366,11 @@ export function aSolicitudInsumoResponse(dto: SolicitudInsumoApiResponse): Solic
     creadaEn: dto.creadaEn ?? undefined,
     expiraEn: dto.expiraEn ?? undefined,
     resueltaEn: dto.resueltaEn ?? undefined,
+    etaMinutos: dto.etaMinutos ?? undefined,
+    distanciaKm: dto.distanciaKm ?? undefined,
+    aceptadaEn: dto.aceptadaEn ?? undefined,
+    despachadaEn: dto.despachadaEn ?? undefined,
+    radioKm: dto.radioKm ?? undefined,
   };
 }
 
@@ -376,6 +383,8 @@ export function aOfertaInsumoResponse(dto: OfertaInsumoApiResponse): OfertaInsum
     creadaEn: dto.creadaEn ?? undefined,
     expiraEn: dto.expiraEn ?? undefined,
     resueltaEn: dto.resueltaEn ?? undefined,
+    distanciaKm: dto.distanciaKm ?? undefined,
+    etaSugeridoMinutos: dto.etaSugeridoMinutos ?? undefined,
     // El rechazo responde la oferta sin requerimiento embebido.
     requerimiento: dto.requerimiento ? aSolicitudInsumoResponse(dto.requerimiento) : null,
   };

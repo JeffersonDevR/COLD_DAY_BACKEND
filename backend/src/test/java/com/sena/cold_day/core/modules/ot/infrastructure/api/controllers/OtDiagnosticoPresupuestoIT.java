@@ -399,10 +399,15 @@ class OtDiagnosticoPresupuestoIT {
                 });
     }
 
+    /** Eligible for the radius broadcast: active, approved and ~2 km from the service location. */
     private void crearProveedorActivo(String nit, String correo) {
         Long usuarioId = crearUsuario(correo, Rol.PROVEEDOR);
-        proveedorRepository.save(Proveedor.crear(usuarioId, "Suministros " + nit, nit, "3105550001", null, null,
-                Set.of()));
+        Proveedor proveedor = Proveedor.crear(usuarioId, "Suministros " + nit, nit, "3105550001", null,
+                new Point(UBICACION_SERVICIO.latitud() + 0.018, UBICACION_SERVICIO.longitud()), Set.of());
+        proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1), List.of(
+                new com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor(1L,
+                        proveedor.getId(), "RUT", LocalDate.of(2099, 1, 1))));
+        proveedorRepository.save(proveedor);
     }
 
     private Ot otAsignada(ClienteId clienteId, TecnicoId tecnicoId, Instant asignadaEn) {

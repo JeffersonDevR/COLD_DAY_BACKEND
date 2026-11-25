@@ -31,6 +31,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.exception.TransicionReq
 import com.sena.cold_day.core.modules.proveedores.domain.repository.OfertaInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.RequerimientoInsumoRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.services.NotificacionInsumoPort;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoEstado;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoId;
@@ -41,7 +42,7 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 /**
  * Delivery confirmation (spec disp.R7, design AD8): only the winning supplier —
  * the one whose offer is {@code ACEPTADA} for the request — can move
- * {@code ASIGNADO -> ENTREGADO}; another supplier is ineligible and an
+ * {@code DESPACHADO -> ENTREGADO}; another supplier is ineligible and an
  * already-delivered request fails the transition guard.
  */
 @ExtendWith(MockitoExtension.class)
@@ -56,13 +57,14 @@ class EntregarInsumoUseCaseTest {
     @Mock RequerimientoInsumoRepository requerimientoRepository;
     @Mock OfertaInsumoRepository ofertaRepository;
     @Mock ProveedorRepository proveedorRepository;
+    @Mock NotificacionInsumoPort notificacion;
 
     private EntregarInsumoUseCase useCase;
 
     @BeforeEach
     void setUp() {
         useCase = new EntregarInsumoUseCase(requerimientoRepository, ofertaRepository, proveedorRepository,
-                Clock.fixed(AHORA, ZoneOffset.UTC));
+                notificacion, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 
     @Test
@@ -71,7 +73,7 @@ class EntregarInsumoUseCaseTest {
         RequerimientoInsumoId requerimientoId = RequerimientoInsumoId.nueva();
         when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
         when(requerimientoRepository.buscarPorId(requerimientoId))
-                .thenReturn(Optional.of(requerimiento(requerimientoId, EstadoRequerimiento.ASIGNADO, null)));
+                .thenReturn(Optional.of(requerimiento(requerimientoId, EstadoRequerimiento.DESPACHADO, null)));
         when(ofertaRepository.listarPorProveedor(proveedor.getId(), OfertaInsumoEstado.ACEPTADA))
                 .thenReturn(List.of(ofertaAceptada(requerimientoId, proveedor.getId())));
         when(requerimientoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -81,6 +83,7 @@ class EntregarInsumoUseCaseTest {
         assertThat(resultado.getEstado()).isEqualTo(EstadoRequerimiento.ENTREGADO);
         assertThat(resultado.getResueltaEn()).isEqualTo(AHORA);
         verify(requerimientoRepository).save(any());
+        verify(notificacion).notificarEntregada(resultado);
     }
 
     @Test
@@ -95,6 +98,22 @@ class EntregarInsumoUseCaseTest {
 
         assertThatThrownBy(() -> useCase.entregar(new UsuarioId(USUARIO_ID), requerimientoId))
                 .isInstanceOf(ProveedorNoElegibleException.class);
+
+        verify(requerimientoRepository, never()).save(any());
+    }
+
+    @Test
+    void deliveringARequestThatWasNeverDispatchedIsAConflict() {
+        Proveedor proveedor = proveedorActivo();
+        RequerimientoInsumoId requerimientoId = RequerimientoInsumoId.nueva();
+        when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
+        when(requerimientoRepository.buscarPorId(requerimientoId))
+                .thenReturn(Optional.of(requerimiento(requerimientoId, EstadoRequerimiento.ASIGNADO, null)));
+        when(ofertaRepository.listarPorProveedor(proveedor.getId(), OfertaInsumoEstado.ACEPTADA))
+                .thenReturn(List.of(ofertaAceptada(requerimientoId, proveedor.getId())));
+
+        assertThatThrownBy(() -> useCase.entregar(new UsuarioId(USUARIO_ID), requerimientoId))
+                .isInstanceOf(TransicionRequerimientoInvalidaException.class);
 
         verify(requerimientoRepository, never()).save(any());
     }

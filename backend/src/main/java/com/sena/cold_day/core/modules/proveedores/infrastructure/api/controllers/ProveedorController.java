@@ -25,6 +25,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProve
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.DocumentoProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.MiPerfilProveedorApiRequest;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.UbicacionProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.ProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.ValidacionProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.DocumentoProveedorApiResponse;
@@ -116,6 +117,15 @@ public class ProveedorController {
             @Valid @RequestBody MiPerfilProveedorApiRequest request) {
         return ProveedorApiResponse.from(
                 miPerfil.completarDatos(principal.usuarioId(), request.razonSocial(), request.nit()));
+    }
+
+    /** El proveedor fija su ubicacion; sin ella no recibe solicitudes de insumos por radio. */
+    @PutMapping("/me/ubicacion")
+    @PreAuthorize("hasRole('PROVEEDOR')")
+    public ProveedorApiResponse fijarMiUbicacion(@AuthenticationPrincipal AuthenticatedUser principal,
+            @Valid @RequestBody UbicacionProveedorApiRequest request) {
+        return ProveedorApiResponse.from(
+                miPerfil.fijarUbicacion(principal.usuarioId(), request.latitud(), request.longitud()));
     }
 
     @GetMapping

@@ -12,9 +12,11 @@ import {
 import {
   DocumentoProveedorApiResponse,
   OfertaInsumoApiResponse,
+  AceptarInsumoApiRequest,
   ProveedorApiRequest,
   ProveedorApiResponse,
   SolicitudInsumoApiResponse,
+  UbicacionProveedorApiRequest,
   ValidacionProveedorApiRequest,
 } from '../models/backend.dto';
 import {
@@ -114,6 +116,20 @@ export class ProveedoresApi {
   }
 
   /**
+   * PUT /api/proveedores/me/ubicacion: donde opera el proveedor. Sin ubicacion no
+   * recibe solicitudes: el aviso se reparte por radio alrededor de la entrega.
+   */
+  fijarMiUbicacion(latitud: number, longitud: number): Observable<ProveedorResponse> {
+    if (this.apiConfig.useMocks()) {
+      return this.getMiPerfil().pipe(map(p => ({ ...p, latitud, longitud })));
+    }
+    const body: UbicacionProveedorApiRequest = { latitud, longitud };
+    return this.http
+      .put<ProveedorApiResponse>(this.apiConfig.url('/proveedores/me/ubicacion'), body)
+      .pipe(map(aProveedorResponse));
+  }
+
+  /**
    * GET /api/proveedores/{id}/documentos: expediente de un proveedor puntual para
    * que un administrador lo revise antes de aprobar o rechazar su validacion.
    * El mock no tiene expedientes por proveedor arbitrario, asi que responde un
@@ -156,15 +172,30 @@ export class ProveedoresApi {
   }
 
   /**
-   * POST /api/insumos/{ofertaId}/aceptar → requerimiento `ASIGNADO`.
-   * Una carrera perdida responde 409 y una oferta ajena/no vigente 404/409.
+   * POST /api/insumos/{ofertaId}/aceptar con el ETA al que se compromete el
+   * proveedor → requerimiento `ASIGNADO`. Una carrera perdida responde 409, una
+   * oferta ajena/no vigente 404/409 y un ETA fuera de rango 400.
    */
-  aceptar(ofertaId: string): Observable<SolicitudInsumoResponse> {
+  aceptar(ofertaId: string, etaMinutos: number): Observable<SolicitudInsumoResponse> {
     if (this.apiConfig.useMocks()) {
-      return defer(() => of(this.mockDb.aceptarInsumo(ofertaId))).pipe(delay(300));
+      return defer(() => of(this.mockDb.aceptarInsumo(ofertaId, etaMinutos))).pipe(delay(300));
+    }
+    const body: AceptarInsumoApiRequest = { etaMinutos };
+    return this.http
+      .post<SolicitudInsumoApiResponse>(this.apiConfig.url(`/insumos/${ofertaId}/aceptar`), body)
+      .pipe(map(aSolicitudInsumoResponse));
+  }
+
+  /**
+   * POST /api/insumos/{id}/despachar → requerimiento `DESPACHADO`. Solo el
+   * proveedor ganador; la entrega exige haber despachado antes.
+   */
+  despachar(requerimientoId: string): Observable<SolicitudInsumoResponse> {
+    if (this.apiConfig.useMocks()) {
+      return defer(() => of(this.mockDb.despacharInsumo(requerimientoId))).pipe(delay(300));
     }
     return this.http
-      .post<SolicitudInsumoApiResponse>(this.apiConfig.url(`/insumos/${ofertaId}/aceptar`), null)
+      .post<SolicitudInsumoApiResponse>(this.apiConfig.url(`/insumos/${requerimientoId}/despachar`), null)
       .pipe(map(aSolicitudInsumoResponse));
   }
 
@@ -180,7 +211,8 @@ export class ProveedoresApi {
 
   /**
    * POST /api/insumos/{id}/entregar → requerimiento `ENTREGADO`.
-   * Solo el proveedor cuya oferta está `ACEPTADA` puede confirmar la entrega.
+   * Solo el proveedor cuya oferta está `ACEPTADA` puede confirmar la entrega, y
+   * solo después de despachar.
    */
   entregar(requerimientoId: string): Observable<SolicitudInsumoResponse> {
     if (this.apiConfig.useMocks()) {

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.sena.cold_day.core.modules.proveedores.domain.exception.EtaInvalidoException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.OfertaInsumoNoDisponibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoElegibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoValidadoException;
@@ -37,6 +38,12 @@ public class InsumoControllerAdvice {
         List<String> errors = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + " " + error.getDefaultMessage()).toList();
         return ResponseEntity.badRequest().body(new ApiError(400, "Solicitud invalida", errors));
+    }
+
+    /** An ETA outside the allowed range (the message names the range). */
+    @ExceptionHandler(EtaInvalidoException.class)
+    ResponseEntity<ApiError> handleEtaInvalido(EtaInvalidoException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     /** Unknown, inactive, foreign or non-owning supplier (spec disp.R3, design AD7). */

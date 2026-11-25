@@ -9,10 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.proveedores.application.dto.SolicitudProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
+import com.sena.cold_day.core.modules.proveedores.domain.entities.OfertaInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoElegibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.OfertaInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.RequerimientoInsumoRepository;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoEstado;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
@@ -53,12 +56,27 @@ public class ListarSolicitudesProveedorUseCase {
     public List<SolicitudProveedor> listar(UsuarioId usuarioId) {
         Proveedor proveedor = proveedorElegible(usuarioId);
         Instant ahora = clock.instant();
-        return ofertaRepository.listarPorProveedor(proveedor.getId(), OfertaInsumoEstado.PENDIENTE).stream()
-                .filter(oferta -> oferta.estaVigente(ahora))
+        return ofertaRepository.listarPorProveedor(proveedor.getId(), OfertaInsumoEstado.PENDIENTE,
+                OfertaInsumoEstado.ACEPTADA).stream()
+                .filter(oferta -> oferta.getEstado() == OfertaInsumoEstado.ACEPTADA || oferta.estaVigente(ahora))
                 .flatMap(oferta -> requerimientoRepository.buscarPorId(oferta.getRequerimientoId())
+                        .filter(requerimiento -> estaEnCurso(oferta, requerimiento))
                         .map(requerimiento -> new SolicitudProveedor(oferta, requerimiento))
                         .stream())
                 .toList();
+    }
+
+    /**
+     * A pending offer is listed while it is open; an accepted one stays listed while
+     * the supplier still has something to do with it (dispatch or deliver) and
+     * disappears once the request is delivered.
+     */
+    private static boolean estaEnCurso(OfertaInsumo oferta, RequerimientoInsumo requerimiento) {
+        if (oferta.getEstado() == OfertaInsumoEstado.ACEPTADA) {
+            return requerimiento.getEstado() == EstadoRequerimiento.ASIGNADO
+                    || requerimiento.getEstado() == EstadoRequerimiento.DESPACHADO;
+        }
+        return true;
     }
 
     /** Resolves the acting supplier and enforces the eligibility gate (AD7). */

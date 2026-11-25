@@ -13,7 +13,7 @@ class CanalPushTest {
     @Test
     void idsCoincidenConLaApp() {
         assertEquals(
-                List.of("ot_nueva_tec", "ot_update_tec", "ot_nueva_cli", "ot_update_cli"),
+                List.of("ot_nueva_tec", "ot_update_tec", "ot_nueva_cli", "ot_update_cli", "insumo_nuevo_prov"),
                 Arrays.stream(CanalPush.values()).map(CanalPush::id).toList());
     }
 }

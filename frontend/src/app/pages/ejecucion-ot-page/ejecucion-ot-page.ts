@@ -301,6 +301,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     switch (estado) {
       case 'SOLICITADO': return 'Solicitado';
       case 'ASIGNADO': return 'Asignado';
+      case 'DESPACHADO': return 'Despachado';
       case 'ENTREGADO': return 'Entregado';
       case 'SIN_PROVEEDOR': return 'Sin proveedor';
     }
@@ -310,6 +311,7 @@ export class EjecucionOtPage implements OnInit, OnDestroy {
     switch (estado) {
       case 'SOLICITADO': return 'pendiente';
       case 'ASIGNADO':
+      case 'DESPACHADO':
       case 'ENTREGADO': return 'ok';
       case 'SIN_PROVEEDOR': return 'error';
     }

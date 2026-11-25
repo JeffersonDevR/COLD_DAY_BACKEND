@@ -73,7 +73,8 @@ public class SolicitarInsumosOtUseCase {
 
         // Same broadcast, same vigencia, same SIN_PROVEEDOR semantics as the
         // diagnóstico trigger: pass the ids resolved from the OT aggregate.
-        return solicitarInsumo.solicitar(ot.getId().valor(), tecnico.getId().valor(), lineas, observaciones);
+        return solicitarInsumo.solicitar(ot.getId().valor(), tecnico.getId().valor(),
+                DestinoInsumos.resolver(ot, tecnico, lineas), lineas, observaciones);
     }
 
     /** See the class javadoc for the exact allowed state set. */

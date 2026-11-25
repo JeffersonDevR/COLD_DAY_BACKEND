@@ -22,7 +22,12 @@ public record SolicitudInsumoApiResponse(
         List<LineaInsumoApiResponse> items,
         Instant creadaEn,
         Instant expiraEn,
-        Instant resueltaEn) {
+        Instant resueltaEn,
+        Integer etaMinutos,
+        Double distanciaKm,
+        Instant aceptadaEn,
+        Instant despachadaEn,
+        Double radioKm) {
 
     public static SolicitudInsumoApiResponse from(RequerimientoInsumo requerimiento) {
         return new SolicitudInsumoApiResponse(
@@ -31,7 +36,9 @@ public record SolicitudInsumoApiResponse(
                 requerimiento.getTecnicoId() == null ? null : requerimiento.getTecnicoId().toString(),
                 requerimiento.getEstado(), requerimiento.getObservaciones(),
                 requerimiento.getItems().stream().map(LineaInsumoApiResponse::from).toList(),
-                requerimiento.getCreadaEn(), requerimiento.getExpiraEn(), requerimiento.getResueltaEn());
+                requerimiento.getCreadaEn(), requerimiento.getExpiraEn(), requerimiento.getResueltaEn(),
+                requerimiento.getEtaMinutos(), requerimiento.getDistanciaKm(), requerimiento.getAceptadaEn(),
+                requerimiento.getDespachadaEn(), requerimiento.getRadioKm());
     }
 
     /** One declared insumo line: free-text description plus a positive quantity. */

@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.proveedores.infrastructure.api.controller
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -198,6 +199,54 @@ class ProveedorApiIT {
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/tecnicos/me/ots").header("Authorization", bearer(proveedorJwt())))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void putUbicacionPersisteYGetMeLaDevuelve() throws Exception {
+        createSupplier("NIT-UB1", "prov.ub1@coldday.com.co");
+        String token = propioJwt("prov.ub1@coldday.com.co");
+
+        mockMvc.perform(get("/api/proveedores/me").header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.latitud").doesNotExist())
+                .andExpect(jsonPath("$.longitud").doesNotExist());
+
+        mockMvc.perform(put("/api/proveedores/me/ubicacion").header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"latitud\":4.6097,\"longitud\":-74.0817}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.latitud").value(4.6097))
+                .andExpect(jsonPath("$.longitud").value(-74.0817));
+
+        mockMvc.perform(get("/api/proveedores/me").header("Authorization", bearer(token)))
+                .andExpect(jsonPath("$.latitud").value(4.6097))
+                .andExpect(jsonPath("$.longitud").value(-74.0817));
+    }
+
+    @Test
+    void putUbicacionFueraDeRangoOIncompletaEs400() throws Exception {
+        createSupplier("NIT-UB2", "prov.ub2@coldday.com.co");
+        String token = propioJwt("prov.ub2@coldday.com.co");
+
+        for (String body : new String[] { "{\"latitud\":91,\"longitud\":0}", "{\"latitud\":0,\"longitud\":-181}",
+                "{\"latitud\":4.6}", "{}" }) {
+            mockMvc.perform(put("/api/proveedores/me/ubicacion").header("Authorization", bearer(token))
+                    .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void putUbicacionSinRolProveedorEs403() throws Exception {
+        for (String token : new String[] { tecnicoJwt(), clienteJwt(), adminJwt() }) {
+            mockMvc.perform(put("/api/proveedores/me/ubicacion").header("Authorization", bearer(token))
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"latitud\":4.6,\"longitud\":-74.0}"))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    private String propioJwt(String correo) {
+        Long usuarioId = usuarioRepository.findByCorreo(correo).orElseThrow().getId();
+        return tokenIssuer.emitir(new UsuarioId(usuarioId), Rol.PROVEEDOR, 0).valor();
     }
 
     private void createSupplier(String nit, String correo) throws Exception {

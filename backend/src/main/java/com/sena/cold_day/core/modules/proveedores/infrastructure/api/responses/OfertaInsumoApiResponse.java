@@ -20,6 +20,8 @@ public record OfertaInsumoApiResponse(
         Instant creadaEn,
         Instant expiraEn,
         Instant resueltaEn,
+        Double distanciaKm,
+        Integer etaSugeridoMinutos,
         SolicitudInsumoApiResponse requerimiento) {
 
     public static OfertaInsumoApiResponse from(OfertaInsumo oferta, RequerimientoInsumo requerimiento) {
@@ -28,6 +30,7 @@ public record OfertaInsumoApiResponse(
                 oferta.getRequerimientoId() == null ? null : oferta.getRequerimientoId().valor().toString(),
                 oferta.getProveedorId() == null ? null : oferta.getProveedorId().valor().toString(),
                 oferta.getEstado(), oferta.getCreadaEn(), oferta.getExpiraEn(), oferta.getResueltaEn(),
+                oferta.getDistanciaKm(), oferta.getEtaSugeridoMinutos(),
                 requerimiento == null ? null : SolicitudInsumoApiResponse.from(requerimiento));
     }
 }

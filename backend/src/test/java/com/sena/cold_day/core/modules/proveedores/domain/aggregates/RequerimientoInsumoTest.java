@@ -17,6 +17,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.services.TransicionesRe
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.InsumoLinea;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * Domain behaviour of an insumo request (spec disp.R1/R3/R4/R6/R7, design
@@ -114,6 +115,7 @@ class RequerimientoInsumoTest {
     void marcarEntregadoMueveAsignadoAEntregadoYQuedaTerminal() {
         RequerimientoInsumo requerimiento = crear();
         requerimiento.asignar();
+        requerimiento.despachar(AHORA.plusSeconds(30));
 
         Instant entrega = AHORA.plusSeconds(60);
         requerimiento.marcarEntregado(entrega);
@@ -153,6 +155,7 @@ class RequerimientoInsumoTest {
         // ENTREGADO es terminal: ninguna salida.
         RequerimientoInsumo entregado = crear();
         entregado.asignar();
+        entregado.despachar(AHORA);
         entregado.marcarEntregado(AHORA);
         for (EstadoRequerimiento destino : EstadoRequerimiento.values()) {
             assertThat(TransicionesRequerimiento.esPermitida(EstadoRequerimiento.ENTREGADO, destino))
@@ -177,7 +180,12 @@ class RequerimientoInsumoTest {
         assertThat(TransicionesRequerimiento.esPermitida(EstadoRequerimiento.SOLICITADO,
                 EstadoRequerimiento.SIN_PROVEEDOR)).isTrue();
         assertThat(TransicionesRequerimiento.esPermitida(EstadoRequerimiento.ASIGNADO,
+                EstadoRequerimiento.DESPACHADO)).isTrue();
+        assertThat(TransicionesRequerimiento.esPermitida(EstadoRequerimiento.DESPACHADO,
                 EstadoRequerimiento.ENTREGADO)).isTrue();
+        // La entrega exige haber despachado antes (diseno 2026-11-25).
+        assertThat(TransicionesRequerimiento.esPermitida(EstadoRequerimiento.ASIGNADO,
+                EstadoRequerimiento.ENTREGADO)).isFalse();
 
         assertThatCode(() -> TransicionesRequerimiento.validar(EstadoRequerimiento.SOLICITADO,
                 EstadoRequerimiento.ASIGNADO)).doesNotThrowAnyException();
@@ -192,7 +200,105 @@ class RequerimientoInsumoTest {
     void estadoRequerimientoNoDeclaraCancelado() {
         assertThat(Arrays.stream(EstadoRequerimiento.values()).map(Enum::name))
                 .doesNotContain("CANCELADO")
-                .containsExactly("SOLICITADO", "ASIGNADO", "ENTREGADO", "SIN_PROVEEDOR");
+                .containsExactly("SOLICITADO", "ASIGNADO", "DESPACHADO", "ENTREGADO", "SIN_PROVEEDOR");
+    }
+
+    @Test
+    void asignarConEtaGuardaEtaDistanciaYMomento() {
+        RequerimientoInsumo requerimiento = crearConRadio();
+
+        requerimiento.asignar(45, 12.5, AHORA.plusSeconds(20));
+
+        assertThat(requerimiento.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
+        assertThat(requerimiento.getEtaMinutos()).isEqualTo(45);
+        assertThat(requerimiento.getDistanciaKm()).isEqualTo(12.5);
+        assertThat(requerimiento.getAceptadaEn()).isEqualTo(AHORA.plusSeconds(20));
+    }
+
+    @Test
+    void asignarExigeEtaPositivo() {
+        RequerimientoInsumo requerimiento = crearConRadio();
+
+        assertThatThrownBy(() -> requerimiento.asignar(0, 1.0, AHORA))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> requerimiento.asignar(-5, 1.0, AHORA))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(requerimiento.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO);
+    }
+
+    @Test
+    void despacharSoloDesdeAsignadoYRegistraElMomento() {
+        RequerimientoInsumo solicitado = crearConRadio();
+        assertThatThrownBy(() -> solicitado.despachar(AHORA))
+                .isInstanceOf(TransicionRequerimientoInvalidaException.class);
+
+        RequerimientoInsumo asignado = crearConRadio();
+        asignado.asignar(30, 5.0, AHORA);
+        asignado.despachar(AHORA.plusSeconds(90));
+
+        assertThat(asignado.getEstado()).isEqualTo(EstadoRequerimiento.DESPACHADO);
+        assertThat(asignado.getDespachadaEn()).isEqualTo(AHORA.plusSeconds(90));
+        assertThat(asignado.esTerminal()).isFalse();
+    }
+
+    @Test
+    void entregarExigeDespachado() {
+        RequerimientoInsumo asignado = crearConRadio();
+        asignado.asignar(30, 5.0, AHORA);
+
+        assertThatThrownBy(() -> asignado.marcarEntregado(AHORA))
+                .isInstanceOf(TransicionRequerimientoInvalidaException.class);
+        assertThat(asignado.getEstado()).isEqualTo(EstadoRequerimiento.ASIGNADO);
+    }
+
+    @Test
+    void escalarSoloEnSolicitadoYSubeRadioYVentana() {
+        RequerimientoInsumo requerimiento = crearConRadio();
+        Instant nuevaVentana = AHORA.plusSeconds(450);
+
+        requerimiento.escalar(15.0, nuevaVentana);
+
+        assertThat(requerimiento.getRadioKm()).isEqualTo(15.0);
+        assertThat(requerimiento.getVentanaExpiraEn()).isEqualTo(nuevaVentana);
+
+        requerimiento.asignar(20, 3.0, AHORA);
+        assertThatThrownBy(() -> requerimiento.escalar(20.0, nuevaVentana.plusSeconds(10)))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void crearConRadioGuardaDestinoRadioYVentana() {
+        RequerimientoInsumo requerimiento = crearConRadio();
+
+        assertThat(requerimiento.getDestino()).isEqualTo(new Point(4.65, -74.1));
+        assertThat(requerimiento.getRadioKm()).isEqualTo(10.0);
+        assertThat(requerimiento.getVentanaExpiraEn()).isEqualTo(AHORA.plusSeconds(225));
+        assertThat(requerimiento.getEtaMinutos()).isNull();
+    }
+
+    @Test
+    void unRequerimientoLegadoSinRadioSigueSiendoValido() {
+        RequerimientoInsumo legado = crear();
+
+        assertThat(legado.getRadioKm()).isNull();
+        assertThat(legado.getDestino()).isNull();
+        assertThat(legado.getVentanaExpiraEn()).isNull();
+        assertThat(legado.estaVigente(AHORA)).isTrue();
+    }
+
+    @Test
+    void marcarEtaAvisadoRegistraElMomento() {
+        RequerimientoInsumo requerimiento = crearConRadio();
+        requerimiento.asignar(10, 2.0, AHORA);
+
+        requerimiento.marcarEtaAvisado(AHORA.plusSeconds(700));
+
+        assertThat(requerimiento.getEtaAvisoEn()).isEqualTo(AHORA.plusSeconds(700));
+    }
+
+    private RequerimientoInsumo crearConRadio() {
+        return RequerimientoInsumo.crear(UUID.randomUUID(), UUID.randomUUID(), lineas(), "obs", AHORA, EXPIRA,
+                new Point(4.65, -74.1), 10.0, AHORA.plusSeconds(225));
     }
 
     @Test

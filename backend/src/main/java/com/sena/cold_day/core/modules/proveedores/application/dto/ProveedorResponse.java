@@ -19,7 +19,9 @@ public record ProveedorResponse(
         String telefono,
         boolean activo,
         Instant creadoEn,
-        EstadoValidacionProveedor estadoValidacion) {
+        EstadoValidacionProveedor estadoValidacion,
+        Double latitud,
+        Double longitud) {
 
     /**
      * Normalizes a missing validation state to {@code PENDIENTE}. The aggregate
@@ -33,6 +35,8 @@ public record ProveedorResponse(
     public static ProveedorResponse from(Proveedor proveedor) {
         return new ProveedorResponse(proveedor.getId(), proveedor.getUsuarioId(), proveedor.getRazonSocial(),
                 proveedor.getNit(), proveedor.getTelefono(), proveedor.isActivo(), proveedor.getCreadoEn(),
-                proveedor.getEstadoValidacion());
+                proveedor.getEstadoValidacion(),
+                proveedor.getUbicacion() == null ? null : proveedor.getUbicacion().latitud(),
+                proveedor.getUbicacion() == null ? null : proveedor.getUbicacion().longitud());
     }
 }

@@ -136,7 +136,7 @@ class OtInsumosIT {
     }
 
     @Test
-    void withNoActiveSuppliersTheRequestResolvesToSinProveedorAndRemainsRetriable() throws Exception {
+    void withNoSuppliersInTheRadiusTheRequestStaysOpenAndRemainsRetriable() throws Exception {
         Long clienteUsuario = crearUsuario("cliente-sin-prov@example.com", Rol.CLIENTE);
         Cliente cliente = crearCliente(clienteUsuario);
         Long tecnicoUsuario = crearUsuario("tecnico-sin-prov@example.com", Rol.TECNICO);
@@ -148,20 +148,21 @@ class OtInsumosIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"insumos\":[{\"descripcion\":\"Filtro secadora\",\"cantidad\":2}]}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.estado").value("SIN_PROVEEDOR"))
-                .andExpect(jsonPath("$.resueltaEn").isNotEmpty());
+                .andExpect(jsonPath("$.estado").value("SOLICITADO"));
 
-        // The documented retriable branch: the retry also returns 201 with a
-        // new SIN_PROVEEDOR row, without ever blocking the OT lifecycle.
+        // Nobody in the 10 km ring is not a failure: the escalation sweep widens the radius and only
+        // the expiry sweep ends in SIN_PROVEEDOR. Calling again creates a fresh request, never blocking the OT.
         mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/insumos")
                         .header("Authorization", "Bearer " + jwt(tecnicoUsuario, Rol.TECNICO))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"insumos\":[{\"descripcion\":\"Filtro secadora\",\"cantidad\":2}]}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.estado").value("SIN_PROVEEDOR"));
+                .andExpect(jsonPath("$.estado").value("SOLICITADO"));
 
-        assertThat(springDataRequerimiento.findByOtId(ot.getId().valor())).hasSize(2).allSatisfy(
-                row -> assertThat(row.getEstado()).isEqualTo(EstadoRequerimiento.SIN_PROVEEDOR));
+        assertThat(springDataRequerimiento.findByOtId(ot.getId().valor())).hasSize(2).allSatisfy(row -> {
+            assertThat(row.getEstado()).isEqualTo(EstadoRequerimiento.SOLICITADO);
+            assertThat(row.getRadioKm()).isEqualTo(10.0);
+        });
         assertThat(springDataOferta.findAll()).isEmpty();
     }
 
@@ -346,10 +347,15 @@ class OtInsumosIT {
                 null, creadaEn, creadaEn.plusSeconds(900)));
     }
 
+    /** Eligible for the radius broadcast: active, approved and ~2 km from the service location. */
     private void crearProveedorActivo(String nit, String correo) {
         Long usuarioId = crearUsuario(correo, Rol.PROVEEDOR);
-        proveedorRepository.save(Proveedor.crear(usuarioId, "Suministros " + nit, nit, "3105550001", null, null,
-                Set.of()));
+        Proveedor proveedor = Proveedor.crear(usuarioId, "Suministros " + nit, nit, "3105550001", null,
+                new Point(UBICACION_SERVICIO.latitud() + 0.018, UBICACION_SERVICIO.longitud()), Set.of());
+        proveedor.aprobarValidacion(LocalDate.of(2026, 1, 1), List.of(
+                new com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor(1L,
+                        proveedor.getId(), "RUT", LocalDate.of(2099, 1, 1))));
+        proveedorRepository.save(proveedor);
     }
 
     private Ot otEnEstado(ClienteId clienteId, TecnicoId tecnicoId, EstadoOt estado) {

@@ -124,7 +124,7 @@ class RequerimientoInsumoConcurrenteIT {
             CountDownLatch listos, CountDownLatch disparar) throws InterruptedException {
         listos.countDown();
         disparar.await(10, TimeUnit.SECONDS);
-        int gano = requerimientos.intentarAsignar(requerimientoId, ahora);
+        int gano = requerimientos.intentarAsignar(requerimientoId, ahora, 30, 5.0);
         if (gano == 1) {
             ofertas.intentarAceptar(ofertaId, ahora);
             ofertas.invalidarPendientesDe(requerimientoId, OfertaInsumoEstado.CANCELADA, ahora);

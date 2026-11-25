@@ -22,13 +22,34 @@ public class OfertaInsumo {
     private Instant creadaEn;
     private Instant expiraEn;
     private Instant resueltaEn;
+    // Distance from the supplier to the delivery point and the ETA suggested from
+    // it. Nullable: offers created before V21 carry neither.
+    private Double distanciaKm;
+    private Integer etaSugeridoMinutos;
 
     private OfertaInsumo() {
     }
 
-    /** Creates a pending offer with the broadcast window. */
+    /** Creates a pending offer without distance data (legacy shape). */
     public static OfertaInsumo crear(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId,
             Instant creadaEn, Instant expiraEn) {
+        return crearOferta(requerimientoId, proveedorId, creadaEn, expiraEn, null, null);
+    }
+
+    /** Creates a pending offer with the broadcast window, the distance and the suggested ETA. */
+    public static OfertaInsumo crear(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId,
+            Instant creadaEn, Instant expiraEn, double distanciaKm, int etaSugeridoMinutos) {
+        if (distanciaKm < 0) {
+            throw new IllegalArgumentException("La distancia no puede ser negativa");
+        }
+        if (etaSugeridoMinutos < 1) {
+            throw new IllegalArgumentException("El ETA sugerido debe ser de al menos 1 minuto");
+        }
+        return crearOferta(requerimientoId, proveedorId, creadaEn, expiraEn, distanciaKm, etaSugeridoMinutos);
+    }
+
+    private static OfertaInsumo crearOferta(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId,
+            Instant creadaEn, Instant expiraEn, Double distanciaKm, Integer etaSugeridoMinutos) {
         if (requerimientoId == null) {
             throw new IllegalArgumentException("El requerimiento es requerido");
         }
@@ -52,14 +73,26 @@ public class OfertaInsumo {
         oferta.estado = OfertaInsumoEstado.PENDIENTE;
         oferta.creadaEn = creadaEn;
         oferta.expiraEn = expiraEn;
+        oferta.distanciaKm = distanciaKm;
+        oferta.etaSugeridoMinutos = etaSugeridoMinutos;
         return oferta;
     }
 
-    /** Reconstitution from persistence: restores the full offer state. */
+    /** Reconstitution of an offer without distance data. */
     public static OfertaInsumo reconstituir(OfertaInsumoId id, RequerimientoInsumoId requerimientoId,
             ProveedorId proveedorId, OfertaInsumoEstado estado, Instant creadaEn, Instant expiraEn,
             Instant resueltaEn) {
+        return reconstituir(id, requerimientoId, proveedorId, estado, creadaEn, expiraEn, resueltaEn, null, null);
+    }
+
+    /** Reconstitution from persistence: restores the full offer state. */
+    @SuppressWarnings("java:S107") // Rehidratacion de persistencia: requiere el estado completo de la oferta.
+    public static OfertaInsumo reconstituir(OfertaInsumoId id, RequerimientoInsumoId requerimientoId,
+            ProveedorId proveedorId, OfertaInsumoEstado estado, Instant creadaEn, Instant expiraEn,
+            Instant resueltaEn, Double distanciaKm, Integer etaSugeridoMinutos) {
         OfertaInsumo oferta = new OfertaInsumo();
+        oferta.distanciaKm = distanciaKm;
+        oferta.etaSugeridoMinutos = etaSugeridoMinutos;
         oferta.id = id;
         oferta.requerimientoId = requerimientoId;
         oferta.proveedorId = proveedorId;
@@ -131,5 +164,13 @@ public class OfertaInsumo {
 
     public Instant getResueltaEn() {
         return resueltaEn;
+    }
+
+    public Double getDistanciaKm() {
+        return distanciaKm;
+    }
+
+    public Integer getEtaSugeridoMinutos() {
+        return etaSugeridoMinutos;
     }
 }

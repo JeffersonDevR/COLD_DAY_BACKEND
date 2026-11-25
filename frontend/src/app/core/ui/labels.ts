@@ -93,6 +93,7 @@ export function estadoRequerimientoLabel(estado: EstadoRequerimiento): string {
   switch (estado) {
     case 'SOLICITADO': return 'Solicitado';
     case 'ASIGNADO': return 'Asignado';
+    case 'DESPACHADO': return 'Despachado';
     case 'ENTREGADO': return 'Entregado';
     case 'SIN_PROVEEDOR': return 'Sin proveedor';
     default: return sinEtiqueta(estado);

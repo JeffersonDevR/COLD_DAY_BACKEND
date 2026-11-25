@@ -15,7 +15,8 @@ import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequ
  * Transition                    Trigger                        Actor
  * -&gt; SOLICITADO                 diagnostico with insumos       TECNICO (assigned)
  * SOLICITADO -&gt; ASIGNADO        atomic accept gate             PROVEEDOR
- * ASIGNADO   -&gt; ENTREGADO       delivery confirmed             PROVEEDOR
+ * ASIGNADO   -&gt; DESPACHADO      supplier dispatches the order  PROVEEDOR
+ * DESPACHADO -&gt; ENTREGADO       delivery confirmed             PROVEEDOR
  * SOLICITADO -&gt; SIN_PROVEEDOR   zero eligible on broadcast     SISTEMA
  * </pre>
  *
@@ -28,7 +29,8 @@ public final class TransicionesRequerimiento {
     private static final Map<EstadoRequerimiento, Set<EstadoRequerimiento>> PERMITIDAS = Map.of(
             EstadoRequerimiento.SOLICITADO,
             Set.of(EstadoRequerimiento.ASIGNADO, EstadoRequerimiento.SIN_PROVEEDOR),
-            EstadoRequerimiento.ASIGNADO, Set.of(EstadoRequerimiento.ENTREGADO),
+            EstadoRequerimiento.ASIGNADO, Set.of(EstadoRequerimiento.DESPACHADO),
+            EstadoRequerimiento.DESPACHADO, Set.of(EstadoRequerimiento.ENTREGADO),
             EstadoRequerimiento.ENTREGADO, Set.of(),
             EstadoRequerimiento.SIN_PROVEEDOR, Set.of());
 

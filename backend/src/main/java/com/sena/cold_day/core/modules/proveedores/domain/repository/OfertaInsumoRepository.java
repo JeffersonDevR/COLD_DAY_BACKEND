@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.proveedores.domain.repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.sena.cold_day.core.modules.proveedores.domain.entities.OfertaInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.OfertaInsumoEstado;
@@ -20,6 +21,9 @@ public interface OfertaInsumoRepository {
     OfertaInsumo save(OfertaInsumo oferta);
 
     Optional<OfertaInsumo> buscarPorId(OfertaInsumoId id);
+
+    /** Suppliers that already hold an offer (any state) for the request: they never get a second one. */
+    Set<ProveedorId> proveedoresOfertados(RequerimientoInsumoId requerimientoId);
 
     /** Pending offers broadcast for one request, oldest first. */
     List<OfertaInsumo> listarPendientesPorRequerimiento(RequerimientoInsumoId requerimientoId);
