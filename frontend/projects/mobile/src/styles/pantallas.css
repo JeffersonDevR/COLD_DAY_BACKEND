@@ -2484,6 +2484,54 @@ button.cd-ot.cd-oferta-panel {
   min-width: 0;
 }
 
+/* Chips de un documento (vigencia y, si lo hay, estado de validación): en columna
+   para que no le quiten el ancho al título a 320 px. */
+.cd-documento__chips {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.cd-documento__chips .cd-chip {
+  white-space: nowrap;
+}
+
+/* Cabecera de bloque plegable (Gestión: Liquidaciones): una fila tocable que
+   resume el contenido para que lo escondido no se pierda. */
+.cd-desplegable__cabecera {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cd-desplegable__titulos {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cd-desplegable__resumen {
+  font-size: 0.8rem;
+  color: var(--cd-muted);
+}
+
+.cd-desplegable__contenido {
+  margin-top: 0.75rem;
+}
+
 .cd-liq__cabecera > .cd-chip {
   flex: 0 0 auto;
   white-space: nowrap;
