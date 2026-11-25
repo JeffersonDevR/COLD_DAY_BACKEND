@@ -16,6 +16,7 @@ import { MobileToastService } from '../../core/toast.service';
 import { SeguimientoOtPage } from './seguimiento-ot.page';
 import { GoogleMapsLoaderService } from '@core/service/google-maps-loader';
 import { MAPA_MOTOR } from '@core/maps/mapa-motor.token';
+import { MapaConfigService } from '@core/service/mapa-config.service';
 import type { EscenaMapa, MapaInstancia, MapaMotor } from '@core/maps/mapa-motor';
 
 /** Vista del componente con lo que ejercitan los tests (miembros protected). */
@@ -115,6 +116,9 @@ function setup({
   TestBed.overrideComponent(SeguimientoOtPage, {
     set: { providers: [{ provide: RutaSeguimientoService, useValue: rutaStub }] },
   });
+
+  // La config del mapa llega del backend: en el test no hay red y se resuelve de inmediato.
+  vi.spyOn(TestBed.inject(MapaConfigService), 'cargar').mockResolvedValue(undefined as never);
 
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
@@ -675,7 +679,10 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     const { fixture } = setup({ loader });
 
     // La página real instancia el hijo con el loader stubbeado: sin Maps, el
-    // bloque de mapa es una tarjeta honesta con salida.
+    // bloque de mapa es una tarjeta honesta con salida. Primero llega la config
+    // (mientras tanto dice "Cargando mapa…") y luego el motor falla.
+    await fixture.whenStable();
+    fixture.detectChanges();
     const fallback = fixture.nativeElement.querySelector('[data-testid="mapa-fallback"]') as HTMLElement;
     expect(fallback).not.toBeNull();
 
