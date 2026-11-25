@@ -178,7 +178,13 @@ export class MapaSeguimientoComponent {
     effect(() => {
       if (!this.motor.listo()) return;
       const el = this.mapaEl()?.nativeElement;
-      if (!el) return;
+      if (!el) {
+        // El canvas se quitó (p. ej. el técnico perdió su posición): se suelta el
+        // mapa ya, no cuando aparezca otro nodo.
+        this.descartarMapa();
+        this.elementoActual = null;
+        return;
+      }
       if (el !== this.elementoActual) {
         // Angular recreó el nodo (p. ej. alternó el estado vacío): se rehace.
         this.descartarMapa();
@@ -257,5 +263,7 @@ export class MapaSeguimientoComponent {
   private descartarMapa(): void {
     this.instancia?.destruir();
     this.instancia = null;
+    // Un mapa nuevo vuelve a encuadrar el par técnico-destino.
+    this.limitesAjustados = false;
   }
 }

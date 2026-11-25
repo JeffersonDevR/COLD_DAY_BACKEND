@@ -747,6 +747,25 @@ describe('SeguimientoOtPage móvil (A6)', () => {
       expect(instancia.ajustarA).toHaveBeenCalledTimes(1);
     });
 
+    it('si la posición desaparece y vuelve, suelta el mapa viejo y vuelve a encuadrar', async () => {
+      const { page, fixture, crear, instancia } = await montar(POLYLINE_VALIDO);
+      expect(instancia.ajustarA).toHaveBeenCalledTimes(1);
+
+      page.tecnicoUbicacion.set(null);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(instancia.destruir).toHaveBeenCalledTimes(1);
+
+      page.tecnicoUbicacion.set(UBICACION_TECNICO);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(crear).toHaveBeenCalledTimes(2);
+      expect(instancia.ajustarA).toHaveBeenCalledTimes(2);
+    });
+
     it('con un polyline corrupto cae a la recta técnico→destino', async () => {
       const { instancia } = await montar('basura');
 
