@@ -63,6 +63,11 @@ describe('backend.mappers — despacho de insumos', () => {
       otId: 'OT-1',
       tecnicoId: 'TEC-1',
       estado: 'ASIGNADO',
+      etaMinutos: null,
+      distanciaKm: null,
+      aceptadaEn: null,
+      despachadaEn: null,
+      radioKm: null,
       observaciones: null,
       items: [{ descripcion: 'Capacitor 45uF', cantidad: 2 }],
       creadaEn: '2026-09-15T09:00:00Z',
@@ -87,6 +92,8 @@ describe('backend.mappers — despacho de insumos', () => {
       creadaEn: null,
       expiraEn: null,
       resueltaEn: '2026-09-15T09:05:00Z',
+      distanciaKm: null,
+      etaSugeridoMinutos: null,
       requerimiento: null,
     };
 
@@ -106,10 +113,17 @@ describe('backend.mappers — despacho de insumos', () => {
       creadaEn: '2026-09-15T09:00:00Z',
       expiraEn: '2026-09-15T09:15:00Z',
       resueltaEn: null,
+      distanciaKm: 7.5,
+      etaSugeridoMinutos: 15,
       requerimiento: {
         id: 'REQ-2',
         otId: 'OT-2',
         tecnicoId: 'TEC-2',
+        etaMinutos: 30,
+        distanciaKm: 7.5,
+        aceptadaEn: null,
+        despachadaEn: null,
+        radioKm: 10,
         estado: 'SOLICITADO',
         observaciones: 'Entrega en sitio',
         items: [{ descripcion: 'Breaker 2x40A', cantidad: 1 }],
@@ -315,11 +329,13 @@ describe('backend.mappers — contratos existentes', () => {
     const proveedor: ProveedorApiResponse = {
       id: 'p1', usuarioId: 10, razonSocial: 'Suministros Norte', nit: '900123456',
       telefono: null, activo: true, creadoEn: null, estadoValidacion: 'PENDIENTE',
+      latitud: 4.6097, longitud: -74.0817,
     };
     // El estado de validación viaja: el portal lo necesita para explicar por qué
     // un proveedor recién registrado todavía no puede tomar insumos.
     expect(aProveedorResponse(proveedor)).toMatchObject({
       id: 'p1', razonSocial: 'Suministros Norte', telefono: undefined, estadoValidacion: 'PENDIENTE',
+      latitud: 4.6097, longitud: -74.0817,
     });
     const tarifa: TarifaEstimadaApiResponse = {
       distanciaKm: 35, tarifaFuente: 'LINEAL', banda: null, tarifa: null, fueraDeRango: true,

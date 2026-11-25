@@ -282,6 +282,20 @@ export interface ProveedorApiResponse {
    * columna sin DEFAULT y `Proveedor.crear` la declara de forma explicita.
    */
   estadoValidacion: EstadoValidacionProveedor;
+  /** `null` hasta que el proveedor fija donde opera. */
+  latitud: number | null;
+  longitud: number | null;
+}
+
+/** UbicacionProveedorApiRequest.java: donde opera el proveedor. */
+export interface UbicacionProveedorApiRequest {
+  latitud: number;
+  longitud: number;
+}
+
+/** AceptarInsumoApiRequest.java: los minutos a los que se compromete el proveedor. */
+export interface AceptarInsumoApiRequest {
+  etaMinutos: number;
 }
 
 /** DocumentoProveedorApiRequest.java: solo metadata, sin archivo ni upload. */
@@ -418,7 +432,7 @@ export interface InsumoLineaApi {
 /**
  * Requerimiento de insumos (SolicitudInsumoApiResponse.java): estado raíz del
  * despacho + las líneas declaradas. `estado` ∈ {SOLICITADO, ASIGNADO,
- * ENTREGADO, SIN_PROVEEDOR}.
+ * DESPACHADO, ENTREGADO, SIN_PROVEEDOR}.
  */
 export interface SolicitudInsumoApiResponse {
   id: string;
@@ -430,6 +444,11 @@ export interface SolicitudInsumoApiResponse {
   creadaEn: string | null;
   expiraEn: string | null;
   resueltaEn: string | null;
+  etaMinutos: number | null;
+  distanciaKm: number | null;
+  aceptadaEn: string | null;
+  despachadaEn: string | null;
+  radioKm: number | null;
 }
 
 /**
@@ -445,6 +464,8 @@ export interface OfertaInsumoApiResponse {
   creadaEn: string | null;
   expiraEn: string | null;
   resueltaEn: string | null;
+  distanciaKm: number | null;
+  etaSugeridoMinutos: number | null;
   requerimiento: SolicitudInsumoApiResponse | null;
 }
 

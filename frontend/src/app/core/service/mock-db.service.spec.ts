@@ -18,7 +18,7 @@ describe('MockDbService — despacho de insumos', () => {
   it('aceptar asigna el requerimiento y deja la oferta ACEPTADA', () => {
     const pendiente = db.solicitudesProveedor().find(o => o.estado === 'PENDIENTE')!;
 
-    const requerimiento = db.aceptarInsumo(pendiente.id);
+    const requerimiento = db.aceptarInsumo(pendiente.id, 30);
 
     expect(requerimiento.estado).toBe('ASIGNADO');
     const actualizada = db.solicitudesProveedor().find(o => o.id === pendiente.id)!;
@@ -27,11 +27,11 @@ describe('MockDbService — despacho de insumos', () => {
 
   it('aceptar dos veces la misma oferta responde 409', () => {
     const pendiente = db.solicitudesProveedor().find(o => o.estado === 'PENDIENTE')!;
-    db.aceptarInsumo(pendiente.id);
+    db.aceptarInsumo(pendiente.id, 30);
 
     let capturado: unknown;
     try {
-      db.aceptarInsumo(pendiente.id);
+      db.aceptarInsumo(pendiente.id, 30);
     } catch (error) {
       capturado = error;
     }
@@ -50,13 +50,62 @@ describe('MockDbService — despacho de insumos', () => {
     expect(requerimiento.estado).toBe('SOLICITADO');
   });
 
-  it('entregar marca ENTREGADO solo si la oferta está ACEPTADA', () => {
+  it('aceptar guarda el ETA comprometido', () => {
     const pendiente = db.solicitudesProveedor().find(o => o.estado === 'PENDIENTE')!;
-    const asignado = db.aceptarInsumo(pendiente.id);
 
+    const requerimiento = db.aceptarInsumo(pendiente.id, 45);
+
+    expect(requerimiento.etaMinutos).toBe(45);
+    expect(requerimiento.aceptadaEn).toBeTruthy();
+  });
+
+  it('aceptar con un ETA fuera de rango responde 400 y no cambia nada', () => {
+    const pendiente = db.solicitudesProveedor().find(o => o.estado === 'PENDIENTE')!;
+
+    for (const eta of [0, -3, 241, 1.5]) {
+      let capturado: unknown;
+      try {
+        db.aceptarInsumo(pendiente.id, eta);
+      } catch (error) {
+        capturado = error;
+      }
+      expect((capturado as ApiHttpError).status).toBe(400);
+    }
+    expect(db.solicitudesProveedor().find(o => o.id === pendiente.id)!.estado).toBe('PENDIENTE');
+  });
+
+  it('despachar mueve ASIGNADO a DESPACHADO y entregar lo cierra', () => {
+    const pendiente = db.solicitudesProveedor().find(o => o.estado === 'PENDIENTE')!;
+    const asignado = db.aceptarInsumo(pendiente.id, 30);
+
+    const despachado = db.despacharInsumo(asignado.id);
     const entregado = db.entregarInsumo(asignado.id);
 
+    expect(despachado.estado).toBe('DESPACHADO');
+    expect(despachado.despachadaEn).toBeTruthy();
     expect(entregado.estado).toBe('ENTREGADO');
+  });
+
+  it('entregar sin despachar responde 409 y despachar dos veces también', () => {
+    const pendiente = db.solicitudesProveedor().find(o => o.estado === 'PENDIENTE')!;
+    const asignado = db.aceptarInsumo(pendiente.id, 30);
+
+    let sinDespachar: unknown;
+    try {
+      db.entregarInsumo(asignado.id);
+    } catch (error) {
+      sinDespachar = error;
+    }
+    expect((sinDespachar as ApiHttpError).status).toBe(409);
+
+    db.despacharInsumo(asignado.id);
+    let dosVeces: unknown;
+    try {
+      db.despacharInsumo(asignado.id);
+    } catch (error) {
+      dosVeces = error;
+    }
+    expect((dosVeces as ApiHttpError).status).toBe(409);
   });
 
   it('entregar una oferta no aceptada responde 404', () => {

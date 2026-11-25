@@ -1454,7 +1454,10 @@ export class MockDbService {
   }
 
   /** Acepta la oferta (el primero gana): requerimiento ASIGNADO y hermanas CANCELADAS. */
-  aceptarInsumo(ofertaId: string): SolicitudInsumoResponse {
+  aceptarInsumo(ofertaId: string, etaMinutos: number): SolicitudInsumoResponse {
+    if (!Number.isInteger(etaMinutos) || etaMinutos < 1 || etaMinutos > 240) {
+      throw new ApiHttpError('El ETA debe estar entre 1 y 240 minutos.', 400);
+    }
     const oferta = this.solicitudesProveedor().find(o => o.id === ofertaId);
     if (!oferta) throw new ApiHttpError('La oferta de insumos no existe o ya no está disponible.', 404);
     if (oferta.estado !== 'PENDIENTE') throw new ApiHttpError('Otra empresa ya tomó esta solicitud.', 409);
@@ -1464,7 +1467,8 @@ export class MockDbService {
     const requerimiento: SolicitudInsumoResponse = {
       ...oferta.requerimiento,
       estado: 'ASIGNADO',
-      resueltaEn: fecha,
+      etaMinutos,
+      aceptadaEn: fecha,
     };
 
     this.solicitudesProveedor.update(list =>
@@ -1494,13 +1498,39 @@ export class MockDbService {
     return rechazada;
   }
 
-  /** Confirma la entrega del requerimiento asignado a este proveedor. */
+  /** Despacha el requerimiento asignado a este proveedor (`ASIGNADO` → `DESPACHADO`). */
+  despacharInsumo(requerimientoId: string): SolicitudInsumoResponse {
+    const oferta = this.solicitudesProveedor().find(
+      o => o.requerimiento?.id === requerimientoId && o.estado === 'ACEPTADA'
+    );
+    if (!oferta?.requerimiento) {
+      throw new ApiHttpError('No hay un requerimiento asignado a tu empresa con ese identificador.', 404);
+    }
+    if (oferta.requerimiento.estado !== 'ASIGNADO') {
+      throw new ApiHttpError('Este pedido ya fue despachado.', 409);
+    }
+
+    const despachado: SolicitudInsumoResponse = {
+      ...oferta.requerimiento,
+      estado: 'DESPACHADO',
+      despachadaEn: new Date().toISOString(),
+    };
+    this.solicitudesProveedor.update(list =>
+      list.map(o => (o.id === oferta.id ? { ...o, requerimiento: despachado } : o))
+    );
+    return despachado;
+  }
+
+  /** Confirma la entrega del requerimiento despachado por este proveedor. */
   entregarInsumo(requerimientoId: string): SolicitudInsumoResponse {
     const oferta = this.solicitudesProveedor().find(
       o => o.requerimiento?.id === requerimientoId && o.estado === 'ACEPTADA'
     );
     if (!oferta?.requerimiento) {
       throw new ApiHttpError('No hay un requerimiento asignado a tu empresa con ese identificador.', 404);
+    }
+    if (oferta.requerimiento.estado !== 'DESPACHADO') {
+      throw new ApiHttpError('Despacha el pedido antes de confirmar la entrega.', 409);
     }
 
     const fecha = new Date().toISOString();

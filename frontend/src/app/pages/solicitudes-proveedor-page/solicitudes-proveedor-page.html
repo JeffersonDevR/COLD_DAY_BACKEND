@@ -143,6 +143,21 @@
                   <button
                     type="button"
                     [disabled]="accionEnCurso() === oferta.id"
+                    (click)="despachar(oferta)"
+                    class="px-5 py-2.5 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-colors"
+                  >
+                    @if (accionEnCurso() === oferta.id) {
+                      <i class="pi pi-sync animate-spin text-sm"></i>
+                      Despachando...
+                    } @else {
+                      <i class="pi pi-send text-sm"></i>
+                      Despachar pedido
+                    }
+                  </button>
+                } @else if (oferta.estado === 'ACEPTADA' && oferta.requerimiento?.estado === 'DESPACHADO') {
+                  <button
+                    type="button"
+                    [disabled]="accionEnCurso() === oferta.id"
                     (click)="entregar(oferta)"
                     class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md transition-colors"
                   >

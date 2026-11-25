@@ -22,6 +22,11 @@ function requerimientoDto(overrides: Partial<SolicitudInsumoApiResponse> = {}): 
     creadaEn: '2026-09-15T09:40:00Z',
     expiraEn: null,
     resueltaEn: null,
+    etaMinutos: null,
+    distanciaKm: null,
+    aceptadaEn: null,
+    despachadaEn: null,
+    radioKm: null,
     ...overrides,
   };
 }
@@ -35,6 +40,8 @@ function ofertaDto(overrides: Partial<OfertaInsumoApiResponse> = {}): OfertaInsu
     creadaEn: '2026-09-15T09:40:00Z',
     expiraEn: null,
     resueltaEn: null,
+    distanciaKm: null,
+    etaSugeridoMinutos: null,
     requerimiento: requerimientoDto(),
     ...overrides,
   };
@@ -50,6 +57,8 @@ function proveedorDto(overrides: Partial<ProveedorApiResponse> = {}): ProveedorA
     activo: true,
     estadoValidacion: 'PENDIENTE',
     creadoEn: '2026-09-15T09:40:00Z',
+    latitud: null,
+    longitud: null,
     ...overrides,
   };
 }
@@ -161,15 +170,47 @@ describe('ProveedoresApi', () => {
     expect(ofertas[0].creadaEn).toBe('2026-09-15T09:40:00Z');
   });
 
-  it('aceptar hace POST /api/insumos/{id}/aceptar sin cuerpo y traduce el requerimiento', async () => {
-    const promise = firstValueFrom(api.aceptar('OFERTA-INSUMO-001'));
+  it('aceptar hace POST /api/insumos/{id}/aceptar con el ETA y traduce el requerimiento', async () => {
+    const promise = firstValueFrom(api.aceptar('OFERTA-INSUMO-001', 35));
     const req = http.expectOne('/api/insumos/OFERTA-INSUMO-001/aceptar');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toBeNull();
-    req.flush(requerimientoDto({ estado: 'ASIGNADO' }));
+    expect(req.request.body).toEqual({ etaMinutos: 35 });
+    req.flush(requerimientoDto({ estado: 'ASIGNADO', etaMinutos: 35, distanciaKm: 7.5, aceptadaEn: '2026-09-15T10:00:00Z' }));
     const solicitud = await promise;
     expect(solicitud.estado).toBe('ASIGNADO');
     expect(solicitud.items[0].descripcion).toBe('compresor');
+    expect(solicitud.etaMinutos).toBe(35);
+    expect(solicitud.distanciaKm).toBe(7.5);
+    expect(solicitud.aceptadaEn).toBe('2026-09-15T10:00:00Z');
+  });
+
+  it('despachar hace POST /api/insumos/{id}/despachar y traduce el requerimiento', async () => {
+    const promise = firstValueFrom(api.despachar('REQ-INSUMO-001'));
+    const req = http.expectOne('/api/insumos/REQ-INSUMO-001/despachar');
+    expect(req.request.method).toBe('POST');
+    req.flush(requerimientoDto({ estado: 'DESPACHADO', despachadaEn: '2026-09-15T10:30:00Z' }));
+    const solicitud = await promise;
+    expect(solicitud.estado).toBe('DESPACHADO');
+    expect(solicitud.despachadaEn).toBe('2026-09-15T10:30:00Z');
+  });
+
+  it('fijarMiUbicacion hace PUT /api/proveedores/me/ubicacion y trae la ubicacion en el perfil', async () => {
+    const promise = firstValueFrom(api.fijarMiUbicacion(4.6097, -74.0817));
+    const req = http.expectOne('/api/proveedores/me/ubicacion');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ latitud: 4.6097, longitud: -74.0817 });
+    req.flush(proveedorDto({ latitud: 4.6097, longitud: -74.0817 }));
+    const perfil = await promise;
+    expect(perfil.latitud).toBe(4.6097);
+    expect(perfil.longitud).toBe(-74.0817);
+  });
+
+  it('getMisSolicitudes trae la distancia y el ETA sugerido de la oferta', async () => {
+    const promise = firstValueFrom(api.getMisSolicitudes());
+    http.expectOne('/api/proveedores/me/solicitudes').flush([ofertaDto({ distanciaKm: 7.5, etaSugeridoMinutos: 15 })]);
+    const ofertas = await promise;
+    expect(ofertas[0].distanciaKm).toBe(7.5);
+    expect(ofertas[0].etaSugeridoMinutos).toBe(15);
   });
 
   it('rechazar hace POST /api/insumos/{id}/rechazar y devuelve la oferta rechazada', async () => {
@@ -212,8 +253,11 @@ describe('ProveedoresApi', () => {
     const pendiente = mockDb.solicitudesProveedor().find((oferta) => oferta.estado === 'PENDIENTE');
     expect(pendiente).toBeDefined();
 
-    const aceptada = await firstValueFrom(api.aceptar(pendiente!.id));
+    const aceptada = await firstValueFrom(api.aceptar(pendiente!.id, 30));
     expect(aceptada.estado).toBe('ASIGNADO');
+
+    const despachada = await firstValueFrom(api.despachar(aceptada.id));
+    expect(despachada.estado).toBe('DESPACHADO');
 
     const entregada = await firstValueFrom(api.entregar(aceptada.id));
     expect(entregada.estado).toBe('ENTREGADO');
@@ -234,6 +278,7 @@ describe('ProveedoresApi', () => {
     const mockDb = TestBed.inject(MockDbService);
     const aceptada = mockDb.solicitudesProveedor().find((oferta) => oferta.estado === 'ACEPTADA')!;
 
+    await firstValueFrom(api.despachar(aceptada.requerimiento!.id));
     const entregada = await firstValueFrom(api.entregar(aceptada.requerimiento!.id));
     expect(entregada.estado).toBe('ENTREGADO');
   });
@@ -248,13 +293,13 @@ describe('ProveedoresApi', () => {
     config.setUseMocks(true);
     const mockDb = TestBed.inject(MockDbService);
     const pendiente = mockDb.solicitudesProveedor().find((oferta) => oferta.estado === 'PENDIENTE')!;
-    await firstValueFrom(api.aceptar(pendiente.id));
-    await expect(firstValueFrom(api.aceptar(pendiente.id))).rejects.toThrow(/ya tom/);
+    await firstValueFrom(api.aceptar(pendiente.id, 30));
+    await expect(firstValueFrom(api.aceptar(pendiente.id, 30))).rejects.toThrow(/ya tom/);
   });
 
   it('en modo mock entrega el 404 cuando la oferta no existe', async () => {
     config.setUseMocks(true);
-    await expect(firstValueFrom(api.aceptar('OFERTA-INSUMO-999'))).rejects.toThrow(/no existe/);
+    await expect(firstValueFrom(api.aceptar('OFERTA-INSUMO-999', 30))).rejects.toThrow(/no existe/);
     await expect(firstValueFrom(api.rechazar('OFERTA-INSUMO-999'))).rejects.toThrow(/no existe/);
     await expect(firstValueFrom(api.entregar('REQ-INSUMO-999'))).rejects.toThrow(/No hay un requerimiento/);
   });

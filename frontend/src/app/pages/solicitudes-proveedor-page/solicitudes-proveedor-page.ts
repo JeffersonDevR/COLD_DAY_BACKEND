@@ -14,6 +14,9 @@ import {
 
 type TonoBadge = 'pendiente' | 'ok' | 'error' | 'neutro';
 
+/** La consola web no pide el tiempo: si el servidor no sugirió uno, se acepta con este. */
+const ETA_POR_DEFECTO_MINUTOS = 30;
+
 /**
  * Portal del proveedor (rol PROVEEDOR). Lista las ofertas de insumos vigentes
  * con sus líneas, la vigencia de la oferta y el estado resuelto, y expone las
@@ -69,7 +72,8 @@ export class SolicitudesProveedorPage implements OnInit {
 
   aceptar(oferta: OfertaInsumoResponse): void {
     this.accionEnCurso.set(oferta.id);
-    this.proveedoresApi.aceptar(oferta.id).subscribe({
+    // La consola web no pide el tiempo: usa el ETA que sugiere el servidor por la distancia.
+    this.proveedoresApi.aceptar(oferta.id, oferta.etaSugeridoMinutos ?? ETA_POR_DEFECTO_MINUTOS).subscribe({
       next: (requerimiento) => {
         this.accionEnCurso.set(null);
         this.anunciar(`Solicitud aceptada. Estado: ${requerimiento.estado}.`);
@@ -108,6 +112,30 @@ export class SolicitudesProveedorPage implements OnInit {
     });
   }
 
+  despachar(oferta: OfertaInsumoResponse): void {
+    const requerimientoId = oferta.requerimiento?.id;
+    if (!requerimientoId) {
+      this.toast.error('Sin requerimiento', 'La oferta no expone el requerimiento a despachar.');
+      return;
+    }
+    this.accionEnCurso.set(oferta.id);
+    this.proveedoresApi.despachar(requerimientoId).subscribe({
+      next: () => {
+        this.accionEnCurso.set(null);
+        this.anunciar('Pedido despachado.');
+        this.toast.success('Pedido despachado', 'El técnico ya sabe que tu pedido va en camino.');
+        this.cargar();
+      },
+      error: (err) => {
+        this.accionEnCurso.set(null);
+        if (sesionYaNotificada(err)) return;
+        const mensaje = this.mensajeError(err, 'despachar');
+        this.anunciar(mensaje);
+        this.toast.error('No se pudo despachar', mensaje);
+      },
+    });
+  }
+
   entregar(oferta: OfertaInsumoResponse): void {
     const requerimientoId = oferta.requerimiento?.id;
     if (!requerimientoId) {
@@ -133,13 +161,14 @@ export class SolicitudesProveedorPage implements OnInit {
   }
 
   /** Traduce el error del backend a un mensaje humano según el status HTTP. */
-  private mensajeError(err: unknown, accion: 'aceptar' | 'rechazar' | 'entregar'): string {
+  private mensajeError(err: unknown, accion: 'aceptar' | 'rechazar' | 'despachar' | 'entregar'): string {
     if (err instanceof ApiHttpError) {
       switch (err.status) {
         case 409:
-          return accion === 'aceptar'
-            ? 'Otra empresa tomó esta solicitud primero.'
-            : 'Esta solicitud ya fue gestionada por otro proveedor.';
+          if (accion === 'aceptar') return 'Otra empresa tomó esta solicitud primero.';
+          if (accion === 'despachar') return 'Este pedido ya fue despachado.';
+          if (accion === 'entregar') return 'Despacha el pedido antes de confirmar la entrega.';
+          return 'Esta solicitud ya fue gestionada por otro proveedor.';
         case 403:
           return 'Tu cuenta no está habilitada para operar despachos de insumos.';
         case 404:
@@ -181,6 +210,7 @@ export class SolicitudesProveedorPage implements OnInit {
     switch (estado) {
       case 'SOLICITADO': return 'Solicitado';
       case 'ASIGNADO': return 'Asignado';
+      case 'DESPACHADO': return 'Despachado';
       case 'ENTREGADO': return 'Entregado';
       case 'SIN_PROVEEDOR': return 'Sin proveedor';
     }
@@ -190,6 +220,7 @@ export class SolicitudesProveedorPage implements OnInit {
     switch (estado) {
       case 'SOLICITADO': return 'pendiente';
       case 'ASIGNADO': return 'ok';
+      case 'DESPACHADO': return 'ok';
       case 'ENTREGADO': return 'ok';
       case 'SIN_PROVEEDOR': return 'error';
     }

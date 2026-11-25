@@ -40,6 +40,7 @@ function setup(opts: { ofertas?: OfertaInsumoResponse[]; falloCarga?: ApiHttpErr
       : vi.fn(() => of(opts.ofertas ?? [oferta()])),
     aceptar: vi.fn(() => of(requerimiento({ estado: 'ASIGNADO' }))),
     rechazar: vi.fn(() => of(oferta({ estado: 'RECHAZADO' }))),
+    despachar: vi.fn(() => of(requerimiento({ estado: 'DESPACHADO' }))),
     entregar: vi.fn(() => of(requerimiento({ estado: 'ENTREGADO' }))),
   };
   const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
@@ -79,7 +80,7 @@ describe('SolicitudesProveedorPage', () => {
     const { fixture, proveedoresApi, toast } = setup();
     fixture.componentInstance.aceptar(fixture.componentInstance.ofertas()[0]);
 
-    expect(proveedoresApi.aceptar).toHaveBeenCalledWith('OFERTA-1');
+    expect(proveedoresApi.aceptar).toHaveBeenCalledWith('OFERTA-1', 30);
     expect(toast.success).toHaveBeenCalledWith(
       'Solicitud aceptada',
       'Te asignamos el requerimiento. Coordina la entrega en el sitio del técnico.',
@@ -100,9 +101,18 @@ describe('SolicitudesProveedorPage', () => {
     );
   });
 
+  it('despachar usa el id del requerimiento embebido', () => {
+    const { fixture, proveedoresApi } = setup({
+      ofertas: [oferta({ estado: 'ACEPTADA', requerimiento: requerimiento({ estado: 'ASIGNADO' }) })],
+    });
+    fixture.componentInstance.despachar(fixture.componentInstance.ofertas()[0]);
+
+    expect(proveedoresApi.despachar).toHaveBeenCalledWith('REQ-1');
+  });
+
   it('entregar usa el id del requerimiento embebido y confirma la entrega', () => {
     const { fixture, proveedoresApi, toast } = setup({
-      ofertas: [oferta({ estado: 'ACEPTADA', requerimiento: requerimiento({ estado: 'ASIGNADO' }) })],
+      ofertas: [oferta({ estado: 'ACEPTADA', requerimiento: requerimiento({ estado: 'DESPACHADO' }) })],
     });
     fixture.componentInstance.entregar(fixture.componentInstance.ofertas()[0]);
 
