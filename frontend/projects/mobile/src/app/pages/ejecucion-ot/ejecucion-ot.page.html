@@ -197,6 +197,24 @@
       </ion-card>
     }
 
+    <!-- Presupuesto ya enviado: el técnico solo espera la respuesta del cliente. -->
+    @if (presupuestoEnviado() && orden.presupuesto; as presupuesto) {
+        <ion-card class="cd-card" data-testid="presupuesto-enviado">
+          <ion-card-content>
+            <h2 class="cd-card__titulo">Presupuesto enviado</h2>
+            <p class="cd-muted">Estamos esperando que el cliente lo apruebe. Cuando lo haga podrás empezar la reparación.</p>
+            @if (orden.diagnostico?.diagnostico; as texto) {
+              <p class="cd-ayuda">{{ texto }}</p>
+            }
+            <dl class="cd-perfil-datos">
+              <div><dt>Mano de obra</dt><dd>$ {{ (presupuesto.manoDeObra ?? presupuesto.manoObra).toLocaleString('es-CO') }} COP</dd></div>
+              <div><dt>Repuestos</dt><dd>$ {{ presupuesto.repuestos.toLocaleString('es-CO') }} COP</dd></div>
+              <div><dt>Total</dt><dd data-testid="total-presupuesto-enviado">$ {{ presupuesto.total.toLocaleString('es-CO') }} COP</dd></div>
+            </dl>
+          </ion-card-content>
+        </ion-card>
+    }
+
     <!-- Cierre del servicio -->
     @if (orden.estado === 'EN_REPARACION') {
       <ion-card class="cd-card">

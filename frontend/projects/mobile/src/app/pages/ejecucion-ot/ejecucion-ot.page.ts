@@ -116,8 +116,18 @@ export class EjecucionOtPage implements OnInit {
   readonly desplazamientoBloqueadoPorPago = computed(
     () => this.ot()?.estado === 'ASIGNADA' && this.ot()?.visitaPagada === false,
   );
+  /**
+   * El presupuesto ya se mandó y el cliente todavía no responde: la OT sigue en
+   * `EN_DIAGNOSTICO` hasta que apruebe (o cancele si lo rechaza), así que el
+   * estado solo no alcanza para saber si falta enviar algo.
+   */
+  readonly presupuestoEnviado = computed(() => {
+    const orden = this.ot();
+    return orden?.estado === 'EN_DIAGNOSTICO' && !!orden.presupuesto;
+  });
   readonly mostrarDiagnostico = computed(() => {
     const estado = this.ot()?.estado;
+    if (this.presupuestoEnviado()) return false;
     return estado === 'EN_DIAGNOSTICO' || (estado === 'EN_CAMINO' && this.enSitio());
   });
 

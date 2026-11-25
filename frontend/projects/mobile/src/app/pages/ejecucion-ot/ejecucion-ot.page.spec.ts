@@ -189,6 +189,35 @@ describe('EjecucionOtPage (B3)', () => {
     });
   });
 
+  it('con el presupuesto ya enviado oculta el formulario y muestra la espera del cliente', () => {
+    const { fixture } = setup({
+      orden: ot({
+        estado: 'EN_DIAGNOSTICO',
+        diagnostico: { diagnostico: 'Compresor con fuga.' } as OtResponse['diagnostico'],
+        presupuesto: { aprobado: false, total: 350000, manoObra: 200000, manoDeObra: 200000, repuestos: 150000 },
+      }),
+    });
+    fixture.detectChanges();
+    const html = fixture.nativeElement as HTMLElement;
+
+    expect(html.querySelector('[data-testid="campo-diagnostico"]')).toBeNull();
+    expect(html.querySelector('[data-testid="enviar-diagnostico"]')).toBeNull();
+    const enviado = html.querySelector('[data-testid="presupuesto-enviado"]');
+    expect(enviado).not.toBeNull();
+    expect(enviado?.textContent).toContain('esperando');
+    expect(enviado?.textContent).toContain('350.000');
+    expect(enviado?.textContent).toContain('Compresor con fuga.');
+  });
+
+  it('sin presupuesto en diagnóstico el formulario sigue disponible', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+    fixture.detectChanges();
+    const html = fixture.nativeElement as HTMLElement;
+
+    expect(html.querySelector('[data-testid="campo-diagnostico"]')).not.toBeNull();
+    expect(html.querySelector('[data-testid="presupuesto-enviado"]')).toBeNull();
+  });
+
   it('finaliza el servicio con el medio elegido', () => {
     const { fixture, api, presencia } = setup({ orden: ot({ estado: 'EN_REPARACION' }) });
     fixture.componentInstance.finalizarServicio();
