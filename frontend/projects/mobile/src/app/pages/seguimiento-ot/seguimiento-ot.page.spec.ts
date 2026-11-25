@@ -766,6 +766,15 @@ describe('SeguimientoOtPage móvil (A6)', () => {
       expect(instancia.ajustarA).toHaveBeenCalledTimes(2);
     });
 
+    it('al destruir la pantalla suelta el mapa', async () => {
+      const { fixture, instancia } = await montar(POLYLINE_VALIDO);
+      expect(instancia.destruir).not.toHaveBeenCalled();
+
+      fixture.destroy();
+
+      expect(instancia.destruir).toHaveBeenCalledTimes(1);
+    });
+
     it('con un polyline corrupto cae a la recta técnico→destino', async () => {
       const { instancia } = await montar('basura');
 

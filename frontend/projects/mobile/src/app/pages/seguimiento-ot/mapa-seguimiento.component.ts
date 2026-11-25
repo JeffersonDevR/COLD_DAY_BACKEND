@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   PLATFORM_ID,
   afterNextRender,
@@ -104,6 +105,7 @@ import { Point } from '@core/models/common.models';
 })
 export class MapaSeguimientoComponent {
   readonly motor = inject(MAPA_MOTOR);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly mapaConfig = inject(MapaConfigService);
   private readonly platformId = inject(PLATFORM_ID);
 
@@ -166,6 +168,9 @@ export class MapaSeguimientoComponent {
   });
 
   constructor() {
+    // Al salir de la pantalla el mapa y sus marcadores no se quedan vivos.
+    this.destroyRef.onDestroy(() => this.descartarMapa());
+
     afterNextRender(() => {
       if (this.isBrowser) {
         void this.motor.cargar();
