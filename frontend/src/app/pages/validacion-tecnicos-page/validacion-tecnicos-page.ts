@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { catchError, finalize, Observable, of, tap } from 'rxjs';
@@ -39,6 +39,8 @@ export class ValidacionTecnicosPage {
   private readonly destruir = inject(DestroyRef);
 
   readonly tecnicos = signal<TecnicoResponse[]>([]);
+  /** Bandeja de trabajo: un técnico ya aprobado no tiene nada por decidir, así que sale de la lista. */
+  readonly pendientes = computed(() => this.tecnicos().filter((t) => t.estadoValidacion !== 'APROBADO'));
   readonly tecnicoARechazar = signal<TecnicoResponse | null>(null);
   readonly motivoCtrl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(5)] });
 

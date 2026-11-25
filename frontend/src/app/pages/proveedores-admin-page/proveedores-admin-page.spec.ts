@@ -95,7 +95,20 @@ describe('ProveedoresAdminPage', () => {
     const { fixture } = setup({ proveedores: [] });
 
     expect(fixture.componentInstance.errorCarga()).toBe(false);
-    expect(fixture.nativeElement.textContent).toContain('Aún no hay proveedores registrados.');
+    expect(fixture.nativeElement.textContent).toContain('No hay proveedores pendientes de validación.');
+  });
+
+  it('ante un 400 de documentación incompleta explica qué hacer', () => {
+    const { fixture, toast } = setup({
+      validarError: new ApiHttpError('Documentacion incompleta del proveedor PROV-1', 400),
+    });
+
+    fixture.componentInstance.aprobar(proveedor);
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'No se pudo aprobar al proveedor',
+      'El proveedor no tiene documentos cargados o alguno está vencido. Pídele que suba su documentación vigente antes de validarlo.',
+    );
   });
 
   it('aprueba al proveedor sin motivo y recarga el listado', () => {
@@ -153,11 +166,12 @@ describe('ProveedoresAdminPage', () => {
     expect(adminApi.getProveedores).toHaveBeenCalledTimes(1);
   });
 
-  it('si el proveedor ya está aprobado muestra "Validado" y oculta las acciones', () => {
-    const { fixture } = setup({ proveedores: [proveedorAprobado] });
+  it('un proveedor ya aprobado sale de la lista y solo quedan los pendientes', () => {
+    const { fixture } = setup({ proveedores: [proveedorAprobado, proveedor] });
 
-    expect(fixture.nativeElement.textContent).toContain('Validado');
-    expect(textosDeBotones(fixture)).not.toContain('Aprobar');
-    expect(textosDeBotones(fixture)).not.toContain('Rechazar');
+    const texto = fixture.nativeElement.textContent;
+    expect(texto).not.toContain('Repuestos El Frío SAS');
+    expect(texto).toContain('Insumos del Norte SAS');
+    expect(textosDeBotones(fixture).filter((t) => t.includes('Aprobar'))).toHaveLength(1);
   });
 });

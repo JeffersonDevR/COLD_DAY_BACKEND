@@ -75,6 +75,22 @@ describe('ValidacionTecnicosPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Juan Pérez');
   });
 
+  it('un técnico ya aprobado sale de la bandeja y solo quedan los pendientes', () => {
+    const aprobado: TecnicoResponse = {
+      ...tecnico,
+      id: 'TEC-2',
+      nombre: 'Ana Gómez',
+      nombreCompleto: 'Ana Gómez',
+      estadoValidacion: 'APROBADO',
+    };
+    const { fixture } = setup(undefined, vi.fn(() => of([aprobado, tecnico])));
+
+    const texto = fixture.nativeElement.textContent;
+    expect(texto).not.toContain('Ana Gómez');
+    expect(texto).toContain('Juan Pérez');
+    expect(fixture.componentInstance.pendientes().map((t) => t.id)).toEqual(['TEC-1']);
+  });
+
   it('avisa si los expedientes no cargan y reintenta', () => {
     const getTecnicos = vi
       .fn()
