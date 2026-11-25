@@ -185,6 +185,17 @@ public class Proveedor {
         }
     }
 
+    /**
+     * Sets where the supplier operates. Insumo requests are broadcast by radius
+     * from this point, so a supplier without one is never eligible.
+     */
+    public void fijarUbicacion(Point ubicacion) {
+        if (ubicacion == null) {
+            throw new IllegalArgumentException("La ubicacion es requerida");
+        }
+        this.ubicacion = ubicacion;
+    }
+
     /** Inactive suppliers are excluded from dispatch and cannot accept it (spec P5). */
     public void desactivar() {
         this.activo = false;

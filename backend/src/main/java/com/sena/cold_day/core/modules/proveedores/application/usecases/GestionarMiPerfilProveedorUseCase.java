@@ -7,6 +7,7 @@ import com.sena.cold_day.core.modules.proveedores.application.dto.ProveedorRespo
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.ProveedorRepository;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
+import com.sena.cold_day.core.shared.domain.Point;
 
 /**
  * Perfil del proveedor autenticado. El perfil sale del principal, nunca del
@@ -31,6 +32,14 @@ public class GestionarMiPerfilProveedorUseCase {
     public ProveedorResponse completarDatos(UsuarioId usuarioId, String razonSocial, String nit) {
         Proveedor proveedor = proveedorPorUsuario(usuarioId);
         proveedor.completarDatosComerciales(razonSocial, nit);
+        return ProveedorResponse.from(proveedorRepository.save(proveedor));
+    }
+
+    /** El proveedor fija donde opera; sin ubicacion no recibe solicitudes de insumos. */
+    @Transactional
+    public ProveedorResponse fijarUbicacion(UsuarioId usuarioId, double latitud, double longitud) {
+        Proveedor proveedor = proveedorPorUsuario(usuarioId);
+        proveedor.fijarUbicacion(new Point(latitud, longitud));
         return ProveedorResponse.from(proveedorRepository.save(proveedor));
     }
 

@@ -17,6 +17,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoValidacionProveedor;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorCercano;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.repository.ProveedorRepositoryAdapter;
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
@@ -56,6 +58,72 @@ class ProveedorRepositoryTest {
             proveedor.desactivar();
         }
         return proveedor;
+    }
+
+    // Centro en Bogota; 1 grado de latitud ~ 111.19 km, asi que +0.0809 ~ 9.0 km y +0.0989 ~ 11.0 km.
+    private static final Point CENTRO = new Point(4.6097, -74.0817);
+
+    private Proveedor proveedorEn(String correo, String nit, Point ubicacion, EstadoValidacionProveedor estado,
+            boolean activo) {
+        Long usuarioId = persistUsuario(correo);
+        Proveedor base = Proveedor.crear(usuarioId, "Proveedor " + nit, nit, "3105550001", "Calle 1",
+                ubicacion, Set.of("REFRIGERACION"));
+        return repository.save(Proveedor.reconstituir(ProveedorId.nueva(), usuarioId, "Proveedor " + nit, nit,
+                "3105550001", "Calle 1", ubicacion, Set.of("REFRIGERACION"), estado, null, activo,
+                base.getCreadoEn()));
+    }
+
+    @Test
+    void radioDevuelveSoloAprobadosActivosConUbicacionDentroDelRadio() {
+        Proveedor cerca = proveedorEn("a@x.com", "900-1", new Point(4.6097 + 0.0809, -74.0817),
+                EstadoValidacionProveedor.APROBADO, true);
+
+        var resultado = repository.buscarElegiblesEnRadio(CENTRO, 10.0);
+
+        assertThat(resultado).extracting(ProveedorCercano::proveedorId).containsExactly(cerca.getId());
+    }
+
+    @Test
+    void radioExcluyePendienteSuspendidoInactivoYSinUbicacion() {
+        Point dentro = new Point(4.6097 + 0.03, -74.0817);
+        proveedorEn("p@x.com", "900-2", dentro, EstadoValidacionProveedor.PENDIENTE, true);
+        proveedorEn("s@x.com", "900-3", dentro, EstadoValidacionProveedor.SUSPENDIDO, true);
+        proveedorEn("r@x.com", "900-4", dentro, EstadoValidacionProveedor.RECHAZADO, true);
+        proveedorEn("i@x.com", "900-5", dentro, EstadoValidacionProveedor.APROBADO, false);
+        proveedorEn("n@x.com", "900-6", null, EstadoValidacionProveedor.APROBADO, true);
+
+        assertThat(repository.buscarElegiblesEnRadio(CENTRO, 25.0)).isEmpty();
+    }
+
+    @Test
+    void radioOrdenaPorDistanciaYExponeKilometros() {
+        Proveedor lejos = proveedorEn("l@x.com", "900-7", new Point(4.6097 + 0.0809, -74.0817),
+                EstadoValidacionProveedor.APROBADO, true);
+        Proveedor cerca = proveedorEn("c@x.com", "900-8", new Point(4.6097 + 0.03, -74.0817),
+                EstadoValidacionProveedor.APROBADO, true);
+
+        var resultado = repository.buscarElegiblesEnRadio(CENTRO, 10.0);
+
+        assertThat(resultado).extracting(ProveedorCercano::proveedorId).containsExactly(cerca.getId(), lejos.getId());
+        assertThat(resultado.get(0).distanciaKm()).isBetween(3.2, 3.5);
+        assertThat(resultado.get(1).distanciaKm()).isBetween(8.9, 9.1);
+    }
+
+    @Test
+    void radioNoIncluyeProveedoresFueraDelBorde() {
+        proveedorEn("f@x.com", "900-9", new Point(4.6097 + 0.0989, -74.0817),
+                EstadoValidacionProveedor.APROBADO, true);
+
+        assertThat(repository.buscarElegiblesEnRadio(CENTRO, 10.0)).isEmpty();
+        assertThat(repository.buscarElegiblesEnRadio(CENTRO, 15.0)).hasSize(1);
+    }
+
+    @Test
+    void radioRechazaCentroNuloYRadioNoPositivo() {
+        assertThatThrownBy(() -> repository.buscarElegiblesEnRadio(null, 10.0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> repository.buscarElegiblesEnRadio(CENTRO, 0.0))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

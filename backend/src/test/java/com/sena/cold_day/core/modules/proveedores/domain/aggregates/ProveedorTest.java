@@ -105,4 +105,23 @@ class ProveedorTest {
         assertThat(proveedor.isActivo()).isFalse();
         assertThat(proveedor.getCreadoEn()).isEqualTo(creadoEn);
     }
+
+    @Test
+    void fijarUbicacionReemplazaLaUbicacionPrevia() {
+        Proveedor proveedor = Proveedor.crear(7L, null, null, null, null, null, Set.of());
+
+        proveedor.fijarUbicacion(UBICACION);
+
+        assertThat(proveedor.getUbicacion()).isEqualTo(UBICACION);
+        proveedor.fijarUbicacion(new Point(4.61, -74.08));
+        assertThat(proveedor.getUbicacion()).isEqualTo(new Point(4.61, -74.08));
+    }
+
+    @Test
+    void fijarUbicacionRechazaNulo() {
+        Proveedor proveedor = Proveedor.crear(7L, null, null, null, null, UBICACION, Set.of());
+
+        assertThatThrownBy(() -> proveedor.fijarUbicacion(null)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(proveedor.getUbicacion()).isEqualTo(UBICACION);
+    }
 }
