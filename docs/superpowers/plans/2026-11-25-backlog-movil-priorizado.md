@@ -78,6 +78,7 @@ Commits: `7bf5d87` (P0.1), `61930f2` (P0.2), `7ebe196` (P0.3), `147a329` (P0.4).
 - **Camino propuesto:** una sesión de diseño corta con esas 4 preguntas, luego plan propio. No se mezcla con el resto.
 
 ### P2.2 Proveedor sin ubicación no recibe solicitudes — **S/M**
+- **Estado 2026-11-26: compuerta HECHA** en móvil. Sin ubicación no se gestiona la bandeja, salvo que haya un pedido aceptado sin entregar. **Pendiente:** confirmar los valores `app.insumos.*`.
 - Los proveedores existentes deben fijar su ubicación; hoy solo hay un banner. Propuesta: bloquear el acceso a Solicitudes con una pantalla "Fija tu ubicación para recibir pedidos" hasta que la fije.
 - Y confirmar con el negocio los valores por defecto de `app.insumos.*` (velocidad, tope del ETA, radios, ventanas): hoy no son política de producto.
 
