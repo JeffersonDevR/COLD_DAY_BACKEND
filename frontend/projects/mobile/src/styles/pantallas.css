@@ -1232,32 +1232,37 @@ button.cd-ot .cd-ot__direccion {
   color: var(--cd-muted);
 }
 
+/* Progreso vertical: un paso por fila, con el conector entre nodos. */
 .cd-timeline__pasos {
-  display: flex;
-  gap: 0.15rem;
-  overflow-x: auto;
+  display: grid;
   margin: 0;
   padding: 0.25rem 0 0.35rem;
   list-style: none;
-  scrollbar-width: none;
-}
-
-.cd-timeline__pasos::-webkit-scrollbar {
-  display: none;
 }
 
 .cd-timeline__paso {
-  display: grid;
-  justify-items: center;
-  gap: 0.3rem;
-  min-width: 4rem;
-  padding: 0.2rem 0.1rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
   color: var(--cd-muted);
-  text-align: center;
+}
+
+.cd-timeline__paso:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  /* Centrado bajo el nodo (2.1rem de ancho) y hasta el siguiente. */
+  left: calc(1.05rem - 1px);
+  top: calc(50% + 1.05rem);
+  height: calc(100% - 2.1rem);
+  width: 2px;
+  background: var(--cd-surface-border);
 }
 
 .cd-timeline__nodo {
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
   width: 2.1rem;
   height: 2.1rem;
@@ -1272,8 +1277,16 @@ button.cd-ot .cd-ot__direccion {
 }
 
 .cd-timeline__etiqueta {
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.cd-timeline__hora {
+  margin-left: auto;
   font-size: 0.75rem;
-  line-height: 1.2;
+  color: var(--cd-muted);
+  text-align: right;
 }
 
 .cd-timeline__paso.is-completed .cd-timeline__nodo {
@@ -1305,6 +1318,8 @@ button.cd-ot .cd-ot__direccion {
 }
 
 .cd-timeline__historial-toggle {
+  min-height: 44px;
+  align-content: center;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--cd-muted);
