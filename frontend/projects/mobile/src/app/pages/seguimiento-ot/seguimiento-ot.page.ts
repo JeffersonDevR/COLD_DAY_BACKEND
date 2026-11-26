@@ -23,6 +23,7 @@ import {
   IonCard,
   IonCardContent,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonSpinner,
@@ -80,6 +81,7 @@ import { OtTimelineComponent } from './ot-timeline.component';
     IonCard,
     IonCardContent,
     IonContent,
+    IonFooter,
     IonHeader,
     IonIcon,
     IonSpinner,
@@ -167,6 +169,14 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
   readonly pagoVisitaReabreDespacho = computed<boolean>(() => {
     const estado = this.ot()?.estado;
     return estado === 'CANCELADA' || estado === 'DISPUTADA';
+  });
+
+  /** La única acción rellena de la pantalla, en el pie; `null` = no hay pie. */
+  readonly accionPrincipal = computed<'pagar-visita' | 'presupuesto' | 'acta' | null>(() => {
+    if (this.puedePagarVisita()) return 'pagar-visita';
+    const orden = this.ot();
+    if (orden?.estado === 'EN_DIAGNOSTICO' && orden.diagnostico) return 'presupuesto';
+    return orden?.estado === 'FINALIZADA' ? 'acta' : null;
   });
 
   /** Tarifa real de la visita (POST /api/ot/tarifa/estimar); `null` = no se pinta. */

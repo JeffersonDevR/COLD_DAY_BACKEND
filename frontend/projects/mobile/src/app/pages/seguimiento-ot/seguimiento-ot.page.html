@@ -46,61 +46,6 @@
   }
 
   @if (ot(); as orden) {
-    <!-- Acciones contextuales según el estado -->
-    <div class="cd-acciones" data-testid="ot-acciones">
-      @if (orden.estado === 'EN_DIAGNOSTICO' && orden.diagnostico) {
-        <ion-button
-          class="cd-cta"
-          data-testid="cta-presupuesto"
-          (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
-        >
-          <ion-icon slot="start" name="cash-outline" aria-hidden="true"></ion-icon>
-          Revisar Presupuesto
-          @if (orden.presupuesto) {
-            ($ {{ orden.presupuesto.total | number: '1.0-0' }})
-          } @else {
-            (sin presupuesto)
-          }
-        </ion-button>
-      }
-
-      @if (orden.estado === 'FINALIZADA') {
-        <ion-button
-          class="cd-cta"
-          data-testid="cta-acta"
-          (click)="irA(['/cliente/ot', orden.id, 'pago'])"
-        >
-          <ion-icon slot="start" name="document-text-outline" aria-hidden="true"></ion-icon>
-          Ver Acta y Pago
-        </ion-button>
-
-        @if (!orden.calificacion) {
-          <ion-button
-            fill="outline"
-            data-testid="cta-calificar"
-            (click)="irA(['/cliente/ot', orden.id, 'calificar'])"
-          >
-            <ion-icon slot="start" name="star-outline" aria-hidden="true"></ion-icon>
-            Calificar Servicio
-          </ion-button>
-        }
-      }
-
-      @if (orden.estado === 'EN_DIAGNOSTICO' || orden.estado === 'EN_REPARACION') {
-        <ion-button fill="outline" data-testid="cta-disputa" (click)="abrirModalDisputa()">
-          <ion-icon slot="start" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
-          Abrir Disputa
-        </ion-button>
-      }
-
-      @if (puedeCancelar()) {
-        <ion-button fill="outline" color="danger" data-testid="cta-cancelar" (click)="abrirModalCancelar()">
-          <ion-icon slot="start" name="close-circle-outline" aria-hidden="true"></ion-icon>
-          Cancelar Solicitud
-        </ion-button>
-      }
-    </div>
-
     <!-- SOLICITADA / BUSCANDO_TECNICO: búsqueda en curso (sin radar) -->
     @if (orden.estado === 'SOLICITADA' || orden.estado === 'BUSCANDO_TECNICO') {
       <ion-card class="cd-buscando" data-testid="buscando-tecnico">
@@ -173,25 +118,6 @@
               Transferencia
             </button>
           </div>
-
-          <ion-button
-            expand="block"
-            class="cd-cta cd-cta--amber"
-            data-testid="pagar-visita"
-            [attr.aria-busy]="pagandoVisita()"
-            [disabled]="pagandoVisita()"
-            (click)="pagarVisita()"
-          >
-            <ion-icon slot="start" name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
-            {{
-              pagandoVisita()
-                ? 'Procesando pago…'
-                : (pagoVisitaReabreDespacho()
-                    ? 'Pagar visita y reabrir despacho'
-                    : 'Pagar visita') +
-                  (tarifaVisita() ? ' · ' + formatoCop(tarifaVisita()!) : '')
-            }}
-          </ion-button>
         </ion-card-content>
       </ion-card>
     }
@@ -272,14 +198,16 @@
                 Llamar
               </a>
             }
-            <ion-button
-              fill="outline"
-              data-testid="tecnico-diagnostico"
-              (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
-            >
-              <ion-icon slot="start" name="chatbubbles-outline" aria-hidden="true"></ion-icon>
-              Diagnóstico / Presupuesto
-            </ion-button>
+            @if (accionPrincipal() !== 'presupuesto') {
+              <ion-button
+                fill="outline"
+                data-testid="tecnico-diagnostico"
+                (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
+              >
+                <ion-icon slot="start" name="chatbubbles-outline" aria-hidden="true"></ion-icon>
+                Ver diagnóstico
+              </ion-button>
+            }
           </div>
         </ion-card-content>
       </ion-card>
@@ -340,6 +268,34 @@
           la fase de reparación física; a partir de ahí ya no es posible.
         </p>
       </div>
+    </div>
+
+    <!-- Acciones secundarias: la principal vive en el pie. -->
+    <div class="cd-acciones" data-testid="ot-acciones">
+      @if (orden.estado === 'FINALIZADA' && !orden.calificacion) {
+        <ion-button
+          fill="outline"
+          data-testid="cta-calificar"
+          (click)="irA(['/cliente/ot', orden.id, 'calificar'])"
+        >
+          <ion-icon slot="start" name="star-outline" aria-hidden="true"></ion-icon>
+          Calificar Servicio
+        </ion-button>
+      }
+
+      @if (orden.estado === 'EN_DIAGNOSTICO' || orden.estado === 'EN_REPARACION') {
+        <ion-button fill="outline" data-testid="cta-disputa" (click)="abrirModalDisputa()">
+          <ion-icon slot="start" name="shield-checkmark-outline" aria-hidden="true"></ion-icon>
+          Abrir Disputa
+        </ion-button>
+      }
+
+      @if (puedeCancelar()) {
+        <ion-button fill="outline" color="danger" data-testid="cta-cancelar" (click)="abrirModalCancelar()">
+          <ion-icon slot="start" name="close-circle-outline" aria-hidden="true"></ion-icon>
+          Cancelar Solicitud
+        </ion-button>
+      }
     </div>
   }
 
@@ -449,3 +405,61 @@
     </div>
   }
 </ion-content>
+
+<!-- Una sola acción rellena, en la zona del pulgar (DESIGN §4). Se retira con un
+     modal abierto: el pie queda fuera de ion-content y se vería por encima. -->
+@if (ot(); as orden) {
+  @if (accionPrincipal() && !mostrarModalCancelar() && !mostrarModalDisputa()) {
+    <ion-footer class="cd-footer" data-testid="ot-pie">
+      @switch (accionPrincipal()) {
+        @case ('pagar-visita') {
+          <ion-button
+            expand="block"
+            class="cd-cta cd-cta--amber"
+            data-testid="pagar-visita"
+            [attr.aria-busy]="pagandoVisita()"
+            [disabled]="pagandoVisita()"
+            (click)="pagarVisita()"
+          >
+            <ion-icon slot="start" name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+            {{
+              pagandoVisita()
+                ? 'Procesando pago…'
+                : (pagoVisitaReabreDespacho()
+                    ? 'Pagar visita y reabrir despacho'
+                    : 'Pagar visita') +
+                  (tarifaVisita() ? ' · ' + formatoCop(tarifaVisita()!) : '')
+            }}
+          </ion-button>
+        }
+        @case ('presupuesto') {
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            data-testid="cta-presupuesto"
+            (click)="irA(['/cliente/ot', orden.id, 'diagnostico'])"
+          >
+            <ion-icon slot="start" name="cash-outline" aria-hidden="true"></ion-icon>
+            Revisar Presupuesto
+            @if (orden.presupuesto) {
+              ($ {{ orden.presupuesto.total | number: '1.0-0' }})
+            } @else {
+              (sin presupuesto)
+            }
+          </ion-button>
+        }
+        @case ('acta') {
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            data-testid="cta-acta"
+            (click)="irA(['/cliente/ot', orden.id, 'pago'])"
+          >
+            <ion-icon slot="start" name="document-text-outline" aria-hidden="true"></ion-icon>
+            Ver Acta y Pago
+          </ion-button>
+        }
+      }
+    </ion-footer>
+  }
+}

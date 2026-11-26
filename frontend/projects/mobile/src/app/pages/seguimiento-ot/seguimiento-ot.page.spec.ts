@@ -694,6 +694,64 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="timeline-pasos"]')).not.toBeNull();
   });
 
+  describe('acción principal en el pie', () => {
+    const nodo = (fixture: ComponentFixture<SeguimientoOtPage>, id: string) =>
+      fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+
+    function montar(overrides: Partial<OtResponse>) {
+      return setup({ otApi: { getOtById: vi.fn(() => of(ot(overrides))) } });
+    }
+
+    it('pagar la visita va en el pie', () => {
+      const { fixture } = montar({ estado: 'ASIGNADA', visitaPagada: false });
+
+      const boton = nodo(fixture, 'pagar-visita');
+      expect(nodo(fixture, 'ot-pie')?.contains(boton)).toBe(true);
+      expect(nodo(fixture, 'panel-pago-visita')?.contains(boton)).toBe(false);
+    });
+
+    it('revisar presupuesto va en el pie y no se duplica', () => {
+      const { fixture } = montar({ estado: 'EN_DIAGNOSTICO', diagnostico: {} });
+
+      expect(nodo(fixture, 'ot-pie')?.contains(nodo(fixture, 'cta-presupuesto'))).toBe(true);
+      expect(nodo(fixture, 'tecnico-diagnostico')).toBeNull();
+    });
+
+    it('ver acta va en el pie y calificar queda abajo sin relleno', () => {
+      const { fixture } = montar({ estado: 'FINALIZADA' });
+
+      expect(nodo(fixture, 'ot-pie')?.contains(nodo(fixture, 'cta-acta'))).toBe(true);
+      const calificar = nodo(fixture, 'cta-calificar') as HTMLElement & { fill?: string };
+      expect(nodo(fixture, 'ot-acciones')?.contains(calificar)).toBe(true);
+      expect(calificar.fill ?? calificar.getAttribute('fill')).toBe('outline');
+    });
+
+    it('sin acción principal no hay pie', () => {
+      const { fixture } = montar({ estado: 'EN_CAMINO' });
+
+      expect(nodo(fixture, 'ot-pie')).toBeNull();
+    });
+
+    it('con un modal abierto el pie se retira', () => {
+      const { fixture } = montar({ estado: 'EN_DIAGNOSTICO', diagnostico: {} });
+
+      click(fixture, 'cta-disputa');
+      expect(nodo(fixture, 'ot-pie')).toBeNull();
+
+      click(fixture, 'disputa-volver');
+      expect(nodo(fixture, 'ot-pie')).not.toBeNull();
+    });
+
+    it('las acciones secundarias van después de la ficha', () => {
+      const { fixture } = montar({ estado: 'EN_DIAGNOSTICO' });
+
+      const posicion = nodo(fixture, 'timeline-pasos')!.compareDocumentPosition(
+        nodo(fixture, 'ot-acciones')!,
+      );
+      expect(posicion & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
   describe('mapa con motor', () => {
     const POLYLINE_VALIDO = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
 
