@@ -874,6 +874,28 @@ describe('SeguimientoOtPage móvil (A6)', () => {
       expect(dato.classList).toContain('cd-dato--sobre-mapa');
     });
 
+    it('esperando el pago, el chip del mapa no dice "En camino"', () => {
+      const fixture = montar({ estado: 'ASIGNADA', visitaPagada: false });
+
+      const chip = uno(fixture, '[data-testid="mapa-distancia"]')!;
+      expect(chip.textContent).toContain('km');
+      expect(chip.textContent).not.toContain('En camino');
+    });
+
+    it('con la orden en camino, el chip lo dice', () => {
+      const fixture = montar({ estado: 'EN_CAMINO' });
+
+      expect(uno(fixture, '[data-testid="mapa-distancia"]')!.textContent).toContain('En camino');
+    });
+
+    it('las tarjetas usan cd-card para compartir el mismo borde (DESIGN §8.2)', () => {
+      const fixture = montar({ estado: 'ASIGNADA', visitaPagada: false });
+
+      const tarjetas = [...fixture.nativeElement.querySelectorAll('ion-card')] as HTMLElement[];
+      expect(tarjetas).toHaveLength(3);
+      for (const tarjeta of tarjetas) expect(tarjeta.classList).toContain('cd-card');
+    });
+
     it('sin mapa el dato no se monta sobre nada', () => {
       const fixture = montar({ estado: 'SOLICITADA', tecnicoId: null });
 

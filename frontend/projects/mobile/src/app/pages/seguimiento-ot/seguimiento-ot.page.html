@@ -52,6 +52,7 @@
           [destinoNombre]="orden.barrio || 'Punto de servicio'"
           [tecnicoNombre]="orden.tecnicoNombre || 'El técnico'"
           [llegada]="!!orden.llegadaEn"
+          [enCamino]="orden.estado === 'EN_CAMINO'"
           [rutaCodificada]="rutaCodificada()"
         />
       </div>
@@ -106,7 +107,7 @@
 
     <!-- RF-F1-26: pago de la visita para habilitar el desplazamiento o reabrir el despacho -->
     @if (puedePagarVisita()) {
-      <ion-card class="cd-pago" data-testid="panel-pago-visita">
+      <ion-card class="cd-card cd-pago" data-testid="panel-pago-visita">
         <ion-card-content>
           <div class="cd-pago__encabezado">
             <span class="cd-pago__icono" aria-hidden="true">
@@ -163,7 +164,7 @@
 
     <!-- Tarjeta del técnico asignado -->
     @if (orden.tecnicoId) {
-      <ion-card class="cd-tecnico" data-testid="tecnico-card">
+      <ion-card class="cd-card cd-tecnico" data-testid="tecnico-card">
         <ion-card-content>
           <div class="cd-tecnico__fila">
             <div class="cd-tecnico__avatar" aria-hidden="true">
@@ -209,7 +210,7 @@
     <app-ot-timeline [estadoActual]="orden.estado" [historial]="orden.historial ?? []" />
 
     <!-- Ficha única del servicio -->
-    <ion-card class="cd-ficha" data-testid="ficha-servicio">
+    <ion-card class="cd-card cd-ficha" data-testid="ficha-servicio">
       <ion-card-content>
         <h2 class="cd-card__titulo">Servicio</h2>
         <div class="cd-ficha__fila">

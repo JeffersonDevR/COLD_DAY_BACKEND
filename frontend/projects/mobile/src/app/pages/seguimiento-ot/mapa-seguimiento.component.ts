@@ -49,7 +49,7 @@ import { Point } from '@core/models/common.models';
       } @else if (distanciaKm() !== null) {
         <span class="cd-map__chip" data-testid="mapa-distancia">
           <ion-icon name="navigate-outline" aria-hidden="true"></ion-icon>
-          En camino: {{ distanciaKm() | number: '1.1-1' }} km
+          {{ enCamino() ? 'En camino:' : 'A' }} {{ distanciaKm() | number: '1.1-1' }} km
         </span>
       }
 
@@ -102,6 +102,8 @@ export class MapaSeguimientoComponent {
   readonly destinoNombre = input('Punto de servicio');
   readonly tecnicoNombre = input('El técnico');
   readonly llegada = input(false);
+  /** Solo con la orden en EN_CAMINO; si no, el chip da la distancia sin afirmar nada. */
+  readonly enCamino = input(false);
   readonly rutaCodificada = input<string | null>(null);
 
   /** `true` mientras el botón "Reintentar mapa" espera la respuesta del loader. */
