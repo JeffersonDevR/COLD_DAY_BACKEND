@@ -38,8 +38,8 @@ Dato dominante:
 | Buscando | «Buscando técnico» | el aviso actual |
 | En camino con ETA | «14 min» | distancia en km |
 | En camino sin ETA | «Técnico en camino» | — |
-| Llegó | «El técnico llegó» | hora |
-| Otro estado | la etiqueta del estado | fecha de creación |
+| Llegó, antes del diagnóstico | «El técnico llegó» | hora |
+| Otro estado (incluye diagnóstico y reparación, decisión del dueño 2026-11-26) | la etiqueta del estado | fecha de creación |
 
 ## Acción principal
 

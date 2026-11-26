@@ -580,7 +580,7 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     const { fixture } = setup({
       otApi: {
         getOtById: vi.fn(() =>
-          of(ot({ estado: 'EN_DIAGNOSTICO', llegadaEn: '2026-11-03T14:32:00Z', punto: PUNTO })),
+          of(ot({ estado: 'EN_CAMINO', llegadaEn: '2026-11-03T14:32:00Z', punto: PUNTO })),
         ),
         getTecnicoUbicacion: vi.fn(() => of(UBICACION_TECNICO)),
       },
@@ -767,9 +767,18 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     });
 
     it('llegó', () => {
-      const fixture = montar({ estado: 'EN_DIAGNOSTICO', llegadaEn: '2026-11-03T14:32:00Z' });
+      const fixture = montar({ estado: 'EN_CAMINO', llegadaEn: '2026-11-03T14:32:00Z' });
 
       expect(grande(fixture)).toBe('El técnico llegó');
+    });
+
+    it.each([
+      ['EN_DIAGNOSTICO', 'En diagnóstico'],
+      ['EN_REPARACION', 'En reparación'],
+    ] as const)('en %s la llegada ya no es la noticia', (estado, etiqueta) => {
+      const fixture = montar({ estado, llegadaEn: '2026-11-03T14:32:00Z' });
+
+      expect(grande(fixture)).toBe(etiqueta);
     });
 
     it('asignada sin pagar no dice en camino', () => {

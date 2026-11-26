@@ -196,7 +196,8 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
     if (orden.estado === 'SOLICITADA' || orden.estado === 'BUSCANDO_TECNICO') {
       return { tipo: 'buscando' };
     }
-    if (orden.llegadaEn && ESTADOS_TECNICO_EN_MOVIMIENTO.includes(orden.estado)) {
+    // Desde el diagnóstico la llegada es noticia vieja: se dice el estado.
+    if (orden.llegadaEn && (orden.estado === 'ASIGNADA' || orden.estado === 'EN_CAMINO')) {
       return { tipo: 'llegada', llegadaEn: orden.llegadaEn };
     }
     if (orden.estado === 'EN_CAMINO' && orden.tecnicoId) {
