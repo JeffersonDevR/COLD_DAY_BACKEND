@@ -52,6 +52,8 @@ public class OfertaInsumoRepositoryAdapter implements OfertaInsumoRepository {
     @Transactional(readOnly = true)
     public Set<ProveedorId> proveedoresOfertados(RequerimientoInsumoId requerimientoId) {
         return repository.findByRequerimientoId(requerimientoId.valor()).stream()
+                .filter(oferta -> oferta.getEstado() != OfertaInsumoEstado.CANCELADA
+                        && oferta.getEstado() != OfertaInsumoEstado.EXPIRADA)
                 .map(oferta -> ProveedorId.desde(oferta.getProveedorId()))
                 .collect(Collectors.toSet());
     }
@@ -94,5 +96,19 @@ public class OfertaInsumoRepositoryAdapter implements OfertaInsumoRepository {
     public int expirarVencidas(Instant ahora) {
         return repository.expirarVencidas(ahora,
                 OfertaInsumoEstado.PENDIENTE, OfertaInsumoEstado.EXPIRADA);
+    }
+
+    @Override
+    @Transactional
+    public int reemplazarAceptada(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId, Instant ahora) {
+        return repository.cambiarEstadoDe(requerimientoId.valor(), proveedorId.valor(), ahora,
+                OfertaInsumoEstado.ACEPTADA, OfertaInsumoEstado.REEMPLAZADA);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean fueReemplazado(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId) {
+        return repository.existsByRequerimientoIdAndProveedorIdAndEstado(requerimientoId.valor(),
+                proveedorId.valor(), OfertaInsumoEstado.REEMPLAZADA);
     }
 }

@@ -65,4 +65,23 @@ public interface SpringDataRequerimientoInsumoRepository
             + "WHERE r.estado = :origen AND r.expiraEn <= :ahora")
     int expirarVencidos(@Param("ahora") Instant ahora,
             @Param("origen") EstadoRequerimiento origen, @Param("destino") EstadoRequerimiento destino);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE requerimiento_insumo SET estado = 'SOLICITADO', expira_en = :expira, "
+            + "radio_km = :radio, ventana_expira_en = :ventana, eta_minutos = NULL, distancia_km = NULL, "
+            + "aceptada_en = NULL, eta_aviso_en = NULL, version = version + 1 "
+            + "WHERE id = :id AND tecnico_id = :tecnico AND estado = 'ASIGNADO' "
+            + "AND aceptada_en + (eta_minutos * interval '1 minute') <= :ahora", nativeQuery = true)
+    int reabrirSiEtaVencido(@Param("id") UUID id, @Param("tecnico") UUID tecnicoId, @Param("ahora") Instant ahora,
+            @Param("expira") Instant expiraEn, @Param("radio") double radioKm,
+            @Param("ventana") Instant ventanaExpiraEn);
+
+    /** One statement on purpose: the offer check cannot go stale between a read and the write. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE requerimiento_insumo r SET estado = 'DESPACHADO', despachada_en = :ahora, "
+            + "version = r.version + 1 WHERE r.id = :id AND r.estado = 'ASIGNADO' AND EXISTS "
+            + "(SELECT 1 FROM oferta_insumo o WHERE o.requerimiento_id = r.id AND o.proveedor_id = :proveedor "
+            + "AND o.estado = 'ACEPTADA')", nativeQuery = true)
+    int despacharSiAsignado(@Param("id") UUID id, @Param("proveedor") UUID proveedorId,
+            @Param("ahora") Instant ahora);
 }

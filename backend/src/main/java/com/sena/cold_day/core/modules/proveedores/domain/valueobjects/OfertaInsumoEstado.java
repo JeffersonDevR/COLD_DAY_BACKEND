@@ -15,7 +15,9 @@ public enum OfertaInsumoEstado {
     ACEPTADA,
     RECHAZADO,
     EXPIRADA,
-    CANCELADA;
+    CANCELADA,
+    /** Was the winner, but the technician moved the request to another supplier. */
+    REEMPLAZADA;
 
     /** An offer is actionable only while pending. */
     public boolean estaPendiente() {
@@ -28,6 +30,6 @@ public enum OfertaInsumoEstado {
      * because the request lifecycle continues towards {@code ENTREGADO}.
      */
     public boolean esTerminal() {
-        return this == RECHAZADO || this == EXPIRADA || this == CANCELADA;
+        return this == RECHAZADO || this == EXPIRADA || this == CANCELADA || this == REEMPLAZADA;
     }
 }

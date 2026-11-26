@@ -22,7 +22,12 @@ public interface OfertaInsumoRepository {
 
     Optional<OfertaInsumo> buscarPorId(OfertaInsumoId id);
 
-    /** Suppliers that already hold an offer (any state) for the request: they never get a second one. */
+    /**
+     * Suppliers that must not be offered this request again: those with a pending or
+     * accepted offer, those that rejected it and those it was taken away from. A
+     * supplier whose offer was cancelled because another won (or expired) may get a
+     * new one when the request reopens.
+     */
     Set<ProveedorId> proveedoresOfertados(RequerimientoInsumoId requerimientoId);
 
     /** Pending offers broadcast for one request, oldest first. */
@@ -39,4 +44,10 @@ public interface OfertaInsumoRepository {
 
     /** Closes every pending offer whose server-authoritative window expired. */
     int expirarVencidas(Instant ahora);
+
+    /** Moves the supplier's {@code ACEPTADA} offer to {@code REEMPLAZADA}. Returns how many rows changed. */
+    int reemplazarAceptada(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId, Instant ahora);
+
+    /** True if the request was taken away from this supplier. */
+    boolean fueReemplazado(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId);
 }

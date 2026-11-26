@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.repository.RequerimientoInsumoRepository;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.EstadoRequerimiento;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.RequerimientoInsumoJpaEntity;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.persistence.SpringDataRequerimientoInsumoRepository;
@@ -95,5 +96,18 @@ public class RequerimientoInsumoRepositoryAdapter implements RequerimientoInsumo
     public int expirarVencidos(Instant ahora) {
         return repository.expirarVencidos(ahora,
                 EstadoRequerimiento.SOLICITADO, EstadoRequerimiento.SIN_PROVEEDOR);
+    }
+
+    @Override
+    @Transactional
+    public int reabrirSiEtaVencido(RequerimientoInsumoId id, UUID tecnicoId, Instant ahora, Instant expiraEn,
+            double radioKm, Instant ventanaExpiraEn) {
+        return repository.reabrirSiEtaVencido(id.valor(), tecnicoId, ahora, expiraEn, radioKm, ventanaExpiraEn);
+    }
+
+    @Override
+    @Transactional
+    public int despacharSiAsignado(RequerimientoInsumoId id, ProveedorId proveedorId, Instant ahora) {
+        return repository.despacharSiAsignado(id.valor(), proveedorId.valor(), ahora);
     }
 }
