@@ -161,7 +161,7 @@ class OfertaInsumoTest {
     @Test
     void estadoDeOfertaUsaRechazadoNoRechazada() {
         assertThat(Arrays.stream(OfertaInsumoEstado.values()).map(Enum::name))
-                .containsExactly("PENDIENTE", "ACEPTADA", "RECHAZADO", "EXPIRADA", "CANCELADA")
+                .containsExactly("PENDIENTE", "ACEPTADA", "RECHAZADO", "EXPIRADA", "CANCELADA", "REEMPLAZADA")
                 .doesNotContain("RECHAZADA");
     }
 
@@ -170,6 +170,7 @@ class OfertaInsumoTest {
         assertThat(OfertaInsumoEstado.RECHAZADO.esTerminal()).isTrue();
         assertThat(OfertaInsumoEstado.EXPIRADA.esTerminal()).isTrue();
         assertThat(OfertaInsumoEstado.CANCELADA.esTerminal()).isTrue();
+        assertThat(OfertaInsumoEstado.REEMPLAZADA.esTerminal()).isTrue();
         assertThat(OfertaInsumoEstado.PENDIENTE.esTerminal()).isFalse();
         assertThat(OfertaInsumoEstado.ACEPTADA.esTerminal()).isFalse();
     }

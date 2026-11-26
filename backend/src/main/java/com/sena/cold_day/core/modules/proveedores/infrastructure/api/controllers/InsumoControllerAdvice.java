@@ -9,7 +9,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.sena.cold_day.core.modules.proveedores.domain.exception.CambioProveedorNoPermitidoException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.EtaInvalidoException;
+import com.sena.cold_day.core.modules.proveedores.domain.exception.PedidoReemplazadoException;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.PerfilTecnicoNoEncontradoException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.OfertaInsumoNoDisponibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoElegibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoValidadoException;
@@ -73,6 +76,18 @@ public class InsumoControllerAdvice {
     @ExceptionHandler(TransicionRequerimientoInvalidaException.class)
     ResponseEntity<ApiError> handleInvalidTransition(TransicionRequerimientoInvalidaException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** The supplier change is not allowed, or the supplier was already replaced. */
+    @ExceptionHandler({ CambioProveedorNoPermitidoException.class, PedidoReemplazadoException.class })
+    ResponseEntity<ApiError> handleSupplierChange(RuntimeException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    /** A user with the technician role but no technician profile. */
+    @ExceptionHandler(PerfilTecnicoNoEncontradoException.class)
+    ResponseEntity<ApiError> handleNoTechnician(PerfilTecnicoNoEncontradoException exception) {
+        return error(HttpStatus.NOT_FOUND, exception);
     }
 
     @ExceptionHandler(RequerimientoInsumoNoEncontradoException.class)
