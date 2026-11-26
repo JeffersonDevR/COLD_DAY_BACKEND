@@ -317,9 +317,21 @@ export type EstadoRequerimiento = 'SOLICITADO' | 'ASIGNADO' | 'DESPACHADO' | 'EN
 /**
  * Estados por oferta del despacho (OfertaInsumoEstado.java). El literal de
  * rechazo es `RECHAZADO` (nunca `RECHAZADA`); `CANCELADA` marca la oferta hermana
- * que perdió la aceptación atómica.
+ * que perdió la aceptación atómica; `REEMPLAZADA`, la ganadora a la que el técnico
+ * le quitó el pedido porque venció su ETA.
  */
-export type OfertaInsumoEstado = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADO' | 'EXPIRADA' | 'CANCELADA';
+export type OfertaInsumoEstado = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADO' | 'EXPIRADA' | 'CANCELADA' | 'REEMPLAZADA';
+
+/** Un ETA incumplido que registró el servidor (solo consulta, sin sanción). */
+export interface IncumplimientoInsumo {
+  id: string;
+  proveedorId: string;
+  razonSocial: string;
+  requerimientoId: string;
+  etaMinutos: number;
+  aceptadaEn: string;
+  reemplazadoEn: string;
+}
 
 /**
  * Requerimiento de insumos tal como lo ve el proveedor (SolicitudInsumoApiResponse).

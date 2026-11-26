@@ -273,6 +273,8 @@ export class SolicitudesProveedorPage implements OnInit {
         return 'Expirada';
       case 'CANCELADA':
         return 'Cancelada';
+      case 'REEMPLAZADA':
+        return 'Reemplazada';
     }
   }
 

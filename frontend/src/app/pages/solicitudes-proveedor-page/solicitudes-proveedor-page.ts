@@ -193,6 +193,7 @@ export class SolicitudesProveedorPage implements OnInit {
       case 'RECHAZADO': return 'Rechazada';
       case 'EXPIRADA': return 'Expirada';
       case 'CANCELADA': return 'Cancelada';
+      case 'REEMPLAZADA': return 'Reemplazada';
     }
   }
 
@@ -203,6 +204,7 @@ export class SolicitudesProveedorPage implements OnInit {
       case 'RECHAZADO': return 'error';
       case 'EXPIRADA':
       case 'CANCELADA': return 'neutro';
+      case 'REEMPLAZADA': return 'neutro';
     }
   }
 

@@ -1,0 +1,227 @@
+﻿
+    <div class="space-y-6 max-w-7xl mx-auto">
+      <!-- Header -->
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-ink-1">
+            Torre de Control Administrativa
+          </h1>
+          <p class="text-xs sm:text-sm text-ink-3">
+            Monitoreo en tiempo real de operaciones, conciliación y mediación • COLD DAY S.A.S.
+          </p>
+        </div>
+
+        <!-- Accesos directos administrativos -->
+        <div class="flex flex-wrap items-center gap-2">
+          <a
+            routerLink="/admin/consignaciones"
+            class="px-3.5 py-2 rounded-xl bg-transparent hover:bg-[var(--cd-surface-2)] text-ink-2 font-bold text-xs  transition-colors inline-flex items-center gap-1.5"
+          >
+            <i class="pi pi-receipt text-sm"></i>
+            Conciliar Consignaciones
+          </a>
+          <a
+            routerLink="/admin/validacion-tecnicos"
+            class="px-3.5 py-2 rounded-xl bg-transparent hover:bg-[var(--cd-surface-2)] text-ink-2 font-bold text-xs  transition-colors inline-flex items-center gap-1.5"
+          >
+            <i class="pi pi-shield text-sm"></i>
+            Auditoría de Técnicos
+          </a>
+          <a
+            routerLink="/admin/disputas"
+            class="px-3.5 py-2 rounded-xl bg-transparent hover:bg-[var(--cd-surface-2)] text-ink-2 font-bold text-xs  transition-colors inline-flex items-center gap-1.5"
+          >
+            <i class="pi pi-shield text-sm"></i>
+            Bandeja Disputas
+          </a>
+        </div>
+      </div>
+
+      <!-- Carga de métricas: un fallo se ve y se puede reintentar. -->
+      @if (errorCarga()) {
+        <app-carga-error
+          mensaje="No pudimos cargar las métricas de la torre de control."
+          (reintentar)="cargarMetricas()"
+        />
+      } @else if (cargando()) {
+        <p class="text-xs text-ink-3">Cargando métricas…</p>
+      }
+
+      <!-- 6 KPIs Principales -->
+      @if (metricas(); as m) {
+        <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+          <div class="p-4 rounded-2xl bg-surface border border-line ">
+            <span class="text-xs font-bold text-ink-4 uppercase tracking-wider">En Ejecución</span>
+            <div class="text-2xl font-bold text-action mt-1">{{ m.serviciosEnEjecucion }}</div>
+            <span class="text-xs text-ink-3">OTs activas</span>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-surface border border-line ">
+            <span class="text-xs font-bold text-ink-4 uppercase tracking-wider">Técnicos Verif.</span>
+            <div class="text-2xl font-bold text-ink-1 mt-1">{{ m.tecnicosVerificados }}</div>
+            <span class="text-xs text-ink-3">{{ m.tecnicosDisponibles }} disponibles</span>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-surface border border-line ">
+            <span class="text-xs font-bold text-ink-4 uppercase tracking-wider">Tiempo Resp.</span>
+            <div class="text-2xl font-bold text-ink-1 mt-1">{{ m.tiempoPromedioRespuestaMin }} min</div>
+            <span class="text-xs text-ink-3">Broadcast radar</span>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-surface border border-line ">
+            <span class="text-xs font-bold text-ink-4 uppercase tracking-wider">Disputas</span>
+            <div class="text-2xl font-bold text-[var(--cd-danger-ink)] mt-1">{{ m.incidenciasActivas }}</div>
+            <span class="text-xs text-ink-3">Pendientes</span>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-surface border border-line ">
+            <span class="text-xs font-bold text-ink-4 uppercase tracking-wider">Recaudo Mes</span>
+            <div class="text-lg sm:text-xl font-bold text-ink-1 mt-1">
+              $ {{ (m.totalRecaudoMesCop / 1000000).toFixed(1) }}M
+            </div>
+            <span class="text-xs text-ink-3">Total transado</span>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-surface border border-line ">
+            <span class="text-xs font-bold text-ink-4 uppercase tracking-wider">Comisión {{ comisionPorcentaje }}%</span>
+            <div class="text-lg sm:text-xl font-bold text-ink-1 mt-1">
+              $ {{ (m.comisionesMesCop / 1000).toFixed(0) }}K
+            </div>
+            <span class="text-xs text-ink-3">Ingresos brutos</span>
+          </div>
+        </div>
+
+        <!-- Gráficos SVG Nativos y Analítica -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Gráfico 1: Servicios Semanales (Barras SVG) -->
+          <div class="lg:col-span-2 bg-surface rounded-3xl p-6 border border-line  space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-line border-line">
+              <div>
+                <h3 class="text-sm font-bold text-ink-1 uppercase tracking-wider">
+                  Volumen Semanal de Servicios Técnicos
+                </h3>
+                <span class="text-xs text-ink-4">Comportamiento de OTs completadas en Cúcuta</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-[var(--cd-action-soft)]0"></span> Completadas</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-[var(--cd-danger)]"></span> Canceladas</span>
+              </div>
+            </div>
+
+            <!-- Gráfico de barras SVG -->
+            <div class="h-56 w-full pt-4">
+              <svg class="w-full h-full" viewBox="0 0 500 180" preserveAspectRatio="none">
+                <!-- Grid Lines -->
+                <line x1="30" y1="20" x2="490" y2="20" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="3,3" />
+                <line x1="30" y1="70" x2="490" y2="70" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="3,3" />
+                <line x1="30" y1="120" x2="490" y2="120" stroke="currentColor" stroke-opacity="0.1" stroke-dasharray="3,3" />
+                <line x1="30" y1="160" x2="490" y2="160" stroke="currentColor" stroke-opacity="0.2" />
+
+                <!-- Eje Y labels -->
+                <text x="5" y="24" class="text-xs fill-[var(--cd-text-4)] font-mono">20</text>
+                <text x="5" y="74" class="text-xs fill-[var(--cd-text-4)] font-mono">10</text>
+                <text x="12" y="124" class="text-xs fill-[var(--cd-text-4)] font-mono">5</text>
+                <text x="12" y="164" class="text-xs fill-[var(--cd-text-4)] font-mono">0</text>
+
+                <!-- Barras de días -->
+                @for (h of m.historicoSemanal; track h.dia; let i = $index) {
+                  @let xBase = 50 + i * 62;
+                  @let barHeight = (h.completadas / 20) * 140;
+                  @let cancHeight = (h.canceladas / 20) * 140;
+
+                  <!-- Barra Completadas -->
+                  <rect
+                    [attr.x]="xBase"
+                    [attr.y]="160 - barHeight"
+                    width="22"
+                    [attr.height]="barHeight"
+                    rx="4"
+                    class="fill-[var(--cd-action)] hover:fill-[var(--cd-action-hover)] transition-colors"
+                  />
+
+                  <!-- Barra Canceladas -->
+                  <rect
+                    [attr.x]="xBase + 24"
+                    [attr.y]="160 - cancHeight"
+                    width="12"
+                    [attr.height]="cancHeight"
+                    rx="3"
+                    class="fill-[var(--cd-danger)]"
+                  />
+
+                  <!-- Etiqueta Día -->
+                  <text
+                    [attr.x]="xBase + 12"
+                    y="176"
+                    text-anchor="middle"
+                    class="text-xs font-bold fill-[var(--cd-text-3)]"
+                  >
+                    {{ h.dia }}
+                  </text>
+                }
+              </svg>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Distribución por Categoría (Dona SVG) -->
+          <div class="bg-surface rounded-3xl p-6 border border-line  space-y-4">
+            <div class="pb-2 border-b border-line border-line">
+              <h3 class="text-sm font-bold text-ink-1 uppercase tracking-wider">
+                Distribución por Especialidad
+              </h3>
+              <span class="text-xs text-ink-4">Demanda en Norte de Santander</span>
+            </div>
+
+            <!-- Gráfico circular SVG Donut -->
+            <div class="flex flex-col items-center justify-center py-2">
+              <div class="relative w-40 h-40">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <!-- Fondo gris -->
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-opacity="0.1" stroke-width="14" />
+
+                  @for (seg of distribucion(); track seg.categoria) {
+                    <circle
+                      cx="50" cy="50" r="38"
+                      fill="none"
+                      [attr.stroke]="seg.color"
+                      stroke-width="14"
+                      [attr.stroke-dasharray]="seg.dasharray"
+                      [attr.stroke-dashoffset]="seg.dashoffset"
+                    />
+                  }
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span class="text-lg font-bold text-ink-1">{{ totalServicios() }}</span>
+                  <span class="text-[9px] uppercase tracking-wider font-bold text-ink-4">Servicios</span>
+                </div>
+              </div>
+
+              <!-- Leyenda -->
+              <div class="w-full mt-4 space-y-1.5 text-xs">
+                @for (seg of distribucion(); track seg.categoria) {
+                  <div class="flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full" [style.background-color]="seg.color"></span>
+                      {{ seg.label }}
+                    </span>
+                    <span class="font-bold">{{ seg.porcentaje }}%</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Acceso a Monitoreo en Vivo de OTs -->
+      <div class="pt-2 flex justify-end">
+        <a
+          routerLink="/admin/monitoreo"
+          class="px-5 py-2.5 rounded-xl bg-surface bg-[var(--cd-surface-2)] text-ink-2 text-ink-1 font-bold text-xs  inline-flex items-center gap-2 hover:opacity-90 transition-opacity"
+        >
+          <i class="pi pi-eye text-sm"></i>
+          Ver Todas las Órdenes en Monitoreo Global
+        </a>
+      </div>
+    </div>
+  

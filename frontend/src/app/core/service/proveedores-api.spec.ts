@@ -303,4 +303,21 @@ describe('ProveedoresApi', () => {
     await expect(firstValueFrom(api.rechazar('OFERTA-INSUMO-999'))).rejects.toThrow(/no existe/);
     await expect(firstValueFrom(api.entregar('REQ-INSUMO-999'))).rejects.toThrow(/No hay un requerimiento/);
   });
+
+  it('getIncumplimientos consulta los incumplimientos de ETA', async () => {
+    const promise = firstValueFrom(api.getIncumplimientos());
+    const req = http.expectOne('/api/proveedores/incumplimientos');
+    expect(req.request.method).toBe('GET');
+    const fila = {
+      id: 'inc1',
+      proveedorId: 'PROV-001',
+      razonSocial: 'Suministros',
+      requerimientoId: 'REQ-1',
+      etaMinutos: 30,
+      aceptadaEn: '2026-09-15T09:00:00Z',
+      reemplazadoEn: '2026-09-15T09:40:00Z',
+    };
+    req.flush([fila]);
+    expect(await promise).toEqual([fila]);
+  });
 });

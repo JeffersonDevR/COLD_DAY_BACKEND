@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { ApiConfig } from './api.config';
 import { MockDbService } from './mock-db.service';
 import {
+  IncumplimientoInsumo,
   DocumentoProveedorResponse,
   OfertaInsumoResponse,
   ProveedorRequest,
@@ -113,6 +114,14 @@ export class ProveedoresApi {
       .post<DocumentoProveedorApiResponse>(this.apiConfig.url('/proveedores/me/documentos'),
         { tipo, fechaVencimiento: fechaVencimiento ?? null })
       .pipe(map(doc => ({ ...doc, fechaVencimiento: doc.fechaVencimiento ?? undefined })));
+  }
+
+  /** GET /api/proveedores/incumplimientos (admin): los 200 más recientes. */
+  getIncumplimientos(): Observable<IncumplimientoInsumo[]> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.incumplimientos()).pipe(delay(200));
+    }
+    return this.http.get<IncumplimientoInsumo[]>(this.apiConfig.url('/proveedores/incumplimientos'));
   }
 
   /**

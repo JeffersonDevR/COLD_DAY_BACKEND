@@ -531,4 +531,53 @@ describe('TecnicosApi', () => {
     const ok = await firstValueFrom(api.cambiarEstadoOperativo('OCUPADO'));
     expect(ok).toBe(true);
   });
+
+  it('cambiarProveedorInsumo hace POST /api/insumos/{id}/cambiar-proveedor', async () => {
+    config.setUseMocks(false);
+    const promise = firstValueFrom(api.cambiarProveedorInsumo('REQ-1'));
+    const req = http.expectOne('/api/insumos/REQ-1/cambiar-proveedor');
+    expect(req.request.method).toBe('POST');
+    req.flush({
+      id: 'REQ-1',
+      otId: 'ot1',
+      tecnicoId: 'TEC-001',
+      estado: 'SOLICITADO',
+      observaciones: null,
+      items: [],
+      etaMinutos: null,
+    });
+    const reabierto = await promise;
+    expect(reabierto.estado).toBe('SOLICITADO');
+    expect(reabierto.etaMinutos).toBeUndefined();
+  });
+
+  it('en modo mock cambiar de proveedor reabre el pedido y deja el incumplimiento', async () => {
+    config.setUseMocks(true);
+    const mockDb = TestBed.inject(MockDbService);
+    const oferta = mockDb.solicitudesProveedor()[0];
+    const id = oferta.requerimiento!.id;
+    mockDb.solicitudesProveedor.update((lista) =>
+      lista.map((o) =>
+        o.id === oferta.id
+          ? {
+              ...o,
+              estado: 'ACEPTADA' as const,
+              requerimiento: {
+                ...o.requerimiento!,
+                estado: 'ASIGNADO' as const,
+                etaMinutos: 30,
+                aceptadaEn: '2026-01-01T00:00:00Z',
+              },
+            }
+          : o,
+      ),
+    );
+
+    const reabierto = await firstValueFrom(api.cambiarProveedorInsumo(id));
+
+    expect(reabierto.estado).toBe('SOLICITADO');
+    expect(reabierto.etaMinutos).toBeUndefined();
+    expect(mockDb.solicitudesProveedor()[0].estado).toBe('REEMPLAZADA');
+    expect(mockDb.incumplimientos()[0].etaMinutos).toBe(30);
+  });
 });
