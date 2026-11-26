@@ -307,4 +307,23 @@ describe('SolicitudesProveedorPage (C1)', () => {
     expect(item?.textContent).toContain('2 ×');
     expect(item?.textContent).toContain('Gas R410A 900g');
   });
+
+  it('al despachar un pedido que le quitaron lo dice y recarga la bandeja', () => {
+    const { fixture, toast, stub } = setup({
+      api: { despachar: vi.fn(() => throwError(() => new ApiHttpError('Este pedido ya no es tuyo', 409))) },
+    });
+    fixture.componentInstance.despachar(oferta({ estado: 'ACEPTADA' }));
+
+    expect(toast.error.mock.calls[0]?.[1]).toBe('Este pedido ya no es tuyo');
+    expect(stub.getMisSolicitudes).toHaveBeenCalledTimes(2);
+  });
+
+  it('cualquier otro 409 al despachar sigue diciendo que ya fue despachado', () => {
+    const { fixture, toast } = setup({
+      api: { despachar: vi.fn(() => throwError(() => new ApiHttpError('Transicion invalida', 409))) },
+    });
+    fixture.componentInstance.despachar(oferta({ estado: 'ACEPTADA' }));
+
+    expect(toast.error.mock.calls[0]?.[1]).toBe('Este pedido ya fue despachado.');
+  });
 });

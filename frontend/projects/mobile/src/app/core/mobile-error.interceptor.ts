@@ -58,6 +58,9 @@ const ACCION_SILENCIOSA_ENDPOINTS: readonly RegExp[] = [
   // sesión. Si falla (p. ej. un backend sin el endpoint) el usuario no hizo
   // ninguna acción y un toast de error sería ruido.
   /\/api\/usuarios\/me\/dispositivos$/,
+  // ETA incumplido: cambiar de proveedor y despachar compiten entre sí y la
+  // pantalla muestra el motivo que manda el servidor.
+  /\/api\/insumos\/[^/]+\/(cambiar-proveedor|despachar)$/,
 ];
 
 function esAccionSilenciosa(url: string): boolean {

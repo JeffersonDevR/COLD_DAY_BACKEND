@@ -260,6 +260,61 @@
               }
             </p>
           }
+          @if (etaVencido(solicitud)) {
+            <section
+              class="cd-alerta cd-alerta--aviso"
+              role="status"
+              [attr.data-testid]="'eta-vencido-' + solicitud.id"
+            >
+              @if (!avisosPlegados().has(solicitud.id)) {
+                <h3 class="cd-alerta__titulo">El proveedor no ha despachado</h3>
+                <p class="cd-alerta__texto">
+                  Prometió {{ solicitud.etaMinutos }} min · van {{ minutosTranscurridos(solicitud) }}
+                </p>
+              }
+              @if (confirmandoCambio() === solicitud.id) {
+                <p class="cd-alerta__texto">Si nadie más acepta, el pedido queda sin proveedor.</p>
+                <div class="cd-ot__acciones">
+                  <ion-button
+                    class="cd-cta"
+                    [attr.aria-busy]="cambiandoProveedor() === solicitud.id"
+                    [disabled]="cambiandoProveedor() === solicitud.id"
+                    (click)="cambiarProveedor(solicitud)"
+                    [attr.data-testid]="'eta-confirmar-cambio-' + solicitud.id"
+                  >
+                    Sí, buscar otro
+                  </ion-button>
+                  <ion-button
+                    fill="clear"
+                    color="medium"
+                    [disabled]="cambiandoProveedor() === solicitud.id"
+                    (click)="confirmandoCambio.set(null)"
+                  >
+                    Cancelar
+                  </ion-button>
+                </div>
+              } @else {
+                <div class="cd-ot__acciones">
+                  @if (!avisosPlegados().has(solicitud.id)) {
+                    <ion-button
+                      fill="outline"
+                      (click)="seguirEsperando(solicitud)"
+                      [attr.data-testid]="'eta-esperar-' + solicitud.id"
+                    >
+                      Seguir esperando
+                    </ion-button>
+                  }
+                  <ion-button
+                    class="cd-cta"
+                    (click)="confirmandoCambio.set(solicitud.id)"
+                    [attr.data-testid]="'eta-buscar-' + solicitud.id"
+                  >
+                    Buscar otro proveedor
+                  </ion-button>
+                </div>
+              }
+            </section>
+          }
         </article>
       }
     }
