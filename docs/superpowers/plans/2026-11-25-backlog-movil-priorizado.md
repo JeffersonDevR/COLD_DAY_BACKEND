@@ -69,6 +69,7 @@ Commits: `7bf5d87` (P0.1), `61930f2` (P0.2), `7ebe196` (P0.3), `147a329` (P0.4).
 ## P2 — Repuestos: lo que dejamos a medias
 
 ### P2.1 ETA incumplido: sanción y redifusión — **L** (requiere brainstorming)
+- **Estado 2026-11-26: HECHO.** Decide el técnico, el incumplimiento solo se registra (sin sanción). Diseño `specs/2026-11-26-eta-incumplido-design.md`, plan `plans/2026-11-26-eta-incumplido.md`. Usa la migración `V22`: la fase B de documentos pasa a `V23`.
 - **Hoy:** si el ETA vence sin despacho solo se avisa al técnico por push (`AvisarEtaVencidoUseCase`); el pedido sigue asignado a ese proveedor.
 - **Es delicado** (el dueño lo marcó): toca dinero, reputación del proveedor y el tiempo del técnico. Antes de escribir código hay que decidir:
   1. ¿Cuánta gracia tras el ETA antes de actuar?

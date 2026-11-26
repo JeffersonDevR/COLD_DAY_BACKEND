@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminApi } from '../../core/service/admin-api';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
-import { ProveedorResponse } from '../../core/models/common.models';
+import { IncumplimientoInsumo, ProveedorResponse } from '../../core/models/common.models';
 import { CargaError } from '../../shared/carga-error/carga-error';
 
 /**
@@ -28,7 +29,7 @@ const MENSAJES_VALIDACION: Record<number, string> = {
 @Component({
   selector: 'app-proveedores-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, CargaError],
+  imports: [ReactiveFormsModule, CargaError, DatePipe],
   templateUrl: './proveedores-admin-page.html'
 })
 export class ProveedoresAdminPage {
@@ -46,8 +47,40 @@ export class ProveedoresAdminPage {
   readonly cargando = signal<boolean>(false);
   readonly errorCarga = signal<boolean>(false);
 
+  /** Registro de ETA incumplidos: solo consulta, con su propia carga y error. */
+  readonly incumplimientos = signal<IncumplimientoInsumo[]>([]);
+  readonly cargandoIncumplimientos = signal(false);
+  readonly errorIncumplimientos = signal(false);
+  /** El servidor devuelve como máximo esta cantidad. */
+  readonly topeIncumplimientos = 200;
+  readonly totalesPorProveedor = computed(() => {
+    const totales = new Map<string, { proveedorId: string; razonSocial: string; total: number }>();
+    for (const { proveedorId, razonSocial } of this.incumplimientos()) {
+      const actual = totales.get(proveedorId) ?? { proveedorId, razonSocial, total: 0 };
+      totales.set(proveedorId, { ...actual, total: actual.total + 1 });
+    }
+    return [...totales.values()].sort((a, b) => b.total - a.total);
+  });
+
   constructor() {
     this.cargar();
+    this.cargarIncumplimientos();
+  }
+
+  cargarIncumplimientos(): void {
+    this.cargandoIncumplimientos.set(true);
+    this.errorIncumplimientos.set(false);
+    this.proveedoresApi.getIncumplimientos().subscribe({
+      next: (filas) => {
+        this.incumplimientos.set(filas);
+        this.cargandoIncumplimientos.set(false);
+      },
+      error: () => {
+        this.incumplimientos.set([]);
+        this.cargandoIncumplimientos.set(false);
+        this.errorIncumplimientos.set(true);
+      },
+    });
   }
 
   cargar(): void {
