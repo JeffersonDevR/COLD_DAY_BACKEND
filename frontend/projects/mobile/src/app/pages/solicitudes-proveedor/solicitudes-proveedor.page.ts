@@ -3,7 +3,6 @@ import {
   IonButton,
   IonContent,
   IonHeader,
-  IonIcon,
   IonSpinner,
   IonToolbar,
 } from '@ionic/angular';
@@ -35,7 +34,6 @@ const ETA_MAXIMO_MINUTOS = 240;
     IonButton,
     IonContent,
     IonHeader,
-    IonIcon,
     IonSpinner,
     IonToolbar,
     SkeletonComponent,
@@ -65,6 +63,15 @@ export class SolicitudesProveedorPage implements OnInit {
     const perfil = this.perfil();
     return perfil !== null && (perfil.latitud == null || perfil.longitud == null);
   });
+  /** Compuerta: sin ubicación no se gestiona la bandeja, salvo que haya un pedido
+   aceptado sin entregar, que no puede quedar atrapado detrás del aviso. */
+  readonly bloqueadoPorUbicacion = computed(
+    () =>
+      this.sinUbicacion() &&
+      !this.ofertas().some(
+        (oferta) => oferta.estado === 'ACEPTADA' && oferta.requerimiento?.estado !== 'ENTREGADO',
+      ),
+  );
 
   /** Oferta que se está aceptando: el proveedor primero compromete sus minutos. */
   readonly ofertaAceptando = signal<string | null>(null);

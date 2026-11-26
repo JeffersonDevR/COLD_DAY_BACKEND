@@ -157,6 +157,41 @@ describe('SolicitudesProveedorPage (C1)', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="sin-ubicacion"]')).toBeNull();
   });
 
+  it('sin ubicación no deja gestionar solicitudes hasta fijarla', () => {
+    const { fixture } = setup({
+      api: { getMiPerfil: vi.fn(() => of(perfil({ latitud: undefined, longitud: undefined }))) },
+    });
+    const q = (id: string) => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
+
+    expect(texto(fixture)).toContain('Fija tu ubicación para recibir pedidos');
+    expect(q('solicitud-of1')).toBeNull();
+    expect(q('solicitudes-conteo')).toBeNull();
+
+    q('fijar-ubicacion').click();
+    fixture.detectChanges();
+
+    expect(q('solicitud-of1')).toBeTruthy();
+  });
+
+  it('sin ubicación y sin solicitudes no muestra además el estado vacío', () => {
+    const { fixture } = setup({
+      ofertas: [],
+      api: { getMiPerfil: vi.fn(() => of(perfil({ latitud: undefined, longitud: undefined }))) },
+    });
+    expect(fixture.nativeElement.querySelector('[data-testid="solicitudes-vacio"]')).toBeNull();
+  });
+
+  it('sin ubicación pero con un pedido aceptado sin entregar, la lista sigue disponible', () => {
+    const { fixture } = setup({
+      ofertas: [oferta({ estado: 'ACEPTADA', requerimiento: { ...oferta().requerimiento!, estado: 'DESPACHADO' } })],
+      api: { getMiPerfil: vi.fn(() => of(perfil({ latitud: undefined, longitud: undefined }))) },
+    });
+    const q = (id: string) => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
+
+    expect(q('entregar-of1')).toBeTruthy();
+    expect(q('sin-ubicacion')).toBeTruthy();
+  });
+
   it('no muestra el aviso de ubicación si el perfil ya la tiene', () => {
     const { fixture } = setup();
     expect(fixture.nativeElement.querySelector('[data-testid="sin-ubicacion"]')).toBeNull();
