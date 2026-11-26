@@ -59,7 +59,12 @@
 
     <!-- Dato dominante: qué está pasando, de un vistazo. -->
     @if (datoDominante(); as dato) {
-      <section class="cd-dato" data-testid="dato-dominante" aria-live="polite">
+      <section
+        class="cd-dato"
+        [class.cd-dato--sobre-mapa]="mostrarSeguimientoActivo()"
+        data-testid="dato-dominante"
+        aria-live="polite"
+      >
         @switch (dato.tipo) {
           @case ('buscando') {
             <div data-testid="buscando-tecnico">

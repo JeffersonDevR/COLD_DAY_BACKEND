@@ -40,17 +40,7 @@ import { Point } from '@core/models/common.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DecimalPipe, IonButton, IonIcon, IonSpinner],
   template: `
-    <div class="cd-map__cabecera">
-      <div>
-        <p class="cd-map__titulo">Seguimiento en vivo</p>
-        <p class="cd-map__nota">
-          @if (llegada()) {
-            Dónde está el técnico y si ya llegó al punto de servicio
-          } @else {
-            Dónde está el técnico y hacia dónde va
-          }
-        </p>
-      </div>
+    <div class="cd-map__lienzo">
       @if (llegada()) {
         <span class="cd-map__chip cd-map__chip--llegada" data-testid="mapa-llegada">
           <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
@@ -62,9 +52,7 @@ import { Point } from '@core/models/common.models';
           En camino: {{ distanciaKm() | number: '1.1-1' }} km
         </span>
       }
-    </div>
 
-    <div class="cd-map__lienzo">
       @if (motor.listo()) {
         @if (mostrarMapa()) {
           <!-- El canvas lo ocupa el motor de mapa de forma imperativa. -->
@@ -100,7 +88,7 @@ import { Point } from '@core/models/common.models';
       }
     </div>
 
-    <p class="cd-map__resumen" aria-live="polite" data-testid="mapa-resumen">{{ resumen() }}</p>
+    <p class="cd-sr-only" aria-live="polite" data-testid="mapa-resumen">{{ resumen() }}</p>
   `,
 })
 export class MapaSeguimientoComponent {

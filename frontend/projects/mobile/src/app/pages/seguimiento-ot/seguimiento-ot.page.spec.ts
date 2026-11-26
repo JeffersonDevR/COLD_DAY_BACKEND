@@ -839,6 +839,50 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     });
   });
 
+  describe('mapa a todo el ancho', () => {
+    const uno = (fixture: ComponentFixture<SeguimientoOtPage>, selector: string) =>
+      fixture.nativeElement.querySelector(selector) as HTMLElement | null;
+
+    function montar(overrides: Partial<OtResponse>) {
+      return setup({
+        otApi: {
+          getOtById: vi.fn(() => of(ot({ punto: PUNTO, ...overrides }))),
+          getTecnicoUbicacion: vi.fn(() => of(UBICACION_TECNICO)),
+        },
+      }).fixture;
+    }
+
+    it('el mapa no lleva título propio y su chip va dentro del lienzo', () => {
+      const fixture = montar({ estado: 'EN_CAMINO' });
+
+      expect(texto(fixture)).not.toContain('Seguimiento en vivo');
+      expect(uno(fixture, '.cd-map__lienzo [data-testid="mapa-distancia"]')).not.toBeNull();
+    });
+
+    it('ya llegó también va sobre el mapa', () => {
+      const fixture = montar({ estado: 'EN_DIAGNOSTICO', llegadaEn: '2026-11-03T14:32:00Z' });
+
+      expect(uno(fixture, '.cd-map__lienzo [data-testid="mapa-llegada"]')).not.toBeNull();
+    });
+
+    it('el mapa va primero y el dato se monta sobre él', () => {
+      const fixture = montar({ estado: 'EN_CAMINO' });
+
+      const mapa = uno(fixture, '.cd-mapa-bloque')!;
+      const dato = uno(fixture, '[data-testid="dato-dominante"]')!;
+      expect(mapa.compareDocumentPosition(dato) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(dato.classList).toContain('cd-dato--sobre-mapa');
+    });
+
+    it('sin mapa el dato no se monta sobre nada', () => {
+      const fixture = montar({ estado: 'SOLICITADA', tecnicoId: null });
+
+      expect(uno(fixture, '[data-testid="dato-dominante"]')!.classList).not.toContain(
+        'cd-dato--sobre-mapa',
+      );
+    });
+  });
+
   describe('mapa con motor', () => {
     const POLYLINE_VALIDO = '_p~iF~ps|U_ulLnnqC_mqNvxq`@';
 

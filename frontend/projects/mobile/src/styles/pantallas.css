@@ -860,28 +860,36 @@ button.cd-ot .cd-ot__direccion {
   margin-bottom: 0.75rem;
 }
 
-.cd-map__cabecera {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+/* Seguimiento: mapa a sangre. La franja inferior es donde se monta el dato
+   dominante, para no tapar la atribución del proveedor del mapa. */
+app-seguimiento-ot .cd-mapa-bloque {
+  margin: -1rem -1rem 0;
 }
 
-.cd-map__titulo {
-  margin: 0;
-  font-family: var(--cd-font-headline);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ion-color-primary);
+app-seguimiento-ot .cd-map__lienzo {
+  box-sizing: content-box;
+  padding-bottom: 1.5rem;
+  border-width: 0 0 1px;
+  border-radius: 0;
 }
 
-.cd-map__nota {
-  margin: 0.1rem 0 0;
-  font-size: 0.75rem;
-  color: var(--cd-muted);
+app-seguimiento-ot .cd-map__chip {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 1;
+  max-width: calc(100% - 1.2rem);
+  background: var(--cd-surface);
+}
+
+/* Solo para lector de pantalla: lo mismo ya se ve en el chip y el dato. */
+.cd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .cd-map__chip {
@@ -1027,13 +1035,6 @@ button.cd-ot .cd-ot__direccion {
   color: var(--cd-muted);
 }
 
-.cd-map__resumen {
-  margin: 0.5rem 0 0;
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--ion-text-color);
-}
-
 /* Dato dominante de Seguimiento: lo primero que se lee. */
 .cd-dato {
   margin-bottom: 0.75rem;
@@ -1041,6 +1042,12 @@ button.cd-ot .cd-ot__direccion {
   background: var(--cd-surface);
   border: 1px solid var(--cd-surface-border);
   border-radius: var(--cd-radius-card);
+}
+
+.cd-dato--sobre-mapa {
+  position: relative;
+  z-index: 1;
+  margin-top: -1.5rem;
 }
 
 .cd-dato__grande {
