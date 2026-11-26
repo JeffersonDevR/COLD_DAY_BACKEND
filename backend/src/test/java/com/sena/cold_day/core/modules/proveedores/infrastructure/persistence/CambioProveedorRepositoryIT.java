@@ -120,7 +120,9 @@ class CambioProveedorRepositoryIT {
         oferta(id, c, OfertaInsumoEstado.CANCELADA);
 
         assertThat(ofertas.fueReemplazado(id, a)).isFalse();
+        assertThat(ofertas.buscarAceptada(id)).map(OfertaInsumo::getProveedorId).contains(a);
         ofertas.reemplazarAceptada(id, a, AHORA);
+        assertThat(ofertas.buscarAceptada(id)).isEmpty();
 
         assertThat(ofertas.fueReemplazado(id, a)).isTrue();
         assertThat(ofertas.proveedoresOfertados(id)).containsExactlyInAnyOrder(a, b);

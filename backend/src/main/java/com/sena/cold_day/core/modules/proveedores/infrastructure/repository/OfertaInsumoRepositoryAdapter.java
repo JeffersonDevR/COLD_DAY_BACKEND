@@ -107,6 +107,14 @@ public class OfertaInsumoRepositoryAdapter implements OfertaInsumoRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<OfertaInsumo> buscarAceptada(RequerimientoInsumoId requerimientoId) {
+        return repository
+                .findByRequerimientoIdAndEstadoOrderByCreadaEnAsc(requerimientoId.valor(), OfertaInsumoEstado.ACEPTADA)
+                .stream().findFirst().map(OfertaInsumoJpaEntity::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean fueReemplazado(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId) {
         return repository.existsByRequerimientoIdAndProveedorIdAndEstado(requerimientoId.valor(),
                 proveedorId.valor(), OfertaInsumoEstado.REEMPLAZADA);

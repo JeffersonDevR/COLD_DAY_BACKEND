@@ -26,6 +26,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.aggregates.Proveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.OfertaInsumo;
+import com.sena.cold_day.core.modules.proveedores.domain.exception.PedidoReemplazadoException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoElegibleException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.ProveedorNoValidadoException;
 import com.sena.cold_day.core.modules.proveedores.domain.exception.TransicionRequerimientoInvalidaException;
@@ -77,13 +78,13 @@ class DespacharInsumoUseCaseTest {
                 .thenReturn(Optional.of(requerimiento(id, EstadoRequerimiento.ASIGNADO)));
         when(ofertaRepository.listarPorProveedor(proveedor.getId(), OfertaInsumoEstado.ACEPTADA))
                 .thenReturn(List.of(ofertaAceptada(id, proveedor.getId())));
-        when(requerimientoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(requerimientoRepository.despacharSiAsignado(id, proveedor.getId(), AHORA)).thenReturn(1);
 
         RequerimientoInsumo resultado = useCase.despachar(new UsuarioId(USUARIO_ID), id);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoRequerimiento.DESPACHADO);
         assertThat(resultado.getDespachadaEn()).isEqualTo(AHORA);
-        verify(requerimientoRepository).save(any());
+        verify(requerimientoRepository).despacharSiAsignado(id, proveedor.getId(), AHORA);
         verify(notificacion).notificarDespachada(resultado);
     }
 
@@ -96,7 +97,7 @@ class DespacharInsumoUseCaseTest {
                 .thenReturn(Optional.of(requerimiento(id, EstadoRequerimiento.ASIGNADO)));
         when(ofertaRepository.listarPorProveedor(proveedor.getId(), OfertaInsumoEstado.ACEPTADA))
                 .thenReturn(List.of(ofertaAceptada(id, proveedor.getId())));
-        when(requerimientoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(requerimientoRepository.despacharSiAsignado(id, proveedor.getId(), AHORA)).thenReturn(1);
         org.mockito.Mockito.doThrow(new IllegalStateException("push caido")).when(notificacion).notificarDespachada(any());
 
         assertThat(useCase.despachar(new UsuarioId(USUARIO_ID), id).getEstado())
@@ -116,7 +117,7 @@ class DespacharInsumoUseCaseTest {
         assertThatThrownBy(() -> useCase.despachar(new UsuarioId(USUARIO_ID), id))
                 .isInstanceOf(ProveedorNoElegibleException.class);
 
-        verify(requerimientoRepository, never()).save(any());
+        verify(requerimientoRepository, never()).despacharSiAsignado(any(), any(), any());
     }
 
     @Test
@@ -132,7 +133,7 @@ class DespacharInsumoUseCaseTest {
         assertThatThrownBy(() -> useCase.despachar(new UsuarioId(USUARIO_ID), id))
                 .isInstanceOf(TransicionRequerimientoInvalidaException.class);
 
-        verify(requerimientoRepository, never()).save(any());
+        verify(requerimientoRepository, never()).despacharSiAsignado(any(), any(), any());
     }
 
     @Test
@@ -143,7 +144,40 @@ class DespacharInsumoUseCaseTest {
         assertThatThrownBy(() -> useCase.despachar(new UsuarioId(USUARIO_ID), RequerimientoInsumoId.nueva()))
                 .isInstanceOf(ProveedorNoValidadoException.class);
 
-        verify(requerimientoRepository, never()).save(any());
+        verify(requerimientoRepository, never()).despacharSiAsignado(any(), any(), any());
+    }
+
+    @Test
+    void elReemplazadoNoDespacha() {
+        Proveedor proveedor = proveedorActivo();
+        RequerimientoInsumoId id = RequerimientoInsumoId.nueva();
+        when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
+        when(requerimientoRepository.buscarPorId(id))
+                .thenReturn(Optional.of(requerimiento(id, EstadoRequerimiento.ASIGNADO)));
+        when(ofertaRepository.fueReemplazado(id, proveedor.getId())).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.despachar(new UsuarioId(USUARIO_ID), id))
+                .isInstanceOf(PedidoReemplazadoException.class)
+                .hasMessage("Este pedido ya no es tuyo");
+
+        verify(requerimientoRepository, never()).despacharSiAsignado(any(), any(), any());
+    }
+
+    @Test
+    void siElPedidoCambioEntreLeerYEscribirDaConflicto() {
+        Proveedor proveedor = proveedorActivo();
+        RequerimientoInsumoId id = RequerimientoInsumoId.nueva();
+        when(proveedorRepository.findByUsuarioId(USUARIO_ID)).thenReturn(Optional.of(proveedor));
+        when(requerimientoRepository.buscarPorId(id))
+                .thenReturn(Optional.of(requerimiento(id, EstadoRequerimiento.ASIGNADO)));
+        when(ofertaRepository.listarPorProveedor(proveedor.getId(), OfertaInsumoEstado.ACEPTADA))
+                .thenReturn(List.of(ofertaAceptada(id, proveedor.getId())));
+        when(ofertaRepository.fueReemplazado(id, proveedor.getId())).thenReturn(false, true);
+
+        assertThatThrownBy(() -> useCase.despachar(new UsuarioId(USUARIO_ID), id))
+                .isInstanceOf(PedidoReemplazadoException.class);
+
+        verify(notificacion, never()).notificarDespachada(any());
     }
 
     private Proveedor proveedorActivo() {

@@ -48,6 +48,9 @@ public interface OfertaInsumoRepository {
     /** Moves the supplier's {@code ACEPTADA} offer to {@code REEMPLAZADA}. Returns how many rows changed. */
     int reemplazarAceptada(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId, Instant ahora);
 
+    /** The winning offer of the request, if it currently has one. */
+    Optional<OfertaInsumo> buscarAceptada(RequerimientoInsumoId requerimientoId);
+
     /** True if the request was taken away from this supplier. */
     boolean fueReemplazado(RequerimientoInsumoId requerimientoId, ProveedorId proveedorId);
 }

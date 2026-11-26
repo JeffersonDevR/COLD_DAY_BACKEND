@@ -51,4 +51,10 @@ public class LoggingNotificacionInsumoAdapter implements NotificacionInsumoPort 
         log.info("ETA de insumos vencido sin despachar: requerimiento={} ot={} etaMinutos={}",
                 requerimiento.getId(), requerimiento.getOtId(), requerimiento.getEtaMinutos());
     }
+
+    @Override
+    public void notificarReemplazado(ProveedorId proveedorId, RequerimientoInsumo requerimiento) {
+        log.info("Proveedor reemplazado por ETA incumplido: requerimiento={} ot={} proveedor={}",
+                requerimiento.getId(), requerimiento.getOtId(), proveedorId);
+    }
 }

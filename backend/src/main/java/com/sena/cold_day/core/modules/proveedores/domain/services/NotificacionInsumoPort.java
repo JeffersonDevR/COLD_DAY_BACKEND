@@ -32,4 +32,7 @@ public interface NotificacionInsumoPort {
 
     /** Warns the requesting technician the committed ETA elapsed without a dispatch (no sanction). */
     void notificarEtaVencido(RequerimientoInsumo requerimiento);
+
+    /** Tells a supplier the technician moved the request to another one. */
+    void notificarReemplazado(ProveedorId proveedorId, RequerimientoInsumo requerimiento);
 }

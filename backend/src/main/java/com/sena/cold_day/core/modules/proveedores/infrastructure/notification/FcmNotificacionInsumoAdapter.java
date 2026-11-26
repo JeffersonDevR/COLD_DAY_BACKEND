@@ -89,6 +89,19 @@ public class FcmNotificacionInsumoAdapter implements NotificacionInsumoPort {
                 "Ya pasó el tiempo que el proveedor prometió. Revisa el estado de tu pedido.");
     }
 
+    @Override
+    public void notificarReemplazado(ProveedorId proveedorId, RequerimientoInsumo requerimiento) {
+        try {
+            proveedores.buscarPorId(proveedorId).ifPresent(proveedor -> enviar(proveedor.getUsuarioId(),
+                    CanalPush.INSUMO_NUEVO_PROV, "Pedido reasignado",
+                    "El técnico buscó otro proveedor porque pasó el tiempo prometido. Este pedido ya no es tuyo.",
+                    Map.of("ruta", "/proveedor/insumos",
+                            "requerimientoId", requerimiento.getId().valor().toString())));
+        } catch (RuntimeException e) {
+            // The dispatch does not depend on push.
+        }
+    }
+
     private void alTecnico(RequerimientoInsumo requerimiento, String titulo, String cuerpo) {
         try {
             tecnicos.findByIdAndActivoTrue(new TecnicoId(requerimiento.getTecnicoId()))
