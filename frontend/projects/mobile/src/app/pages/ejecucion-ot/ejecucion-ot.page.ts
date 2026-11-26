@@ -266,7 +266,10 @@ export class EjecucionOtPage implements OnInit {
 
   /** Aceptado, sin despachar y con el tiempo prometido ya cumplido. El servidor lo vuelve a validar. */
   etaVencido(pedido: SolicitudInsumoResponse): boolean {
+    const estadoOt = this.ot()?.estado;
     return (
+      estadoOt !== 'FINALIZADA' &&
+      estadoOt !== 'CANCELADA' &&
       pedido.estado === 'ASIGNADO' &&
       !!pedido.etaMinutos &&
       !!pedido.aceptadaEn &&
@@ -288,6 +291,8 @@ export class EjecucionOtPage implements OnInit {
     this.cambiandoProveedor.set(pedido.id);
     this.tecnicosApi.cambiarProveedorInsumo(pedido.id).subscribe({
       next: () => {
+        // Es el mismo pedido con otro proveedor: su aviso empieza completo.
+        this.avisosPlegados.update((plegados) => new Set([...plegados].filter((id) => id !== pedido.id)));
         this.terminarCambio();
         void this.toast.success(
           'Buscando otro proveedor',

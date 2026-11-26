@@ -374,6 +374,21 @@ describe('EjecucionOtPage (B3)', () => {
       expect(getInsumosOt.mock.calls.length).toBeGreaterThan(1);
     });
 
+    it('en una orden cerrada no ofrece buscar otro proveedor', () => {
+      const getInsumosOt = vi.fn(() => of([asignado(38)]));
+      const { fixture } = setup({ orden: ot({ estado: 'CANCELADA' }), tecnicos: { getInsumosOt } });
+      expect(fixture.nativeElement.querySelector('[data-testid="eta-vencido-req1"]')).toBeNull();
+    });
+
+    it('tras cambiar de proveedor, el aviso del siguiente vuelve a salir completo', () => {
+      const { q, tocar } = montar([asignado(38)]);
+      tocar('eta-esperar-req1');
+      tocar('eta-buscar-req1');
+      tocar('eta-confirmar-cambio-req1');
+
+      expect(q('eta-vencido-req1')!.textContent).toContain('El proveedor no ha despachado');
+    });
+
     it('sin pedidos en curso no sigue consultando', () => {
       const { getInsumosOt } = montar([solicitudInsumo({ estado: 'ENTREGADO' })]);
       vi.advanceTimersByTime(120_000);

@@ -102,6 +102,8 @@ class CambioProveedorApiIT {
         limpiar();
         fx = new FkFixtures(jdbc);
         otId = fx.ot(UUID.randomUUID());
+        // El cambio de proveedor lee la OT: sin radio no se puede cargar (la app siempre lo escribe).
+        jdbc.update("UPDATE ot SET radio_km = 10 WHERE id = ?", otId);
         tecnicoId = fx.tecnico(UUID.randomUUID());
     }
 
@@ -161,6 +163,19 @@ class CambioProveedorApiIT {
                 .andExpect(jsonPath("$[0].etaMinutos").value(30));
         mockMvc.perform(get("/api/proveedores/incumplimientos").header("Authorization", tecnico(tecnicoId)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void enUnaOrdenCanceladaEs409() throws Exception {
+        Proveedor a = proveedor("910-6");
+        RequerimientoInsumo req = aceptadoPor(a, 30, 31);
+        jdbc.update("UPDATE ot SET estado = 'CANCELADA' WHERE id = ?", otId);
+
+        mockMvc.perform(post(ruta(req)).header("Authorization", tecnico(tecnicoId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("La orden de trabajo ya está cerrada"));
+
+        assertThat(estado(req)).isEqualTo(EstadoRequerimiento.ASIGNADO);
     }
 
     @Test
