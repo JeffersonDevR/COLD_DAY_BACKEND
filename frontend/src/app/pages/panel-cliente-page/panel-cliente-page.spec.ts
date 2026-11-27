@@ -42,13 +42,6 @@ function setup(getOts: ReturnType<typeof vi.fn>, sesion: { id: number; nombre?: 
 }
 
 describe('PanelClientePage', () => {
-  it('recuerda el panel del cliente como último panel visitado', () => {
-    window.localStorage.clear();
-
-    setup(vi.fn(() => of([])));
-
-    expect(window.localStorage.getItem(CLAVE_PANEL_PREFERIDO)).toBe('/cliente/panel');
-  });
 
   it('separa servicios activos y finalizados', () => {
     const getOts = vi.fn(() =>

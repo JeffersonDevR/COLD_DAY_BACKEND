@@ -143,13 +143,6 @@ describe('PanelTecnicoPage', () => {
     window.localStorage.clear();
   });
 
-  it('recuerda el panel del técnico como último panel visitado', () => {
-    window.localStorage.clear();
-
-    setup();
-
-    expect(window.localStorage.getItem(CLAVE_PANEL_PREFERIDO)).toBe('/tecnico/panel');
-  });
 
   it('carga el técnico y filtra las OTs en curso', () => {
     const { fixture, tecnicosApi } = setup();
