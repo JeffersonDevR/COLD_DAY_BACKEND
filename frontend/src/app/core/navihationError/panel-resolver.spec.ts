@@ -28,6 +28,10 @@ describe('panel-resolver', () => {
       expect(resolverPanel('CLIENTE', new Set<Rol>(['CLIENTE', 'CONTABLE']))).toBe('/admin/dashboard');
     });
 
+    it('lleva a Recursos Humanos a la auditoría de técnicos', () => {
+      expect(resolverPanel('RECURSOS_HUMANOS', new Set<Rol>(['RECURSOS_HUMANOS']))).toBe('/admin/validacion-tecnicos');
+    });
+
     it('tolera la barra final en la preferencia guardada', () => {
       window.localStorage.setItem(CLAVE_PANEL_PREFERIDO, '/admin/dashboard/');
 
@@ -50,11 +54,12 @@ describe('panel-resolver', () => {
   });
 
   describe('catálogo de paneles', () => {
-    it('solo los roles internos tienen panel, y comparten la torre de control', () => {
+    it('solo los roles internos tienen panel, según sus permisos', () => {
       expect(rutaDePanel('ADMINISTRADOR')).toBe('/admin/dashboard');
       expect(rutaDePanel('CONTABLE')).toBe('/admin/dashboard');
+      expect(rutaDePanel('RECURSOS_HUMANOS')).toBe('/admin/validacion-tecnicos');
       expect(rutaDePanel('CLIENTE')).toBeNull();
-      expect([...RUTAS_PANEL]).toEqual(['/admin/dashboard']);
+      expect([...RUTAS_PANEL]).toEqual(['/admin/dashboard', '/admin/validacion-tecnicos']);
     });
   });
 });

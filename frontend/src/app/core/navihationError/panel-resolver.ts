@@ -1,4 +1,5 @@
 import { Rol } from '../models/common.models';
+import { Permiso, PERMISOS_POR_ROL } from '../permisos';
 
 /**
  * Último panel visitado. Es una preferencia del dispositivo (no del backend):
@@ -12,20 +13,20 @@ export const CLAVE_PANEL_PREFERIDO = 'coldday.panel.preferido';
  * registrarse como visitado. `AuthService.getDashboardRouteForRole` resuelve
  * otra cosa (landing de login) y no debe multiplicar este mapa.
  */
-const RUTA_PANEL = new Map<Rol, string>([
-  ['ADMINISTRADOR', '/admin/dashboard'],
-  ['CONTABLE', '/admin/dashboard'],
-]);
+const PANEL_POR_PERMISO: readonly (readonly [Permiso, string])[] = [
+  ['VER_OPERACION', '/admin/dashboard'],
+  ['VALIDAR_DOCUMENTACION', '/admin/validacion-tecnicos'],
+];
 
 /** Destino de las cuentas sin rol interno: sus funciones viven en la app. */
 export const RUTA_SIN_PANEL = '/usa-la-app';
 
 /** Rutas de panel conocidas; la preferencia se valida contra este conjunto. */
-export const RUTAS_PANEL: ReadonlySet<string> = new Set(RUTA_PANEL.values());
+export const RUTAS_PANEL: ReadonlySet<string> = new Set(PANEL_POR_PERMISO.map(([, ruta]) => ruta));
 
 /** Ruta del panel de un rol, o `null` si ese rol no tiene panel propio. */
 export function rutaDePanel(rol: Rol): string | null {
-  return RUTA_PANEL.get(rol) ?? null;
+  return PANEL_POR_PERMISO.find(([permiso]) => PERMISOS_POR_ROL[rol]?.includes(permiso))?.[1] ?? null;
 }
 
 /**

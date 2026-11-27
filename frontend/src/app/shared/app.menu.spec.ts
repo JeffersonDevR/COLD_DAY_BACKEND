@@ -20,6 +20,10 @@ describe('buildMenu — accesos internos por rol', () => {
     ]);
   });
 
+  it('Recursos Humanos solo ve las dos validaciones', () => {
+    expect(rutasDe(['RECURSOS_HUMANOS'])).toEqual(['/admin/validacion-tecnicos', '/admin/proveedores']);
+  });
+
   it('el contable solo ve sus pantallas permitidas', () => {
     expect(rutasDe(['CONTABLE'])).toEqual(['/admin/dashboard', '/admin/consignaciones', '/admin/monitoreo']);
   });
