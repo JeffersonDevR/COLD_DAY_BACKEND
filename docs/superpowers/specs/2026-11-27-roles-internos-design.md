@@ -1,6 +1,6 @@
 # Roles internos: Contable, Recursos Humanos y cuentas desde el panel
 
-Estado: **aprobado** (2026-11-27).
+Estado: **implementado** en `feat/roles-internos`; el backend está pendiente de verificarse en CI.
 
 ## Para qué
 
