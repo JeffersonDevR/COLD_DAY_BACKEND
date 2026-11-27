@@ -46,7 +46,7 @@
     <section class="bg-white rounded-2xl border border-slate-200 p-6 text-sm text-slate-900">
       <h2 class="font-bold mb-2">Presupuesto</h2>
       @if (orden.presupuesto; as p) {
-        <dl class="grid gap-3 sm:grid-cols-4">
+        <dl class="grid gap-3 sm:grid-cols-3">
           <div>
             <dt class="text-slate-700">Total</dt>
             <dd class="font-bold">{{ pesos(p.total) }}</dd>
@@ -59,15 +59,23 @@
             <dt class="text-slate-700">Repuestos</dt>
             <dd>{{ pesos(p.repuestos) }}</dd>
           </div>
-          <div>
-            <dt class="text-slate-700">Aprobado</dt>
-            <dd>{{ p.aprobado ? 'Sí' : 'No' }}</dd>
-          </div>
         </dl>
       } @else {
         <p class="italic text-slate-700">Sin presupuesto</p>
       }
     </section>
+
+    @if (orden.tarifaVisita != null) {
+      <section class="bg-white rounded-2xl border border-slate-200 p-6 text-sm text-slate-900">
+        <h2 class="font-bold mb-2">Tarifa de visita</h2>
+        <p>
+          <span class="font-bold">{{ pesos(orden.tarifaVisita) }}</span>
+          @if (orden.visitaPagada !== undefined) {
+            <span class="text-slate-700">· {{ orden.visitaPagada ? 'Pagada' : 'Pendiente de pago' }}</span>
+          }
+        </p>
+      </section>
+    }
 
     @if (errorHistorial()) {
       <p role="alert" class="text-sm text-rose-800">No pudimos cargar el historial.</p>

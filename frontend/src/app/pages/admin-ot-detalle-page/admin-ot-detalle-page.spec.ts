@@ -5,6 +5,8 @@ import { AdminOtDetallePage } from './admin-ot-detalle-page';
 import { OtApi } from '../../core/service/ot-api';
 import { ApiHttpError } from '../../core/alertas/api-http.error';
 import { OtResponse } from '../../core/models/common.models';
+import { OtApiResponse } from '../../core/models/backend.dto';
+import { aOtResponse } from '../../core/service/backend.mappers';
 
 const completa: OtResponse = {
   id: 'ot-1',
@@ -78,6 +80,31 @@ describe('AdminOtDetallePage', () => {
 
     expect(texto()).toContain('OT-2026-0001');
     expect(texto()).toContain('No pudimos cargar el historial.');
+  });
+
+  it('no afirma que el presupuesto esté sin aprobar: la API no lo informa', () => {
+    const real = aOtResponse({
+      id: 'ot-1',
+      estado: 'EN_REPARACION',
+      categoriaServicio: 'REFRIGERACION',
+      descripcionFalla: 'No enfría',
+      presupuesto: { costoManoObra: 100000, costoRepuestos: 50000 },
+      latitud: null,
+      longitud: null,
+      auxiliaresRequeridos: 0,
+    } as unknown as OtApiResponse);
+    const { texto } = setup(() => of(real));
+
+    expect(texto()).toContain('150.000');
+    expect(texto()).not.toContain('Aprobado');
+  });
+
+  it('muestra la tarifa de visita registrada y si está pagada', () => {
+    const { texto } = setup(() => of({ ...completa, tarifaVisita: 30000, visitaPagada: true }));
+
+    expect(texto()).toContain('Tarifa de visita');
+    expect(texto()).toContain('30.000');
+    expect(texto()).toContain('Pagada');
   });
 
   it('no ofrece acciones sobre la OT', () => {
