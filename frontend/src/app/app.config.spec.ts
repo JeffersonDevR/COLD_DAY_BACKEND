@@ -20,10 +20,7 @@ describe('appConfig', () => {
     });
     // Inyectar ApplicationInitStatus ejecuta los initializers de la app.
     TestBed.inject(ApplicationInitStatus);
-    const http = TestBed.inject(HttpTestingController);
-    // La configuración del mapa se pide al arrancar (ver MapaConfigService).
-    http.expectOne('/api/config/maps').flush({});
-    return http;
+    return TestBed.inject(HttpTestingController);
   }
 
   it('descarta la preferencia de tema heredada al arrancar', () => {
@@ -47,7 +44,7 @@ describe('appConfig', () => {
     expect(window.localStorage.getItem('coldday.layout')).toBe('{"menuMode":"overlay"}');
   });
 
-  it('pide la configuración del mapa al backend al arrancar', () => {
+  it('no pide configuración de mapa: la web ya no tiene mapas', () => {
     const http = arrancarApp();
 
     http.expectNone('/api/config/maps');
