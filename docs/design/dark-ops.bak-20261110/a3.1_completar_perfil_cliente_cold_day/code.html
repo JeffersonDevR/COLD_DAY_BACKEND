@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>COLD DAY · Dark Ops - Completar perfil de cliente</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            // Dark Ops strict palette tokens
+            background: "#0b1220",
+            surface: "#111a2e",
+            "surface-elevated": "#17233d",
+            outline: "#1e293b",
+            "outline-variant": "#334155",
+            primary: "#22d3ee",
+            "on-primary": "#082f49",
+            "primary-container": "rgba(34, 211, 238, 0.12)",
+            secondary: "#8b5cf6",
+            "secondary-container": "rgba(139, 92, 246, 0.16)",
+            accent: "#f59e0b",
+            "accent-container": "rgba(245, 158, 11, 0.14)",
+            "on-surface": "#f1f5f9",
+            "on-surface-variant": "#94a3b8"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            label: ["Public Sans", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom radar pulse & subtle grid for technician aesthetic */
+    .tech-grid {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(30, 41, 59, 0.45) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.45) 1px, transparent 1px);
+    }
+    .map-streets {
+      background-image: radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.12) 0%, transparent 60%);
+    }
+    /* Smooth focus rings */
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 0 1.5px #22d3ee, 0 0 12px rgba(34, 211, 238, 0.25);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body antialiased min-h-screen flex justify-center items-start selection:bg-primary selection:text-on-primary">
+<!-- Mobile Viewport Container (Simulated 390x844 Frame) -->
+<main class="w-full max-w-[390px] min-h-[844px] bg-background relative flex flex-col shadow-2xl border-x border-outline/50 overflow-x-hidden pb-8">
+<!-- Top Safe Area / Status Bar -->
+<header class="w-full pt-3 px-6 pb-2 flex items-center justify-between text-xs text-on-surface-variant select-none">
+<span class="font-headline font-semibold text-on-surface text-[13px] tracking-tight">09:41</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">signal_cellular_4_bar</span>
+<span class="material-symbols-outlined text-[15px]">wifi</span>
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">battery_full</span>
+</div>
+</header>
+<!-- Header Navigation Section -->
+<nav class="px-5 pt-2 pb-4 flex items-center justify-between">
+<button aria-label="Volver" class="w-9 h-9 rounded-full bg-surface border border-outline flex items-center justify-center text-on-surface active:scale-95 transition-all hover:border-primary/50" type="button">
+<span class="material-symbols-outlined text-xl">arrow_back</span>
+</button>
+<!-- Dual Mode Stepper Badge -->
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-container border border-secondary/30">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="font-headline text-[10px] tracking-widest text-primary font-bold uppercase">PERFIL CLIENTE · MODO DUAL</span>
+<span class="text-[10px] text-on-surface-variant font-medium">| PASO 2/2</span>
+</div>
+<div class="w-9 h-9 flex items-center justify-end">
+<span class="material-symbols-outlined text-on-surface-variant text-xl">tune</span>
+</div>
+</nav>
+<!-- Main Title & Context Header -->
+<section class="px-5 pb-3">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="text-xs font-headline tracking-wider text-accent uppercase font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-accent" style="font-variation-settings: 'FILL' 1;">build</span>
+          Lucas Vázquez · Matrícula #T-409
+        </span>
+</div>
+<h1 class="font-headline font-bold text-2xl text-on-surface tracking-tight leading-tight">
+        Completar mi perfil de cliente
+      </h1>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+        Ya tenemos tus datos de técnico validados: confirmá la dirección para el nuevo servicio y listo.
+      </p>
+</section>
+<!-- Purple Glass Notification Banner (Order Draft Preservation) -->
+<section class="px-5 mb-4">
+<aside class="p-3.5 rounded-lg bg-surface border border-secondary/40 shadow-sm relative overflow-hidden backdrop-blur-md">
+<!-- Ambient lighting glow -->
+<div class="absolute -right-6 -top-6 w-24 h-24 bg-secondary/15 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-start gap-3 relative z-10">
+<div class="w-8 h-8 rounded-lg bg-secondary/20 border border-secondary/30 flex-shrink-0 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">auto_mode</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-semibold text-on-surface leading-snug">
+              Tu solicitud de servicio quedó guardada en borrador.
+            </p>
+<p class="text-[11px] text-on-surface-variant mt-0.5 leading-normal">
+              Al confirmar este perfil, la despachamos automáticamente sin repetir el diagnóstico.
+            </p>
+<div class="mt-2 inline-flex items-center gap-2 px-2 py-0.5 rounded bg-background/80 border border-outline text-[11px] font-headline text-accent">
+<span class="font-bold tracking-wide">#CD-8845</span>
+<span class="text-on-surface-variant">·</span>
+<span class="text-on-surface-variant truncate max-w-[170px]">Split 3000fg gotea en living</span>
+</div>
+</div>
+</div>
+</aside>
+</section>
+<!-- Client Type Segmented Control -->
+<section class="px-5 mb-4">
+<div class="p-1 rounded-lg bg-surface border border-outline grid grid-cols-2 gap-1" role="tablist">
+<!-- B2C Selected -->
+<button aria-selected="true" class="py-2 px-3 rounded-lg bg-primary-container border border-primary/40 text-primary font-headline font-semibold text-xs tracking-wide flex items-center justify-center gap-1.5 transition-all shadow-sm" role="tab" type="button">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">person</span>
+          Particular (B2C)
+        </button>
+<!-- B2B Inactive -->
+<button aria-selected="false" class="py-2 px-3 rounded-lg text-on-surface-variant hover:text-on-surface font-headline font-medium text-xs tracking-wide flex items-center justify-center gap-1.5 transition-colors" role="tab" type="button">
+<span class="material-symbols-outlined text-sm">apartment</span>
+          Empresa (B2B)
+        </button>
+</div>
+</section>
+<!-- Prefilled Address Form -->
+<section class="px-5 flex flex-col gap-3">
+<!-- Address Field -->
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<label class="font-headline text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold" for="address">
+            Dirección del Servicio
+          </label>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-label font-bold text-primary bg-primary-container border border-primary/30">
+<span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            Autocompletado
+          </span>
+</div>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined text-lg">location_on</span>
+</div>
+<input class="w-full bg-surface border border-outline rounded-lg py-2.5 pl-10 pr-24 text-xs font-medium text-on-surface placeholder:text-on-surface-variant/50 transition-colors" id="address" type="text" value="Av. Siempre Viva 742"/>
+<div class="absolute inset-y-0 right-0 pr-2.5 flex items-center">
+<button class="text-[11px] text-primary hover:text-cyan-300 font-headline font-semibold px-1 py-0.5" type="button">
+              Editar
+            </button>
+</div>
+</div>
+</div>
+<!-- City & Postal/Detail Row -->
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block font-headline text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold mb-1.5" for="city">
+            Ciudad
+          </label>
+<div class="relative">
+<input class="w-full bg-surface border border-outline rounded-lg py-2.5 px-3 text-xs font-medium text-on-surface" id="city" type="text" value="Cúcuta"/>
+<span class="absolute inset-y-0 right-3 flex items-center text-on-surface-variant/70 pointer-events-none">
+<span class="material-symbols-outlined text-sm">lock</span>
+</span>
+</div>
+</div>
+<div>
+<label class="block font-headline text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold mb-1.5" for="phone-alt">
+            Teléfono de Contacto
+          </label>
+<input class="w-full bg-surface border border-outline rounded-lg py-2.5 px-3 text-xs font-medium text-on-surface" id="phone-alt" type="tel" value="+57 312 849 2011"/>
+</div>
+</div>
+<!-- Neighborhood / Reference Field -->
+<div>
+<label class="block font-headline text-[11px] uppercase tracking-wider text-on-surface-variant font-semibold mb-1.5" for="notes">
+          Barrio / Referencia (Opcional)
+        </label>
+<div class="relative">
+<input class="w-full bg-surface border border-outline rounded-lg py-2.5 px-3 text-xs text-on-surface placeholder:text-on-surface-variant/40" id="notes" placeholder="Ej. Los Patios, portón gris, timbre 3B" type="text"/>
+</div>
+</div>
+<!-- Tactical Mini-Map Preview Card -->
+<div class="mt-1 rounded-lg bg-surface border border-outline overflow-hidden relative">
+<div class="px-3.5 py-2 border-b border-outline/70 flex items-center justify-between bg-surface-elevated/40">
+<span class="text-[11px] font-headline font-semibold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-primary">pin_drop</span>
+            Georreferenciación Cold Day Ops
+          </span>
+<button class="inline-flex items-center gap-1 text-[11px] text-primary hover:text-cyan-300 font-headline font-semibold tracking-tight transition-colors" type="button">
+<span class="material-symbols-outlined text-sm">my_location</span>
+            Ajustar en mapa
+          </button>
+</div>
+<!-- Stylized Dark Mode Map Canvas -->
+<div class="relative w-full h-28 bg-[#070d17] tech-grid flex items-center justify-center overflow-hidden">
+<!-- Tactical Map Vector Graphic Overlay -->
+<svg class="absolute inset-0 w-full h-full opacity-40" fill="none" viewbox="0 0 350 112">
+<!-- Simulated secondary roads -->
+<path d="M-20 30 H370" stroke="#1e293b" stroke-width="2"></path>
+<path d="M-20 85 H370" stroke="#1e293b" stroke-dasharray="4 4" stroke-width="1.5"></path>
+<path d="M70 -10 V120" stroke="#1e293b" stroke-width="2"></path>
+<path d="M280 -10 V120" stroke="#1e293b" stroke-width="2"></path>
+<!-- Main Diagonal Avenue -->
+<path d="M40 120 L240 -10" stroke="#334155" stroke-width="3"></path>
+<path d="M40 120 L240 -10" stroke="#22d3ee" stroke-opacity="0.5" stroke-width="1"></path>
+<!-- Surrounding building blocks -->
+<rect fill="#111a2e" height="35" rx="2" stroke="#1e293b" width="40" x="85" y="40"></rect>
+<rect fill="#111a2e" height="25" rx="2" stroke="#1e293b" width="50" x="140" y="10"></rect>
+<rect fill="#111a2e" height="32" rx="2" stroke="#1e293b" width="55" x="210" y="45"></rect>
+</svg>
+<!-- Ambient radar ring in the center -->
+<div class="absolute w-24 h-24 rounded-full border border-primary/20 animate-ping opacity-30 pointer-events-none"></div>
+<div class="absolute w-12 h-12 rounded-full border border-primary/40 bg-primary/10 pointer-events-none"></div>
+<!-- Pulsing Pin Marker -->
+<div class="relative z-10 flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center text-primary shadow-[0_0_15px_rgba(34,211,238,0.6)]">
+<span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">home_pin</span>
+</div>
+<div class="mt-1 px-2 py-0.5 rounded bg-background/90 border border-outline text-[10px] font-mono text-on-surface font-semibold tracking-tight shadow-md">
+              Av. Siempre Viva 742
+            </div>
+</div>
+<!-- GPS Precision Indicator -->
+<div class="absolute bottom-1.5 left-2 px-1.5 py-0.5 rounded bg-background/70 border border-outline/50 text-[9px] font-mono text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            GPS ±3m · Zona Urbana
+          </div>
+</div>
+</div>
+</section>
+<!-- Primary CTA & Dual Credential Actions -->
+<section class="mt-auto px-5 pt-4 flex flex-col gap-2.5">
+<!-- Primary Submit Button -->
+<button class="w-full py-3.5 px-4 rounded-lg bg-primary hover:bg-cyan-300 text-on-primary font-headline font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(34,211,238,0.25)] active:scale-[0.98] transition-all" type="button">
+<span>Crear perfil y enviar solicitud</span>
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+<!-- Secondary Alternative Action -->
+<button class="w-full py-2 text-center text-xs font-headline font-semibold text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+        Completar el perfil por separado
+      </button>
+<!-- Trust & Technician Context Security Guarantee -->
+<footer class="mt-1 p-2.5 rounded-lg bg-surface/50 border border-outline/60 flex items-center gap-2.5">
+<span class="material-symbols-outlined text-accent text-base flex-shrink-0" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<p class="text-[10px] text-on-surface-variant leading-tight">
+          No vas a tener que cargar nada de nuevo · Tus credenciales de técnico siguen activas para tomar guardias.
+        </p>
+</footer>
+</section>
+<!-- Bottom Safe Area Spacer -->
+<div class="h-4 w-full"></div>
+</main>
+</body></html>

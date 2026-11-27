@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Cold Day · Panel Cliente</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:wght@400;700&amp;family=Public+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            canvas: "#0b1220",
+            surface: "#111b2e",
+            "surface-subtle": "#162238",
+            "border-line": "#1e293b",
+            primary: "#22d3ee",
+            "primary-dim": "rgba(34, 211, 238, 0.12)",
+            amber: {
+              DEFAULT: "#f59e0b",
+              dim: "rgba(245, 158, 11, 0.12)"
+            },
+            violet: {
+              DEFAULT: "#a78bfa",
+              dim: "rgba(167, 139, 250, 0.12)"
+            },
+            success: {
+              DEFAULT: "#22c55e",
+              dim: "rgba(34, 197, 94, 0.12)"
+            },
+            danger: {
+              DEFAULT: "#f87171",
+              dim: "rgba(248, 113, 113, 0.12)"
+            }
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+            mono: ["Space Mono", "monospace"],
+            label: ["Public Sans", "sans-serif"]
+          },
+          boxShadow: {
+            'glow-cyan': '0 0 20px -3px rgba(34, 211, 238, 0.45)',
+            'glow-cyan-sm': '0 0 10px -2px rgba(34, 211, 238, 0.35)',
+            'glow-amber': '0 0 12px -2px rgba(245, 158, 11, 0.35)'
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      background-color: #0b1220;
+      color: #e2e8f0;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .material-symbols-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    /* Safe-area padding adjustments for realistic mobile shell */
+    .pb-safe {
+      padding-bottom: calc( env(safe-area-inset-bottom, 0px) + 72px );
+    }
+  </style>
+</head>
+<body class="bg-canvas min-h-screen flex justify-center items-start text-slate-200 font-body selection:bg-primary/20 selection:text-primary">
+<!-- Mobile Viewport Shell (390 x 844) with relative frame -->
+<div class="w-full max-w-[390px] min-h-screen bg-canvas flex flex-col relative shadow-2xl border-x border-border-line/40">
+<!-- Top App Bar / Native Header -->
+<header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-border-line px-4 pt-3 pb-2.5 flex items-center justify-between">
+<div class="flex items-center space-x-2.5">
+<!-- Brand Icon / Avatar -->
+<div class="w-7 h-7 rounded-lg overflow-hidden border border-primary/30 flex items-center justify-center bg-canvas shrink-0">
+<img alt="Cold Day Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XiO-AxEHuaOTB8N9UX504Q9uGpTJw4XkUs1SjDl5C910wV7SQOxq_LmviLK76OnC1eQ7Qjo59Jz3DdEXhRZcvGui584K_4QL-Iv__fRFftYOqTY6jA1MCEDhruBs_UIP6pZ9nw6Z0doPNzIZPMF17oM4AieErgzqjeio4AWRwP9hpn1xsz-cmikj29jlAnwyu5fegdqYon6PmL34FpaTR69918zjmuViLU7_Ztz5G5x2SlPr0grWUxlJ4"/>
+</div>
+<div>
+<div class="flex items-center space-x-1">
+<span class="font-headline font-bold text-sm text-slate-100 tracking-tight">Hola, Martín</span>
+</div>
+<p class="text-[11px] text-slate-400 font-mono tracking-wider">PANEL DE OPERACIONES</p>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<!-- Client Status Pill -->
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono tracking-wider font-bold text-primary border border-primary/40 bg-primary-dim uppercase">
+          CLIENTE
+        </span>
+<!-- Notifications Bell Button -->
+<button aria-label="Notificaciones" class="relative w-9 h-9 rounded-lg border border-border-line bg-surface hover:bg-surface-subtle active:scale-95 transition-all flex items-center justify-center text-slate-300">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute 1 top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber shadow-glow-amber ring-2 ring-surface"></span>
+</button>
+</div>
+</header>
+<!-- Subtle Pull to Refresh Bar -->
+<div class="bg-surface/50 border-b border-border-line/40 px-4 py-1.5 flex items-center justify-center space-x-1.5 text-slate-400 text-[11px] font-mono select-none">
+<span class="material-symbols-outlined text-[14px] text-primary animate-pulse">south</span>
+<span>Deslizá para actualizar estado</span>
+</div>
+<!-- Main Scrollable Content Canvas -->
+<main class="flex-1 px-4 pt-3.5 pb-28 space-y-4 overflow-y-auto">
+<!-- Compact Stat Counters (3 Bento Metrics) -->
+<section class="grid grid-cols-3 gap-2">
+<!-- Card 1: Activas -->
+<div class="bg-surface border border-border-line rounded-lg p-2.5 flex flex-col justify-between items-start transition-colors">
+<span class="font-headline font-bold text-xl text-primary leading-none">2</span>
+<span class="font-mono text-[10px] tracking-wider text-slate-400 uppercase mt-2">ACTIVAS</span>
+</div>
+<!-- Card 2: Completadas -->
+<div class="bg-surface border border-border-line rounded-lg p-2.5 flex flex-col justify-between items-start transition-colors">
+<span class="font-headline font-bold text-xl text-primary leading-none">5</span>
+<span class="font-mono text-[10px] tracking-wider text-slate-400 uppercase mt-2">COMPLETADAS</span>
+</div>
+<!-- Card 3: Sin Técnico -->
+<div class="bg-surface border border-border-line rounded-lg p-2.5 flex flex-col justify-between items-start transition-colors">
+<span class="font-headline font-bold text-xl text-amber leading-none">1</span>
+<span class="font-mono text-[10px] tracking-wider text-slate-400 uppercase mt-2">SIN TÉCNICO</span>
+</div>
+</section>
+<!-- Segmented Chips / Filter Bar -->
+<nav class="flex items-center space-x-1.5 text-xs overflow-x-auto no-scrollbar py-0.5">
+<button class="px-3 py-1.5 rounded-md font-mono text-[11px] font-bold text-primary bg-primary-dim border border-primary/50 transition-all shrink-0">
+          Todas
+        </button>
+<button class="px-3 py-1.5 rounded-md font-mono text-[11px] text-slate-400 bg-surface border border-border-line hover:text-slate-200 transition-all shrink-0">
+          Activas
+        </button>
+<button class="px-3 py-1.5 rounded-md font-mono text-[11px] text-slate-400 bg-surface border border-border-line hover:text-slate-200 transition-all shrink-0">
+          Completadas
+        </button>
+<button class="px-3 py-1.5 rounded-md font-mono text-[11px] text-slate-400 bg-surface border border-border-line hover:text-slate-200 transition-all shrink-0">
+          Sin técnico
+        </button>
+</nav>
+<!-- Section Title Header -->
+<div class="flex items-center justify-between pt-1">
+<h2 class="font-headline font-bold text-sm tracking-tight text-slate-200">Servicios Recientes</h2>
+<span class="font-mono text-[11px] text-slate-500">3 de 8 totales</span>
+</div>
+<!-- Orders List Cards -->
+<section class="space-y-2.5">
+<!-- Order 1: Heladera (Sin Técnico) -->
+<article class="bg-surface border border-border-line rounded-xl p-3.5 active:bg-surface-subtle transition-all cursor-pointer">
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex items-start space-x-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-subtle border border-border-line flex items-center justify-center text-amber shrink-0">
+<span class="material-symbols-outlined text-[20px]">kitchen</span>
+</div>
+<div class="min-w-0 flex-1">
+<h3 class="font-headline font-bold text-sm text-slate-100 truncate">Heladera no enfría freezer</h3>
+<p class="font-mono text-[11px] text-slate-400 mt-0.5">#CD-8842 · CABA</p>
+</div>
+</div>
+<!-- Status Badge Amber -->
+<span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-amber border border-amber/50 bg-amber-dim uppercase">
+              BUSCANDO TÉCNICO
+            </span>
+</div>
+<div class="pt-2 border-t border-border-line flex items-center justify-between text-xs text-slate-300">
+<span class="text-slate-400 font-mono text-[11px]">12 Oct · Cotización preliminar: <strong class="text-slate-200 font-sans font-semibold">$42.000</strong></span>
+<span class="material-symbols-outlined text-slate-500 text-[18px]">chevron_right</span>
+</div>
+</article>
+<!-- Order 2: Aire Acondicionado (En Camino) -->
+<article class="bg-surface border border-border-line rounded-xl p-3.5 active:bg-surface-subtle transition-all cursor-pointer">
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex items-start space-x-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-subtle border border-border-line flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">ac_unit</span>
+</div>
+<div class="min-w-0 flex-1">
+<h3 class="font-headline font-bold text-sm text-slate-100 truncate">Split 3000F gotea agua interior</h3>
+<p class="font-mono text-[11px] text-slate-400 mt-0.5">#CD-8819 · Palermo</p>
+</div>
+</div>
+<!-- Status Badge Cyan -->
+<span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-primary border border-primary/50 bg-primary-dim uppercase">
+              EN CAMINO
+            </span>
+</div>
+<div class="pt-2 border-t border-border-line flex items-center justify-between text-xs text-slate-300">
+<div class="flex items-center space-x-1.5 truncate">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+<span class="text-slate-300 font-sans text-xs truncate">Técnico Lucas V. llega en 15 min · <span class="font-semibold text-primary">$28.500</span></span>
+</div>
+<span class="material-symbols-outlined text-slate-500 text-[18px] shrink-0">chevron_right</span>
+</div>
+</article>
+<!-- Order 3: Lavarropas (Finalizada) -->
+<article class="bg-surface border border-border-line rounded-xl p-3.5 active:bg-surface-subtle transition-all cursor-pointer opacity-90">
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex items-start space-x-2.5 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-subtle border border-border-line flex items-center justify-center text-success shrink-0">
+<span class="material-symbols-outlined text-[20px]">local_laundry_service</span>
+</div>
+<div class="min-w-0 flex-1">
+<h3 class="font-headline font-bold text-sm text-slate-100 truncate">Error de desagote bomba tambor</h3>
+<p class="font-mono text-[11px] text-slate-400 mt-0.5">#CD-8730 · Belgrano</p>
+</div>
+</div>
+<!-- Status Badge Success -->
+<span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider text-success border border-success/40 bg-success-dim uppercase">
+              FINALIZADA
+            </span>
+</div>
+<div class="pt-2 border-t border-border-line flex items-center justify-between text-xs text-slate-400">
+<span class="font-mono text-[11px]">08 Oct · Pagado $35.200 <span class="text-success ml-1">(Garantía activa)</span></span>
+<span class="material-symbols-outlined text-slate-500 text-[18px]">receipt_long</span>
+</div>
+</article>
+</section>
+<!-- Inline Empty-State / Discovery Callout Block -->
+<section class="bg-surface/60 border border-dashed border-border-line rounded-xl p-3.5 space-y-2.5">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5 pr-2">
+<h4 class="font-headline font-bold text-xs text-slate-200">Contá tu próximo service</h4>
+<p class="text-xs text-slate-400 leading-relaxed">¿Necesitás revisar otro equipo? Diagnosticá en 3 pasos.</p>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface border border-border-line flex items-center justify-center text-violet shrink-0">
+<span class="material-symbols-outlined text-[18px]">build_circle</span>
+</div>
+</div>
+<button class="w-full py-2 px-3 rounded-lg border border-border-line bg-surface hover:bg-surface-subtle text-slate-200 font-headline font-semibold text-xs transition-colors flex items-center justify-center space-x-1.5 active:scale-[0.99]">
+<span class="material-symbols-outlined text-[16px] text-violet">speed</span>
+<span>Diagnóstico rápido</span>
+</button>
+</section>
+</main>
+<!-- Floating Primary CTA Bar (above the Bottom Navigation) -->
+<div class="fixed bottom-16 max-w-[390px] w-full px-4 py-2 z-40 bg-gradient-to-t from-canvas via-canvas/90 to-transparent pointer-events-none">
+<button class="pointer-events-auto w-full h-[50px] bg-primary text-canvas font-headline font-bold text-sm tracking-wide rounded-xl shadow-glow-cyan flex items-center justify-center space-x-2 active:scale-95 transition-all duration-150">
+<span class="material-symbols-outlined font-bold text-[20px]">add</span>
+<span>Nueva solicitud de service</span>
+</button>
+</div>
+<!-- Ionic-style Bottom Tab Bar (as defined in Shared Components JSON) -->
+<nav class="fixed bottom-0 max-w-[390px] w-full z-50 flex justify-around items-center h-16 px-2 bg-surface/95 backdrop-blur-md border-t border-border-line shadow-lg">
+<!-- Tab 1: Inicio (Active) -->
+<button class="flex flex-col items-center justify-center text-primary font-semibold gap-1 py-1 active:scale-95 transition-transform duration-100 flex-1">
+<span class="material-symbols-outlined material-symbols-fill text-[22px]">home</span>
+<span class="font-label text-[10px] uppercase tracking-wider">Inicio</span>
+</button>
+<!-- Tab 2: Equipos -->
+<button class="flex flex-col items-center justify-center text-slate-400 font-normal gap-1 py-1 hover:text-primary active:scale-95 transition-transform duration-100 flex-1">
+<span class="material-symbols-outlined text-[22px]">build</span>
+<span class="font-label text-[10px] uppercase tracking-wider">Servicios</span>
+</button>
+<!-- Center Action Anchor / Request Quick Action -->
+<div class="flex flex-col items-center justify-center -mt-5 flex-1">
+<button aria-label="Solicitar de urgencia" class="w-11 h-11 rounded-full bg-surface border-2 border-primary text-primary flex items-center justify-center shadow-glow-cyan-sm active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[22px] font-bold">bolt</span>
+</button>
+<span class="font-label text-[9px] uppercase tracking-wider text-primary font-bold mt-0.5">Urgente</span>
+</div>
+<!-- Tab 3: Solicitudes / Historial -->
+<button class="flex flex-col items-center justify-center text-slate-400 font-normal gap-1 py-1 hover:text-primary active:scale-95 transition-transform duration-100 flex-1">
+<span class="material-symbols-outlined text-[22px]">assignment</span>
+<span class="font-label text-[10px] uppercase tracking-wider">Solicitudes</span>
+</button>
+<!-- Tab 4: Perfil -->
+<button class="flex flex-col items-center justify-center text-slate-400 font-normal gap-1 py-1 hover:text-primary active:scale-95 transition-transform duration-100 flex-1">
+<span class="material-symbols-outlined text-[22px]">person</span>
+<span class="font-label text-[10px] uppercase tracking-wider">Perfil</span>
+</button>
+</nav>
+</div>
+<script>
+    // Lightweight interaction for filter chips
+    document.querySelectorAll('nav button').forEach(button => {
+      button.addEventListener('click', function() {
+        if (!this.closest('header') && !this.closest('.fixed.bottom-0')) {
+          this.parentElement.querySelectorAll('button').forEach(btn => {
+            btn.className = "px-3 py-1.5 rounded-md font-mono text-[11px] text-slate-400 bg-surface border border-border-line hover:text-slate-200 transition-all shrink-0";
+          });
+          this.className = "px-3 py-1.5 rounded-md font-mono text-[11px] font-bold text-primary bg-primary-dim border border-primary/50 transition-all shrink-0";
+        }
+      });
+    });
+  </script>
+</body></html>

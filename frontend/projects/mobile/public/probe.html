@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="utf-8" /><title>probe</title></head>
+  <body style="margin:0;background:#111">
+    <pre id="r" style="color:#0f0;font:12px monospace">PENDIENTE</pre>
+    <iframe id="f" style="width:360px;height:800px;border:0"></iframe>
+    <script>
+      const f = document.getElementById('f');
+      const pre = document.getElementById('r');
+      function medir() {
+        try {
+          const d = f.contentDocument;
+          const w = f.contentWindow;
+          if (!d || !w || !d.body) return;
+          const ancho = w.innerWidth;
+          const offenders = [...d.querySelectorAll('body *')]
+            .map((el) => ({ el, r: el.getBoundingClientRect() }))
+            .filter(({ r }) => r.width > 0 && (r.right > ancho + 1 || r.left < -1))
+            .slice(0, 20)
+            .map(({ el, r }) => ({
+              tag: el.tagName.toLowerCase(),
+              cls: (el.className && el.className.toString ? el.className.toString() : '').slice(0, 70),
+              left: Math.round(r.left),
+              right: Math.round(r.right),
+              width: Math.round(r.width),
+            }));
+          pre.textContent = 'PROBE ' + JSON.stringify({
+            viewport: ancho,
+            docScrollWidth: d.documentElement.scrollWidth,
+            offenders,
+          });
+        } catch (e) {
+          pre.textContent = 'PROBE ERROR ' + e.message;
+        }
+      }
+      f.src = '/login';
+      setInterval(medir, 400);
+    </script>
+  </body>
+</html>

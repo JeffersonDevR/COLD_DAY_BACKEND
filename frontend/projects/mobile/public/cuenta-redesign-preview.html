@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Vista previa de diseño — Mi cuenta</title>
+  <style>
+    /*
+     * Non-production design preview.
+     * Standalone render of the redesigned "Mi cuenta" mobile view. The same
+     * --cd-* token contract is declared here so the file opens with no build
+     * step; outside this :root block every color is consumed through var().
+     */
+    :root {
+      --cd-canvas: #0E1011;
+      --cd-surface: #171A1C;
+      --cd-surface-2: #212529;
+      --cd-surface-3: #2A2F33;
+      --cd-well: #0A0C0D;
+      --cd-line: #30363A;
+      --cd-line-strong: #66747A;
+      --cd-text-1: #F4F6F5;
+      --cd-text-2: #DDE3E0;
+      --cd-text-3: #B9C2BE;
+      --cd-text-4: #98A5A0;
+      --cd-action: #B7F24A;
+      --cd-action-hover: #A4DD35;
+      --cd-action-on: #101408;
+      --cd-action-soft: #273021;
+      --cd-focus: #B7F24A;
+      --cd-success: #2FC98A;
+      --cd-success-ink: #86F0C4;
+      --cd-warn: #F4B740;
+      --cd-warn-ink: #FFD98A;
+      --cd-warn-on: #1B1204;
+      --cd-warn-soft: #3A2A0E;
+      --cd-parts: #B18CFA;
+      --cd-parts-ink: #DCCBFF;
+      --cd-danger: #FF6B5E;
+      --cd-danger-ink: #FFB3A8;
+      --cd-font-head: "Space Grotesk", system-ui, sans-serif;
+      --cd-font-body: "Inter", system-ui, sans-serif;
+      --cd-font-mono: "Space Mono", ui-monospace, monospace;
+      --cd-type-display: 22px;
+      --cd-type-title: 20px;
+      --cd-type-card: 15px;
+      --cd-type-body: 14px;
+      --cd-type-label: 12px;
+      --cd-radius: 16px;
+      --cd-radius-sm: 12px;
+      --cd-radius-control: 8px;
+      --cd-radius-pill: 999px;
+      --cd-radius-card: var(--cd-radius-sm);
+      --cd-shell-max: 430px;
+      --cd-safe-top: env(safe-area-inset-top, 0px);
+      --cd-safe-bottom: env(safe-area-inset-bottom, 0px);
+      --cd-muted: var(--cd-text-4);
+      --cd-surface-border: var(--cd-line);
+      --cd-surface-border-strong: var(--cd-line-strong);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 1.25rem 1rem calc(2rem + var(--cd-safe-bottom));
+      background: var(--cd-canvas);
+      color: var(--cd-text-2);
+      font-family: var(--cd-font-body);
+      font-size: var(--cd-type-body);
+      line-height: 1.45;
+    }
+
+    .preview-note {
+      max-width: var(--cd-shell-max);
+      margin: 0 auto 1rem;
+      padding: 0.85rem 1rem;
+      border: 1px dashed var(--cd-line-strong);
+      border-radius: var(--cd-radius-card);
+      background: var(--cd-surface);
+    }
+
+    .preview-note__badge {
+      display: inline-block;
+      margin-bottom: 0.4rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--cd-radius-pill);
+      background: var(--cd-warn-soft);
+      color: var(--cd-warn-ink);
+      font-family: var(--cd-font-mono);
+      font-size: var(--cd-type-label);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .preview-note h1 {
+      margin: 0 0 0.3rem;
+      font-family: var(--cd-font-head);
+      font-size: var(--cd-type-title);
+      font-weight: 700;
+      color: var(--cd-text-1);
+    }
+
+    .preview-note p {
+      margin: 0;
+      font-size: var(--cd-type-label);
+      color: var(--cd-text-3);
+    }
+
+    .preview-note code {
+      font-family: var(--cd-font-mono);
+      color: var(--cd-text-2);
+    }
+
+    .preview-shell {
+      max-width: var(--cd-shell-max);
+      margin: 0 auto;
+      overflow: hidden;
+      background: var(--cd-canvas);
+      border: 1px solid var(--cd-line);
+      border-radius: var(--cd-radius);
+    }
+
+    /* Header */
+    .cd-header {
+      background: var(--cd-surface);
+      border-bottom: 1px solid var(--cd-line);
+    }
+
+    .cd-auth__bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(var(--cd-safe-top) + 0.85rem) 1rem 0.85rem;
+    }
+
+    .cd-auth__bar--nav {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cd-auth__bar-titulo {
+      margin: 0;
+      font-family: var(--cd-font-head);
+      font-size: var(--cd-type-body);
+      font-weight: 700;
+      text-align: center;
+      color: var(--cd-text-1);
+    }
+
+    .cd-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.6rem;
+      border: 1px solid var(--cd-line-strong);
+      border-radius: var(--cd-radius-pill);
+      font-size: var(--cd-type-label);
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+      color: var(--cd-text-3);
+    }
+
+    .cd-chip--ok {
+      color: var(--cd-success-ink);
+      border-color: var(--cd-success);
+      background: var(--cd-action-soft);
+    }
+
+    /* Content + shared primitives */
+    .cd-page-content { padding: 1rem; }
+
+    .cd-card {
+      padding: 1.25rem;
+      background: var(--cd-surface);
+      border: 1px solid var(--cd-surface-border);
+      border-radius: var(--cd-radius-card);
+    }
+
+    section.cd-card + section.cd-card { margin-top: 0.75rem; }
+
+    .cd-eyebrow {
+      margin: 0 0 0.25rem;
+      font-family: var(--cd-font-mono);
+      font-size: var(--cd-type-label);
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cd-action);
+    }
+
+    .cd-muted { color: var(--cd-muted); }
+
+    .icon {
+      display: inline-block;
+      width: 1em;
+      height: 1em;
+      flex: 0 0 auto;
+      vertical-align: -0.12em;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* A3 — Mi cuenta (mirrors pantallas.css) */
+    .cd-cuenta__identidad { margin-bottom: 0.75rem; }
+
+    .cd-cuenta__hero {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .cd-cuenta__avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 3.5rem;
+      width: 3.5rem;
+      height: 3.5rem;
+      overflow: hidden;
+      border: 2px solid var(--cd-line-strong);
+      border-radius: var(--cd-radius);
+      background: var(--cd-surface-2);
+      color: var(--cd-text-1);
+      font-family: var(--cd-font-head);
+      font-weight: 700;
+      font-size: 1.4rem;
+    }
+
+    .cd-cuenta__datos {
+      display: grid;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+
+    .cd-cuenta__rol { margin: 0; }
+
+    .cd-cuenta__nombre-fila {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .cd-cuenta__nombre {
+      margin: 0;
+      font-family: var(--cd-font-head);
+      font-size: var(--cd-type-title);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--cd-text-1);
+      overflow-wrap: anywhere;
+    }
+
+    .cd-cuenta__correo {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+      margin: 0;
+      font-family: var(--cd-font-body);
+      font-size: var(--cd-type-label);
+      color: var(--cd-text-3);
+    }
+
+    .cd-cuenta__correo .icon { font-size: 1rem; color: var(--cd-muted); }
+    .cd-cuenta__correo span { min-width: 0; overflow-wrap: anywhere; }
+
+    .cd-cuenta__stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 0 0 0.75rem;
+      overflow: hidden;
+      background: var(--cd-surface);
+      border: 1px solid var(--cd-line);
+      border-radius: var(--cd-radius-card);
+    }
+
+    .cd-cuenta__stat {
+      display: grid;
+      justify-items: center;
+      gap: 0.2rem;
+      min-width: 0;
+      padding: 0.85rem 0.35rem;
+      text-align: center;
+    }
+
+    .cd-cuenta__stat + .cd-cuenta__stat { border-left: 1px solid var(--cd-line); }
+
+    .cd-cuenta__stat strong {
+      font-family: var(--cd-font-head);
+      font-size: var(--cd-type-title);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+      color: var(--cd-text-1);
+    }
+
+    .cd-cuenta__stat span {
+      font-size: var(--cd-type-label);
+      line-height: 1.25;
+      color: var(--cd-text-3);
+    }
+
+    .cd-cuenta__section-head {
+      display: grid;
+      gap: 0.3rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .cd-cuenta__section-head p { margin: 0; }
+
+    .cd-cuenta__section-titulo {
+      margin: 0;
+      font-family: var(--cd-font-head);
+      font-size: var(--cd-type-card);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--cd-text-1);
+    }
+
+    .cd-cuenta__gating {
+      margin: 0 0 0.85rem;
+      padding: 0.7rem 0.8rem;
+      background: var(--cd-warn-soft);
+      border-left: 3px solid var(--cd-warn);
+      border-radius: var(--cd-radius-control);
+    }
+
+    .cd-cuenta__gating p {
+      margin: 0;
+      color: var(--cd-text-2);
+      font-size: var(--cd-type-label);
+    }
+
+    .cd-cuenta__modos-lista { display: grid; gap: 0.5rem; }
+
+    .cd-cuenta__modos-lista .cd-modo {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      min-width: 0;
+      padding: 0.75rem;
+      text-align: left;
+      background: var(--cd-canvas);
+      border: 1px solid var(--cd-line);
+      border-radius: var(--cd-radius-card);
+      color: var(--cd-text-1);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo:disabled { cursor: default; }
+    .cd-cuenta__modos-lista .cd-modo:focus-visible {
+      outline: 2px solid var(--cd-focus);
+      outline-offset: 2px;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo--activo {
+      background: var(--cd-surface-2);
+      border-color: var(--cd-action);
+    }
+
+    .cd-cuenta__modos-lista .cd-modo--activo::before {
+      content: '';
+      position: absolute;
+      top: 0.75rem;
+      bottom: 0.75rem;
+      left: 0;
+      width: 3px;
+      background: var(--cd-action);
+      border-radius: 0 var(--cd-radius-pill) var(--cd-radius-pill) 0;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo__icono {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      background: var(--cd-surface);
+      border: 1px solid var(--cd-line);
+      border-radius: var(--cd-radius-control);
+      color: var(--cd-text-3);
+      font-size: 1.35rem;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo--activo .cd-modo__icono {
+      background: var(--cd-action-soft);
+      border-color: var(--cd-action);
+      color: var(--cd-action);
+    }
+
+    .cd-cuenta__modos-lista .cd-modo__texto {
+      display: grid;
+      gap: 0.15rem;
+      min-width: 0;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo__nombre {
+      overflow: visible;
+      font-family: var(--cd-font-head);
+      font-size: var(--cd-type-card);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--cd-text-1);
+      text-overflow: clip;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo__nota {
+      font-size: var(--cd-type-label);
+      line-height: 1.35;
+      font-weight: 500;
+      color: var(--cd-text-3);
+      white-space: normal;
+      overflow-wrap: break-word;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo__pill {
+      display: inline-flex;
+      align-items: center;
+      justify-self: end;
+      flex: 0 0 auto;
+      gap: 0.25rem;
+      padding: 0.3rem 0.55rem;
+      background: var(--cd-action);
+      border-radius: var(--cd-radius-pill);
+      color: var(--cd-action-on);
+      font-family: var(--cd-font-mono);
+      font-size: var(--cd-type-label);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .cd-cuenta__modos-lista .cd-modo__pill .icon { font-size: 1rem; }
+
+    .cd-cuenta__modos-lista .cd-modo__pill--off {
+      background: transparent;
+      border: 1px solid var(--cd-line-strong);
+      color: var(--cd-text-3);
+    }
+
+    /* Static stand-ins for the real Ionic form controls (preview only). */
+    .cd-form-preview { display: grid; gap: 0.85rem; }
+
+    .cd-field-preview label {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-size: var(--cd-type-label);
+      font-weight: 600;
+      color: var(--cd-text-2);
+    }
+
+    .cd-field-preview .cd-control-preview {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 48px;
+      padding: 0.6rem 0.75rem;
+      background: var(--cd-well);
+      border: 1px solid var(--cd-line);
+      border-radius: var(--cd-radius-control);
+      font-size: var(--cd-type-body);
+      color: var(--cd-text-3);
+    }
+
+    .cd-field-preview .cd-control-preview--area {
+      display: block;
+      min-height: 76px;
+    }
+
+    .cd-cta-preview {
+      width: 100%;
+      min-height: 48px;
+      margin-top: 0.85rem;
+      background: var(--cd-action);
+      border: 0;
+      border-radius: var(--cd-radius-control);
+      color: var(--cd-action-on);
+      font: inherit;
+      font-size: var(--cd-type-body);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .cd-cuenta__peligro {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--cd-line);
+    }
+
+    .cd-salir-preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      width: 100%;
+      min-height: 48px;
+      background: transparent;
+      border: 1px solid var(--cd-danger);
+      border-radius: var(--cd-radius-control);
+      color: var(--cd-danger-ink);
+      font: inherit;
+      font-size: var(--cd-type-body);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .cd-salir-preview .icon { font-size: 1.1rem; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Icon sprite: local, no network request, no build step. -->
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z" /></symbol>
+    <symbol id="i-construct" viewBox="0 0 24 24"><path d="M20 4a5 5 0 0 0-6.6 6.3L6 17.7a2 2 0 1 0 2.3 2.3l7.4-7.4A5 5 0 0 0 22 6l-3 3-2-2z" /></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2 3 7v10l9 5 9-5V7zM3 7l9 5 9-5M12 12v10" /></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><path d="M2 5h20v14H2zM2 6l10 7 10-7" /></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M8 12l3 3 5-6" /></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" /></symbol>
+  </svg>
+
+  <aside class="preview-note" role="note" aria-label="Aviso de vista previa">
+    <span class="preview-note__badge">Vista previa de diseño · no es producción</span>
+    <h1>Mi cuenta — propuesta visual temporal</h1>
+    <p>
+      Datos de ejemplo: <code>María Gómez</code> · <code>cliente1@coldday.com.co</code> ·
+      rol <code>Cliente</code> · resumen <code>2 / 0 / 2</code> (en curso, concluidos, sin técnico).
+      Archivo desechable; no representa el estado real de ninguna cuenta.
+    </p>
+  </aside>
+
+  <div class="preview-shell">
+    <ion-header class="cd-header">
+      <div class="cd-auth__bar cd-auth__bar--nav">
+        <span aria-hidden="true"></span>
+        <h2 class="cd-auth__bar-titulo">Mi cuenta</h2>
+        <span class="cd-chip cd-chip--ok">Verificado</span>
+      </div>
+    </ion-header>
+
+    <main class="cd-page-content">
+      <!-- 1. Identidad -->
+      <section class="cd-card cd-cuenta__identidad" aria-labelledby="cuenta-nombre">
+        <div class="cd-cuenta__hero">
+          <div class="cd-cuenta__avatar" aria-hidden="true">M</div>
+          <div class="cd-cuenta__datos">
+            <p class="cd-eyebrow cd-cuenta__rol">Tu perfil</p>
+            <div class="cd-cuenta__nombre-fila">
+              <h2 class="cd-cuenta__nombre" id="cuenta-nombre">María Gómez</h2>
+              <span class="cd-chip cd-chip--ok">Cuenta activa</span>
+            </div>
+            <p class="cd-cuenta__correo">
+              <svg class="icon" aria-hidden="true"><use href="#i-mail"></use></svg>
+              <span>cliente1@coldday.com.co</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Banda de resumen -->
+      <section class="cd-cuenta__stats" role="group" aria-label="Resumen de tu perfil">
+        <div class="cd-cuenta__stat"><strong>2</strong><span>En curso</span></div>
+        <div class="cd-cuenta__stat"><strong>0</strong><span>Concluidos</span></div>
+        <div class="cd-cuenta__stat"><strong>2</strong><span>Sin técnico</span></div>
+      </section>
+
+      <!-- 3. Modo de la app -->
+      <section class="cd-card cd-modos" aria-labelledby="cuenta-modos-titulo">
+        <header class="cd-cuenta__section-head">
+          <h2 class="cd-cuenta__section-titulo" id="cuenta-modos-titulo">Modo de la app</h2>
+          <p class="cd-muted">Elige con qué perfil quieres usar Cold Day. Puedes cambiarlo cuando quieras.</p>
+        </header>
+
+        <div class="cd-cuenta__gating">
+          <p class="cd-muted">
+            Tu cuenta no se registró como técnico. Los perfiles que no tienes los activa el
+            administrador cuando envías una solicitud.
+          </p>
+        </div>
+
+        <div class="cd-cuenta__modos-lista" role="group" aria-label="Perfiles de la cuenta">
+          <button type="button" class="cd-modo cd-modo--activo" aria-pressed="true">
+            <span class="cd-modo__icono" aria-hidden="true"><svg class="icon"><use href="#i-home"></use></svg></span>
+            <span class="cd-modo__texto">
+              <span class="cd-modo__nombre">Cliente</span>
+              <span class="cd-modo__nota">Pide reparaciones y sigue tus órdenes</span>
+            </span>
+            <span class="cd-modo__pill"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg>En uso</span>
+          </button>
+
+          <button type="button" class="cd-modo" aria-pressed="false" disabled>
+            <span class="cd-modo__icono" aria-hidden="true"><svg class="icon"><use href="#i-construct"></use></svg></span>
+            <span class="cd-modo__texto">
+              <span class="cd-modo__nombre">Técnico</span>
+              <span class="cd-modo__nota">Recibe ofertas y ejecuta servicios</span>
+            </span>
+            <span class="cd-modo__pill cd-modo__pill--off">Pídelo al admin</span>
+          </button>
+
+          <button type="button" class="cd-modo" aria-pressed="false" disabled>
+            <span class="cd-modo__icono" aria-hidden="true"><svg class="icon"><use href="#i-cube"></use></svg></span>
+            <span class="cd-modo__texto">
+              <span class="cd-modo__nombre">Proveedor</span>
+              <span class="cd-modo__nota">Vende insumos a técnicos certificados</span>
+            </span>
+            <span class="cd-modo__pill cd-modo__pill--off">Pídelo al admin</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 4. Pedir otro perfil -->
+      <section class="cd-card cd-cuenta__solicitud" aria-labelledby="cuenta-solicitud-titulo">
+        <header class="cd-cuenta__section-head">
+          <h2 class="cd-cuenta__section-titulo" id="cuenta-solicitud-titulo">Pedir otro perfil</h2>
+          <p class="cd-muted">
+            Elige el perfil que quieres activar y cuéntanos por qué. El administrador revisa tu
+            solicitud.
+          </p>
+        </header>
+
+        <div class="cd-form-preview">
+          <div class="cd-field-preview">
+            <label>Perfil que quieres pedir</label>
+            <div class="cd-control-preview"><span>Técnico</span><span aria-hidden="true">▾</span></div>
+          </div>
+          <div class="cd-field-preview">
+            <label>¿Por qué quieres este perfil?</label>
+            <div class="cd-control-preview cd-control-preview--area">
+              Trabajo en refrigeración y quiero recibir ofertas de servicios.
+            </div>
+          </div>
+        </div>
+        <button type="button" class="cd-cta-preview">Enviar solicitud</button>
+      </section>
+
+      <!-- 5. Cierre de sesión -->
+      <section class="cd-cuenta__peligro" aria-label="Cerrar sesión">
+        <button type="button" class="cd-salir-preview">
+          <svg class="icon" aria-hidden="true"><use href="#i-logout"></use></svg>
+          Cerrar sesión
+        </button>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

@@ -10,6 +10,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.exception.NumeroIdentificacionDuplicadoException;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
@@ -20,8 +23,11 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
 
     private final SpringDataTecnicoRepository repository;
 
-    public TecnicoRepositoryAdapter(SpringDataTecnicoRepository repository) {
+    private final EntityManager entityManager;
+
+    public TecnicoRepositoryAdapter(SpringDataTecnicoRepository repository, EntityManager entityManager) {
         this.repository = repository;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -84,6 +90,28 @@ public class TecnicoRepositoryAdapter implements TecnicoRepository {
     public int ocuparSiDisponible(TecnicoId id) {
         return repository.ocuparSiDisponible(id.valor(),
                 EstadoOperativo.OCUPADO, EstadoOperativo.DISPONIBLE, EstadoValidacion.APROBADO);
+    }
+
+    @Override
+    @Transactional
+    public int liberarSiOcupado(TecnicoId id) {
+        TecnicoJpaEntity entity = repository.findById(id.valor()).orElse(null);
+        if (entity == null) {
+            return 0;
+        }
+        // Relee con bloqueo de fila: la entidad puede venir de una lectura anterior
+        // de esta misma transaccion.
+        entityManager.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
+        Tecnico tecnico = entity.toDomain();
+        if (tecnico.getEstadoOperativo() != EstadoOperativo.OCUPADO
+                || tecnico.getEstadoValidacion() != EstadoValidacion.APROBADO) {
+            return 0;
+        }
+        tecnico.liberarOrden();
+        // Por la entidad y no por UPDATE masivo: asi queda auditado quien escribio.
+        entity.applyFromDomain(tecnico);
+        repository.saveAndFlush(entity);
+        return 1;
     }
 
     @Override

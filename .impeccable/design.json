@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T12:00:00.000Z",
+  "title": "Design System: COLD DAY — Cold Dispatch",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Deep Canvas",
+        "canonical": "#0b1220",
+        "tonalRamp": ["#05080f", "#0b1220", "#111b2e", "#16243a", "#1e293b", "#334155", "#475569", "#64748b"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Raised Navy",
+        "canonical": "#111b2e",
+        "tonalRamp": ["#080d16", "#0d1526", "#111b2e", "#16243a", "#1c2d47", "#253a58", "#30486b", "#3d5880"]
+      },
+      "surface-elevated": {
+        "role": "neutral",
+        "displayName": "Console Step",
+        "canonical": "#16243a",
+        "tonalRamp": ["#0a1220", "#101b2c", "#16243a", "#1c2f4d", "#233a5f", "#2b4672", "#345286", "#3e5f9a"]
+      },
+      "surface-well": {
+        "role": "neutral",
+        "displayName": "Inset Well",
+        "canonical": "#0e1828",
+        "tonalRamp": ["#060d18", "#0a1221", "#0e1828", "#121e32", "#16243a", "#1b2c47", "#213555", "#284064"]
+      },
+      "signal": {
+        "role": "primary",
+        "displayName": "Signal Cyan",
+        "canonical": "#22d3ee",
+        "tonalRamp": ["#0b3b45", "#10616f", "#158699", "#1aabc2", "#22d3ee", "#5fe3f4", "#94edf8", "#caf6fc"]
+      },
+      "signal-hover": {
+        "role": "primary",
+        "displayName": "Signal Hover",
+        "canonical": "#06b6d4",
+        "tonalRamp": ["#062f37", "#08505c", "#0a7282", "#0b94a8", "#06b6d4", "#3fcfe5", "#7ce0ee", "#b8eff7"]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Money Amber",
+        "canonical": "#f59e0b",
+        "tonalRamp": ["#4a2c02", "#7a4a05", "#ab6808", "#db850b", "#f59e0b", "#f8b74a", "#fbd08a", "#fde7c5"]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Settled Green",
+        "canonical": "#22c55e",
+        "tonalRamp": ["#072f16", "#0d4f23", "#136f31", "#1a9442", "#22c55e", "#5cd782", "#94e5ab", "#c9f3d5"]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Attention Red",
+        "canonical": "#f87171",
+        "tonalRamp": ["#3d0f0f", "#651818", "#8e2222", "#b62c2c", "#f87171", "#fab0b0", "#fcd3d3", "#fdeaea"]
+      },
+      "tertiary": {
+        "role": "tertiary",
+        "displayName": "Parts Violet",
+        "canonical": "#a78bfa",
+        "tonalRamp": ["#241a4d", "#3d2b80", "#563db3", "#704fd9", "#a78bfa", "#c3b1fc", "#d9cefd", "#eee8fe"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Instrument White",
+        "canonical": "#f8fafc",
+        "tonalRamp": ["#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Console Grey",
+        "canonical": "#94a3b8",
+        "tonalRamp": ["#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#b6c0cd", "#cbd5e1", "#e2e8f0"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles and the single leading number on a board. One per screen."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section and panel titles. Never used for body copy."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Record names, card titles, button labels."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All running text, cells, and form values."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Column headers, field labels, tag text, eyebrows."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "OT codes, verification codes, coordinates, currency amounts."
+      }
+    },
+    "shadows": [
+      {
+        "name": "accent-glow",
+        "value": "0 0 20px rgba(34, 211, 238, 0.25)",
+        "purpose": "Primary CTA only. Reads as the control being powered."
+      },
+      {
+        "name": "accent-halo",
+        "value": "0 0 32px rgba(34, 211, 238, 0.18)",
+        "purpose": "Brand mark and the live indicator on an active map pin."
+      },
+      {
+        "name": "overlay",
+        "value": "0 24px 64px rgba(2, 6, 23, 0.72)",
+        "purpose": "Modals, popovers, dropdown panels leaving the plane."
+      }
+    ],
+    "motion": [
+      {
+        "name": "press",
+        "value": "120ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Colour and 1% scale on an active press."
+      },
+      {
+        "name": "state",
+        "value": "150ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Hover, focus, and background transitions."
+      },
+      {
+        "name": "layout",
+        "value": "200ms cubic-bezier(0.2, 0, 0, 1)",
+        "purpose": "Sidebar collapse and drawer. Disabled under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1600px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action of a page or panel. Dark ink on signal cyan.",
+      "html": "<button class=\"ds-btn-primary\">Solicitar técnico</button>",
+      "css": ".ds-btn-primary { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; font-weight: 600; line-height: 1; color: #042f2e; background: #22d3ee; border: 1px solid transparent; border-radius: 8px; padding: 0 16px; height: 40px; box-shadow: 0 0 20px rgba(34, 211, 238, 0.25); cursor: pointer; transition: background 150ms cubic-bezier(0.2, 0, 0, 1), transform 120ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn-primary:hover { background: #06b6d4; } .ds-btn-primary:focus-visible { outline: 2px solid #22d3ee; outline-offset: 1px; } .ds-btn-primary:active { background: #1ebad1; transform: scale(0.99); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default action for anything that is not the page's one primary job.",
+      "html": "<button class=\"ds-btn-secondary\">Ver historial</button>",
+      "css": ".ds-btn-secondary { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; font-weight: 500; line-height: 1; color: #e2e8f0; background: #16243a; border: 1px solid #1e293b; border-radius: 8px; padding: 0 16px; height: 40px; cursor: pointer; transition: background 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn-secondary:hover { background: #1c2f4d; } .ds-btn-secondary:focus-visible { outline: 2px solid #22d3ee; outline-offset: 1px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Row actions and toolbar toggles. Never the only action on a screen.",
+      "html": "<button class=\"ds-btn-ghost\" aria-label=\"Filtrar\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" aria-hidden=\"true\"><path d=\"M2 4h12M4.5 8h7M6.5 12h3\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg>Filtrar</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 6px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; font-weight: 500; color: #cbd5e1; background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 0 12px; height: 36px; cursor: pointer; transition: background 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-btn-ghost:hover { background: #16243a; color: #e2e8f0; } .ds-btn-ghost:focus-visible { outline: 2px solid #22d3ee; outline-offset: 1px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Every field sits in a well, not on the plane.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Descripción de la falla</span><input class=\"ds-input\" type=\"text\" placeholder=\"Ej. no enfría desde ayer\" /></label>",
+      "css": ".ds-field { display: grid; gap: 6px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .ds-field__label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #cbd5e1; } .ds-input { font-family: inherit; font-size: 14px; color: #e2e8f0; background: #0e1828; border: 1px solid #1e293b; border-radius: 8px; padding: 0 12px; height: 40px; transition: border-color 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-input::placeholder { color: #94a3b8; } .ds-input:hover { border-color: #334155; } .ds-input:focus-visible { outline: 2px solid #22d3ee; outline-offset: 1px; border-color: #22d3ee; }"
+    },
+    {
+      "name": "Status Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Ink on tint, never a solid fill and never a bare colour dot.",
+      "html": "<span class=\"ds-tag ds-tag--ok\">Finalizada</span><span class=\"ds-tag ds-tag--wait\">Buscando técnico</span><span class=\"ds-tag ds-tag--danger\">En disputa</span><span class=\"ds-tag ds-tag--live\">En camino</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 6px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; font-weight: 600; line-height: 1.3; border: 1px solid #1e293b; border-radius: 4px; padding: 3px 8px; color: #cbd5e1; background: #0e1828; } .ds-tag::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: currentColor; } .ds-tag--ok { color: #6ee7b7; border-color: rgba(110, 231, 183, 0.5); background: rgba(16, 185, 129, 0.12); } .ds-tag--wait { color: #fcd34d; border-color: rgba(252, 211, 77, 0.5); background: rgba(245, 158, 11, 0.12); } .ds-tag--danger { color: #fca5a5; border-color: rgba(252, 165, 165, 0.45); background: rgba(248, 113, 113, 0.1); } .ds-tag--live { color: #22d3ee; border-color: rgba(34, 211, 238, 0.5); background: rgba(34, 211, 238, 0.1); }"
+    },
+    {
+      "name": "Panel Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat raised plane separated by a hairline. Never lifted by a shadow.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card__title\">Orden de trabajo</h2><p class=\"ds-card__meta\">OT-2026-0418 · Cúcuta</p><p class=\"ds-card__body\">Diagnóstico pendiente de aprobación del cliente.</p></section>",
+      "css": ".ds-card { display: grid; gap: 8px; padding: 16px; background: #111b2e; border: 1px solid #1e293b; border-radius: 12px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .ds-card__title { margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; color: #f8fafc; } .ds-card__meta { margin: 0; font-family: 'Space Mono', ui-monospace, monospace; font-size: 12px; letter-spacing: 0.02em; color: #94a3b8; } .ds-card__body { margin: 0; font-size: 14px; line-height: 1.5; color: #e2e8f0; }"
+    },
+    {
+      "name": "Board Table",
+      "kind": "custom",
+      "description": "The monitoring board. Sticky header, whole-row link, status in a fixed column.",
+      "html": "<table class=\"ds-board\"><thead><tr><th scope=\"col\">OT</th><th scope=\"col\">Cliente</th><th scope=\"col\">Estado</th><th scope=\"col\">Antigüedad</th></tr></thead><tbody><tr class=\"ds-board__row\"><td class=\"ds-board__code\">OT-2026-0418</td><td>María Restrepo</td><td><span class=\"ds-tag ds-tag--wait\">Buscando técnico</span></td><td class=\"ds-board__age\">00:42</td></tr></tbody></table>",
+      "css": ".ds-board { width: 100%; border-collapse: collapse; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #e2e8f0; background: #111b2e; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; } .ds-board th { position: sticky; top: 0; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; background: #0e1828; padding: 10px 12px; border-bottom: 1px solid #1e293b; } .ds-board td { padding: 0 12px; height: 40px; border-bottom: 1px solid #1e293b; } .ds-board__row { cursor: pointer; transition: background 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-board__row:hover { background: #16243a; } .ds-board__code { font-family: 'Space Mono', ui-monospace, monospace; font-size: 12px; color: #cbd5e1; } .ds-board__age { font-family: 'Space Mono', ui-monospace, monospace; font-size: 12px; color: #94a3b8; }"
+    },
+    {
+      "name": "Sidebar Item",
+      "kind": "nav",
+      "description": "Active state is a left rule and a tint, not a filled cyan block.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav__item ds-nav__item--active\" href=\"#\">Monitoreo de OTs</a><a class=\"ds-nav__item\" href=\"#\">Disputas</a></nav>",
+      "css": ".ds-nav { display: grid; gap: 2px; padding: 8px; background: #111b2e; border-right: 1px solid #1e293b; width: 232px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; } .ds-nav__item { position: relative; display: flex; align-items: center; height: 36px; padding: 0 12px 0 14px; font-size: 14px; font-weight: 500; color: #cbd5e1; text-decoration: none; border-radius: 8px; transition: background 150ms cubic-bezier(0.2, 0, 0, 1), color 150ms cubic-bezier(0.2, 0, 0, 1); } .ds-nav__item:hover { background: #16243a; color: #e2e8f0; } .ds-nav__item:focus-visible { outline: 2px solid #22d3ee; outline-offset: 1px; } .ds-nav__item--active { color: #22d3ee; background: rgba(34, 211, 238, 0.1); } .ds-nav__item--active::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: #22d3ee; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Cold Dispatch",
+    "overview": "Cold Dispatch is the night dispatch room of a refrigeration network. The console is on all night. Orders arrive, get picked up, move across the city, and close. Everything on screen answers one of three questions in under a second: what is live, what is stuck, and who is responsible for it. The world is a deep navy that never turns black. Two surfaces — a canvas and a raised plane — plus a well for anything you type into. Depth is carried by a one-pixel hairline and a tonal step, never by a drop shadow; the only light in the room is a single cyan signal that means this is live or this is interactive. Density is high and deliberate. This is a control tower, not a dashboard for showing off.",
+    "keyCharacteristics": [
+      "Deep navy canvas, one raised surface, one inset well. No black, no pure white text.",
+      "A single cyan accent, used on ≤10% of any screen.",
+      "Flat by default; hairlines and tonal steps instead of shadows.",
+      "Three typefaces with three jobs: display, text, data.",
+      "12 px type floor and a 700 weight ceiling, no exceptions.",
+      "Status is a tag, and the tag has a fixed position on every board."
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "body": "Signal cyan covers at most 10% of any screen. If two things on a page are both cyan, one of them is decoration and must lose.",
+        "section": "colors"
+      },
+      {
+        "name": "The Border-Before-Color Rule",
+        "body": "When two regions need separating, reach for a hairline first. Colour is what you add when the border alone is not saying enough — not the other way round.",
+        "section": "colors"
+      },
+      {
+        "name": "The #64748b Ban",
+        "body": "#64748b and #475569 never carry text on canvas, surface, or well. On canvas they measure 3.9:1 and 2.5:1 — both under AA. Use #94a3b8, which measures 7.3:1, for anything that must be read.",
+        "section": "colors"
+      },
+      {
+        "name": "The 700 Ceiling Rule",
+        "body": "Nothing renders heavier than 700. font-black (900) and font-extrabold (800) are banned outright — the incumbent web app uses them 74 times and the result is a screen where everything shouts.",
+        "section": "typography"
+      },
+      {
+        "name": "The 12px Floor Rule",
+        "body": "No text below 12px. The incumbent app declares 122 arbitrary sizes at 9, 10, and 11px; every one of them becomes 12px. If a label does not fit at 12px, the label is too long, not the type too big.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono-Is-Data Rule",
+        "body": "Space Mono is reserved for values a human compares character by character. Never for a sentence, never for a button, and never for a heading — with one exception: an uppercase eyebrow of two or three words.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Surfaces are flat at rest. If you are reaching for a shadow to separate two regions, you want a border. If you are reaching for a shadow to show that something is interactive, you want a hover background from surface-elevated.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Glow-Is-A-Status Rule",
+        "body": "The accent glow is never used on a secondary button, a card, or a hover state. It appears on the primary action and on the live indicator, and nowhere else.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do start every new surface from the three-layer stack: canvas → surface → well, in that order.",
+      "Do use the 12/14/16px trio for almost all text, and reserve Display for one element per screen.",
+      "Do give every state a tag with text in it, in a fixed column position.",
+      "Do keep the focus ring at 2px signal at 1px offset on every interactive element, including hand-rolled buttons that Tailwind's reset stripped.",
+      "Do honour prefers-reduced-motion — every animation in this system has a static equivalent.",
+      "Do name what failed in an error state, and offer the retry next to it."
+    ],
+    "donts": [
+      "Don't use #64748b or #475569 for text on any dark surface; they fail contrast.",
+      "Don't use font-black, font-extrabold, or any weight above 700 — the current web app does this 74 times and the hierarchy it buys is false.",
+      "Don't set type below 12px, including micro labels and chart axes.",
+      "Don't add a drop shadow to a card, a row, or a button to signal elevation or hover.",
+      "Don't put a gradient on anything, including the brand mark.",
+      "Don't ship a dark: variant. This system has exactly one appearance; a dark: prefix that never activates is dead code pretending to be a feature.",
+      "Don't use a colour-only status indicator — no bare dot, no colour-coded row without a textual state.",
+      "Don't invent a hover animation beyond a background step and a 150ms colour transition."
+    ]
+  }
+}
