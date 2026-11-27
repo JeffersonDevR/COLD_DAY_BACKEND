@@ -304,3 +304,29 @@ describe('ConsignacionesAdminPage', () => {
     });
   });
 });
+
+describe('referencia de la consignación', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const pintar = (comprobanteUrl: string) => {
+    const { fixture } = setup(
+      vi.fn(() => of([liquidacion({ comprobanteUrl, referenciaPago: undefined })])),
+    );
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  };
+
+  it('un número se muestra como texto, no como enlace roto', () => {
+    const html = pintar('TRX-12345');
+
+    expect(html.textContent).toContain('Referencia: TRX-12345');
+    expect(html.querySelector('a[href="TRX-12345"]')).toBeNull();
+    expect(html.textContent).not.toContain('Sin comprobante subido');
+  });
+
+  it('un enlace sigue abriéndose como recibo', () => {
+    const html = pintar('https://recibos.example/1.jpg');
+
+    expect(html.querySelector('a[href="https://recibos.example/1.jpg"]')).not.toBeNull();
+  });
+});
