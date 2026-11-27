@@ -451,3 +451,79 @@ describe('DiagnosticoPage móvil (A7)', () => {
     expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'ot1']);
   });
 });
+
+describe('Diagnóstico: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(of(ot({ codigo: 'OT-NUEVA' })));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+  });
+});
+
+describe('deslizar tras fallar la carga inicial', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('recupera la orden y quita el aviso de error', () => {
+    const getOtById = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new ApiHttpError('boom', 500)))
+      .mockReturnValue(of(ot({ codigo: 'OT-RECUPERADA' })));
+    const { fixture } = setup({ otApi: { getOtById } });
+
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('OT-RECUPERADA');
+  });
+});
+
+describe('diagnóstico: el dinero primero', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const precede = (a: HTMLElement, b: HTMLElement) =>
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('el total a autorizar va antes del desglose y del dictamen', () => {
+    const { fixture } = setup();
+    const dato = nodo(fixture, 'dato-dominante')!;
+
+    expect(dato.textContent).toContain('Total a autorizar');
+    expect(dato.textContent).toContain('350.000');
+    expect(precede(dato, nodo(fixture, 'costo-total')!)).toBe(true);
+    expect(precede(nodo(fixture, 'costo-total')!, nodo(fixture, 'dictamen-texto')!)).toBe(true);
+  });
+
+  it('sin presupuesto no muestra un total engañoso', () => {
+    const { fixture } = setup({
+      otApi: { getOtById: vi.fn(() => of(ot({ presupuesto: undefined, tarifaVisita: 30000 }))) },
+    });
+    const dato = nodo(fixture, 'dato-dominante')!;
+
+    expect(dato.textContent).toContain('Presupuesto pendiente');
+    expect(dato.textContent).not.toContain('30.000');
+  });
+});

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -71,72 +71,85 @@ function texto(fixture: ComponentFixture<MobileEquiposPage>): string {
   return (fixture.nativeElement.textContent as string) ?? '';
 }
 
-describe('MobileEquiposPage (A10)', () => {
+describe('Historial del cliente', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  it('marca En curso el equipo que tiene órdenes activas y no el que ya cerró todo', () => {
+  const tarjetas = (fixture: ComponentFixture<MobileEquiposPage>) =>
+    Array.from(
+      fixture.nativeElement.querySelectorAll('[data-testid="historial-ot"]'),
+    ) as HTMLElement[];
+
+  it('una tarjeta por orden, de la más reciente a la más antigua y sin fecha al final', () => {
     const { fixture } = setup({
       ots: [
-        ot({ id: 'a', categoriaServicio: 'AIRE_ACONDICIONADO', estado: 'EN_CAMINO' }),
-        ot({ id: 'b', categoriaServicio: 'AIRE_ACONDICIONADO', estado: 'FINALIZADA' }),
-        ot({ id: 'c', categoriaServicio: 'ELECTRICIDAD', estado: 'FINALIZADA' }),
-        ot({ id: 'd', categoriaServicio: 'LAVADORAS', estado: 'SIN_TECNICOS_DISPONIBLES' }),
+        ot({ id: 'sin', codigo: 'OT-SIN', fechaCreacion: undefined }),
+        ot({ id: 'vieja', codigo: 'OT-VIEJA', fechaCreacion: '2026-10-01T10:00:00Z' }),
+        ot({ id: 'nueva', codigo: 'OT-NUEVA', fechaCreacion: '2026-11-20T10:00:00Z' }),
       ],
     });
 
-    const tarjetas = Array.from(
-      fixture.nativeElement.querySelectorAll('[data-testid="equipo"]') as NodeListOf<HTMLElement>,
-    );
-    const conCurso = tarjetas.filter((t) => t.querySelector('[data-testid="equipo-en-curso"]'));
-
-    expect(tarjetas).toHaveLength(3);
-    expect(conCurso).toHaveLength(1);
-    expect(conCurso[0].textContent).toContain('1 en curso');
+    expect(tarjetas(fixture).map((t) => t.querySelector('.cd-ot__codigo')?.textContent?.trim()))
+      .toEqual(['OT-NUEVA', 'OT-VIEJA', 'OT-SIN']);
+    expect(texto(fixture)).toContain('Aire acondicionado');
   });
 
-  it('agrupa por categoría y muestra la falla de la última OT', () => {
+  it('la prioridad solo sale en las activas y dicha completa', () => {
     const { fixture } = setup({
       ots: [
-        ot({
-          id: 'ot2',
-          categoriaServicio: 'REFRIGERACION',
-          descripcionFalla: 'Nevera no enfría',
-          fechaCreacion: '2026-11-10T10:00:00Z',
-        }),
-        ot(),
+        ot({ id: 'activa', estado: 'EN_CAMINO', prioridad: 'ALTA' }),
+        ot({ id: 'cerrada', estado: 'FINALIZADA', fechaCreacion: '2026-10-01T10:00:00Z' }),
       ],
     });
 
-    const tarjetas = fixture.nativeElement.querySelectorAll('[data-testid="equipo"]');
-    expect(tarjetas.length).toBe(2);
-    expect(texto(fixture)).toContain('Aire acondicionado');
-    expect(texto(fixture)).toContain('Refrigeración');
-    expect(texto(fixture)).toContain('Split 3000F gotea agua en el living');
-    expect(texto(fixture)).toContain('Nevera no enfría');
+    const [activa, cerrada] = tarjetas(fixture);
+    expect(activa.querySelector('[data-testid="prioridad-chip"]')?.textContent?.trim()).toBe(
+      'Prioridad alta',
+    );
+    expect(cerrada.querySelector('[data-testid="prioridad-chip"]')).toBeNull();
+  });
+
+  it('«Revisar» abre esa orden y no hay conteos ni «última OT»', () => {
+    const { fixture } = setup({ ots: [ot({ id: 'abc' })] });
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const boton = fixture.nativeElement.querySelector(
+      '[data-testid="historial-revisar"]',
+    ) as HTMLElement & { fill?: string };
+
+    expect(boton.textContent?.trim()).toBe('Revisar');
+    expect(boton.fill).toBe('outline');
+    boton.click();
+    expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'abc']);
+    expect(texto(fixture)).not.toContain('servicios ·');
+    expect(texto(fixture)).not.toContain('última OT');
+    expect(texto(fixture)).not.toContain('equipos');
+  });
+
+  it('omite lo que el backend no entrega', () => {
+    const { fixture } = setup({
+      ots: [ot({ codigo: undefined, fechaCreacion: undefined, direccion: undefined })],
+    });
+
+    expect(texto(fixture)).not.toContain('undefined');
+    expect(tarjetas(fixture)[0].querySelector('.cd-ot__codigo')).toBeNull();
+    expect(tarjetas(fixture)[0].querySelector('.cd-ot__pie')).toBeNull();
   });
 
   it('la tarjeta lleva el icono decorativo de su categoría', () => {
     const { fixture } = setup();
 
-    const icono = fixture.nativeElement.querySelector('[data-testid="equipo"] .cd-equipo__icono');
+    const icono = fixture.nativeElement.querySelector('[data-testid="historial-ot"] .cd-equipo__icono');
     expect(icono?.getAttribute('aria-hidden')).toBe('true');
+    expect(fixture.componentInstance.iconoCategoria('LAVADORAS')).toBe('water-outline');
+    expect(fixture.componentInstance.iconoCategoria('REFRIGERACION')).toBe('snow-outline');
   });
 
-  it('cada categoría mapea a su icono registrado', () => {
-    const { fixture } = setup();
-    const page = fixture.componentInstance;
-
-    expect(page.iconoCategoria('AIRE_ACONDICIONADO')).toBe('thermometer-outline');
-    expect(page.iconoCategoria('REFRIGERACION')).toBe('snow-outline');
-    expect(page.iconoCategoria('LAVADORAS')).toBe('water-outline');
-    expect(page.iconoCategoria('ELECTRICIDAD')).toBe('flash-outline');
-    expect(page.iconoCategoria('CAMARAS_VIGILANCIA')).toBe('videocam-outline');
-  });
-
-  it('muestra el estado vacío cuando no hay órdenes', () => {
+  it('sin órdenes invita a pedir', () => {
     const { fixture } = setup({ ots: [] });
 
-    expect(fixture.nativeElement.querySelector('[data-testid="equipos-vacio"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="equipos-vacio"]')?.textContent).toContain(
+      'Aún no tienes servicios',
+    );
+    expect(texto(fixture)).toContain('Pedir un técnico');
   });
 
   it('muestra error con reintentar ante una falla de carga', () => {
@@ -144,5 +157,65 @@ describe('MobileEquiposPage (A10)', () => {
 
     expect(fixture.nativeElement.querySelector('[data-testid="equipos-error"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="equipos-reintentar"]')).toBeTruthy();
+  });
+});
+
+describe('Historial: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.getOtsPorCliente.mockReturnValue(of([ot({ codigo: 'OT-NUEVA' })]));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.getOtsPorCliente.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('OT-2026-0004');
+  });
+});
+
+describe('Historial: detalles', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('sin falla no deja un párrafo vacío', () => {
+    const { fixture } = setup({ ots: [ot({ descripcionFalla: '' })] });
+
+    expect(fixture.nativeElement.querySelector('.cd-historial__falla')).toBeNull();
+  });
+
+  it('prefiere la dirección, como el resto de listas', () => {
+    const { fixture } = setup({ ots: [ot({ direccion: 'Calle 15', barrio: 'Caobos' })] });
+
+    expect(texto(fixture)).toContain('Calle 15');
+    expect(texto(fixture)).not.toContain('Caobos');
+  });
+
+  it('deslizar sin perfil de cliente muestra su aviso y no un error', () => {
+    const { fixture, getOtsPorCliente } = setup();
+    getOtsPorCliente.mockReturnValue(
+      throwError(() => new ApiHttpError('No existe un perfil de cliente para el usuario: 7', 404)),
+    );
+    const error = vi.fn();
+
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+
+    expect(error).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="equipos-sin-perfil"]')).not.toBeNull();
   });
 });

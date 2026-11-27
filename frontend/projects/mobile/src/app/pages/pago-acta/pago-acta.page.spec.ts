@@ -579,3 +579,124 @@ describe('PagoActaPage móvil (A8)', () => {
     expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'ot1']);
   });
 });
+
+describe('Pago y acta: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(of(ot({ codigo: 'OT-NUEVA' })));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+  });
+});
+
+describe('deslizar tras fallar la carga inicial', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('recupera la orden y quita el aviso de error', () => {
+    const getOtById = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new ApiHttpError('boom', 500)))
+      .mockReturnValue(of(ot({ codigo: 'OT-RECUPERADA' })));
+    const { fixture } = setup({ otApi: { getOtById } });
+
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('OT-RECUPERADA');
+  });
+});
+
+describe('pago y acta: el total primero', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const precede = (a: HTMLElement, b: HTMLElement) =>
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('el total del servicio va antes del desglose', () => {
+    const { fixture } = setup({
+      orden: ot({
+        tarifaVisita: 30000,
+        presupuesto: { aprobado: true, total: 200000, manoObra: 200000, repuestos: 0 },
+      }),
+    });
+    const dato = nodo(fixture, 'dato-dominante')!;
+
+    expect(dato.textContent).toContain('Total del servicio');
+    expect(dato.textContent).toContain('230.000');
+    expect(precede(dato, nodo(fixture, 'costo-visita')!)).toBe(true);
+  });
+
+  it('sin presupuesto dice «Por confirmar» y habla en tuteo', () => {
+    const { fixture } = setup({ orden: ot({ presupuesto: undefined, tarifaVisita: 30000 }) });
+
+    expect(nodo(fixture, 'dato-dominante')!.textContent).toContain('Por confirmar');
+    expect(fixture.nativeElement.textContent).toContain('Dibuja tu firma aquí');
+    expect(fixture.nativeElement.textContent).not.toContain('Dibujá');
+  });
+});
+
+describe('firma con la orden que llega después', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('se puede firmar aunque el lienzo aparezca tras la respuesta del servidor', () => {
+    const respuesta = new Subject<OtResponse>();
+    const { fixture, ctxStub } = setup({ otApi: { getOtById: vi.fn(() => respuesta) } });
+
+    respuesta.next(ot({ estado: 'FINALIZADA' }));
+    fixture.detectChanges();
+    const lienzo = fixture.nativeElement.querySelector('[data-testid="firma-canvas"]') as HTMLElement;
+    for (const tipo of ['pointerdown', 'pointermove', 'pointerup']) {
+      lienzo.dispatchEvent(new MouseEvent(tipo, { clientX: 10, clientY: 10 }));
+    }
+
+    expect(ctxStub.lineTo).toHaveBeenCalled();
+  });
+});
+
+describe('pago y acta: detalles', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('no deja recargar mientras se está firmando', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'FINALIZADA' }) });
+    const indicador = () =>
+      fixture.nativeElement.querySelector('ion-refresher') as HTMLElement & { disabled?: boolean };
+    const lienzo = fixture.nativeElement.querySelector('[data-testid="firma-canvas"]') as HTMLElement;
+
+    lienzo.dispatchEvent(new MouseEvent('pointerdown', { clientX: 5, clientY: 5 }));
+    fixture.detectChanges();
+    expect(indicador().disabled).toBe(true);
+
+    lienzo.dispatchEvent(new MouseEvent('pointerup'));
+    fixture.detectChanges();
+    expect(indicador().disabled).toBe(false);
+  });
+
+  it('el desglose usa la misma etiqueta que el total grande', () => {
+    const { fixture } = setup();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Total a pagar');
+  });
+});

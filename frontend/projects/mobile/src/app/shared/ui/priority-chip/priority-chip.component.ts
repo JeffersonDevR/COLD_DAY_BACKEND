@@ -26,11 +26,15 @@ const ETIQUETA_PRIORIDAD: Record<Prioridad, string> = {
 @Component({
   selector: 'app-priority-chip',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="cd-chip cd-chip--{{ tono() }}" data-testid="prioridad-chip">{{ etiqueta() }}</span>`,
+  template: `<span class="cd-chip cd-chip--{{ tono() }}" data-testid="prioridad-chip">{{
+    conPalabra() ? 'Prioridad ' + etiqueta().toLowerCase() : etiqueta()
+  }}</span>`,
 })
 export class PriorityChipComponent {
   /** Las órdenes sin dato del backend se muestran como Media. */
   readonly prioridad = input<Prioridad>('MEDIA');
+  /** «Prioridad media»: la palabra sola junto a un estado no se entendía. */
+  readonly conPalabra = input(false);
 
   protected readonly tono = computed(() => TONO_PRIORIDAD[this.prioridad()]);
   protected readonly etiqueta = computed(() => ETIQUETA_PRIORIDAD[this.prioridad()]);

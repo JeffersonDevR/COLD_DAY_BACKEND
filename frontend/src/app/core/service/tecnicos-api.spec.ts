@@ -401,7 +401,9 @@ describe('TecnicosApi', () => {
     await diag;
 
     const fin = firstValueFrom(api.finalizarServicio('ot1', 'EFECTIVO'));
-    http.expectOne('/api/ot/ot1/finalizar').flush(null);
+    const finReq = http.expectOne('/api/ot/ot1/finalizar');
+    expect(finReq.request.body).toEqual({ medioPago: 'EFECTIVO' });
+    finReq.flush(null);
     await fin;
 
     const doc = firstValueFrom(api.subirDocumento('TEC-001', 'CEDULA', 'url', '2025-01-01', '2027-01-01'));

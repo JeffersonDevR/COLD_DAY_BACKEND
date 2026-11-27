@@ -46,9 +46,9 @@ public class ReconciliarTecnicosOcupadosUseCase {
             if (tieneOrdenActiva) {
                 continue;
             }
-            tecnico.liberarOrden();
-            if (tecnico.getEstadoOperativo() == EstadoOperativo.DISPONIBLE) {
-                tecnicoRepository.save(tecnico);
+            // Escritura condicional: si la fila ya cambio (p. ej. finalizar lo
+            // bloqueo mientras se leian sus ordenes), no se toca.
+            if (tecnicoRepository.liberarSiOcupado(tecnico.getId()) == 1) {
                 log.warn("Tecnico {} liberado automaticamente: no tiene OT activa", tecnico.getId().valor());
                 reconciliados++;
             }

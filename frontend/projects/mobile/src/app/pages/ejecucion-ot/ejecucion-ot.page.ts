@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -34,8 +35,9 @@ import {
   IonSpinner,
   IonTextarea,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable, tap, forkJoin, of, catchError, finalize } from 'rxjs';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { avisarErrorAccion, mensajeErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -56,6 +58,7 @@ import {
 import { MobileToastService } from '../../core/toast.service';
 import { CatalogoInsumosService, ProductoCatalogo } from '../../core/catalogo-insumos';
 import { ActivatedRoute } from '@angular/router';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /** Only a 409 proves the client has not paid yet or the order moved elsewhere. */
 const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
@@ -70,6 +73,9 @@ const ESTADOS_PEDIDO_EN_CURSO: readonly string[] = ['SOLICITADO', 'ASIGNADO', 'D
   selector: 'app-ejecucion-ot',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     IonFooter,
     ReactiveFormsModule,
     IonBackButton,
@@ -111,6 +117,8 @@ export class EjecucionOtPage implements OnInit {
   readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
   readonly enSitio = signal(false);
+  /** Evita que un doble toque envíe dos veces el mismo paso. */
+  readonly enviandoPaso = signal(false);
   readonly enviandoDiagnostico = signal(false);
   readonly finalizando = signal(false);
   readonly insumosOt = signal<SolicitudInsumoResponse[]>([]);
@@ -135,6 +143,66 @@ export class EjecucionOtPage implements OnInit {
     const orden = this.ot();
     return orden?.estado === 'EN_DIAGNOSTICO' && !!orden.presupuesto;
   });
+  /** El paso en el que va la orden: lo primero que se lee. */
+  readonly paso = computed(() => {
+    const orden = this.ot();
+    switch (orden?.estado) {
+      case 'ASIGNADA':
+        return this.desplazamientoBloqueadoPorPago() ? 'Visita pendiente de pago' : 'Lista para salir';
+      case 'EN_CAMINO':
+        return this.enSitio() ? 'Diagnóstico' : 'En camino';
+      case 'EN_DIAGNOSTICO':
+        return this.presupuestoEnviado() ? 'Esperando al cliente' : 'Diagnóstico';
+      case 'FINALIZADA':
+        return 'Servicio finalizado';
+      case undefined:
+        return '';
+      default:
+        return ETIQUETA_ESTADO_OT[orden!.estado];
+    }
+  });
+
+  /** Una sola acción en el pie, la del paso. */
+  readonly accionPie = computed<'salir' | 'llegar' | 'diagnostico' | 'finalizar' | 'volver' | null>(
+    () => {
+      const estado = this.ot()?.estado;
+      if (estado === 'ASIGNADA') return 'salir';
+      if (estado === 'EN_CAMINO' && !this.enSitio()) return 'llegar';
+      if (this.mostrarDiagnostico()) return 'diagnostico';
+      if (estado === 'EN_REPARACION') return 'finalizar';
+      return estado === 'FINALIZADA' ? 'volver' : null;
+    },
+  );
+
+  /** Visita estimada mientras la orden no la tenga registrada (se fija al cerrar). */
+  private readonly visitaEstimada = signal<number | null>(null);
+  private readonly visita = computed(() => this.ot()?.tarifaVisita ?? this.visitaEstimada());
+
+  /** `true` cuando el total mostrado ya incluye la visita. */
+  readonly incluyeVisita = computed(() => this.visita() !== null);
+
+  /** Presupuesto más visita; sin presupuesto no se afirma un valor. */
+  readonly valorACobrar = computed<number | null>(() => {
+    const orden = this.ot();
+    if (!orden?.presupuesto) return null;
+    return orden.presupuesto.total + (this.visita() ?? 0);
+  });
+
+  /** Comisión de la plataforma: 15 % de lo cobrado (la calcula y registra el servidor). */
+  readonly comision = computed(() => Math.round((this.valorACobrar() ?? 0) * 0.15));
+
+  /** La misma tarifa que usa el servidor al cerrar, pedida al llegar al cierre. */
+  private estimarVisita(): void {
+    const orden = this.ot();
+    const punto = orden?.punto;
+    if (orden?.estado !== 'EN_REPARACION' || orden.tarifaVisita != null || !punto) return;
+    this.otApi.estimarTarifa(punto).subscribe({
+      next: (estimacion) =>
+        this.visitaEstimada.set(estimacion.fueraDeRango ? null : estimacion.tarifa),
+      error: () => this.visitaEstimada.set(null),
+    });
+  }
+
   readonly mostrarDiagnostico = computed(() => {
     const estado = this.ot()?.estado;
     if (this.presupuestoEnviado()) return false;
@@ -188,7 +256,35 @@ export class EjecucionOtPage implements OnInit {
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.valorDiagnostico.set(this.diagnosticoForm.getRawValue()));
     effect(() => this.presencia.sincronizarOt(this.ot()));
+    // Solo cuando cambia la orden o su estado: no en cada recarga del mismo punto.
+    const claveCierre = computed(() => {
+      const orden = this.ot();
+      return orden?.estado === 'EN_REPARACION' ? orden.id : null;
+    });
+    effect(() => {
+      if (claveCierre()) untracked(() => this.estimarVisita());
+    });
   }
+
+  /** Deslizar: orden e insumos; el formulario no se toca. */
+  readonly recargar = (): Observable<unknown> => {
+    // Con la carga inicial fallida, deslizar es reintentar: así se quita el aviso.
+    if (this.otErrorCarga()) {
+      this.reintentarCargaOt();
+      return of(null);
+    }
+    return forkJoin([
+      this.otApi.getOtById(this.otId()),
+      // Como en la carga inicial: sin insumos la orden se actualiza igual.
+      this.tecnicosApi.getInsumosOt(this.otId()).pipe(catchError(() => of(this.insumosOt()))),
+    ]).pipe(
+      tap(([orden, insumos]) => {
+        this._otRemoto.set(orden);
+        this.ahora.set(Date.now());
+        this.insumosOt.set(insumos);
+      }),
+    );
+  };
 
   ngOnInit(): void {
     // Aparte del respaldo del SSE: los cambios de un pedido no llegan por el stream de la OT.
@@ -323,7 +419,9 @@ export class EjecucionOtPage implements OnInit {
       );
       return;
     }
-    this.tecnicosApi.iniciarDesplazamiento(this.otId()).subscribe({
+    if (this.enviandoPaso()) return;
+    this.enviandoPaso.set(true);
+    this.tecnicosApi.iniciarDesplazamiento(this.otId()).pipe(finalize(() => this.enviandoPaso.set(false))).subscribe({
       next: () => {
         void this.toast.info('En camino', 'El cliente puede rastrear tu trayecto en vivo.');
         this.recargarOt();
@@ -339,7 +437,9 @@ export class EjecucionOtPage implements OnInit {
   }
 
   llegarADomicilio(): void {
-    this.tecnicosApi.llegarADomicilio(this.otId()).subscribe({
+    if (this.enviandoPaso()) return;
+    this.enviandoPaso.set(true);
+    this.tecnicosApi.llegarADomicilio(this.otId()).pipe(finalize(() => this.enviandoPaso.set(false))).subscribe({
       next: () => {
         this.enSitio.set(true);
         this.recargarOt();
@@ -442,7 +542,7 @@ export class EjecucionOtPage implements OnInit {
         this.finalizando.set(false);
         this.presencia.liberarContexto();
         this.recargarOt();
-        void this.toast.success('Servicio finalizado', 'El cliente ya puede ver el acta y calificar.');
+        void this.toast.success('Servicio finalizado', 'Consigna la comisión en Gestión para volver a recibir órdenes.');
       },
       error: (err: Error) => {
         this.finalizando.set(false);

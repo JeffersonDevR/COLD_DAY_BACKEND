@@ -5,6 +5,7 @@ import {
   IonHeader,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { mensajeErrorAccion } from '@core/alertas/mensaje-error';
@@ -22,6 +23,8 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
+import { Observable, tap, forkJoin, catchError, of } from 'rxjs';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /** Tope del ETA que el proveedor puede comprometer (el backend lo valida igual). */
 const ETA_MAXIMO_MINUTOS = 240;
@@ -33,6 +36,9 @@ const PEDIDO_REEMPLAZADO = 'Este pedido ya no es tuyo';
   selector: 'app-solicitudes-proveedor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     IonButton,
     IonContent,
     IonHeader,
@@ -92,6 +98,20 @@ export class SolicitudesProveedorPage implements OnInit {
         (oferta) => oferta.estado === 'PENDIENTE' || oferta.estado === 'ACEPTADA',
       ).length,
   );
+
+  /** Deslizar: solo cambia los datos si llegan las solicitudes. */
+  readonly recargar = (): Observable<unknown> =>
+    forkJoin([
+      this.proveedoresApi.getMisSolicitudes(),
+      this.proveedoresApi.getMiPerfil().pipe(catchError(() => of(null))),
+    ]).pipe(
+      tap(([ofertas, perfil]) => {
+        this.ofertas.set(ofertas);
+        if (perfil) this.perfil.set(perfil);
+        this.errorCarga.set(false);
+        this.validacionBloquea.set(false);
+      }),
+    );
 
   ngOnInit(): void {
     this.cargar();

@@ -31,7 +31,7 @@
     <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="aviso-consignacion">
       <h2 class="cd-alerta__titulo">Tienes comisión por consignar</h2>
       <p class="cd-alerta__texto">
-        <strong>$ {{ cop(porConsignar()) }} COP</strong>. Regístrala en la web: hasta entonces no puedes tomar servicios.
+        <strong>$ {{ cop(porConsignar()) }} COP</strong>. Envía el número de referencia en Liquidaciones: hasta que se apruebe no puedes tomar servicios.
       </p>
     </section>
   }
@@ -162,6 +162,29 @@
             <p class="cd-alerta__texto" [attr.data-testid]="'motivo-' + liq.id">
               Motivo del rechazo: {{ liq.motivoRechazo }}
             </p>
+          }
+
+          @if (pideReferencia(liq)) {
+            <div class="cd-form">
+              <ion-input
+                label="Número de referencia"
+                labelPlacement="stacked"
+                [value]="referenciaDe(liq.id)"
+                maxlength="100"
+                (ionInput)="escribirReferencia(liq.id, $any($event).detail.value ?? '')"
+                [attr.data-testid]="'referencia-' + liq.id"
+              ></ion-input>
+              <ion-button
+                expand="block"
+                fill="outline"
+                [disabled]="!referenciaDe(liq.id).trim() || enviando() === liq.id"
+                [attr.aria-busy]="enviando() === liq.id"
+                (click)="enviarReferencia(liq)"
+                [attr.data-testid]="'enviar-referencia-' + liq.id"
+              >
+                Enviar referencia
+              </ion-button>
+            </div>
           }
         </article>
       }

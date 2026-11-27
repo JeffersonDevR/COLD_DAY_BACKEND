@@ -1,5 +1,4 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
@@ -12,7 +11,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize, Subscription } from 'rxjs';
+import { finalize, Subscription, Observable, tap, of } from 'rxjs';
 import {
   IonBackButton,
   IonButton,
@@ -25,6 +24,7 @@ import {
   IonIcon,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -41,6 +41,7 @@ import {
   TarifaEstimadaResponse,
 } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /**
  * The acta registration conflict (409) is a lifecycle clash — the OT is not
@@ -82,6 +83,9 @@ const MENSAJES_ACTA: Record<number, string> = {
   selector: 'app-pago-acta',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     IonBackButton,
     IonButton,
     IonButtons,
@@ -96,7 +100,7 @@ const MENSAJES_ACTA: Record<number, string> = {
   ],
   templateUrl: './pago-acta.page.html',
 })
-export class PagoActaPage implements OnInit, AfterViewInit {
+export class PagoActaPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly otApi = inject(OtApi);
@@ -106,7 +110,22 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   private readonly toast = inject(MobileToastService);
   private readonly destroyRef = inject(DestroyRef);
 
-  @ViewChild('signatureCanvas') canvasRef?: ElementRef<HTMLCanvasElement>;
+  canvasRef?: ElementRef<HTMLCanvasElement>;
+
+  /**
+   * El lienzo vive dentro de `@if (ot())`: contra el servidor aparece después de
+   * la vista, así que el contexto se prepara cuando el elemento llega.
+   */
+  @ViewChild('signatureCanvas')
+  set lienzo(ref: ElementRef<HTMLCanvasElement> | undefined) {
+    this.canvasRef = ref;
+    this.ctx = ref?.nativeElement.getContext('2d') ?? null;
+    if (this.ctx) {
+      this.ctx.strokeStyle = '#22d3ee';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.lineCap = 'round';
+    }
+  }
 
   readonly otId = signal('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
@@ -181,6 +200,8 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   readonly guardando = signal<boolean>(false);
 
   private isDrawing = false;
+  /** Con un trazo en curso no se recarga: el gesto es de la firma. */
+  readonly firmando = signal(false);
   private ctx: CanvasRenderingContext2D | null = null;
 
   /** Header back: returns to the OT (or the panel if no id yet). */
@@ -191,6 +212,16 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   readonly categoriaLabel = computed<string>(
     () => this.ot()?.categoriaServicio.replace('_', ' ') ?? '',
   );
+
+  /** Deslizar: trae la orden de nuevo; lo escrito en pantalla se conserva. */
+  readonly recargar = (): Observable<unknown> => {
+    // Con la carga inicial fallida, deslizar es reintentar: así se quita el aviso.
+    if (this.otErrorCarga()) {
+      this.reintentarCargaOt();
+      return of(null);
+    }
+    return this.otApi.getOtById(this.otId()).pipe(tap((orden) => this._otRemoto.set(orden)));
+  };
 
   ngOnInit(): void {
     this.cargaOtEstado = cargarOtDesdeRuta(
@@ -204,16 +235,6 @@ export class PagoActaPage implements OnInit, AfterViewInit {
     );
   }
 
-  ngAfterViewInit(): void {
-    const canvas = this.canvasRef?.nativeElement;
-    if (!canvas) return;
-    this.ctx = canvas.getContext('2d');
-    if (this.ctx) {
-      this.ctx.strokeStyle = '#22d3ee';
-      this.ctx.lineWidth = 2.5;
-      this.ctx.lineCap = 'round';
-    }
-  }
 
   /** Copy of the load failure; null while there is no failure. */
   otErrorCarga(): string | null {
@@ -290,6 +311,7 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   startDrawing(e: PointerEvent): void {
     if (!this.ctx || !this.canvasRef) return;
     this.isDrawing = true;
+    this.firmando.set(true);
     const { x, y } = this.posicionEnCanvas(e);
     this.ctx.beginPath();
     this.ctx.moveTo(x, y);
@@ -305,6 +327,7 @@ export class PagoActaPage implements OnInit, AfterViewInit {
 
   stopDrawing(): void {
     this.isDrawing = false;
+    this.firmando.set(false);
   }
 
   /**

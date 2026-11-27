@@ -10,7 +10,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable, tap, of } from 'rxjs';
 import {
   IonBackButton,
   IonButton,
@@ -23,6 +23,7 @@ import {
   IonIcon,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -40,6 +41,7 @@ import {
   TarifaFuente,
 } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /**
  * A7 — Technical diagnosis and budget (client).
@@ -61,6 +63,9 @@ import { MobileToastService } from '../../core/toast.service';
   selector: 'app-diagnostico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     ReactiveFormsModule,
     IonBackButton,
     IonButton,
@@ -156,6 +161,16 @@ export class DiagnosticoPage implements OnInit {
 
   /** Fallback poll when SSE gives up; `null` while the stream is alive. */
   private suscripcionRespaldo: Subscription | null = null;
+
+  /** Deslizar: trae la orden de nuevo; lo escrito en pantalla se conserva. */
+  readonly recargar = (): Observable<unknown> => {
+    // Con la carga inicial fallida, deslizar es reintentar: así se quita el aviso.
+    if (this.otErrorCarga()) {
+      this.reintentarCargaOt();
+      return of(null);
+    }
+    return this.otApi.getOtById(this.otId()).pipe(tap((orden) => this._otRemoto.set(orden)));
+  };
 
   ngOnInit(): void {
     this.cargaOtEstado = cargarOtDesdeRuta(

@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
+import com.sena.cold_day.core.modules.administracion.domain.repository.LiquidacionRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoBloqueadoPorLiquidacionException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,15 +77,30 @@ class AceptarOfertaUseCaseTest {
     @Mock OtEstadoHistorialRepository historialRepository;
     @Mock TecnicoRepository tecnicoRepository;
     @Mock ApplicationEventPublisher events;
+    @Mock LiquidacionRepository liquidaciones;
 
     private AceptarOfertaUseCase useCase;
 
     @BeforeEach
     void setUp() {
         useCase = new AceptarOfertaUseCase(ofertaRepository, otRepository, historialRepository,
-                tecnicoRepository, events, Clock.fixed(AHORA, ZoneOffset.UTC), MAX_AUXILIARES, null);
+                tecnicoRepository, events, Clock.fixed(AHORA, ZoneOffset.UTC), MAX_AUXILIARES, null, liquidaciones);
         // Por defecto el tecnico gana su puerta atomica; los tests de carrera la cierran.
         lenient().when(tecnicoRepository.ocuparSiDisponible(any())).thenReturn(1);
+    }
+
+    @Test
+    void conComisionPorConsignarNoSePuedeAceptar() {
+        Tecnico tecnico = tecnicoDisponible();
+        OfertaOt oferta = ofertaPendiente(OtId.nueva(), tecnico.getId());
+        cuandoElTecnicoSeResuelve(tecnico);
+        cuandoLaOfertaExiste(oferta);
+        when(liquidaciones.existeBloqueadoraPara(tecnico.getId())).thenReturn(true);
+
+        assertThatThrownBy(() -> useCase.aceptar(PRINCIPAL, oferta.getId(), 0))
+                .isInstanceOf(TecnicoBloqueadoPorLiquidacionException.class);
+
+        verify(tecnicoRepository, never()).ocuparSiDisponible(any());
     }
 
     @Test

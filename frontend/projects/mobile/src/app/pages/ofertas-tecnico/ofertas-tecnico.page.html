@@ -8,6 +8,10 @@
     </ion-toolbar>
   </ion-header>
 
+<ion-refresher slot="fixed" [cdRecargar]="recargar">
+  <cd-recarga-contenido />
+</ion-refresher>
+
   @if (ofertas().length > 0) {
     <p class="cd-hero__nota cd-radar__conteo" data-testid="radar-conteo">
       {{ ofertas().length }} {{ ofertas().length === 1 ? 'oferta' : 'ofertas' }} cerca de ti
@@ -55,7 +59,7 @@
     <section class="cd-alerta cd-alerta--error" role="alert" data-testid="radar-bloqueado">
       <h2 class="cd-alerta__titulo">Operación bloqueada</h2>
       <p class="cd-alerta__texto">
-        Liquidación pendiente. Registra la consignación en la web para tomar servicios.
+        Liquidación pendiente. Envía la referencia de la consignación en Gestión para volver a tomar servicios.
       </p>
     </section>
   }

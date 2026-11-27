@@ -23,6 +23,10 @@
 </ion-header>
 
 <ion-content class="ion-padding">
+
+<ion-refresher slot="fixed" [cdRecargar]="recargar">
+  <cd-recarga-contenido />
+</ion-refresher>
   <!-- La carga nunca queda invisible: o hay contenido, o hay error con Reintentar. -->
   @if (cargandoInicial()) {
     <div class="cd-cargando" data-testid="ot-cargando">

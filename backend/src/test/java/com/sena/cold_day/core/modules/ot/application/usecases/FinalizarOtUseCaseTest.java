@@ -1,5 +1,11 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
+import com.sena.cold_day.core.modules.administracion.domain.aggregates.Liquidacion;
+import com.sena.cold_day.core.modules.administracion.domain.repository.LiquidacionRepository;
+import com.sena.cold_day.core.modules.administracion.domain.valueobjects.EstadoLiquidacion;
+import com.sena.cold_day.core.modules.administracion.domain.valueobjects.MedioPago;
+import com.sena.cold_day.core.modules.administracion.domain.events.LiquidacionRegistrada;
+import com.sena.cold_day.core.modules.ot.domain.valueobjects.Presupuesto;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,6 +66,7 @@ class FinalizarOtUseCaseTest {
     @Mock TecnicoRepository tecnicoRepository;
     @Mock ApplicationEventPublisher events;
     @Mock MapsUseCase maps;
+    @Mock LiquidacionRepository liquidaciones;
 
     private FinalizarOtUseCase useCase;
 
@@ -70,7 +77,8 @@ class FinalizarOtUseCaseTest {
 
     private FinalizarOtUseCase useCaseConTarifa(TarifaProperties props) {
         return new FinalizarOtUseCase(otRepository, tecnicoRepository, events,
-                Clock.fixed(AHORA, ZoneOffset.UTC), new EstimarTarifaUseCase(maps, props));
+                Clock.fixed(AHORA, ZoneOffset.UTC), new EstimarTarifaUseCase(maps, props),
+                liquidaciones, new BigDecimal("0.15"));
     }
 
     @Test
@@ -166,6 +174,97 @@ class FinalizarOtUseCaseTest {
         assertThat(response.tarifaVisita()).isNull();
         assertThat(ot.getDistanciaKm()).isNull();
         assertThat(ot.getTarifaFuente()).isNull();
+    }
+
+    @Test
+    void finalizarRegistraLaComisionSobrePresupuestoMasVisitaYBloquea() {
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otConPresupuesto(tecnico.getId());
+        preparar(tecnico, ot);
+        when(liquidaciones.buscarPorOt(ot.getId())).thenReturn(Optional.empty());
+        when(liquidaciones.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        useCase.finalizar(PRINCIPAL, ot.getId(), MedioPago.TRANSFERENCIA);
+
+        ArgumentCaptor<Liquidacion> captor = ArgumentCaptor.forClass(Liquidacion.class);
+        verify(liquidaciones).save(captor.capture());
+        Liquidacion liquidacion = captor.getValue();
+        assertThat(liquidacion.getMontoCobrado()).isEqualByComparingTo("230000");
+        assertThat(liquidacion.getValorComision()).isEqualByComparingTo("34500");
+        assertThat(liquidacion.getMedioPago()).isEqualTo(MedioPago.TRANSFERENCIA);
+        assertThat(liquidacion.getEstado()).isEqualTo(EstadoLiquidacion.PENDIENTE_CONSIGNACION);
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.BLOQUEADO_POR_LIQUIDACION);
+        verify(events).publishEvent(any(LiquidacionRegistrada.class));
+    }
+
+    @Test
+    void sinMedioDePagoSeRegistraComoEfectivo() {
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otConPresupuesto(tecnico.getId());
+        preparar(tecnico, ot);
+        when(liquidaciones.buscarPorOt(ot.getId())).thenReturn(Optional.empty());
+        when(liquidaciones.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        useCase.finalizar(PRINCIPAL, ot.getId());
+
+        ArgumentCaptor<Liquidacion> captor = ArgumentCaptor.forClass(Liquidacion.class);
+        verify(liquidaciones).save(captor.capture());
+        assertThat(captor.getValue().getMedioPago()).isEqualTo(MedioPago.EFECTIVO);
+    }
+
+    @Test
+    void conLiquidacionPreviaNoSeDuplica() {
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otConPresupuesto(tecnico.getId());
+        preparar(tecnico, ot);
+        Liquidacion previa = Liquidacion.registrar(ot.getId(), tecnico.getId(), BigDecimal.TEN,
+                MedioPago.EFECTIVO, new BigDecimal("0.15"), AHORA);
+        when(liquidaciones.buscarPorOt(ot.getId())).thenReturn(Optional.of(previa));
+
+        useCase.finalizar(PRINCIPAL, ot.getId(), MedioPago.EFECTIVO);
+
+        verify(liquidaciones, never()).save(any());
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.DISPONIBLE);
+    }
+
+    @Test
+    void sinPresupuestoNoHayLiquidacionNiBloqueo() {
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otEnReparacion(tecnico.getId());
+        preparar(tecnico, ot);
+
+        useCase.finalizar(PRINCIPAL, ot.getId(), MedioPago.EFECTIVO);
+
+        verify(liquidaciones, never()).save(any());
+        assertThat(tecnico.getEstadoOperativo()).isEqualTo(EstadoOperativo.DISPONIBLE);
+    }
+
+    @Test
+    void unTecnicoSuspendidoAMitadDeLaOrdenIgualPuedeCerrarla() {
+        Tecnico tecnico = tecnicoOcupado();
+        Ot ot = otConPresupuesto(tecnico.getId());
+        tecnico.rechazarValidacion("documentos vencidos");
+        preparar(tecnico, ot);
+        when(liquidaciones.buscarPorOt(ot.getId())).thenReturn(Optional.empty());
+        when(liquidaciones.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OtResponse response = useCase.finalizar(PRINCIPAL, ot.getId(), MedioPago.EFECTIVO);
+
+        assertThat(response.estado()).isEqualTo(EstadoOt.FINALIZADA);
+        verify(liquidaciones).save(any());
+    }
+
+    private void preparar(Tecnico tecnico, Ot ot) {
+        when(otRepository.buscarPorId(ot.getId())).thenReturn(Optional.of(ot));
+        when(tecnicoRepository.findByUsuarioIdAndActivoTrue(USUARIO_ID)).thenReturn(Optional.of(tecnico));
+        when(otRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private Ot otConPresupuesto(TecnicoId tecnicoId) {
+        return Ot.reconstituir(OtId.nueva(), ClienteId.nueva(), tecnicoId, CategoriaServicio.REFRIGERACION,
+                "No enciende", List.of(), "Calle 1", new Point(7.8939, -72.5078), EstadoOt.EN_REPARACION,
+                10.0, AHORA.plusSeconds(60), AHORA, AHORA, null, null, null, null, null,
+                new Presupuesto(new BigDecimal("150000"), new BigDecimal("50000"), AHORA));
     }
 
     private Tecnico tecnicoOcupado() {

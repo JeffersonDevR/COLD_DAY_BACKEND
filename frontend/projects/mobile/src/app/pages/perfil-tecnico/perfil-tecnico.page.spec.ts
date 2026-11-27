@@ -1,8 +1,9 @@
+import { ApiHttpError } from '@core/alertas/api-http.error';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { DocumentoTecnico, TecnicoResponse } from '@core/models/common.models';
 import { TecnicosApi } from '@core/service/tecnicos-api';
 import { MobileToastService } from '../../core/toast.service';
@@ -141,5 +142,46 @@ describe('PerfilTecnicoPage (B4)', () => {
 
     expect(page.etiquetaCategoria('LAVADORAS')).toBe('Lavadoras');
     expect(page.etiquetaCategoria('CAMARAS_VIGILANCIA')).toBe('Cámaras de vigilancia');
+  });
+});
+
+describe('Perfil técnico: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getMiPerfil.mockReturnValue(of(tecnico({ categoriasServicio: ['ELECTRICIDAD'] })));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.estaSeleccionada('ELECTRICIDAD')).toBe(true);
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getMiPerfil.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.componentInstance.tecnico()).toBeDefined();
+  });
+
+  it('no pisa la selección sin guardar', () => {
+    const { fixture, api } = setup();
+    fixture.componentInstance.toggleCategoria('LAVADORAS');
+    const antes = fixture.componentInstance.estaSeleccionada('LAVADORAS');
+    api.getMiPerfil.mockReturnValue(of(tecnico({ categoriasServicio: ['ELECTRICIDAD'] })));
+
+    fixture.componentInstance.recargar().subscribe();
+
+    expect(fixture.componentInstance.estaSeleccionada('LAVADORAS')).toBe(antes);
+    expect(fixture.componentInstance.estaSeleccionada('ELECTRICIDAD')).toBe(false);
   });
 });

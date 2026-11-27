@@ -53,6 +53,10 @@ public class PostgisTecnicoDisponibilidadAdapter implements TecnicoDisponibilida
               AND t.longitud IS NOT NULL
               AND t.ubicacion_actualizada_en IS NOT NULL
               AND t.ubicacion_actualizada_en >= :desde
+              AND NOT EXISTS (
+                SELECT 1 FROM liquidacion l
+                WHERE l.tecnico_id = t.id
+                  AND l.estado IN ('PENDIENTE_CONSIGNACION', 'EN_VERIFICACION', 'RECHAZADA'))
               AND ST_DWithin(
                 ST_MakePoint(t.longitud, t.latitud)::geography,
                 ST_MakePoint(:lon, :lat)::geography,

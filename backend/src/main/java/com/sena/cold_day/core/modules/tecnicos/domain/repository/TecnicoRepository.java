@@ -41,5 +41,12 @@ public interface TecnicoRepository {
      */
     int ocuparSiDisponible(TecnicoId id);
 
+    /**
+     * Pasa a {@code DISPONIBLE} solo si en la base sigue {@code OCUPADO} y
+     * {@code APROBADO}. Asi quien libera desde una lectura vieja no pisa el
+     * bloqueo por liquidacion que otra transaccion acaba de guardar.
+     */
+    int liberarSiOcupado(TecnicoId id);
+
     void deleteAll();
 }

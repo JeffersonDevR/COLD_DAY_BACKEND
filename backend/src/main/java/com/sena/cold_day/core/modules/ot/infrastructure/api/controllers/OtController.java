@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.ot.infrastructure.api.controllers;
 
+import com.sena.cold_day.core.modules.ot.infrastructure.api.requests.FinalizarOtApiRequest;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -253,8 +254,10 @@ public class OtController {
     /** RF-F1-10: the assigned technician finishes the repair. */
     @PostMapping("/{id}/finalizar")
     @PreAuthorize("hasRole('TECNICO')")
-    public OtApiResponse finalizar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id) {
-        return conNombres(finalizar.finalizar(principal.usuarioId(), id));
+    public OtApiResponse finalizar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id,
+            @Valid @RequestBody(required = false) FinalizarOtApiRequest request) {
+        return conNombres(finalizar.finalizar(principal.usuarioId(), id,
+                request == null ? null : request.medioPago()));
     }
 
     /**

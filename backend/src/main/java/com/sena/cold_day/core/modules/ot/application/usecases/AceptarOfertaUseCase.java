@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.ot.application.usecases;
 
+import com.sena.cold_day.core.modules.administracion.domain.repository.LiquidacionRepository;
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoBloqueadoPorLiquidacionException;
 import java.time.Clock;
 import java.time.Instant;
 
@@ -58,12 +60,15 @@ public class AceptarOfertaUseCase {
     private final Clock clock;
     private final int maxAuxiliares;
     private final AceptarOfertaUseCase self;
+    private final LiquidacionRepository liquidaciones;
 
     public AceptarOfertaUseCase(OfertaOtRepository ofertaRepository, OtRepository otRepository,
             OtEstadoHistorialRepository historialRepository, TecnicoRepository tecnicoRepository,
             ApplicationEventPublisher events, Clock clock,
             @Value("${app.auxiliares.max:10}") int maxAuxiliares,
-            @Lazy AceptarOfertaUseCase self) {
+            @Lazy AceptarOfertaUseCase self,
+            LiquidacionRepository liquidaciones) {
+        this.liquidaciones = liquidaciones;
         this.ofertaRepository = ofertaRepository;
         this.otRepository = otRepository;
         this.historialRepository = historialRepository;
@@ -100,6 +105,11 @@ public class AceptarOfertaUseCase {
         }
         if (!oferta.estaVigente(ahora)) {
             throw new OfertaExpiradaException(ofertaId);
+        }
+
+        // Antes de tocar la orden: con deuda no se asigna nada.
+        if (liquidaciones.existeBloqueadoraPara(tecnico.getId())) {
+            throw new TecnicoBloqueadoPorLiquidacionException();
         }
 
         OtId otId = oferta.getOtId();

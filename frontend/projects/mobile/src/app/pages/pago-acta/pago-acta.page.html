@@ -30,6 +30,10 @@
 </ion-header>
 
 <ion-content class="ion-padding">
+
+<ion-refresher slot="fixed" [cdRecargar]="recargar" [disabled]="firmando()">
+  <cd-recarga-contenido />
+</ion-refresher>
   <!-- The load is never invisible: either content, or an error with Retry. -->
   @if (cargandoInicial()) {
     <div class="cd-cargando" data-testid="ot-cargando">
@@ -50,6 +54,13 @@
   }
 
   @if (ot(); as orden) {
+    <section class="cd-dato" data-testid="dato-dominante" aria-live="polite">
+      <p class="cd-dato__grande tnum">
+        {{ orden.presupuesto ? formatoTotal(totalMonto()) : 'Por confirmar' }}
+      </p>
+      <p class="cd-dato__detalle">Total del servicio</p>
+    </section>
+
     <!-- A8: el pago va primero (qué pagas, con el total), el acta y la firma
          después. Antes el documento legal encabezaba la pantalla y el dinero
          quedaba al final, contra la jerarquía de la tarea. -->
@@ -103,7 +114,7 @@
           </div>
 
           <div class="cd-desglose__total">
-            <span>Total a pagar</span>
+            <span>Total del servicio</span>
             <strong data-testid="costo-total">{{ formatoTotal(totalMonto()) }}</strong>
           </div>
         </div>
@@ -195,7 +206,7 @@
             ></canvas>
             @if (!hasFirma()) {
               <div class="cd-firma__placeholder" id="firma-ayuda">
-                Dibujá tu firma acá con el dedo
+                Dibuja tu firma aquí con el dedo
               </div>
             }
           </div>

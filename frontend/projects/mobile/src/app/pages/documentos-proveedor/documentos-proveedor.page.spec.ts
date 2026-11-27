@@ -1,3 +1,4 @@
+import { ApiHttpError } from '@core/alertas/api-http.error';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
@@ -186,5 +187,34 @@ describe('DocumentosProveedorPage (C2)', () => {
 
     const page = fixture.componentInstance;
     expect(page.etiquetaDocumento('OTRO')).toBe('Otro');
+  });
+});
+
+describe('Documentos: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getMisDocumentos.mockReturnValue(of([{ id: 9, tipo: 'RUT' } as never]));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.documentos()).toHaveLength(1);
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getMisDocumentos.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.componentInstance.documentos()).toHaveLength(0);
   });
 });

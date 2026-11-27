@@ -12,6 +12,7 @@ import {
   IonInput,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import {
@@ -25,6 +26,8 @@ import { MobileToastService } from '../../core/toast.service';
 import { PerfilTecnicoEstado, perfilTecnicoCompleto } from '../../modo/perfil-tecnico-completo.guard';
 import { TokenStorageService } from '@core/service/token-storage.service';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
+import { Observable, tap } from 'rxjs';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 const ORDEN_CATEGORIAS: CategoriaServicio[] = [
   'CAMARAS_VIGILANCIA',
@@ -39,6 +42,9 @@ const ORDEN_CATEGORIAS: CategoriaServicio[] = [
   selector: 'app-perfil-tecnico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     IonFooter,
     IonBackButton,
     IonButton,
@@ -91,6 +97,19 @@ export class PerfilTecnicoPage implements OnInit {
   /** Etiqueta canónica del estado de validación (labels.ts), igual que la web. */
   readonly validacionLabel = computed(() => estadoValidacionLabel(this.validacion()));
   readonly motivoRechazo = computed(() => this.tecnico()?.motivoRechazoValidacion ?? null);
+
+  /** Deslizar: la selección sin guardar no se pisa. */
+  readonly recargar = (): Observable<unknown> =>
+    this.tecnicosApi.getMiPerfil().pipe(
+      tap((tecnico) => {
+        if (!tecnico) return;
+        const pendiente = this.hayCambios();
+        this.tecnico.set(tecnico);
+        const base = tecnico.categoriasServicio ?? tecnico.categorias ?? [];
+        this.categoriasServidor.set(new Set(base));
+        if (!pendiente) this.seleccion.set(new Set(base));
+      }),
+    );
 
   ngOnInit(): void {
     cargarTecnicoAutenticado(

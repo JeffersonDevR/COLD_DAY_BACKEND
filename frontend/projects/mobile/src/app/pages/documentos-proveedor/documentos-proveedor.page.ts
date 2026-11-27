@@ -12,6 +12,7 @@ import {
   IonSelectOption,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import {
@@ -29,6 +30,8 @@ import { DocumentoVista, DocumentosListaComponent } from '../../shared/ui/docume
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
+import { Observable, tap, forkJoin, catchError, of } from 'rxjs';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /**
  * C2 — Documentos de la empresa (proveedor): tipo y vencimiento, sin archivo (el
@@ -40,6 +43,9 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
   selector: 'app-documentos-proveedor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     ReactiveFormsModule,
     IonButton,
     IonCard,
@@ -96,6 +102,18 @@ export class DocumentosProveedorPage implements OnInit {
     razonSocial: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     nit: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
+
+  /** Deslizar: actualiza documentos y validación sin tocar lo que se esté escribiendo. */
+  readonly recargar = (): Observable<unknown> =>
+    forkJoin([
+      this.proveedoresApi.getMisDocumentos(),
+      this.proveedoresApi.getMiPerfil().pipe(catchError(() => of(null))),
+    ]).pipe(
+      tap(([documentos, perfil]) => {
+        this.documentos.set(documentos);
+        if (perfil?.estadoValidacion) this.estadoValidacion.set(perfil.estadoValidacion);
+      }),
+    );
 
   ngOnInit(): void {
     this.cargar();

@@ -401,7 +401,7 @@ export class TecnicosApi {
       this.mockDb.finalizarOtConPago(otId, medioPago, firmaDataUrl);
       return of(undefined).pipe(delay(300));
     }
-    return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/finalizar`), null);
+    return this.http.post<void>(this.apiConfig.url(`/ot/${otId}/finalizar`), { medioPago });
   }
 
   /**

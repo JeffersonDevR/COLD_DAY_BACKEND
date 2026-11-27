@@ -56,6 +56,7 @@ function setup({
   const api = {
     getOtById: getOtById ?? vi.fn(() => of(orden)),
     getInsumosOt: vi.fn(() => of([])),
+    estimarTarifa: vi.fn(() => of({ tarifa: 30000, fueraDeRango: false })),
     iniciarDesplazamiento: vi.fn(() => of(undefined)),
     llegarADomicilio: vi.fn(() => of(undefined)),
     registrarDiagnostico: vi.fn(() => of(undefined)),
@@ -73,7 +74,7 @@ function setup({
       provideHttpClient(),
       provideRouter([]),
       { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'ot1' })) } },
-      { provide: OtApi, useValue: { getOtById: api.getOtById } },
+      { provide: OtApi, useValue: { getOtById: api.getOtById, estimarTarifa: api.estimarTarifa } },
       { provide: TecnicosApi, useValue: api },
       { provide: TecnicoPresenciaService, useValue: presencia },
       { provide: SseService, useValue: sse },
@@ -394,5 +395,210 @@ describe('EjecucionOtPage (B3)', () => {
       vi.advanceTimersByTime(120_000);
       expect(getInsumosOt).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('Ejecución: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(of(ot({ codigo: 'OT-NUEVA' })));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+  });
+
+  it('no borra el diagnóstico que se está escribiendo', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+    fixture.componentInstance.diagnosticoForm.patchValue({ diagnostico: 'Fuga en la unidad' });
+
+    fixture.componentInstance.recargar().subscribe();
+
+    expect(fixture.componentInstance.diagnosticoForm.value.diagnostico).toBe('Fuga en la unidad');
+  });
+});
+
+describe('deslizar tras fallar la carga inicial', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('recupera la orden y quita el aviso de error', () => {
+    const getOtById = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new ApiHttpError('boom', 500)))
+      .mockReturnValue(of(ot({ codigo: 'OT-RECUPERADA' })));
+    const { fixture } = setup({ getOtById });
+
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('OT-RECUPERADA');
+  });
+});
+
+describe('ejecución: paso primero y acción en el pie', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const precede = (a: HTMLElement, b: HTMLElement) =>
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  const enPie = (f: { nativeElement: HTMLElement }, id: string) =>
+    !!nodo(f, id)?.closest('ion-footer');
+
+  it.each<[Partial<OtResponse>, string]>([
+    [{ estado: 'ASIGNADA', visitaPagada: false }, 'Visita pendiente de pago'],
+    [{ estado: 'ASIGNADA', visitaPagada: true }, 'Lista para salir'],
+    [{ estado: 'EN_CAMINO' }, 'En camino'],
+    [{ estado: 'EN_DIAGNOSTICO' }, 'Diagnóstico'],
+    [{ estado: 'EN_REPARACION' }, 'En reparación'],
+    [{ estado: 'FINALIZADA' }, 'Servicio finalizado'],
+  ])('%o muestra el paso %s con la dirección', (datos, paso) => {
+    const { fixture } = setup({ orden: ot(datos) });
+    const dato = nodo(fixture, 'dato-dominante')!;
+
+    expect(dato.querySelector('.cd-dato__grande')?.textContent?.trim()).toBe(paso);
+    expect(dato.textContent).toContain('Calle 15 # 3E-28');
+  });
+
+  it('iniciar desplazamiento va en el pie y sigue bloqueado sin pago', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'ASIGNADA', visitaPagada: false }) });
+    const boton = nodo(fixture, 'iniciar-desplazamiento') as HTMLElement & { disabled?: boolean };
+
+    expect(enPie(fixture, 'iniciar-desplazamiento')).toBe(true);
+    expect(boton.disabled).toBe(true);
+  });
+
+  it('llegar y finalizar van en el pie', () => {
+    expect(enPie(setup({ orden: ot({ estado: 'EN_CAMINO' }) }).fixture, 'llegar')).toBe(true);
+    TestBed.resetTestingModule();
+    expect(
+      enPie(setup({ orden: ot({ estado: 'EN_REPARACION' }) }).fixture, 'finalizar-servicio'),
+    ).toBe(true);
+  });
+
+  it('enviar diagnóstico va en el pie y, incompleto, muestra qué falta', () => {
+    const { fixture, api } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+
+    expect(enPie(fixture, 'enviar-diagnostico')).toBe(true);
+    nodo(fixture, 'enviar-diagnostico')!.click();
+    fixture.detectChanges();
+
+    expect(nodo(fixture, 'diagnostico-incompleto')).not.toBeNull();
+    expect(api.registrarDiagnostico).not.toHaveBeenCalled();
+  });
+
+  it('con el presupuesto enviado no hay acción en el pie', () => {
+    const { fixture } = setup({
+      orden: ot({
+        estado: 'EN_DIAGNOSTICO',
+        presupuesto: { aprobado: false, total: 200000, manoObra: 200000, repuestos: 0 },
+      }),
+    });
+
+    expect(nodo(fixture, 'dato-dominante')!.textContent).toContain('Esperando al cliente');
+    expect(fixture.nativeElement.querySelector('ion-footer')).toBeNull();
+  });
+
+  it('antes de cerrar muestra el valor a cobrar: presupuesto más visita', () => {
+    const { fixture } = setup({
+      orden: ot({
+        estado: 'EN_REPARACION',
+        tarifaVisita: 30000,
+        presupuesto: { aprobado: true, total: 200000, manoObra: 200000, repuestos: 0 },
+      }),
+    });
+
+    expect(nodo(fixture, 'valor-a-cobrar')!.textContent).toContain('230.000');
+    TestBed.resetTestingModule();
+    expect(
+      nodo(setup({ orden: ot({ estado: 'EN_REPARACION' }) }).fixture, 'valor-a-cobrar'),
+    ).toBeNull();
+  });
+});
+
+describe('deslizar cuando fallan solo los insumos', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('actualiza la orden igual y no entrega error', () => {
+    const { fixture, api } = setup();
+    api.getOtById.mockReturnValue(of(ot({ codigo: 'OT-NUEVA' })));
+    api.getInsumosOt.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+
+    expect(error).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
+  });
+});
+
+describe('doble toque en los pasos', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it.each([
+    ['iniciarDesplazamiento', ot({ estado: 'ASIGNADA', visitaPagada: true })],
+    ['llegarADomicilio', ot({ estado: 'EN_CAMINO' })],
+  ] as const)('%s no se envía dos veces', (metodo, orden) => {
+    const espera = new Subject<void>();
+    const api = vi.fn(() => espera);
+    const { fixture } = setup({ orden, tecnicos: { [metodo]: api } });
+
+    fixture.componentInstance[metodo]();
+    fixture.componentInstance[metodo]();
+
+    expect(api).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('cierre con cobro', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const orden = () =>
+    ot({
+      estado: 'EN_REPARACION',
+      punto: { latitud: 7.89, longitud: -72.5 },
+      presupuesto: { aprobado: true, total: 200000, manoObra: 200000, repuestos: 0 },
+    });
+
+  it('estima la visita, muestra la comisión y avisa del bloqueo', () => {
+    const { fixture } = setup({ orden: orden() });
+
+    expect(nodo(fixture, 'valor-a-cobrar')!.textContent).toContain('230.000');
+    expect(nodo(fixture, 'comision-a-consignar')!.textContent).toContain('34.500');
+    expect(nodo(fixture, 'comision-a-consignar')!.textContent).toContain('hasta consignar');
+    expect(nodo(fixture, 'finalizar-servicio')!.textContent).toContain('Finalizar y cobrar');
+  });
+
+  it('sin estimación no inventa el total', () => {
+    const { fixture } = setup({
+      orden: orden(),
+      tecnicos: { estimarTarifa: vi.fn(() => throwError(() => new ApiHttpError('boom', 500))) },
+    });
+
+    expect(nodo(fixture, 'valor-a-cobrar')!.textContent).toContain('más la visita');
+    expect(nodo(fixture, 'comision-a-consignar')!.textContent).not.toContain('30.000');
   });
 });
