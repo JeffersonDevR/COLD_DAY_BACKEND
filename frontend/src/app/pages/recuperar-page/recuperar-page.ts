@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UsuariosApi } from '../../core/service/usuarios-api';
+import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 
 @Component({
@@ -14,8 +15,13 @@ export class RecuperarPage {
   private readonly usuariosApi = inject(UsuariosApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
-  readonly paso = signal<1 | 2>(1);
+  /** Token del enlace del correo (`/recuperar?token=…`); vacío si se entra a mano. */
+  private readonly tokenEnlace = inject(ActivatedRoute).snapshot.queryParamMap.get('token') ?? '';
+  readonly desdeEnlace = this.tokenEnlace.length > 0;
+
+  readonly paso = signal<1 | 2>(this.desdeEnlace ? 2 : 1);
   /**
    * Código de demostración. SÓLO se rellena con la respuesta del modo mock; el
    * backend real nunca lo entrega (el token viaja por correo), por eso la UI no
@@ -26,14 +32,14 @@ export class RecuperarPage {
   readonly loading = signal<boolean>(false);
 
   readonly solicitarForm = new FormGroup({
-    correo: new FormControl('maria.gomez@gmail.com', {
+    correo: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.email]
     })
   });
 
   readonly resetForm = new FormGroup({
-    token: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    token: new FormControl(this.tokenEnlace, { nonNullable: true, validators: [Validators.required] }),
     nuevaPassword: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
   });
 
@@ -73,7 +79,13 @@ export class RecuperarPage {
       next: (res) => {
         this.loading.set(false);
         this.toast.success('¡Listo!', res.mensaje);
-        this.router.navigate(['/login']);
+        // El cambio de clave revoca los tokens: una sesión abierta ya no sirve
+        // y `guestGuard` la devolvería al panel en vez de dejar ver el login.
+        if (this.auth.isAuthenticated()) {
+          this.auth.logout();
+        } else {
+          this.router.navigate(['/login']);
+        }
       },
       error: () => {
         this.loading.set(false);

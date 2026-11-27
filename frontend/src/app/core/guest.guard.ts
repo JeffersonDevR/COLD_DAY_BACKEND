@@ -18,3 +18,10 @@ export const guestGuard: CanActivateFn = () => {
 
   return true;
 };
+
+/**
+ * `/recuperar` con `?token=` es el enlace del correo: también debe abrir con
+ * sesión (los usuarios de la app móvil no tienen otra pantalla para esto).
+ */
+export const recuperarGuard: CanActivateFn = (route, state) =>
+  !!route.queryParamMap.get('token') || guestGuard(route, state);
