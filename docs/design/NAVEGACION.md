@@ -17,7 +17,7 @@ Tabs = `MODOS[modo].tabs` en `frontend/projects/mobile/src/app/modo/modo.ts`. «
 | Pantalla | Ruta | Entrada | Volver a | Diseño |
 |---|---|---|---|---|
 | Panel (tab) | `/cliente/panel` | tab | — | A4 |
-| Mis equipos (tab) | `/cliente/equipos` | tab | — | A10 |
+| Historial (tab) | `/cliente/equipos` | tab | — | A10 |
 | Cuenta (tab) | `/cliente/cuenta` | tab | — | A3 |
 | Solicitar servicio (3 pasos) | `/cliente/solicitar` | CTA del panel · CTA de equipos | panel | A5-1/2/3 |
 | Seguimiento de OT | `/cliente/ot/:id` | tarjeta del panel · tarjeta de equipos · al crear la OT | panel (`defaultHref`) | A6 |
@@ -69,7 +69,7 @@ Ordenados por impacto en el usuario. «Backend» = bloqueado por datos; **no se 
 | F4 | Cliente sin **A3.1 completar perfil** como paso propio (self-adopt de perfil cliente) | cliente | Parcial | El backend lo soporta; hoy el perfil se crea al confirmar la solicitud |
 | F5 | **Countdown** «Expira en» del radar no avanza (muestra el snapshot) | técnico | Bug de reactividad | Ticker local + recarga al llegar a 0 |
 | F6 | Bandeja del proveedor sin **refresher ni SSE**: solo ve nuevas solicitudes al recargar | proveedor | Falta | `ion-refresher` (inmediato); SSE después |
-| F7 | `ion-refresher` solo en panel-cliente, panel-tecnico y liquidaciones | todos | Inconsistente | Aplicar a toda lista remota (ver §3) |
+| F7 | `ion-refresher` en las listas y detalles con datos remotos desde 2026-11-27 | todos | Inconsistente | Aplicar a toda lista remota (ver §3) |
 | F8 | **Notificaciones**. Estado (2026-11-23): **preparado, desactivado**. Hecho: backend `V19__dispositivo_push` + `POST/DELETE /api/usuarios/me/dispositivos` (con test); móvil `core/push.ts` (permiso, canal «ofertas», registro del token, abrir ruta al tocar, baja al cerrar sesión), `@capacitor/push-notifications` y permiso `POST_NOTIFICATIONS`. Adaptador FCM del backend hecho (`FcmNotificacionPushAdapter`, activo con `FCM_ENABLED=true`). Falta solo el setup: `google-services.json` en `frontend/android/app/`, `PUSH.habilitado = true` y la cuenta de servicio en el entorno del backend. Hasta entonces solo hay toasts con la app abierta y **no se pinta** campana | todos | Firebase + backend | Ver cabecera de `core/push.ts` |
 | F9 | **Chat** con el técnico: A7 muestra «Próximamente» honesto | cliente/técnico | Backend | Backend de chat |
 | F10 | **Archivos reales** (evidencias, documentos): solo metadata | técnico/proveedor | Backend | Upload |
@@ -99,18 +99,18 @@ Medido por búsqueda de texto en `pages/*` (2026-11-23); es una guía, no una pr
 | Pantalla | Plantilla (DESIGN §5.1) | `cd-page` | `cd-marca` | Footer CTA | Skeleton | Vacío | Error | Refresher |
 |---|---|---|---|---|---|---|---|---|
 | panel-cliente | Cola | Y | Y | Y | Y | Y | Y | Y |
-| equipos | Cola | Y | Y | Y | Y | Y | Y | — |
+| equipos | Cola | Y | Y | Y | Y | Y | Y | Y |
 | cuenta | Formulario | Y | Y | — | Y | — | Y | — |
-| ofertas-tecnico (radar) | Cola | Y | Y | — | Y | Y | Y | — |
+| ofertas-tecnico (radar) | Cola | Y | Y | — | Y | Y | Y | Y |
 | panel-tecnico (Mis OTs) | Cola | Y | Y | — | Y | Y | Y | Y |
 | liquidaciones-tecnico | Cola | Y | Y | — | Y | Y | Y | Y |
-| solicitudes-proveedor | Cola | — | Y | — | Y | Y | Y | — |
-| documentos-proveedor | Cola | — | Y | — | Y | Y | — | — |
-| seguimiento-ot | Detalle | — | — | — | — | — | — | — |
-| ejecucion-ot | Detalle | — | — | Y | — | — | — | — |
-| perfil-tecnico | Formulario | — | — | Y | Y | — | — | — |
-| diagnostico | Detalle + decisión | — | — | Y | — | — | — | — |
-| pago-acta | Detalle + decisión | — | — | Y | — | — | — | — |
+| solicitudes-proveedor | Cola | — | Y | — | Y | Y | Y | Y |
+| documentos-proveedor | Cola | — | Y | — | Y | Y | — | Y |
+| seguimiento-ot | Detalle | — | — | — | — | — | — | Y |
+| ejecucion-ot | Detalle | — | — | Y | — | — | — | Y |
+| perfil-tecnico | Formulario | — | — | Y | Y | — | — | Y |
+| diagnostico | Detalle + decisión | — | — | Y | — | — | — | Y |
+| pago-acta | Detalle + decisión | — | — | Y | — | — | — | Y |
 | calificar | Formulario | — | — | Y | — | — | — | — |
 | solicitar-servicio | Asistente | — | — | Y | — | — | — | — |
 | login · registro · solo-web | Auth / salida | — | — | — | n/a | n/a | n/a | n/a |

@@ -33,6 +33,8 @@ Para **Seguimiento** (cliente), la referencia de estructura es `docs/superpowers
 
 Para los **paneles** de cliente y técnico, la referencia de estructura es `docs/superpowers/specs/2026-11-27-rediseno-paneles-design.md` (2026-11-27, aprobado por el dueño), no los prototipos a4 y b0.
 
+La pestaña **Historial** del cliente (antes «Mis equipos») sigue `docs/superpowers/specs/2026-11-27-observaciones-historial-recarga-design.md`, no el prototipo a10.
+
 Los exports crudos de Stitch traen defectos de generación (voseo, `.com.ar`, `tel:+54`, «lavarropas», `user-scalable=no`, texto de 10–11 px): se corrigen al implementar, **no** son parte del diseño. Excepciones y renegociaciones se anotan **solo en este archivo** (en la regla afectada), nunca en un documento paralelo.
 
 ---
@@ -177,14 +179,14 @@ Cada pantalla nueva o migrada elige **una**; no mezcla ni inventa estructura.
 | Plantilla | Cuándo | Estructura | Estados obligatorios |
 |---|---|---|---|
 | **Cola** (lista de trabajo) | panel, radar, mis OTs, insumos, documentos, liquidaciones | `cd-page` + `cd-marca` + resumen/filtros + tarjetas (`<a>`/`<button>`) + `ion-refresher` | skeleton con la forma de la lista · vacío (1 línea + 1 acción) · error + reintentar |
-| **Detalle** (una OT, un acta) | seguimiento, ejecución, diagnóstico, pago | `ion-header.cd-header` con `ion-back-button` (UI-N2) + héroe compacto (código + chip de estado) + secciones en tarjetas + **CTA en `cd-footer`** si hay acción | skeleton de la OT · error de carga + reintentar · estado vacío de cada sección |
+| **Detalle** (una OT, un acta) | seguimiento, ejecución, diagnóstico, pago | `ion-header.cd-header` con `ion-back-button` (UI-N2) + héroe compacto (código + chip de estado) + secciones en tarjetas + **CTA en `cd-footer`** si hay acción | deslizar para recargar (`cdRecargar`) · skeleton de la OT · error de carga + reintentar · estado vacío de cada sección |
 | **Formulario** | cuenta, perfil técnico, calificar | `cd-header` + `.cd-form` (etiqueta visible, error con `aria-describedby`/`aria-invalid`) + **guardar en `cd-footer`** | cargando · error de guardado junto al campo · éxito explícito |
 | **Asistente** | solicitar servicio | pasos con `Continuar` fijo en footer, hint «Desliza para volver», progreso real (nunca falso) | por paso: validación inline |
 | **Auth / salida** | login, registro, solo-web | sin tabs; layout centrado; `--cd-shell-max` | error inline `role="alert"`, bloqueo de doble envío |
 
 El estado actual de cada pantalla frente a su plantilla está en `docs/design/NAVEGACION.md` §3; las brechas se cierran **una pantalla por commit**.
 
-**Regla de tarjeta de orden:** toda tarjeta de orden (panel de cliente y mis órdenes) debe mostrar el chip de prioridad en el hueco `.cd-ot__prioridad` de la cabecera, con el dato real del backend o `Media` cuando no venga (`?? 'MEDIA'`). El color nunca va solo: siempre lleva su etiqueta.
+**Regla de tarjeta de orden:** en el cliente, el chip de prioridad sale **solo en órdenes activas** y con la palabra («Prioridad media»), con el dato del backend o `Media` cuando no venga (`?? 'MEDIA'`). El color nunca va solo. *(Cambiado 2026-11-27 a pedido del dueño: «Media» junto a «Finalizada» no se entendía.)*
 
 **Ya implementado:** el `<cd-page>` (header + contenido + footer) es el shell de las tres pantallas principales, y `styles.css` carga las capas `styles/{tokens,base,componentes,pantallas}.css` (ver tabla y TAREAS-UI TU-01/TU-02).
 
