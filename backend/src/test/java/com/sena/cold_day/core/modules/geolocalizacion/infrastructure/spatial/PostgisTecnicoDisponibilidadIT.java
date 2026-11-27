@@ -14,10 +14,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sena.cold_day.core.modules.geolocalizacion.domain.repository.TecnicoDisponibilidadRepository;
 import com.sena.cold_day.core.modules.geolocalizacion.domain.valueobjects.TecnicoCercano;
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
+import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.CategoriaServicio;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoOperativo;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.EstadoValidacion;
@@ -45,10 +48,23 @@ class PostgisTecnicoDisponibilidadIT {
     @Autowired TecnicoDisponibilidadRepository disponibilidad;
     @Autowired SpringDataTecnicoRepository tecnicoRepository;
     @Autowired SpringDataUsuarioRepository usuarioRepository;
+    @Autowired TecnicoRepository tecnicos;
+    @Autowired JdbcTemplate jdbc;
+    @Autowired TransactionTemplate transaccion;
+
+    private final Set<UUID> ordenesSembradas = new HashSet<>();
+    private final Set<UUID> clientesSembrados = new HashSet<>();
 
     @BeforeEach
     @AfterEach
     void limpieza() {
+        ordenesSembradas.forEach(id -> {
+            jdbc.update("DELETE FROM liquidacion WHERE ot_id = ?", id);
+            jdbc.update("DELETE FROM ot WHERE id = ?", id);
+        });
+        clientesSembrados.forEach(id -> jdbc.update("DELETE FROM clientes WHERE id = ?", id));
+        ordenesSembradas.clear();
+        clientesSembrados.clear();
         tecnicoRepository.deleteAll();
         usuarioRepository.deleteAll();
     }
@@ -153,6 +169,73 @@ class PostgisTecnicoDisponibilidadIT {
 
         assertThat(resultados).extracting(TecnicoCercano::tecnicoId)
                 .containsExactly(new TecnicoId(haceUnMinuto));
+    }
+
+    /** Con comision sin aprobar no se le ofrece trabajo, diga lo que diga su estado. */
+    @Test
+    void excluyeTecnicosConComisionSinAprobar() {
+        UUID alDia = persistirTecnico(4.61, -74.0, EstadoValidacion.APROBADO, EstadoOperativo.DISPONIBLE,
+                Set.of(CategoriaServicio.REFRIGERACION));
+        UUID yaPago = persistirTecnico(4.62, -74.0, EstadoValidacion.APROBADO, EstadoOperativo.DISPONIBLE,
+                Set.of(CategoriaServicio.REFRIGERACION));
+        sembrarLiquidacion(yaPago, "APROBADA");
+        for (String estado : new String[] { "PENDIENTE_CONSIGNACION", "EN_VERIFICACION", "RECHAZADA" }) {
+            sembrarLiquidacion(persistirTecnico(4.63, -74.0, EstadoValidacion.APROBADO,
+                    EstadoOperativo.DISPONIBLE, Set.of(CategoriaServicio.REFRIGERACION)), estado);
+        }
+
+        var resultados = disponibilidad.buscarDisponiblesEnRadio(BOGOTA, 10.0,
+                Set.of(CategoriaServicio.REFRIGERACION), marcaDeVigencia());
+
+        assertThat(resultados).extracting(TecnicoCercano::tecnicoId)
+                .containsExactly(new TecnicoId(alDia), new TecnicoId(yaPago));
+    }
+
+    @Test
+    void liberarSiOcupadoSoloTocaAlQueSigueOcupado() {
+        UUID ocupado = persistirTecnico(4.61, -74.0, EstadoValidacion.APROBADO, EstadoOperativo.OCUPADO,
+                Set.of(CategoriaServicio.REFRIGERACION));
+        UUID bloqueado = persistirTecnico(4.62, -74.0, EstadoValidacion.APROBADO,
+                EstadoOperativo.BLOQUEADO_POR_LIQUIDACION, Set.of(CategoriaServicio.REFRIGERACION));
+
+        assertThat(tecnicos.liberarSiOcupado(new TecnicoId(ocupado))).isEqualTo(1);
+        assertThat(tecnicos.liberarSiOcupado(new TecnicoId(bloqueado))).isZero();
+
+        assertThat(tecnicoRepository.findById(ocupado).orElseThrow().getEstadoOperativo())
+                .isEqualTo(EstadoOperativo.DISPONIBLE);
+        assertThat(tecnicoRepository.findById(bloqueado).orElseThrow().getEstadoOperativo())
+                .isEqualTo(EstadoOperativo.BLOQUEADO_POR_LIQUIDACION);
+    }
+
+    /** El reconciliador ya leyo al tecnico cuando otra escritura lo bloquea. */
+    @Test
+    void liberarSiOcupadoNoSeFiaDeUnaLecturaAnterior() {
+        UUID id = persistirTecnico(4.61, -74.0, EstadoValidacion.APROBADO, EstadoOperativo.OCUPADO,
+                Set.of(CategoriaServicio.REFRIGERACION));
+
+        Integer liberados = transaccion.execute(estado -> {
+            tecnicos.findByActivoTrue();
+            jdbc.update("UPDATE tecnico SET estado_operativo = 'BLOQUEADO_POR_LIQUIDACION' WHERE id = ?", id);
+            return tecnicos.liberarSiOcupado(new TecnicoId(id));
+        });
+
+        assertThat(liberados).isZero();
+        assertThat(tecnicoRepository.findById(id).orElseThrow().getEstadoOperativo())
+                .isEqualTo(EstadoOperativo.BLOQUEADO_POR_LIQUIDACION);
+    }
+
+    private void sembrarLiquidacion(UUID tecnicoId, String estado) {
+        UUID clienteId = UUID.randomUUID();
+        UUID otId = UUID.randomUUID();
+        jdbc.update("INSERT INTO clientes (id, usuario_id, tipo, activo) VALUES (?, ?, 'B2C', true)",
+                clienteId, persistirUsuario());
+        jdbc.update("INSERT INTO ot (id, cliente_id, estado, version) VALUES (?, ?, 'FINALIZADA', 0)",
+                otId, clienteId);
+        jdbc.update("INSERT INTO liquidacion (id, ot_id, tecnico_id, monto_cobrado, medio_pago, "
+                + "porcentaje_comision, valor_comision, estado) VALUES (?, ?, ?, 100, 'EFECTIVO', 0.15, 15, ?)",
+                UUID.randomUUID(), otId, tecnicoId, estado);
+        clientesSembrados.add(clienteId);
+        ordenesSembradas.add(otId);
     }
 
     /** The lower bound shared by the radar and the aggregate's freshness rule. */
