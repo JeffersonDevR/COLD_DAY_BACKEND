@@ -31,6 +31,8 @@ Decisión del dueño del producto (2026-11-23), que sustituye cualquier lectura 
 
 Para **Seguimiento** (cliente), la referencia de estructura es `docs/superpowers/specs/2026-11-26-rediseno-seguimiento-design.md` (2026-11-26, aprobado por el dueño), no el prototipo a6.
 
+Para los **paneles** de cliente y técnico, la referencia de estructura es `docs/superpowers/specs/2026-11-27-rediseno-paneles-design.md` (2026-11-27, aprobado por el dueño), no los prototipos a4 y b0.
+
 Los exports crudos de Stitch traen defectos de generación (voseo, `.com.ar`, `tel:+54`, «lavarropas», `user-scalable=no`, texto de 10–11 px): se corrigen al implementar, **no** son parte del diseño. Excepciones y renegociaciones se anotan **solo en este archivo** (en la regla afectada), nunca en un documento paralelo.
 
 ---
