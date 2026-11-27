@@ -79,6 +79,22 @@ class CuentasApiIT {
     }
 
     @Test
+    void desactivarAnulaLaInvitacionPendienteAunqueSeReactive() throws Exception {
+        crear("Ana", "ana@example.com", "CONTABLE").andExpect(status().isCreated());
+        ArgumentCaptor<CuentaInternaInvitada> invitacion = ArgumentCaptor.forClass(CuentaInternaInvitada.class);
+        verify(notificador).invitar(invitacion.capture());
+        Long id = usuarios.findByCorreo("ana@example.com").orElseThrow().getId();
+
+        cambiarEstado(id, false).andExpect(status().isNoContent());
+        cambiarEstado(id, true).andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/usuarios/reset-contrasena").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"" + invitacion.getValue().token()
+                                + "\",\"nuevaPassword\":\"clave-nueva-1\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void unCorreoYaUsadoDa409() throws Exception {
         crear("Ana", "ana@example.com", "CONTABLE").andExpect(status().isCreated());
         crear("Otra", "ana@example.com", "RECURSOS_HUMANOS").andExpect(status().isConflict());

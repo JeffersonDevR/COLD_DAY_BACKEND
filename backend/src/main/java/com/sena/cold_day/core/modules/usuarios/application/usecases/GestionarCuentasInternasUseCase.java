@@ -76,6 +76,8 @@ public class GestionarCuentasInternasUseCase {
             cuenta.desactivar();
             // Las sesiones abiertas dejan de servir de inmediato.
             cuenta.incrementarTokenVersion();
+            // Y un enlace de invitación o recuperación pendiente deja de valer, también si se reactiva.
+            tokens.invalidarTodosDe(id);
         }
         usuarios.save(cuenta);
     }
