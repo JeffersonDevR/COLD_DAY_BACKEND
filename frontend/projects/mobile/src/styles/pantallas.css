@@ -63,72 +63,8 @@
   color: var(--cd-muted);
 }
 
-.cd-panel__sub {
-  margin: 0.5rem 0 1rem;
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
 
-/* A4 — resumen compacto. DESIGN §4 prohíbe tres KPIs de colores como estructura
-   de página: el dato se conserva, sin tarjetas de métrica que compitan. */
-.cd-panel__resumen {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  margin: 0 0 0.75rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--cd-text-3);
-}
 
-.cd-panel__resumen span {
-  white-space: nowrap;
-}
-
-.cd-panel__resumen b {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--cd-text-1);
-}
-
-/* A4 — cuatro filtros en frase a 12 px. Padding real desde la escala de espacio
-   del sistema (cd-*: 8/12 px, DESIGN §2.4) para que el texto no toque el borde
-   del rectángulo; a 320 px la etiqueta se parte en vez de desbordar (TU-06). */
-.cd-filtros.cd-filtros--cliente ion-segment-button {
-  flex: 0 0 auto;
-  width: auto;
-  max-width: 100%;
-  --padding-start: 0.75rem;
-  --padding-end: 0.75rem;
-  --padding-top: 0.5rem;
-  --padding-bottom: 0.5rem;
-  min-width: 0;
-}
-
-.cd-filtros.cd-filtros--cliente ion-segment-button ion-label {
-  max-width: 100%;
-  font-size: 0.75rem;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-overflow: ellipsis;
-  text-transform: none;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.cd-ot.cd-panel-ot .cd-ot__categoria {
-  font-size: 0.8125rem;
-}
-
-.cd-ot.cd-panel-ot .cd-ot__codigo {
-  white-space: nowrap;
-}
-
-/* A4 — la primera OT en curso encabeza la cola con borde de acción (DESIGN §4:
-   una OT activa grande; el resto del listado queda en segundo plano). */
-ion-card.cd-panel-ot--destacada {
-  border-color: var(--cd-action);
-}
 
 /* El footer fijo no debe tapar la última tarjeta al llegar al final del scroll. */
 ion-content.cd-panel-content.ion-padding {
@@ -174,6 +110,18 @@ button.cd-ot .cd-ayuda {
 button.cd-ot .cd-ot__direccion {
   display: flex;
   margin-top: 0.35rem;
+}
+
+/* Orden compacta de panel: tarjeta propia (DESIGN §5), toda ella navega. */
+button.cd-ot.cd-ot--compacta {
+  padding: 0.75rem 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-ot--compacta .cd-ot__cabecera {
+  flex-wrap: wrap;
 }
 
 .cd-ot__cabecera {
