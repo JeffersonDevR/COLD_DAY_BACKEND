@@ -11,6 +11,8 @@ import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { DocumentoTecnico, TecnicoResponse } from '../../core/models/common.models';
 import { crearExpedientes } from '../../core/service/expedientes';
 import { CargaError } from '../../shared/carga-error/carga-error';
+import { tienePermiso } from '../../core/permisos';
+import { AuthService } from '../../core/service/auth.service';
 
 /** Actividad administrativa que cambia esta bandeja. */
 const TIPOS_VALIDACION: readonly TipoActividadAdmin[] = ['TECNICO_VALIDADO', 'TECNICO_VALIDACION_RECHAZADA'];
@@ -35,6 +37,8 @@ export class ValidacionTecnicosPage {
   private readonly adminApi = inject(AdminApi);
   private readonly tecnicosApi = inject(TecnicosApi);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+  readonly puedeVerTorre = tienePermiso(this.auth.userRoles(), 'VER_OPERACION');
   /** Canal admin: sin backend real el stream se completa vacío (mock/SSR). */
   private readonly sse = inject(SseService);
   private readonly destruir = inject(DestroyRef);

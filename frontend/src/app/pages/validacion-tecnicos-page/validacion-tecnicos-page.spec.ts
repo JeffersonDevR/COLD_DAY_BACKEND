@@ -8,7 +8,8 @@ import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refr
 import { AdminActividad, SseService } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { TecnicoResponse } from '../../core/models/common.models';
+import { Rol, TecnicoResponse } from '../../core/models/common.models';
+import { AuthService } from '../../core/service/auth.service';
 
 interface CanalAdmin {
   abrirAdminStream: ReturnType<typeof vi.fn>;
@@ -45,6 +46,7 @@ function setup(
   getTecnicos?: ReturnType<typeof vi.fn>,
   sse?: CanalAdmin,
   getDocumentos: ReturnType<typeof vi.fn> = vi.fn(() => of(tecnico.documentos)),
+  rol: Rol = 'ADMINISTRADOR',
 ) {
   const adminApi = {
     validarDocumentacionTecnico: vi.fn(() =>
@@ -58,6 +60,7 @@ function setup(
     providers: [
       provideRouter([]),
       { provide: AdminApi, useValue: adminApi },
+      { provide: AuthService, useValue: { userRoles: () => new Set<Rol>([rol]) } },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: ToastService, useValue: toast },
       // Sin canal explícito, el stream se completa vacío: la degradación real.
@@ -74,6 +77,14 @@ describe('ValidacionTecnicosPage', () => {
     const { fixture } = setup();
     expect(fixture.componentInstance.tecnicos().length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('Juan Pérez');
+  });
+
+  it('no ofrece volver a la Torre de Control a quien no puede abrirla', () => {
+    const rrhh = setup(undefined, undefined, undefined, undefined, 'RECURSOS_HUMANOS');
+    expect(rrhh.fixture.nativeElement.textContent).not.toContain('Torre de Control');
+    TestBed.resetTestingModule();
+
+    expect(setup().fixture.nativeElement.textContent).toContain('Volver a la Torre de Control');
   });
 
   describe('documentos declarados', () => {
