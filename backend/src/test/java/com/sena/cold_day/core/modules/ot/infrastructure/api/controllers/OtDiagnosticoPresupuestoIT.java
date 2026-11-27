@@ -23,6 +23,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.sena.cold_day.core.modules.administracion.domain.repository.LiquidacionRepository;
+import com.sena.cold_day.core.modules.administracion.domain.valueobjects.MedioPago;
+import com.sena.cold_day.core.modules.administracion.infrastructure.persistence.SpringDataLiquidacionRepository;
 import com.sena.cold_day.core.modules.clientes.domain.aggregates.Cliente;
 import com.sena.cold_day.core.modules.clientes.domain.repository.ClienteRepository;
 import com.sena.cold_day.core.modules.clientes.domain.valueobjects.ClienteId;
@@ -85,6 +88,12 @@ class OtDiagnosticoPresupuestoIT {
             + "\"insumos\":[{\"descripcion\":\"Filtro secadora\",\"cantidad\":2},"
             + "{\"descripcion\":\"Bimetalico universal L55\",\"cantidad\":1}]}";
 
+    @Autowired
+    LiquidacionRepository liquidacionRepository;
+
+    @Autowired
+    SpringDataLiquidacionRepository springDataLiquidacion;
+
     @Autowired MockMvc mockMvc;
     @Autowired OtRepository otRepository;
     @Autowired TecnicoRepository tecnicoRepository;
@@ -107,6 +116,7 @@ class OtDiagnosticoPresupuestoIT {
         springDataRequerimiento.deleteAll();
         springDataProveedor.deleteAll();
         springDataHistorial.deleteAll();
+        springDataLiquidacion.deleteAll();
         springDataOt.deleteAll();
         springDataTecnico.deleteAll();
         clienteRepository.deleteAll();
@@ -114,7 +124,7 @@ class OtDiagnosticoPresupuestoIT {
     }
 
     @Test
-    void walksFromAssignedToFinalizedAndReleasesTheTechnician() throws Exception {
+    void walksFromAssignedToFinalizedAndBlocksTheTechnicianUntilHeDepositsTheFee() throws Exception {
         Long clienteUsuario = crearUsuario("cliente-flujo@example.com", Rol.CLIENTE);
         Cliente cliente = crearCliente(clienteUsuario);
         Long tecnicoUsuario = crearUsuario("tecnico-flujo@example.com", Rol.TECNICO);
@@ -151,7 +161,8 @@ class OtDiagnosticoPresupuestoIT {
                 .andExpect(jsonPath("$.estado").value("EN_REPARACION"));
 
         mockMvc.perform(post("/api/ot/" + ot.getId().valor() + "/finalizar")
-                        .header("Authorization", "Bearer " + tecnicoToken))
+                        .header("Authorization", "Bearer " + tecnicoToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"medioPago\":\"TRANSFERENCIA\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("FINALIZADA"));
 
@@ -163,7 +174,14 @@ class OtDiagnosticoPresupuestoIT {
                 });
         assertThat(tecnicoRepository.findByIdAndActivoTrue(tecnicoId))
                 .hasValueSatisfying(found -> assertThat(found.getEstadoOperativo())
-                        .isEqualTo(EstadoOperativo.DISPONIBLE));
+                        .isEqualTo(EstadoOperativo.BLOQUEADO_POR_LIQUIDACION));
+        // El cobro queda liquidado en la misma operacion (presupuesto mas visita, 15 %).
+        assertThat(liquidacionRepository.buscarPorOt(ot.getId())).hasValueSatisfying(liquidacion -> {
+            BigDecimal visita = otRepository.buscarPorId(ot.getId()).orElseThrow().getTarifaVisita();
+            assertThat(liquidacion.getMontoCobrado()).isEqualByComparingTo(
+                    new BigDecimal("470000.00").add(visita == null ? BigDecimal.ZERO : visita));
+            assertThat(liquidacion.getMedioPago()).isEqualTo(MedioPago.TRANSFERENCIA);
+        });
         assertThat(springDataHistorial.findByOtIdOrderByOcurridoEnAscIdAsc(ot.getId().valor()))
                 .extracting(OtEstadoHistorialJpaEntity::getEstadoDestino)
                 .containsExactly(EstadoOt.EN_CAMINO, EstadoOt.EN_DIAGNOSTICO, EstadoOt.EN_REPARACION,
