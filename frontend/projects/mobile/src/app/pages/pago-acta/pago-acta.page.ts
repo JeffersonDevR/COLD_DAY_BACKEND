@@ -1,5 +1,4 @@
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
@@ -101,7 +100,7 @@ const MENSAJES_ACTA: Record<number, string> = {
   ],
   templateUrl: './pago-acta.page.html',
 })
-export class PagoActaPage implements OnInit, AfterViewInit {
+export class PagoActaPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly otApi = inject(OtApi);
@@ -111,7 +110,22 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   private readonly toast = inject(MobileToastService);
   private readonly destroyRef = inject(DestroyRef);
 
-  @ViewChild('signatureCanvas') canvasRef?: ElementRef<HTMLCanvasElement>;
+  canvasRef?: ElementRef<HTMLCanvasElement>;
+
+  /**
+   * El lienzo vive dentro de `@if (ot())`: contra el servidor aparece después de
+   * la vista, así que el contexto se prepara cuando el elemento llega.
+   */
+  @ViewChild('signatureCanvas')
+  set lienzo(ref: ElementRef<HTMLCanvasElement> | undefined) {
+    this.canvasRef = ref;
+    this.ctx = ref?.nativeElement.getContext('2d') ?? null;
+    if (this.ctx) {
+      this.ctx.strokeStyle = '#22d3ee';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.lineCap = 'round';
+    }
+  }
 
   readonly otId = signal('');
   private readonly _otRemoto = signal<OtResponse | undefined>(undefined);
@@ -219,16 +233,6 @@ export class PagoActaPage implements OnInit, AfterViewInit {
     );
   }
 
-  ngAfterViewInit(): void {
-    const canvas = this.canvasRef?.nativeElement;
-    if (!canvas) return;
-    this.ctx = canvas.getContext('2d');
-    if (this.ctx) {
-      this.ctx.strokeStyle = '#22d3ee';
-      this.ctx.lineWidth = 2.5;
-      this.ctx.lineCap = 'round';
-    }
-  }
 
   /** Copy of the load failure; null while there is no failure. */
   otErrorCarga(): string | null {

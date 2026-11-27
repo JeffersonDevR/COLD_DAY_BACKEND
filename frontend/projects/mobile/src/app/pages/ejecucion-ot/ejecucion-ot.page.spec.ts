@@ -534,3 +534,20 @@ describe('ejecución: paso primero y acción en el pie', () => {
     ).toBeNull();
   });
 });
+
+describe('deslizar cuando fallan solo los insumos', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('actualiza la orden igual y no entrega error', () => {
+    const { fixture, api } = setup();
+    api.getOtById.mockReturnValue(of(ot({ codigo: 'OT-NUEVA' })));
+    api.getInsumosOt.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+
+    expect(error).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
+  });
+});

@@ -36,7 +36,7 @@ import {
   IonToolbar,
   IonRefresher,
 } from '@ionic/angular';
-import { Subscription, Observable, tap, forkJoin, of } from 'rxjs';
+import { Subscription, Observable, tap, forkJoin, of, catchError } from 'rxjs';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { avisarErrorAccion, mensajeErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -242,7 +242,8 @@ export class EjecucionOtPage implements OnInit {
     }
     return forkJoin([
       this.otApi.getOtById(this.otId()),
-      this.tecnicosApi.getInsumosOt(this.otId()),
+      // Como en la carga inicial: sin insumos la orden se actualiza igual.
+      this.tecnicosApi.getInsumosOt(this.otId()).pipe(catchError(() => of(this.insumosOt()))),
     ]).pipe(
       tap(([orden, insumos]) => {
         this._otRemoto.set(orden);

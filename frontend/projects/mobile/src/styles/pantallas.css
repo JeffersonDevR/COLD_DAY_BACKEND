@@ -1599,7 +1599,6 @@ app-seguimiento-ot .cd-map__chip {
 }
 
 
-.cd-oferta__icono,
 /* Historial: una tarjeta por orden. */
 .cd-historial__identidad {
   display: flex;
@@ -1629,6 +1628,7 @@ app-seguimiento-ot .cd-map__chip {
   -webkit-line-clamp: 2;
 }
 
+.cd-oferta__icono,
 .cd-equipo__icono {
   display: inline-flex;
   align-items: center;

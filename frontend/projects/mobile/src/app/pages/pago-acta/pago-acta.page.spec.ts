@@ -657,3 +657,21 @@ describe('pago y acta: el total primero', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Dibujá');
   });
 });
+
+describe('firma con la orden que llega después', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('se puede firmar aunque el lienzo aparezca tras la respuesta del servidor', () => {
+    const respuesta = new Subject<OtResponse>();
+    const { fixture, ctxStub } = setup({ otApi: { getOtById: vi.fn(() => respuesta) } });
+
+    respuesta.next(ot({ estado: 'FINALIZADA' }));
+    fixture.detectChanges();
+    const lienzo = fixture.nativeElement.querySelector('[data-testid="firma-canvas"]') as HTMLElement;
+    for (const tipo of ['pointerdown', 'pointermove', 'pointerup']) {
+      lienzo.dispatchEvent(new MouseEvent(tipo, { clientX: 10, clientY: 10 }));
+    }
+
+    expect(ctxStub.lineTo).toHaveBeenCalled();
+  });
+});
