@@ -36,7 +36,7 @@ import {
   IonToolbar,
   IonRefresher,
 } from '@ionic/angular';
-import { Subscription, Observable, tap, forkJoin, of, catchError } from 'rxjs';
+import { Subscription, Observable, tap, forkJoin, of, catchError, finalize } from 'rxjs';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { avisarErrorAccion, mensajeErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -116,6 +116,8 @@ export class EjecucionOtPage implements OnInit {
   readonly ot = otDesdeFuente(this.apiConfig, this.mockDb, this.otId, this._otRemoto);
 
   readonly enSitio = signal(false);
+  /** Evita que un doble toque envíe dos veces el mismo paso. */
+  readonly enviandoPaso = signal(false);
   readonly enviandoDiagnostico = signal(false);
   readonly finalizando = signal(false);
   readonly insumosOt = signal<SolicitudInsumoResponse[]>([]);
@@ -386,7 +388,9 @@ export class EjecucionOtPage implements OnInit {
       );
       return;
     }
-    this.tecnicosApi.iniciarDesplazamiento(this.otId()).subscribe({
+    if (this.enviandoPaso()) return;
+    this.enviandoPaso.set(true);
+    this.tecnicosApi.iniciarDesplazamiento(this.otId()).pipe(finalize(() => this.enviandoPaso.set(false))).subscribe({
       next: () => {
         void this.toast.info('En camino', 'El cliente puede rastrear tu trayecto en vivo.');
         this.recargarOt();
@@ -402,7 +406,9 @@ export class EjecucionOtPage implements OnInit {
   }
 
   llegarADomicilio(): void {
-    this.tecnicosApi.llegarADomicilio(this.otId()).subscribe({
+    if (this.enviandoPaso()) return;
+    this.enviandoPaso.set(true);
+    this.tecnicosApi.llegarADomicilio(this.otId()).pipe(finalize(() => this.enviandoPaso.set(false))).subscribe({
       next: () => {
         this.enSitio.set(true);
         this.recargarOt();

@@ -2,7 +2,7 @@ import { CategoriaServicio } from '@core/models/common.models';
 
 /**
  * Icono Ionicons por categoría de servicio, para las pantallas del móvil que
- * muestran tarjetas por categoría (B1 radar de ofertas, A10 mis equipos).
+ * muestran tarjetas por categoría (B1 radar de ofertas, historial del cliente).
  *
  * El mapa vive en el proyecto móvil a propósito: la web usa PrimeIcons, ver el
  * docblock de `@core/service/equipos-cliente` ("el icono no está acá: cada

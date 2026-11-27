@@ -69,7 +69,7 @@ Ordenados por impacto en el usuario. «Backend» = bloqueado por datos; **no se 
 | F4 | Cliente sin **A3.1 completar perfil** como paso propio (self-adopt de perfil cliente) | cliente | Parcial | El backend lo soporta; hoy el perfil se crea al confirmar la solicitud |
 | F5 | **Countdown** «Expira en» del radar no avanza (muestra el snapshot) | técnico | Bug de reactividad | Ticker local + recarga al llegar a 0 |
 | F6 | Bandeja del proveedor sin **refresher ni SSE**: solo ve nuevas solicitudes al recargar | proveedor | Falta | `ion-refresher` (inmediato); SSE después |
-| F7 | `ion-refresher` en las listas y detalles con datos remotos desde 2026-11-27 | todos | Inconsistente | Aplicar a toda lista remota (ver §3) |
+| F7 | `ion-refresher` en las listas y detalles con datos remotos desde 2026-11-27 | todos | Aplicado (2026-11-27) | Aplicar a toda lista remota (ver §3) |
 | F8 | **Notificaciones**. Estado (2026-11-23): **preparado, desactivado**. Hecho: backend `V19__dispositivo_push` + `POST/DELETE /api/usuarios/me/dispositivos` (con test); móvil `core/push.ts` (permiso, canal «ofertas», registro del token, abrir ruta al tocar, baja al cerrar sesión), `@capacitor/push-notifications` y permiso `POST_NOTIFICATIONS`. Adaptador FCM del backend hecho (`FcmNotificacionPushAdapter`, activo con `FCM_ENABLED=true`). Falta solo el setup: `google-services.json` en `frontend/android/app/`, `PUSH.habilitado = true` y la cuenta de servicio en el entorno del backend. Hasta entonces solo hay toasts con la app abierta y **no se pinta** campana | todos | Firebase + backend | Ver cabecera de `core/push.ts` |
 | F9 | **Chat** con el técnico: A7 muestra «Próximamente» honesto | cliente/técnico | Backend | Backend de chat |
 | F10 | **Archivos reales** (evidencias, documentos): solo metadata | técnico/proveedor | Backend | Upload |
@@ -130,7 +130,7 @@ Medido por búsqueda de texto en `pages/*` (2026-11-23); es una guía, no una pr
 
 | ID | Decisión | Estado |
 |---|---|---|
-| D1 | El tab del cliente se llama **«Mis equipos»** (A10) | Aplicado en `modo.ts`, rutas, `cd-marca` y specs |
+| D1 | El tab del cliente se llama **«Historial» (antes «Mis equipos»)** (A10) | Aplicado en `modo.ts`, rutas, `cd-marca` y specs |
 | D2 | **Sí** se pinta el monto real de la visita, tomado de `POST /api/ot/tarifa/estimar` | Aplicado en A6 (panel de pago y CTA); si la estimación falla o está fuera de rango no se pinta monto |
 | D3 | Precios/estimados: **honesto-vacío** hasta que el backend los entregue | Vigente; el backend se acomoda después |
 | D4 | Editar datos/contraseña (F2) y empresa del proveedor (F3): **sin pantalla por ahora** | Vigente; proveedores se retoma después |

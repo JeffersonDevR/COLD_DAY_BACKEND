@@ -551,3 +551,21 @@ describe('deslizar cuando fallan solo los insumos', () => {
     expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
   });
 });
+
+describe('doble toque en los pasos', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it.each([
+    ['iniciarDesplazamiento', ot({ estado: 'ASIGNADA', visitaPagada: true })],
+    ['llegarADomicilio', ot({ estado: 'EN_CAMINO' })],
+  ] as const)('%s no se envía dos veces', (metodo, orden) => {
+    const espera = new Subject<void>();
+    const api = vi.fn(() => espera);
+    const { fixture } = setup({ orden, tecnicos: { [metodo]: api } });
+
+    fixture.componentInstance[metodo]();
+    fixture.componentInstance[metodo]();
+
+    expect(api).toHaveBeenCalledTimes(1);
+  });
+});

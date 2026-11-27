@@ -31,7 +31,7 @@
 
 <ion-content class="ion-padding">
 
-<ion-refresher slot="fixed" [cdRecargar]="recargar">
+<ion-refresher slot="fixed" [cdRecargar]="recargar" [disabled]="firmando()">
   <cd-recarga-contenido />
 </ion-refresher>
   <!-- The load is never invisible: either content, or an error with Retry. -->
@@ -114,7 +114,7 @@
           </div>
 
           <div class="cd-desglose__total">
-            <span>Total a pagar</span>
+            <span>Total del servicio</span>
             <strong data-testid="costo-total">{{ formatoTotal(totalMonto()) }}</strong>
           </div>
         </div>

@@ -287,3 +287,20 @@ describe('Radar: deslizar para recargar', () => {
     expect(fixture.componentInstance.ofertas()).toHaveLength(1);
   });
 });
+
+describe('Radar: deslizar sin perfil cargado', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('trae el perfil y de una vez las ofertas', () => {
+    const getMiPerfil = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new ApiHttpError('boom', 500)))
+      .mockReturnValue(of(tecnico()));
+    const { fixture, api } = setup({ tecnicoApi: { getMiPerfil } });
+
+    fixture.componentInstance.recargar().subscribe();
+
+    expect(api.getOfertasParaTecnico).toHaveBeenCalled();
+    expect(fixture.componentInstance.ofertas()).toHaveLength(1);
+  });
+});

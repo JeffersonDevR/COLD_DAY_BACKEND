@@ -42,7 +42,7 @@ import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 import { PageComponent } from '../../shared/ui/page/page';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, switchMap, of } from 'rxjs';
 import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /** Only a 409 proves another technician took the order first. */
@@ -136,15 +136,18 @@ export class OfertasTecnicoPage implements OnInit {
 
   /** Deslizar: sin perfil cargado lo pide primero; si falla, conserva lo visible. */
   readonly recargar = (): Observable<unknown> => {
+    const ofertasDe = (id: string) =>
+      this.tecnicosApi.getOfertasParaTecnico(id).pipe(
+        tap((ofertas) => {
+          this.errorCarga.set(false);
+          this.ofertas.set(ofertas);
+        }),
+      );
     const tecnico = this.tecnico();
-    if (!tecnico) {
-      return this.tecnicosApi.getMiPerfil().pipe(tap((perfil) => this.tecnico.set(perfil)));
-    }
-    return this.tecnicosApi.getOfertasParaTecnico(tecnico.id).pipe(
-      tap((ofertas) => {
-        this.errorCarga.set(false);
-        this.ofertas.set(ofertas);
-      }),
+    if (tecnico) return ofertasDe(tecnico.id);
+    return this.tecnicosApi.getMiPerfil().pipe(
+      tap((perfil) => this.tecnico.set(perfil)),
+      switchMap((perfil) => (perfil ? ofertasDe(perfil.id) : of(null))),
     );
   };
 

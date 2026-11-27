@@ -25,7 +25,7 @@ import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { PageComponent } from '../../shared/ui/page/page';
 import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, catchError, of, throwError } from 'rxjs';
 import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /**
@@ -115,10 +115,12 @@ import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recar
                   <app-priority-chip [prioridad]="ot.prioridad ?? 'MEDIA'" [conPalabra]="true" />
                 }
               </p>
-              <p class="cd-historial__falla">{{ ot.descripcionFalla }}</p>
+              @if (ot.descripcionFalla) {
+                <p class="cd-historial__falla">{{ ot.descripcionFalla }}</p>
+              }
               @if (ot.fechaCreacion || ot.barrio || ot.direccion) {
                 <p class="cd-ot__pie">
-                  <span>{{ ot.barrio || ot.direccion }}</span>
+                  <span>{{ ot.direccion || ot.barrio }}</span>
                   @if (ot.fechaCreacion; as fecha) {
                     <span class="cd-muted">{{ fecha | date: 'mediumDate' }}</span>
                   }
@@ -176,6 +178,12 @@ export class MobileEquiposPage implements OnInit {
         this.ots.set(ots);
         this.errorCarga.set(false);
         this.sinPerfilCliente.set(false);
+      }),
+      catchError((err: unknown) => {
+        // Sin perfil de cliente no es una falla: se muestra su aviso.
+        if (!esErrorPerfilClienteFaltante(err)) return throwError(() => err);
+        this.sinPerfilCliente.set(true);
+        return of(null);
       }),
     );
 

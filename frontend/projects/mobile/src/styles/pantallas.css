@@ -1591,12 +1591,6 @@ app-seguimiento-ot .cd-map__chip {
    estimado y la barra de urgencia del diseño no se pintan porque el DTO no los
    trae (no inventar). */
 .cd-oferta__identidad,
-.cd-equipo__identidad {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-width: 0;
-}
 
 
 /* Historial: una tarjeta por orden. */

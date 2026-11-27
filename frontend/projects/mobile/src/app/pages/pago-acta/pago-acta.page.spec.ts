@@ -675,3 +675,28 @@ describe('firma con la orden que llega después', () => {
     expect(ctxStub.lineTo).toHaveBeenCalled();
   });
 });
+
+describe('pago y acta: detalles', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('no deja recargar mientras se está firmando', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'FINALIZADA' }) });
+    const indicador = () =>
+      fixture.nativeElement.querySelector('ion-refresher') as HTMLElement & { disabled?: boolean };
+    const lienzo = fixture.nativeElement.querySelector('[data-testid="firma-canvas"]') as HTMLElement;
+
+    lienzo.dispatchEvent(new MouseEvent('pointerdown', { clientX: 5, clientY: 5 }));
+    fixture.detectChanges();
+    expect(indicador().disabled).toBe(true);
+
+    lienzo.dispatchEvent(new MouseEvent('pointerup'));
+    fixture.detectChanges();
+    expect(indicador().disabled).toBe(false);
+  });
+
+  it('el desglose usa la misma etiqueta que el total grande', () => {
+    const { fixture } = setup();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Total a pagar');
+  });
+});

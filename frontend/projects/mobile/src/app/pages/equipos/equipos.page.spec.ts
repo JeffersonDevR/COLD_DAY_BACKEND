@@ -188,3 +188,34 @@ describe('Historial: deslizar para recargar', () => {
     expect(fixture.nativeElement.textContent).toContain('OT-2026-0004');
   });
 });
+
+describe('Historial: detalles', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('sin falla no deja un párrafo vacío', () => {
+    const { fixture } = setup({ ots: [ot({ descripcionFalla: '' })] });
+
+    expect(fixture.nativeElement.querySelector('.cd-historial__falla')).toBeNull();
+  });
+
+  it('prefiere la dirección, como el resto de listas', () => {
+    const { fixture } = setup({ ots: [ot({ direccion: 'Calle 15', barrio: 'Caobos' })] });
+
+    expect(texto(fixture)).toContain('Calle 15');
+    expect(texto(fixture)).not.toContain('Caobos');
+  });
+
+  it('deslizar sin perfil de cliente muestra su aviso y no un error', () => {
+    const { fixture, getOtsPorCliente } = setup();
+    getOtsPorCliente.mockReturnValue(
+      throwError(() => new ApiHttpError('No existe un perfil de cliente para el usuario: 7', 404)),
+    );
+    const error = vi.fn();
+
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+
+    expect(error).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="equipos-sin-perfil"]')).not.toBeNull();
+  });
+});

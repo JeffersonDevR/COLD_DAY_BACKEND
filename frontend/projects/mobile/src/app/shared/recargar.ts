@@ -37,6 +37,8 @@ export class RecargarDirective {
 /** Los textos del indicador, iguales en todas las pantallas. */
 @Component({
   selector: 'cd-recarga-contenido',
+  // Sin caja propia: el contenido de Ionic mide contra el indicador.
+  host: { style: 'display: contents' },
   imports: [IonRefresherContent],
   template: `
     <ion-refresher-content

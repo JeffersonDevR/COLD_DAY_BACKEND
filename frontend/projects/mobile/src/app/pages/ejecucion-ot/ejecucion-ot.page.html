@@ -311,7 +311,7 @@
           <ion-button
             expand="block"
             class="cd-cta"
-            [disabled]="desplazamientoBloqueadoPorPago()"
+            [disabled]="desplazamientoBloqueadoPorPago() || enviandoPaso()"
             (click)="iniciarDesplazamiento()"
             data-testid="iniciar-desplazamiento"
           >
@@ -320,7 +320,13 @@
           </ion-button>
         }
         @case ('llegar') {
-          <ion-button expand="block" class="cd-cta" (click)="llegarADomicilio()" data-testid="llegar">
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            [disabled]="enviandoPaso()"
+            (click)="llegarADomicilio()"
+            data-testid="llegar"
+          >
             <ion-icon slot="start" name="location-outline" aria-hidden="true"></ion-icon>
             Llegué al domicilio
           </ion-button>

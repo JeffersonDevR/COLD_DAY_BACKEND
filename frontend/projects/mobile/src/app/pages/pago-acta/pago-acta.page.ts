@@ -200,6 +200,8 @@ export class PagoActaPage implements OnInit {
   readonly guardando = signal<boolean>(false);
 
   private isDrawing = false;
+  /** Con un trazo en curso no se recarga: el gesto es de la firma. */
+  readonly firmando = signal(false);
   private ctx: CanvasRenderingContext2D | null = null;
 
   /** Header back: returns to the OT (or the panel if no id yet). */
@@ -309,6 +311,7 @@ export class PagoActaPage implements OnInit {
   startDrawing(e: PointerEvent): void {
     if (!this.ctx || !this.canvasRef) return;
     this.isDrawing = true;
+    this.firmando.set(true);
     const { x, y } = this.posicionEnCanvas(e);
     this.ctx.beginPath();
     this.ctx.moveTo(x, y);
@@ -324,6 +327,7 @@ export class PagoActaPage implements OnInit {
 
   stopDrawing(): void {
     this.isDrawing = false;
+    this.firmando.set(false);
   }
 
   /**
