@@ -1,5 +1,6 @@
 package com.sena.cold_day.core.modules.usuarios.domain.services;
 
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaInvitada;
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
 
 /**
@@ -16,4 +17,6 @@ public interface NotificadorRecuperacion {
      * the persisted token remains the source of truth.
      */
     void notificar(RecuperacionSolicitada evento);
+
+    void invitar(CuentaInternaInvitada evento);
 }

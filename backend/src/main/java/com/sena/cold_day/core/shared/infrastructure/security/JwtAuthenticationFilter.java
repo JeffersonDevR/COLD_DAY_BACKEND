@@ -10,7 +10,6 @@ import javax.crypto.SecretKey;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -66,10 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     AuthenticatedUser principal = new AuthenticatedUser(usuarioId, rol, roles, nombre);
                     // Option C: exactly one authority per role in the set, so every
                     // existing hasRole(...) gate keeps working unchanged.
-                    var authorities = roles.stream()
-                            .map(r -> new SimpleGrantedAuthority("ROLE_" + r.name()))
-                            .toList();
-                    var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+                    var auth = new UsernamePasswordAuthenticationToken(principal, null, principal.authorities());
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (JwtException | IllegalArgumentException _) {

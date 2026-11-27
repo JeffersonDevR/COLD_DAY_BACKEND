@@ -50,7 +50,8 @@ class MapsConfigApiIT {
                 .andExpect(jsonPath("$.zoom").value(9))
                 .andExpect(jsonPath("$.radioInicialKm").value(10))
                 .andExpect(jsonPath("$.radioMaxKm").value(25))
-                .andExpect(jsonPath("$.radioPasoKm").value(5));
+                .andExpect(jsonPath("$.radioPasoKm").value(5))
+                .andExpect(jsonPath("$.proveedor").value("google"));
     }
 
     @Test

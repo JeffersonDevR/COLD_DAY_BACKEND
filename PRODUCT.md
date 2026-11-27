@@ -8,7 +8,7 @@ web
 
 ## Users
 
-- **Administrador / Contable** — the internal control tower. They arrive mid-shift, with several work orders in flight at once, and need to answer "what is stuck and who unblocks it" without hunting. Their job: monitor orders, validate technicians, reconcile deposits, mediate disputes.
+- **Administrador / Contable / Recursos Humanos** — the internal control tower. They arrive mid-shift, with several work orders in flight at once, and need to answer "what is stuck and who unblocks it" without hunting. Their job: monitor orders, validate technicians, reconcile deposits, mediate disputes. Accounting reconciles deposits and watches operations; Human Resources validates technician and supplier documentation; only the administrator mediates disputes and creates internal accounts.
 - **Técnico** — a certified independent technician in Cúcuta. Reaches the product on a phone, often standing on a roof or inside a fridge unit, sometimes with gloves on. Their job: catch work, execute it, get paid.
 - **Cliente** — a household or business in Cúcuta or the metro area. Their job: get the right technician, approve a price they trust, and know the service is warranted.
 - **Proveedor** — an auxiliary supplier. Narrow job: receive and fulfil part dispatches.
@@ -28,7 +28,7 @@ The mechanism a generic marketplace listing cannot copy: **the work order is the
 ## Operating Context
 
 - Geography is real and constraining: Cúcuta plus Los Patios, Villa del Rosario, and San Cayetano. Distances are short but traffic and unmapped barrios are not; the product leans on geolocation and map previews rather than on confidence in addresses.
-- Technicians work from a phone, in the field, one-handed. The desktop web app is where back-office, accounting, and the heavier client flows happen.
+- Technicians work from a phone, in the field, one-handed. The desktop web app is an internal console for back-office and accounting only; customers, technicians and suppliers use the mobile app.
 - Money moves in two directions: customers pay on delivery of the acta, and technicians are settled through consignments that accounting reconciles.
 - Commercial vocabulary in use: OT (orden de trabajo), consignación, liquidación, acta, dictamen, comisión de plataforma, proveedor auxiliar, garantía.
 - The audience reads Spanish (Colombia). The product speaks in tuteo, not in usted and not in voseo.
@@ -39,12 +39,12 @@ The mechanism a generic marketplace listing cannot copy: **the work order is the
 
 | Surface | Path | Stack |
 |---|---|---|
-| Web app (dashboard) | `frontend/src` | Angular 21, Tailwind CSS v4, PrimeNG 21 (Aura preset), PrimeIcons, Google Maps |
+| Web admin console (internal roles only) | `frontend/src` | Angular 21, Tailwind CSS v4, PrimeNG 21 (Aura preset), PrimeIcons |
 | Mobile app | `frontend/projects/mobile` | Ionic 9 + Angular 21, Capacitor 8 (Android) |
 | Marketing landing | `landing` | Static HTML/CSS |
 | API | `backend` | Spring Boot 4.1.1, Java 25, JPA, Security, SMTP, springdoc |
 
-**Role model** — `CLIENTE`, `TECNICO`, `ADMINISTRADOR`, `CONTABLE`, `PROVEEDOR`.
+**Role model** — `CLIENTE`, `TECNICO`, `ADMINISTRADOR`, `CONTABLE`, `PROVEEDOR`, `RECURSOS_HUMANOS`.
 
 **Order lifecycle** — `SOLICITADA` → `BUSCANDO_TECNICO` → `ASIGNADA` → `EN_CAMINO` → `EN_DIAGNOSTICO` → `EN_REPARACION` → `FINALIZADA`, with `CANCELADA`, `DISPUTADA`, and `SIN_TECNICOS_DISPONIBLES` as exits.
 

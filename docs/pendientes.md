@@ -2,7 +2,17 @@
 
 Todo lo que falta para completar el trabajo, con lo ya verificado en código (`path:line`) y el tamaño estimado. Se va marcando a medida que se cierre; lo `[ ]` es lo que queda.
 
-Estado: 2026-10-19.
+Estado: 2026-11-26 (revisión contra el código de `main` en `d26ac4d`).
+
+## 0. Lo que de verdad queda (resumen al 2026-11-26)
+
+Todo lo demás de este archivo está cerrado; la evidencia está en cada casilla.
+
+- **Mapas (2.6):** `proveedor` ya se publica en `GET /api/config/maps` (`MAPS_PROVEEDOR`, default `google`); falta `MapboxMotor` + `MapboxMapsAdapter`; los 3 mapas de la web siguen con `@angular/google-maps`.
+- **Repuestos (2.5):** ETA vencido sin sanción ni re-difusión; proveedor sin SSE.
+- **B4:** restricciones de la Maps key para el origen nativo (verificación manual en la consola de Google).
+- **Registry SSE en memoria** (`SseEmitterRegistry`, `ConcurrentHashMap`): solo sirve con 1 instancia (ver TB-03 en `docs/backend/TAREAS-BACKEND.md`).
+- **Backlogs vivos:** `docs/design/TAREAS-UI.md` (TU-03…TU-16) y `docs/backend/TAREAS-BACKEND.md` (TB-01…TB-10).
 
 ## 1. ✅ Cerrado — mapa de la ruta del técnico
 
@@ -13,8 +23,8 @@ Rama `feat/mapa-ruta-tecnico` (desde `origin/main`), **pusheada y sin PR**. Doc 
 - [x] **T1** (`0f34fb8`) — la distancia/ETA del cliente deja de llamar a Google Maps en cada tick de 15 s → cálculo local (`distancia-local.ts`, haversine + 25 km/h, la misma fórmula que el backend). Test con `HttpTestingController` real (`expectNone('/api/maps/distancia')`).
 - [x] **T1-bis** (`4de9904`) — el mismo leak en `ejecucion-ot-page.ts:84` (4 llamadas/min **por técnico**).
 - [x] **T2** (`ea0ca21` backend + `9c4783d` frontend) — `GET /api/config/maps` **público** con `apiKey` (solo la de navegador), `centro`, `bounds`, `zoom` y `radio*Km`; el front lo consume con `mapa-config.service.ts`; **eliminados** `cucuta.constant.ts` (las 6 duplicaciones) y el código muerto `MapsApi.distancia` + `calcularRuta` (sus specs también). Backend 124/844/0 · frontend 72/627/0 · `tsc` 0 · `eslint` 0. Rama `feat/mapa-ruta-tecnico` **pusheada** (sin PR). Lo que quedó duplicado y por qué está en el doc del feature.
-- [ ] **T3** — el mapa de seguimiento: marcador del técnico moviéndose (poll existente de 15 s, **sin llamadas a Maps**), destino y línea recta, y **visible también en `EN_CAMINO`** (hoy el mapa del cliente solo existe en `SOLICITADA|BUSCANDO_TECNICO` → `seguimiento-ot-page.html:151-161`). `mapa-radar` está acoplado al radar (4 círculos, sweep, timer): reutilizar `GoogleMapsLoaderService`, `CUCUTA_METRO_BOUNDS` y los estilos, no el componente tal cual. La librería `geometry` ya se pide en el loader.
-- [ ] **T4** — exponer `llegadaEn` en la respuesta de la OT + evento SSE → el cliente ve "el técnico llegó" sin recargar. Hoy `Ot.confirmarLlegada` (EN_CAMINO, idempotente) la fija pero **no está en ninguna respuesta de la API**.
+- [x] **T3** (cerrado: mapa de seguimiento móvil sobre `MapaMotor`, PR #104) — el mapa de seguimiento: marcador del técnico moviéndose (poll existente de 15 s, **sin llamadas a Maps**), destino y línea recta, y **visible también en `EN_CAMINO`** (hoy el mapa del cliente solo existe en `SOLICITADA|BUSCANDO_TECNICO` → `seguimiento-ot-page.html:151-161`). `mapa-radar` está acoplado al radar (4 círculos, sweep, timer): reutilizar `GoogleMapsLoaderService`, `CUCUTA_METRO_BOUNDS` y los estilos, no el componente tal cual. La librería `geometry` ya se pide en el loader.
+- [x] **T4** (cerrado: `llegadaEn` en `OtApiResponse` + `OtLlegadaConfirmadaSseListener`) — exponer `llegadaEn` en la respuesta de la OT + evento SSE → el cliente ve "el técnico llegó" sin recargar. Hoy `Ot.confirmarLlegada` (EN_CAMINO, idempotente) la fija pero **no está en ninguna respuesta de la API**.
 - [x] **T5** — verificación final del feature: **VERIFIED** por el verificador independiente (1 defecto menor —el badge decía "En camino:" junto al "El técnico llegó"— cerrado en `7ff01fb`; 4 nits documentados). Suite frontend 73/644/0 · backend 125/849/0.
 
 **Decisiones ya tomadas (no reabrir sin motivo):** cero llamadas nuevas a Google Maps; la "ruta" es una **línea recta** al destino y la ETA es **local** (`round((km/25)×60)`) → es una **cota inferior**, optimista frente a Google; **Directions API fuera de alcance** (el scope de la key no es verificable y costaría por viaje); la **geo-arrival automática** fuera de alcance (la llegada sigue siendo manual: `POST /api/ot/{id}/llegada`).
@@ -53,7 +63,7 @@ Cerrado en main (merges 4ae81d5 PR #62 backend + a8e5a04 PR #63 frontend, apilad
 - Frontend: sección "Repuestos" en `ejecucion-ot-page` (líneas libres como el diagnóstico, guard in-flight anti doble broadcast, copy humana en toda la ruta de error) + primera spec de `solicitudes-proveedor-page` (10 tests).
 - Nits documentados (no bloquean): 201 `Location` apunta a la colección; sin idempotencia backend por diseño — el debounce vive en la UI.
 
-### 2.5 Repuestos por radio con ETA y despacho — **L** (IMPLEMENTADO 2026-11-25, sin commitear)
+### 2.5 Repuestos por radio con ETA y despacho — **L** (CERRADO 2026-11-25, PR #103; queda la deuda declarada)
 
 Diseño: `docs/superpowers/specs/2026-11-25-proveedores-broadcast-radio-eta-design.md`. Plan: `docs/superpowers/plans/2026-11-25-proveedores-broadcast-radio-eta.md`.
 - La solicitud de repuestos ya no avisa a todos los proveedores activos: nace con radio de 10 km alrededor del lugar de la entrega (`OT.ubicacion`, o la última del técnico) y escala 10→15→20→25 km (ventana = vigencia ÷ 4). Es elegible un proveedor activo, con documentación `APROBADO` y **con ubicación fijada**. Las ofertas ya enviadas siguen vigentes hasta el vencimiento del requerimiento. Nadie en 25 km → `SIN_PROVEEDOR` al vencer (reintentable).
@@ -62,24 +72,24 @@ Diseño: `docs/superpowers/specs/2026-11-25-proveedores-broadcast-radio-eta-desi
 - Móvil: el proveedor fija su ubicación (`PUT /api/proveedores/me/ubicacion`), acepta con ETA, despacha y entrega; el técnico ve ETA y estado en Repuestos. La consola web acepta con el ETA sugerido y gana el botón Despachar.
 - **Deuda declarada:** (1) el ETA no tiene sanción: si vence sin despachar solo se avisa al técnico por push, no se re-difunde; (2) los proveedores ya registrados deben fijar su ubicación al entrar (sin ella no reciben solicitudes); (3) distancia en línea recta, sin ruta ni tráfico; (4) velocidad promedio, tope del ETA, radios y ventanas son valores por defecto de `app.insumos.*`, no política de producto; (5) sin SSE para el proveedor: push más recarga de la pantalla.
 
-### 2.6 Mapas con proveedor intercambiable — **M** (IMPLEMENTADO 2026-11-25, solo core y móvil)
+### 2.6 Mapas con proveedor intercambiable — **M** (CERRADO en core y móvil, PR #104; web y Mapbox pendientes)
 
 Diseño: `docs/superpowers/specs/2026-11-25-mapas-proveedor-intercambiable-design.md`. Plan: `docs/superpowers/plans/2026-11-25-mapas-proveedor-intercambiable.md`.
 - El mapa móvil de seguimiento y el geocodificador del cliente ya no usan `google.maps` directo: hablan con `MapaMotor` (`core/maps`) y `GeocodificadorCliente`. El motor lo elige el backend con `proveedor` en `GET /api/config/maps`; ausente o desconocido = Google. Para sumar Mapbox: un `MapaMotor` nuevo + su caso en `MAPA_MOTOR`.
-- **Deuda declarada:** (1) los tres componentes de la web (`mapa-radar`, `mapa-seguimiento`, `selector-ubicacion-mapa`) siguen con `@angular/google-maps` y `GoogleMapsLoaderService` por decisión de alcance; (2) falta `MapboxMotor` (front) y un `MapboxMapsAdapter` en backend que implemente `MapsPort` (`app.maps.provider`); (3) el backend aún no publica el campo `proveedor`; (4) antes de migrar: calidad de geocodificación con direcciones reales de Cúcuta, costos y límites vigentes de Mapbox, y WebGL en el WebView de Android objetivo; (5) `MAPA_ESTILOS` y el ícono de marcador son detalle del motor Google y tendrán su equivalente en el de Mapbox.
+- **Deuda declarada:** (1) los tres componentes de la web (`mapa-radar`, `mapa-seguimiento`, `selector-ubicacion-mapa`) siguen con `@angular/google-maps` y `GoogleMapsLoaderService` por decisión de alcance; (2) falta `MapboxMotor` (front) y un `MapboxMapsAdapter` en backend que implemente `MapsPort` (`app.maps.provider`); (3) ~~el backend aún no publica el campo `proveedor`~~ publicado (`app.maps.proveedor` / `MAPS_PROVEEDOR`, `google` por defecto; 2026-11-26); (4) antes de migrar: calidad de geocodificación con direcciones reales de Cúcuta, costos y límites vigentes de Mapbox, y WebGL en el WebView de Android objetivo; (5) `MAPA_ESTILOS` y el ícono de marcador son detalle del motor Google y tendrán su equivalente en el de Mapbox.
 
 ## 3. Pendientes acumulados de la sesión
 
-- [ ] **Locale de fechas**: la app no registra `LOCALE_ID` → todas las fechas salen en `en-US` ("Oct 21, 2026, 3:30:00 PM") dentro de textos en español. Fix de 1 línea (`registerLocaleData` + `LOCALE_ID` es-CO) pero cambia el render de fechas de **toda** la app: decisión tuya.
+- [x] (cerrado: ver B9, `1908b5f`) **Locale de fechas**: la app no registra `LOCALE_ID` → todas las fechas salen en `en-US` ("Oct 21, 2026, 3:30:00 PM") dentro de textos en español. Fix de 1 línea (`registerLocaleData` + `LOCALE_ID` es-CO) pero cambia el render de fechas de **toda** la app: decisión tuya.
 - [ ] **Costo de Google Maps**: un segundo mapa renderizado es un *map load* facturable (a diferencia de Distance Matrix). Hoy no hay doble carga (el radar solo se renderiza cuando no hay técnico asignado), pero es el número a mirar si se superponen.
 
-- [ ] **3 sitios que muestran el mensaje crudo del backend** al usuario: `seguimiento-ot-page.ts:275,295` y `panel-tecnico-page.ts:117` — misma clase de fuga que se corrigió en T4 (`err.message` crudo en vez de copy humano).
-- [ ] **Clase de LOADS silenciosos**: `ot-carga.ts:42` (deja la página **en blanco**), `dashboard-admin-page.ts:56`, `diagnostico-ot-page.ts:85`, `pago-acta-page.ts:95`, `ejecucion-ot-page.ts:185`, `seguimiento-ot-page.ts:133`, y el poll de ubicación que **muere en silencio** cuando el backend responde 404 (`seguimiento-ot-page.ts:202`).
+- [x] (cerrado: `mensajeErrorAccion` en 12 archivos; ya no hay `err.message` crudo en pantallas) **3 sitios que muestran el mensaje crudo del backend** al usuario: `seguimiento-ot-page.ts:275,295` y `panel-tecnico-page.ts:117` — misma clase de fuga que se corrigió en T4 (`err.message` crudo en vez de copy humano).
+- [x] (cerrado: `ot-carga.ts` expone `error` + `reintentar`; `ot-api.ts` solo enmascara el 404) **Clase de LOADS silenciosos**: `ot-carga.ts:42` (deja la página **en blanco**), `dashboard-admin-page.ts:56`, `diagnostico-ot-page.ts:85`, `pago-acta-page.ts:95`, `ejecucion-ot-page.ts:185`, `seguimiento-ot-page.ts:133`, y el poll de ubicación que **muere en silencio** cuando el backend responde 404 (`seguimiento-ot-page.ts:202`).
 - [x] **El tablero admin no se actualiza nunca** (CERRADO 2026-11-03): el canal `admin` ya existe (`176e682` backend, `4d4076b` frontend) y las cuatro pantallas (torre, consignaciones, disputas, validación) recargan con debounce y una sola recarga pendiente.
-- [ ] **`OtSinTecnicosDisponibles` no se emite** (`EscalarRadioUseCase:104`): el estado queda `BUSCANDO_TECNICO` y el cliente no ve que el radio creció.
-- [ ] **El nombre propio del usuario**: el JWT no lo trae (`TokenResponse` = token/expiracion/rol/roles) → requiere backend (agregar `nombre` al token o un `/api/usuarios/me`).
-- [ ] **Batería**: `ejecucion-ot-page.ts:131` reporta ubicación aunque el técnico esté solo `DISPONIBLE` (no ejecutando).
-- [ ] **Botón de reportar ubicación**: el diseño de `tecnico-activar-ubicacion` (reportar para aparecer en el radar, sin OT) es incómodo; el live tracking debería alimentarse del ciclo de vida de la OT.
+- [x] (cerrado: `EscalarRadioUseCase.java:117` lo publica) **`OtSinTecnicosDisponibles` no se emite** (`EscalarRadioUseCase:104`): el estado queda `BUSCANDO_TECNICO` y el cliente no ve que el radio creció.
+- [x] (cerrado: claim `nombre` en `JwtTokenIssuer.java:52` + `GET /api/usuarios/me`) **El nombre propio del usuario**: el JWT no lo trae (`TokenResponse` = token/expiracion/rol/roles) → requiere backend (agregar `nombre` al token o un `/api/usuarios/me`).
+- [x] (cerrado: `TecnicoPresenciaService` es la política única; sin OT en movimiento solo reporta si el técnico activó el switch) **Batería**: `ejecucion-ot-page.ts:131` reporta ubicación aunque el técnico esté solo `DISPONIBLE` (no ejecutando).
+- [x] (cerrado: con OT en movimiento el reporte es automático, ver `TecnicoPresenciaService`) **Botón de reportar ubicación**: el diseño de `tecnico-activar-ubicacion` (reportar para aparecer en el radar, sin OT) es incómodo; el live tracking debería alimentarse del ciclo de vida de la OT.
 - [x] **Navegación a `/panel`** (CERRADO 2026-11-03): `PanelRedirectComponent`, el botón "Mi Panel" del topbar y el acceso "Mi Panel" del sidebar comparten `PanelResolver` (`4966ec8`): preferencia → rol primario → primer panel ruteable.
 - [ ] **Registry SSE en memoria**: con más de una instancia en Railway, un evento publicado en una no llega al cliente de otra. Hoy corre 1 instancia.
 - [x] **El proxy `/api/maps` no tiene `directions`** (CERRADO 2026-11-03): el proxy ya expone `directions` (`ee89e64`) y el seguimiento dibuja la ruta real por calles bajo un guard de costo (`0da1fe2`): 60 s o más de 200 m, lo que ocurra primero.
@@ -97,28 +107,30 @@ Diseño: `docs/superpowers/specs/2026-11-25-mapas-proveedor-intercambiable-desig
 **Corte de superficies propuesto:** Ionic móvil = **cliente + técnico**. El **panel admin queda en Angular web** (comodidad del cliente, pantallas densas, teclado). Proveedor: pendiente decidir (ver preguntas abajo). Común: auth, SSE, servicios, config con `API_ORIGIN` inyectable.
 
 ### 5.1 Blockers de arquitectura móvil (antes de migrar)
-- [ ] **B1** (`S`) backend: CORS aceptar schemes `capacitor://` / `file://` (`SecurityConfig.java:134-144`).
-- [ ] **B2** (`S`) frontend: `API_ORIGIN` inyectable en `api.config.ts` (hoy relativo `'/api'` → roto en Capacitor) + build del workspace móvil.
-- [ ] **B3** (`M`) backend: `GET /api/usuarios/me` + `nombre` en JWT (`JwtTokenIssuer.java:44-52`, hoy sin nombre y sin `/me` → la app móvil no puede mostrar "Bienvenido, X").
+- [x] (cerrado: `CorsProperties` + `application-dev.properties`) **B1** (`S`) backend: CORS aceptar schemes `capacitor://` / `file://` (`SecurityConfig.java:134-144`).
+- [x] (cerrado: `API_ORIGIN` generado por `gen:config`) **B2** (`S`) frontend: `API_ORIGIN` inyectable en `api.config.ts` (hoy relativo `'/api'` → roto en Capacitor) + build del workspace móvil.
+- [x] (cerrado: `UsuarioController` `GET /me` + claim `nombre`) **B3** (`M`) backend: `GET /api/usuarios/me` + `nombre` en JWT (`JwtTokenIssuer.java:44-52`, hoy sin nombre y sin `/me` → la app móvil no puede mostrar "Bienvenido, X").
 - [ ] **B4** (`S`) verificar: Maps key con restricciones para origin nativo; `EventSource` no sobrevive en background (el poll de respaldo cubre).
 
 ### 5.2 Bugs que bloquean el móvil
-- [ ] **B5** (`S`) **técnico no puede pedir una orden**: `POST /api/ot` exige perfil Cliente y tira "No existe un perfil de cliente para el usuario: 1". Fix frontend: detectar ese error al crear OT → guiar a `agregar-perfil-page` (la página y el endpoint `POST /api/clientes/perfil` ya existen). Verificar el flujo dual-role del registro mientras.
-- [ ] **B6** (`S/M`) mensajes crudos del backend en 12+ sitios: adoptar `mensajeErrorAccion` (baseline del fix de `errores-silenciosos-acciones`). Sitios: `seguimiento:347,367`, `panel-tecnico:155`, `pago-acta:252`, `calificar:65`, `solicitar:193`, `login:55`, `registro:196`, `mi-perfil:126`, `agregar-perfil:144`, `selector-ubicacion:128`, `solicitudes-proveedor:143`.
-- [ ] **B7** (`S`) carga de OT en silencio: `ot-carga.ts:41` sin error → 5 páginas en blanco. Estado de error con reintento (mismo patrón de la sección Repuestos).
-- [ ] **B8** (`S`, web only) cargas admin silenciosas ×6 (dashboard, monitoreo, consignaciones, validación, disputas, proveedores): pasa por `next:` sin error.
+- [x] (cerrado: `core/errorStatus/perfil-cliente.ts` detecta el error) **B5** (`S`) **técnico no puede pedir una orden**: `POST /api/ot` exige perfil Cliente y tira "No existe un perfil de cliente para el usuario: 1". Fix frontend: detectar ese error al crear OT → guiar a `agregar-perfil-page` (la página y el endpoint `POST /api/clientes/perfil` ya existen). Verificar el flujo dual-role del registro mientras.
+- [x] (cerrado: `mensajeErrorAccion`/`avisarErrorAccion` adoptados) **B6** (`S/M`) mensajes crudos del backend en 12+ sitios: adoptar `mensajeErrorAccion` (baseline del fix de `errores-silenciosos-acciones`). Sitios: `seguimiento:347,367`, `panel-tecnico:155`, `pago-acta:252`, `calificar:65`, `solicitar:193`, `login:55`, `registro:196`, `mi-perfil:126`, `agregar-perfil:144`, `selector-ubicacion:128`, `solicitudes-proveedor:143`.
+- [x] (cerrado: `ot-carga.ts` con `error` + `reintentar`) **B7** (`S`) carga de OT en silencio: `ot-carga.ts:41` sin error → 5 páginas en blanco. Estado de error con reintento (mismo patrón de la sección Repuestos).
+- [x] (cerrado: el dashboard usa `CargaError`; el resto de bandejas maneja `error:`) **B8** (`S`, web only) cargas admin silenciosas ×6 (dashboard, monitoreo, consignaciones, validación, disputas, proveedores): pasa por `next:` sin error.
 - [x] **B9** (`S`) `LOCALE_ID` es-CO: adoptado (`1908b5f`). Fechas y números usan CLDR es-CO (`28/10/26`, `2:05 p.m.`, `3,5 km`); el dinero ya formateaba con `toLocaleString('es-CO')`. Nota: es-CO no es 24 h ni año de 4 dígitos; eso requiere formato explícito.
-- [ ] **B10** (`S`) polls sin visibilidad gate: ubicación 15 s (`seguimiento`) y poll de OT (`ot-api.ts:139` enmascara 404 **y 401/5xx**): batería en móvil.
-- [ ] **B11** (`S`) 401 doble aviso (interceptor to + tira la página). Dejar un solo toast.
-- [ ] **B12** (`M`) **"Mis equipos" renovación funcional**: hoy `historial-equipos-page` es **hardcoded con datos imaginarios en ambos modos**. Fuente real existe: `ClientesApi.getOtsPorCliente` → derivar equipo por categoría + descripción de falla + última OT (fecha, técnico, estado, garantía/acta) + link al seguimiento. Sin backend nuevo.
-- [ ] **B13** (`S`) chat de diagnóstico **fake**: auto-responde en modo real (`diagnostico-ot-page.ts:169-186`) → quitar o ocultar tras banner "próximamente".
-- [ ] **B14** (`S`) defaults falsos pre-pobla-dos: diagnóstico (`ejecucion:108-116`), comprobante (`liquidaciones:66-67`), 5 estrellas default (`calificar:28-29`).
+- [x] (cerrado: `visible-tab-polling.ts` en web, `app-visibility.ts` en móvil; `ot-api.ts` ya no enmascara 401/5xx) **B10** (`S`) polls sin visibilidad gate: ubicación 15 s (`seguimiento`) y poll de OT (`ot-api.ts:139` enmascara 404 **y 401/5xx**): batería en móvil.
+- [x] (cerrado: `error.interceptor.spec.ts` exige un solo toast ante 401) **B11** (`S`) 401 doble aviso (interceptor to + tira la página). Dejar un solo toast.
+- [x] (cerrado: web y móvil leen `getOtsPorCliente`) **B12** (`M`) **"Mis equipos" renovación funcional**: hoy `historial-equipos-page` es **hardcoded con datos imaginarios en ambos modos**. Fuente real existe: `ClientesApi.getOtsPorCliente` → derivar equipo por categoría + descripción de falla + última OT (fecha, técnico, estado, garantía/acta) + link al seguimiento. Sin backend nuevo.
+- [x] (cerrado: banner «Próximamente», sin chat simulado) **B13** (`S`) chat de diagnóstico **fake**: auto-responde en modo real (`diagnostico-ot-page.ts:169-186`) → quitar o ocultar tras banner "próximamente".
+- [x] (cerrado: calificar arranca en 0 estrellas; sin diagnóstico ni comprobante pre-poblado) **B14** (`S`) defaults falsos pre-pobla-dos: diagnóstico (`ejecucion:108-116`), comprobante (`liquidaciones:66-67`), 5 estrellas default (`calificar:28-29`).
 
 ### 5.3 UX dual-role: buscar ofertas vs pedir una orden
 - [x] **B15** (`M`) **cerrado 2026-10-30 — asignación = broadcast puro.** Decisión del usuario: **no existe ni se implementa "solicitud directa a un técnico"**. Toda solicitud se emite a los técnicos cercanos y el primero que acepta se la lleva. El copy del radar y del panel técnico lo dice explícito (`mapa-radar`, `panel-tecnico-page`, `ofertas-page`, `solicitar-servicio-page`, `panel-cliente-page`). El **selector de rol activo** ("Modo cliente / Modo técnico") **no se hace en el shell web actual**: se mueve al **shell móvil Ionic** (futuro, §5.1/§5.4). La navegación dual-role de hoy la resuelve un único `panel-resolver` (último panel visitado en `coldday.panel.preferido`, con fallback al rol primario).
 - [x] (Designer) **Resuelto 2026-10-30:** ¿existe "solicitud directa a un técnico concreto"? **No existe; broadcast puro, fuera de alcance.** Ninguna pantalla debe sugerir lo contrario.
 
-### 5.4 Revamp UI mobile con Google Stitch
+### 5.4 Revamp UI mobile con Google Stitch — CERRADO (histórico)
+
+Hecho en `frontend/projects/mobile` (integración Stitch, barra de marca, proveedor dentro de Ionic). Lo que queda de diseño vive en `docs/design/TAREAS-UI.md`. Lo de abajo es el registro original.
 Screens a rediseñar (inventario del audit 2026-10-26):
 - **Cliente (Ionic):** login · registro · agregar-perfil · panel (Mi equipo cards + OT activa) · solicitar (mapa + dirección) · seguimiento (mapa + historial) · diagnóstico/aprobar-presupuesto · pago-acta · calificar.
 - **Técnico (Ionic):** panel-ofertas (radar) · aceptación de oferta · ejecución OT (diagnóstico, repuestos, acta, firma) · perfil + documentos.

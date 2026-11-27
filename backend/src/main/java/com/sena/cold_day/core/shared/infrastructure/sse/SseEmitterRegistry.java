@@ -108,6 +108,21 @@ public class SseEmitterRegistry {
     }
 
     /** Completes and drops every emitter. Used on shutdown and by tests. */
+    /** Cierra todos los streams de una clave; quien siga autorizado reconecta con un ticket nuevo. */
+    public void cerrar(String key) {
+        Set<SseEmitter> bucket = emisores.remove(key);
+        if (bucket == null) {
+            return;
+        }
+        for (SseEmitter emitter : new ArrayList<>(bucket)) {
+            try {
+                emitter.complete();
+            } catch (RuntimeException ignored) {
+                // Ya estaba cerrado: no hay nada más que soltar.
+            }
+        }
+    }
+
     public void limpiar() {        for (Set<SseEmitter> bucket : emisores.values()) {
             for (SseEmitter emitter : new ArrayList<>(bucket)) {
                 try {

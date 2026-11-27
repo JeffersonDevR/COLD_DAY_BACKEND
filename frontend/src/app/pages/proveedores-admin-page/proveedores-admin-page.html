@@ -3,8 +3,8 @@
       <div>
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">Proveedores Auxiliares</h1>
         <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-          Los proveedores se registran desde el formulario público de registro. Aquí el administrador revisa el
-          listado y valida la documentación para habilitarlos a operar.
+          Los proveedores se registran desde el formulario público de registro. Aquí revisas el
+          listado y validas la documentación para habilitarlos a operar.
         </p>
       </div>
 
@@ -26,6 +26,28 @@
                 <div>
                   <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ prov.razonSocial }}</p>
                   <p class="text-xs text-slate-500">NIT: {{ prov.nit }} • Tel: {{ prov.telefono || '—' }}</p>
+                  @if (expedientes.porId()[prov.id]; as expediente) {
+                    @switch (expediente.estado) {
+                      @case ('error') {
+                        <app-carga-error mensaje="No pudimos cargar los documentos." (reintentar)="expedientes.cargar(prov.id)" />
+                      }
+                      @case ('listo') {
+                        @if (expediente.desactualizado) {
+                          <app-carga-error mensaje="No pudimos actualizar los documentos; estos pueden estar desactualizados." (reintentar)="expedientes.cargar(prov.id)" />
+                        }
+                        <ul class="mt-1 text-xs text-slate-700">
+                          @for (doc of expediente.documentos; track doc.id) {
+                            <li>{{ doc.tipo.replaceAll('_', ' ') }} · Vence: {{ doc.fechaVencimiento || '—' }}</li>
+                          } @empty {
+                            <li>No ha declarado documentos.</li>
+                          }
+                        </ul>
+                      }
+                      @default {
+                        <p class="text-xs text-slate-700">Cargando documentos…</p>
+                      }
+                    }
+                  }
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   @if (prov.estadoValidacion; as estado) {
@@ -60,43 +82,45 @@
         }
       </div>
 
-      <div class="rounded-3xl p-6 border border-slate-200 shadow-xs">
-        <h2 class="text-base font-bold mb-1">Incumplimientos de ETA</h2>
-        <p class="text-xs opacity-80 mb-4">
-          Pedidos que el técnico pasó a otro proveedor porque venció el tiempo prometido. No aplican sanciones.
-        </p>
-        @if (errorIncumplimientos()) {
-          <app-carga-error mensaje="No pudimos cargar los incumplimientos." (reintentar)="cargarIncumplimientos()" />
-        } @else if (cargandoIncumplimientos()) {
-          <p class="text-xs opacity-80">Cargando incumplimientos…</p>
-        } @else if (incumplimientos().length === 0) {
-          <p class="text-xs opacity-80">No hay incumplimientos registrados</p>
-        } @else {
-          <ul class="flex flex-wrap gap-2 mb-4" data-testid="incumplimientos-totales">
-            @for (total of totalesPorProveedor(); track total.proveedorId) {
-              <li class="px-2.5 py-1 rounded-full border border-slate-200 text-[11px] font-bold">
-                {{ total.razonSocial }}: {{ total.total }}
-              </li>
+      @if (esAdministrador) {
+        <div class="rounded-3xl p-6 border border-slate-200 shadow-xs">
+          <h2 class="text-base font-bold mb-1">Incumplimientos de ETA</h2>
+          <p class="text-xs opacity-80 mb-4">
+            Pedidos que el técnico pasó a otro proveedor porque venció el tiempo prometido. No aplican sanciones.
+          </p>
+          @if (errorIncumplimientos()) {
+            <app-carga-error mensaje="No pudimos cargar los incumplimientos." (reintentar)="cargarIncumplimientos()" />
+          } @else if (cargandoIncumplimientos()) {
+            <p class="text-xs opacity-80">Cargando incumplimientos…</p>
+          } @else if (incumplimientos().length === 0) {
+            <p class="text-xs opacity-80">No hay incumplimientos registrados</p>
+          } @else {
+            <ul class="flex flex-wrap gap-2 mb-4" data-testid="incumplimientos-totales">
+              @for (total of totalesPorProveedor(); track total.proveedorId) {
+                <li class="px-2.5 py-1 rounded-full border border-slate-200 text-[11px] font-bold">
+                  {{ total.razonSocial }}: {{ total.total }}
+                </li>
+              }
+            </ul>
+            <div class="divide-y divide-slate-200/70">
+              @for (fila of incumplimientos(); track fila.id) {
+                <div class="py-3" data-testid="incumplimiento">
+                  <p class="text-sm font-semibold">{{ fila.razonSocial }}</p>
+                  <p class="text-xs opacity-80">
+                    Prometió {{ fila.etaMinutos }} min • Aceptó {{ fila.aceptadaEn | date: 'dd/MM/yyyy HH:mm' }} •
+                    Reemplazado {{ fila.reemplazadoEn | date: 'dd/MM/yyyy HH:mm' }}
+                  </p>
+                </div>
+              }
+            </div>
+            @if (incumplimientos().length >= topeIncumplimientos) {
+              <p class="text-xs opacity-80 mt-2" data-testid="incumplimientos-tope">
+                Se muestran los {{ topeIncumplimientos }} más recientes.
+              </p>
             }
-          </ul>
-          <div class="divide-y divide-slate-200/70">
-            @for (fila of incumplimientos(); track fila.id) {
-              <div class="py-3" data-testid="incumplimiento">
-                <p class="text-sm font-semibold">{{ fila.razonSocial }}</p>
-                <p class="text-xs opacity-80">
-                  Prometió {{ fila.etaMinutos }} min • Aceptó {{ fila.aceptadaEn | date: 'dd/MM/yyyy HH:mm' }} •
-                  Reemplazado {{ fila.reemplazadoEn | date: 'dd/MM/yyyy HH:mm' }}
-                </p>
-              </div>
-            }
-          </div>
-          @if (incumplimientos().length >= topeIncumplimientos) {
-            <p class="text-xs opacity-80 mt-2" data-testid="incumplimientos-tope">
-              Se muestran los {{ topeIncumplimientos }} más recientes.
-            </p>
           }
-        }
-      </div>
+        </div>
+      }
 
       <!-- Modal de Rechazo -->
       @if (proveedorARechazar(); as prov) {

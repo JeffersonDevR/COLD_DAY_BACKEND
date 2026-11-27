@@ -7,6 +7,9 @@ import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
 import { IncumplimientoInsumo, ProveedorResponse } from '../../core/models/common.models';
 import { CargaError } from '../../shared/carga-error/carga-error';
+import { DocumentoProveedorApiResponse } from '../../core/models/backend.dto';
+import { AuthService } from '../../core/service/auth.service';
+import { crearExpedientes } from '../../core/service/expedientes';
 
 /**
  * Copy propia de esta pantalla: el 409 de este endpoint significa que el
@@ -21,7 +24,7 @@ const MENSAJES_VALIDACION: Record<number, string> = {
 };
 
 /**
- * Validación documental de proveedores para el administrador. El alta ya no
+ * Validación documental de proveedores (administrador y Recursos Humanos). El alta ya no
  * vive aquí: los proveedores se auto-registran desde la página pública
  * `/registro`. Esta pantalla solo lista (incluye inactivos, P4) y aprueba o
  * rechaza el expediente de cada proveedor.
@@ -36,6 +39,13 @@ export class ProveedoresAdminPage {
   private readonly adminApi = inject(AdminApi);
   private readonly proveedoresApi = inject(ProveedoresApi);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+
+  /** El registro de ETA incumplidos es solo del administrador. */
+  readonly esAdministrador = this.auth.userRoles().has('ADMINISTRADOR');
+  readonly expedientes = crearExpedientes<DocumentoProveedorApiResponse>(
+    (id) => this.proveedoresApi.getDocumentos(id),
+  );
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
   /** Bandeja de trabajo: un proveedor ya aprobado no tiene nada por decidir, así que sale de la lista. */
@@ -64,7 +74,9 @@ export class ProveedoresAdminPage {
 
   constructor() {
     this.cargar();
-    this.cargarIncumplimientos();
+    if (this.esAdministrador) {
+      this.cargarIncumplimientos();
+    }
   }
 
   cargarIncumplimientos(): void {
@@ -90,6 +102,7 @@ export class ProveedoresAdminPage {
       next: (proveedores) => {
         this.proveedores.set(proveedores);
         this.cargando.set(false);
+        this.pendientes().forEach((p) => this.expedientes.cargar(p.id));
       },
       error: () => {
         this.proveedores.set([]);

@@ -11,7 +11,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -99,10 +98,7 @@ public class DevAuthBypassFilter extends OncePerRequestFilter {
         // exercises the same expanded authority set as a real dual user.
         Set<Rol> roles = rolesDePerfil.resolver(usuarioId, usuario.getRol());
         var principal = new AuthenticatedUser(usuarioId, usuario.getRol(), roles, usuario.getNombre());
-        var authorities = roles.stream()
-                .map(r -> new SimpleGrantedAuthority("ROLE_" + r.name()))
-                .toList();
         SecurityContextHolder.getContext()
-                .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, authorities));
+                .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
     }
 }

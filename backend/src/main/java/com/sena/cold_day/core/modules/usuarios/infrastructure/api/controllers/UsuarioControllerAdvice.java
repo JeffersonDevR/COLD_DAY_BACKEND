@@ -11,11 +11,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.RolNoGestionableException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.TokenRecuperacionInvalidoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
 import com.sena.cold_day.core.shared.errors.ApiError;
 
-@RestControllerAdvice(assignableTypes = UsuarioController.class)
+@RestControllerAdvice(assignableTypes = { UsuarioController.class, CuentasController.class })
 public class UsuarioControllerAdvice {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -33,6 +34,11 @@ public class UsuarioControllerAdvice {
     @ExceptionHandler(CorreoDuplicadoException.class)
     ResponseEntity<ApiError> handleDuplicate(CorreoDuplicadoException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    @ExceptionHandler(RolNoGestionableException.class)
+    ResponseEntity<ApiError> handleRolNoGestionable(RolNoGestionableException exception) {
+        return error(HttpStatus.BAD_REQUEST, exception);
     }
 
     @ExceptionHandler(HabeasDataRequeridoException.class)

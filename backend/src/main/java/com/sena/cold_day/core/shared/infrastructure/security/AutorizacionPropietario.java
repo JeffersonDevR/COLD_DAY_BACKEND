@@ -12,6 +12,7 @@ import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorI
 import com.sena.cold_day.core.modules.tecnicos.domain.aggregates.Tecnico;
 import com.sena.cold_day.core.modules.tecnicos.domain.repository.TecnicoRepository;
 import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Permiso;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 
 /**
@@ -109,6 +110,20 @@ public class AutorizacionPropietario {
     public void exigirParticipanteOAdmin(AuthenticatedUser principal, OtResponse ot) {
         if (!esParticipanteOAdmin(principal, ot)) {
             throw new AccessDeniedException("El usuario autenticado no participa en la orden");
+        }
+    }
+
+    /** Lectura de una orden: quien participa, o quien audita la operación. No vale para escribir. */
+    public void exigirLectorDeOt(AuthenticatedUser principal, OtResponse ot) {
+        if (!principal.tienePermiso(Permiso.VER_OPERACION)) {
+            exigirParticipanteOAdmin(principal, ot);
+        }
+    }
+
+    /** Documentos de un proveedor: su dueño, o quien valida documentación. */
+    public void exigirProveedorOAuditorDocumental(AuthenticatedUser principal, ProveedorId proveedorId) {
+        if (!principal.tienePermiso(Permiso.VALIDAR_DOCUMENTACION)) {
+            exigirProveedorOAdmin(principal, proveedorId);
         }
     }
 

@@ -242,7 +242,7 @@ describe('ProveedoresApi', () => {
     // Sin endpoint de perfil propio (GET /api/proveedores/me no existe): el
     // perfil/estado se lee de ProveedorRegistroService (sessionStorage), no de la API.
     expect(await firstValueFrom(api.getMisDocumentos())).toEqual([]);
-    expect(await firstValueFrom(api.getDocumentos('PROV-001'))).toEqual([]);
+    expect((await firstValueFrom(api.getDocumentos('PROV-001'))).length).toBe(mockDb.documentosDe('PROV-001').length);
     expect((await firstValueFrom(api.registrarDocumento('RUT'))).tipo).toBe('RUT');
     expect(await firstValueFrom(api.validarDocumentacion('PROV-001', 'APROBAR'))).toBeUndefined();
   });

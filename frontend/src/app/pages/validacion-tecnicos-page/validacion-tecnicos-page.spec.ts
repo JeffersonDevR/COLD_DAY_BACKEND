@@ -8,7 +8,8 @@ import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refr
 import { AdminActividad, SseService } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { TecnicoResponse } from '../../core/models/common.models';
+import { Rol, TecnicoResponse } from '../../core/models/common.models';
+import { AuthService } from '../../core/service/auth.service';
 
 interface CanalAdmin {
   abrirAdminStream: ReturnType<typeof vi.fn>;
@@ -44,19 +45,22 @@ function setup(
   validarError?: unknown,
   getTecnicos?: ReturnType<typeof vi.fn>,
   sse?: CanalAdmin,
+  getDocumentos: ReturnType<typeof vi.fn> = vi.fn(() => of(tecnico.documentos)),
+  rol: Rol = 'ADMINISTRADOR',
 ) {
   const adminApi = {
     validarDocumentacionTecnico: vi.fn(() =>
       validarError ? throwError(() => validarError) : of(undefined)
     ),
   };
-  const tecnicosApi = { getTecnicos: getTecnicos ?? vi.fn(() => of([tecnico])) };
+  const tecnicosApi = { getTecnicos: getTecnicos ?? vi.fn(() => of([tecnico])), getDocumentos };
   const toast = { success: vi.fn(), warning: vi.fn(), error: vi.fn() };
   TestBed.configureTestingModule({
     imports: [ValidacionTecnicosPage],
     providers: [
       provideRouter([]),
       { provide: AdminApi, useValue: adminApi },
+      { provide: AuthService, useValue: { userRoles: () => new Set<Rol>([rol]) } },
       { provide: TecnicosApi, useValue: tecnicosApi },
       { provide: ToastService, useValue: toast },
       // Sin canal explícito, el stream se completa vacío: la degradación real.
@@ -73,6 +77,55 @@ describe('ValidacionTecnicosPage', () => {
     const { fixture } = setup();
     expect(fixture.componentInstance.tecnicos().length).toBe(1);
     expect(fixture.nativeElement.textContent).toContain('Juan Pérez');
+  });
+
+  it('no ofrece volver a la Torre de Control a quien no puede abrirla', () => {
+    const rrhh = setup(undefined, undefined, undefined, undefined, 'RECURSOS_HUMANOS');
+    expect(rrhh.fixture.nativeElement.textContent).not.toContain('Torre de Control');
+    TestBed.resetTestingModule();
+
+    expect(setup().fixture.nativeElement.textContent).toContain('Volver a la Torre de Control');
+  });
+
+  describe('documentos declarados', () => {
+    const conFechas = {
+      id: 'DOC-9', tipo: 'RUT' as const, nombre: 'RUT', estadoValidacion: 'APROBADO' as const,
+      fechaExpedicion: '2026-01-10', fechaVencimiento: '2027-01-10',
+    };
+
+    it('muestra tipo y fechas de lo que declaró cada pendiente, sin enlace a un archivo', () => {
+      const getDocumentos = vi.fn(() => of([conFechas]));
+      const { fixture } = setup(undefined, undefined, undefined, getDocumentos);
+
+      const texto = fixture.nativeElement.textContent;
+      expect(getDocumentos).toHaveBeenCalledWith('TEC-1');
+      expect(texto).toContain('RUT');
+      expect(texto).toContain('Expide: 2026-01-10');
+      expect(texto).toContain('Vence: 2027-01-10');
+      expect(fixture.nativeElement.querySelector('a[target="_blank"]')).toBeNull();
+    });
+
+    it('dice cuándo no declaró ninguno', () => {
+      const { fixture } = setup(undefined, undefined, undefined, vi.fn(() => of([])));
+
+      expect(fixture.nativeElement.textContent).toContain('No ha declarado documentos.');
+    });
+
+    it('distingue un fallo de carga y deja reintentar', () => {
+      const getDocumentos = vi.fn()
+        .mockReturnValueOnce(throwError(() => new Error('sin red')))
+        .mockReturnValue(of([conFechas]));
+      const { fixture } = setup(undefined, undefined, undefined, getDocumentos);
+      expect(fixture.nativeElement.textContent).toContain('No pudimos cargar los documentos.');
+      expect(fixture.nativeElement.textContent).not.toContain('No ha declarado documentos.');
+
+      const reintentar = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+        .find((b) => b.textContent?.includes('Reintentar')) as HTMLButtonElement;
+      reintentar.click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Vence: 2027-01-10');
+    });
   });
 
   it('un técnico ya aprobado sale de la bandeja y solo quedan los pendientes', () => {

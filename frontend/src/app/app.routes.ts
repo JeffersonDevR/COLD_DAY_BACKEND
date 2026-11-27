@@ -1,7 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
-import { guestGuard } from './core/guest.guard';
+import { guestGuard, recuperarGuard } from './core/guest.guard';
 import { roleGuard } from './core/role.guard';
+import { rolesCon } from './core/permisos';
 import { PanelRedirectComponent } from './core/navihationError/panel-redirect';
 
 export const routes: Routes = [
@@ -14,14 +15,8 @@ export const routes: Routes = [
     title: 'Ingreso al Sistema - COLD DAY'
   },
   {
-    path: 'registro',
-    canActivate: [guestGuard],
-    loadComponent: () => import('./pages/registro-page/registro-page').then(m => m.RegistroPage),
-    title: 'Registro de Cuenta - COLD DAY'
-  },
-  {
     path: 'recuperar',
-    canActivate: [guestGuard],
+    canActivate: [recuperarGuard],
     loadComponent: () => import('./pages/recuperar-page/recuperar-page').then(m => m.RecuperarPage),
     title: 'Recuperar Contraseña - COLD DAY'
   },
@@ -33,153 +28,68 @@ export const routes: Routes = [
     component: PanelRedirectComponent
   },
 
-  // Adquisición del segundo perfil (Cliente/Técnico) para un usuario autenticado.
+  // Cuentas sin rol interno: sus funciones viven en la app móvil.
   {
-    path: 'perfil/agregar',
+    path: 'usa-la-app',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/agregar-perfil-page/agregar-perfil-page').then(m => m.AgregarPerfilPage),
-    title: 'Completar Perfil - COLD DAY'
-  },
-
-  // Rutas de Clientes
-  {
-    path: 'cliente/panel',
-    // El menú ya ofrece "Mis Órdenes" a TECNICO: el guard debe coincidir, o el
-    // usuario rebota al panel técnico aunque tenga OTs como cliente.
-    canActivate: [authGuard, roleGuard(['CLIENTE', 'TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/panel-cliente-page/panel-cliente-page').then(m => m.PanelClientePage),
-    title: 'Panel Cliente - COLD DAY'
-  },
-  {
-    path: 'cliente/solicitar',
-    canActivate: [authGuard, roleGuard(['CLIENTE', 'TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/solicitar-servicio-page/solicitar-servicio-page').then(m => m.SolicitarServicioPage),
-    title: 'Solicitar Servicio Técnico - COLD DAY'
-  },
-  {
-    path: 'cliente/ot/:id',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/seguimiento-ot-page/seguimiento-ot-page').then(m => m.SeguimientoOtPage),
-    title: 'Seguimiento de Orden de Trabajo'
-  },
-  {
-    path: 'cliente/ot/:id/diagnostico',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/diagnostico-ot-page/diagnostico-ot-page').then(m => m.DiagnosticoOtPage),
-    title: 'Aprobación de Presupuesto - COLD DAY'
-  },
-  {
-    path: 'cliente/ot/:id/pago',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/pago-acta-page/pago-acta-page').then(m => m.PagoActaPage),
-    title: 'Acta de Entrega y Pago - COLD DAY'
-  },
-  {
-    path: 'cliente/ot/:id/calificar',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/calificar-servicio-page/calificar-servicio-page').then(m => m.CalificarServicioPage),
-    title: 'Calificar Servicio - COLD DAY'
-  },
-  {
-    path: 'cliente/equipos',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/historial-equipos-page/historial-equipos-page').then(m => m.HistorialEquiposPage),
-    title: 'Hoja de Vida de Equipos - COLD DAY'
-  },
-
-  // Rutas de Técnicos
-  {
-    path: 'tecnico/panel',
-    canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/panel-tecnico-page/panel-tecnico-page').then(m => m.PanelTecnicoPage),
-    title: 'Panel Operativo Técnico - COLD DAY'
-  },
-  {
-    path: 'tecnico/perfil',
-    canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/mi-perfil-tecnico-page/mi-perfil-tecnico-page').then(m => m.MiPerfilTecnicoPage),
-    title: 'Mi Perfil - COLD DAY'
-  },
-  {
-    path: 'tecnico/ofertas',
-    canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/ofertas-page/ofertas-page').then(m => m.OfertasPage),
-    title: 'Radar de Ofertas en Vivo - COLD DAY'
-  },
-  {
-    path: 'tecnico/ejecucion/:id',
-    canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/ejecucion-ot-page/ejecucion-ot-page').then(m => m.EjecucionOtPage),
-    title: 'Ejecución de Servicio Técnico'
-  },
-  {
-    path: 'tecnico/documentos',
-    canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/perfil-documentos-page/perfil-documentos-page').then(m => m.PerfilDocumentosPage),
-    title: 'Acreditaciones y Documentos - COLD DAY'
-  },
-  {
-    path: 'tecnico/liquidaciones',
-    canActivate: [authGuard, roleGuard(['TECNICO', 'ADMINISTRADOR'])],
-    loadComponent: () => import('./pages/liquidaciones-tecnico-page/liquidaciones-tecnico-page').then(m => m.LiquidacionesTecnicoPage),
-    title: 'Liquidaciones y Consignaciones - COLD DAY'
+    loadComponent: () => import('./pages/usa-la-app-page/usa-la-app-page').then(m => m.UsaLaAppPage),
+    title: 'Usa la app - COLD DAY'
   },
 
   // Rutas Administrativas y Contables
   {
     path: 'admin/dashboard',
-    canActivate: [authGuard, roleGuard(['ADMINISTRADOR', 'CONTABLE'])],
+    canActivate: [authGuard, roleGuard(rolesCon('VER_OPERACION'))],
     loadComponent: () => import('./pages/dashboard-admin-page/dashboard-admin-page').then(m => m.DashboardAdminPage),
     title: 'Torre de Control Administrativa - COLD DAY'
   },
   {
     path: 'admin/validacion-tecnicos',
-    canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
+    canActivate: [authGuard, roleGuard(rolesCon('VALIDAR_DOCUMENTACION'))],
     loadComponent: () => import('./pages/validacion-tecnicos-page/validacion-tecnicos-page').then(m => m.ValidacionTecnicosPage),
     title: 'Auditoría de Técnicos - COLD DAY'
   },
   {
     path: 'admin/consignaciones',
-    canActivate: [authGuard, roleGuard(['ADMINISTRADOR', 'CONTABLE'])],
+    canActivate: [authGuard, roleGuard(rolesCon('GESTIONAR_CONSIGNACIONES'))],
     loadComponent: () => import('./pages/consignaciones-admin-page/consignaciones-admin-page').then(m => m.ConsignacionesAdminPage),
     title: 'Conciliación de Consignaciones - COLD DAY'
   },
   {
     path: 'admin/disputas',
-    canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
+    canActivate: [authGuard, roleGuard(rolesCon('GESTIONAR_DISPUTAS'))],
     loadComponent: () => import('./pages/disputas-admin-page/disputas-admin-page').then(m => m.DisputasAdminPage),
     title: 'Mesa de Mediación - COLD DAY'
   },
   {
     path: 'admin/monitoreo',
-    canActivate: [authGuard, roleGuard(['ADMINISTRADOR', 'CONTABLE'])],
+    canActivate: [authGuard, roleGuard(rolesCon('VER_OPERACION'))],
     loadComponent: () => import('./pages/monitoreo-ot-page/monitoreo-ot-page').then(m => m.MonitoreoOtPage),
     title: 'Monitoreo Global de OTs - COLD DAY'
   },
   {
+    path: 'admin/ot/:id',
+    canActivate: [authGuard, roleGuard(rolesCon('VER_OPERACION'))],
+    loadComponent: () => import('./pages/admin-ot-detalle-page/admin-ot-detalle-page').then(m => m.AdminOtDetallePage),
+    title: 'Detalle de OT - COLD DAY'
+  },
+  {
     path: 'admin/proveedores',
-    canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
+    canActivate: [authGuard, roleGuard(rolesCon('VALIDAR_DOCUMENTACION'))],
     loadComponent: () => import('./pages/proveedores-admin-page/proveedores-admin-page').then(m => m.ProveedoresAdminPage),
     title: 'Proveedores Auxiliares - COLD DAY'
   },
 
-  // Rutas de Proveedores (despacho de insumos)
   {
-    path: 'proveedor/panel',
-    canActivate: [authGuard, roleGuard(['PROVEEDOR'])],
-    loadComponent: () => import('./pages/solicitudes-proveedor-page/solicitudes-proveedor-page').then(m => m.SolicitudesProveedorPage),
-    title: 'Portal de Proveedores - COLD DAY'
-  },
-  {
-    path: 'proveedor/documentos',
-    canActivate: [authGuard, roleGuard(['PROVEEDOR'])],
-    loadComponent: () => import('./pages/documentos-proveedor-page/documentos-proveedor-page').then(m => m.DocumentosProveedorPage),
-    title: 'Expediente del Proveedor - COLD DAY'
+    path: 'admin/cuentas',
+    canActivate: [authGuard, roleGuard(rolesCon('GESTIONAR_CUENTAS'))],
+    loadComponent: () => import('./pages/admin-cuentas-page/admin-cuentas-page').then(m => m.AdminCuentasPage),
+    title: 'Cuentas - COLD DAY'
   },
 
   // Fallback
   {
     path: '**',
-    redirectTo: ''
+    redirectTo: 'login'
   }
 ];

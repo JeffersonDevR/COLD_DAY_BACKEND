@@ -1,29 +1,38 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { RecuperarPage } from './recuperar-page';
 import { UsuariosApi } from '../../core/service/usuarios-api';
+import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 
 function texto(fixture: ComponentFixture<RecuperarPage>): string {
   return (fixture.nativeElement as HTMLElement).textContent ?? '';
 }
 
-function setup(solicitar: ReturnType<typeof vi.fn>, reset: ReturnType<typeof vi.fn>) {
+function setup(
+  solicitar: ReturnType<typeof vi.fn>,
+  reset: ReturnType<typeof vi.fn>,
+  query: Record<string, string> = {},
+  conSesion = false,
+) {
+  const auth = { isAuthenticated: () => conSesion, logout: vi.fn() };
   const toast = { info: vi.fn(), success: vi.fn(), error: vi.fn() };
   TestBed.configureTestingModule({
     imports: [RecuperarPage],
     providers: [
       provideRouter([]),
+      { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
       { provide: UsuariosApi, useValue: { solicitarRecuperacion: solicitar, resetPassword: reset } },
       { provide: ToastService, useValue: toast },
+      { provide: AuthService, useValue: auth },
     ],
   });
   const router = TestBed.inject(Router);
   const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(RecuperarPage);
   fixture.detectChanges();
-  return { fixture, toast, navigate };
+  return { auth, fixture, toast, navigate };
 }
 
 describe('RecuperarPage', () => {
@@ -31,9 +40,10 @@ describe('RecuperarPage', () => {
     const solicitar = vi.fn(() => of({ mensaje: 'ok', tokenSimulado: 'CD-RESET-123456' }));
     const { fixture, toast } = setup(solicitar, vi.fn());
 
+    fixture.componentInstance.solicitarForm.controls.correo.setValue('ana@coldday.com.co');
     fixture.componentInstance.onSolicitarToken();
 
-    expect(solicitar).toHaveBeenCalledWith('maria.gomez@gmail.com');
+    expect(solicitar).toHaveBeenCalledWith('ana@coldday.com.co');
     expect(fixture.componentInstance.paso()).toBe(2);
     expect(fixture.componentInstance.tokenSimulado()).toBe('CD-RESET-123456');
     expect(toast.info).toHaveBeenCalled();
@@ -43,6 +53,7 @@ describe('RecuperarPage', () => {
     const solicitar = vi.fn(() => of({ mensaje: 'ok' }));
     const { fixture } = setup(solicitar, vi.fn());
 
+    fixture.componentInstance.solicitarForm.controls.correo.setValue('ana@coldday.com.co');
     fixture.componentInstance.onSolicitarToken();
     fixture.detectChanges();
 
@@ -56,6 +67,7 @@ describe('RecuperarPage', () => {
     const solicitar = vi.fn(() => of({ mensaje: 'ok', tokenSimulado: 'CD-RESET-123456' }));
     const { fixture } = setup(solicitar, vi.fn());
 
+    fixture.componentInstance.solicitarForm.controls.correo.setValue('ana@coldday.com.co');
     fixture.componentInstance.onSolicitarToken();
     fixture.detectChanges();
 
@@ -67,10 +79,69 @@ describe('RecuperarPage', () => {
     const solicitar = vi.fn(() => throwError(() => new Error('sin red')));
     const { fixture, toast } = setup(solicitar, vi.fn());
 
+    fixture.componentInstance.solicitarForm.controls.correo.setValue('ana@coldday.com.co');
     fixture.componentInstance.onSolicitarToken();
 
     expect(toast.error).toHaveBeenCalled();
     expect(fixture.componentInstance.paso()).toBe(1);
+  });
+
+  it('sin token en el enlace abre en el paso 1 con el correo vacío', () => {
+    const { fixture } = setup(vi.fn(), vi.fn());
+
+    expect(fixture.componentInstance.paso()).toBe(1);
+    expect(fixture.componentInstance.solicitarForm.controls.correo.value).toBe('');
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#correoRec')?.value).toBe('');
+  });
+
+  it('con ?token= abre en el paso 2 con el token puesto', () => {
+    const reset = vi.fn(() => of({ mensaje: 'Contraseña actualizada' }));
+    const { fixture } = setup(vi.fn(), reset, { token: 'abc-123' });
+    const html = fixture.nativeElement as HTMLElement;
+
+    expect(fixture.componentInstance.paso()).toBe(2);
+    expect(html.querySelector<HTMLInputElement>('#tokenInput')?.value).toBe('abc-123');
+    expect(fixture.componentInstance.modoDemo()).toBe(false);
+    expect(texto(fixture)).not.toContain('Pégalo');
+    expect(texto(fixture)).toContain('Escribe tu nueva contraseña');
+
+    fixture.componentInstance.resetForm.controls.nuevaPassword.setValue('nueva123');
+    fixture.componentInstance.onResetPassword();
+
+    expect(reset).toHaveBeenCalledWith('abc-123', 'nueva123');
+  });
+
+  it('con ?token= vacío se comporta como sin token', () => {
+    const { fixture } = setup(vi.fn(), vi.fn(), { token: '' });
+
+    expect(fixture.componentInstance.paso()).toBe(1);
+  });
+
+  it('con sesión abierta, al cambiar la clave cierra la sesión (el token quedó revocado)', () => {
+    const reset = vi.fn(() => of({ mensaje: 'Contraseña actualizada' }));
+    const { fixture, auth } = setup(vi.fn(), reset, { token: 'abc-123' }, true);
+
+    fixture.componentInstance.resetForm.controls.nuevaPassword.setValue('nueva123');
+    fixture.componentInstance.onResetPassword();
+
+    expect(auth.logout).toHaveBeenCalledTimes(1);
+  });
+
+  it('exige la misma longitud de contraseña que el backend (8 a 72)', () => {
+    const reset = vi.fn(() => of({ mensaje: 'ok' }));
+    const { fixture } = setup(vi.fn(), reset, { token: 'abc-123' });
+    const clave = fixture.componentInstance.resetForm.controls.nuevaPassword;
+
+    for (const invalida of ['a'.repeat(7), 'a'.repeat(73)]) {
+      clave.setValue(invalida);
+      fixture.componentInstance.onResetPassword();
+    }
+    expect(reset).not.toHaveBeenCalled();
+
+    clave.setValue('a'.repeat(8));
+    expect(clave.valid).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#nuevaPass')?.placeholder)
+      .toBe('Mínimo 8 caracteres');
   });
 
   it('no envía si el correo es inválido', () => {

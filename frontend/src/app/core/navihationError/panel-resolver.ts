@@ -1,8 +1,9 @@
 import { Rol } from '../models/common.models';
+import { Permiso, PERMISOS_POR_ROL } from '../permisos';
 
 /**
  * Último panel visitado. Es una preferencia del dispositivo (no del backend):
- * el usuario dual-role vuelve al contexto en el que estaba trabajando.
+ * el usuario vuelve al contexto en el que estaba trabajando.
  */
 export const CLAVE_PANEL_PREFERIDO = 'coldday.panel.preferido';
 
@@ -12,20 +13,20 @@ export const CLAVE_PANEL_PREFERIDO = 'coldday.panel.preferido';
  * registrarse como visitado. `AuthService.getDashboardRouteForRole` resuelve
  * otra cosa (landing de login) y no debe multiplicar este mapa.
  */
-const RUTA_PANEL = new Map<Rol, string>([
-  ['CLIENTE', '/cliente/panel'],
-  ['TECNICO', '/tecnico/panel'],
-  ['ADMINISTRADOR', '/admin/dashboard'],
-  ['CONTABLE', '/admin/dashboard'],
-  ['PROVEEDOR', '/proveedor/panel'],
-]);
+const PANEL_POR_PERMISO: readonly (readonly [Permiso, string])[] = [
+  ['VER_OPERACION', '/admin/dashboard'],
+  ['VALIDAR_DOCUMENTACION', '/admin/validacion-tecnicos'],
+];
+
+/** Destino de las cuentas sin rol interno: sus funciones viven en la app. */
+export const RUTA_SIN_PANEL = '/usa-la-app';
 
 /** Rutas de panel conocidas; la preferencia se valida contra este conjunto. */
-export const RUTAS_PANEL: ReadonlySet<string> = new Set(RUTA_PANEL.values());
+export const RUTAS_PANEL: ReadonlySet<string> = new Set(PANEL_POR_PERMISO.map(([, ruta]) => ruta));
 
 /** Ruta del panel de un rol, o `null` si ese rol no tiene panel propio. */
 export function rutaDePanel(rol: Rol): string | null {
-  return RUTA_PANEL.get(rol) ?? null;
+  return PANEL_POR_PERMISO.find(([permiso]) => PERMISOS_POR_ROL[rol]?.includes(permiso))?.[1] ?? null;
 }
 
 /**
@@ -33,7 +34,7 @@ export function rutaDePanel(rol: Rol): string | null {
  * 1. el último panel visitado, si sus roles actuales todavía lo permiten;
  * 2. si no, el panel de su rol primario;
  * 3. si el rol primario no tiene panel, el primer rol del conjunto que sí;
- * 4. sin coincidencias, la raíz.
+ * 4. sin rol interno, la pantalla que remite a la app móvil.
  */
 export function resolverPanel(rolPrimario: Rol, roles: ReadonlySet<Rol>): string {
   const permitidas = rutasPermitidas(rolPrimario, roles);
@@ -52,7 +53,7 @@ export function resolverPanel(rolPrimario: Rol, roles: ReadonlySet<Rol>): string
     if (ruta) return ruta;
   }
 
-  return '/';
+  return RUTA_SIN_PANEL;
 }
 
 /**
@@ -106,7 +107,7 @@ function rutasPermitidas(rolPrimario: Rol, roles: ReadonlySet<Rol>): ReadonlySet
   return permitidas;
 }
 
-/** Sin barra final: `/cliente/panel/` y `/cliente/panel` son el mismo panel. */
+/** Sin barra final: `/admin/dashboard/` y `/admin/dashboard` son el mismo panel. */
 function normalizarRuta(ruta: string): string {
   const limpia = ruta.trim().replace(/\/+$/, '');
   return limpia === '' ? '/' : limpia;

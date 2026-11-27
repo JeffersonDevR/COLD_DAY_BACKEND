@@ -8,6 +8,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaInvitada;
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
 import com.sena.cold_day.core.modules.usuarios.domain.services.NotificadorRecuperacion;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.config.MailProperties;
@@ -38,15 +39,25 @@ public class SmtpNotificadorRecuperacion implements NotificadorRecuperacion {
 
     @Override
     public void notificar(RecuperacionSolicitada evento) {
+        enviar(evento.usuarioId(), evento.correo(), "Restablece tu contrasena - COLD DAY", cuerpo(evento));
+    }
+
+    @Override
+    public void invitar(CuentaInternaInvitada evento) {
+        enviar(evento.usuarioId(), evento.correo(), CorreoDeInvitacion.ASUNTO,
+                CorreoDeInvitacion.cuerpo(propiedades.enlaceDeRecuperacion(evento.token())));
+    }
+
+    private void enviar(Long usuarioId, String correo, String asunto, String texto) {
         try {
             SimpleMailMessage mensaje = new SimpleMailMessage();
             mensaje.setFrom(propiedades.from());
-            mensaje.setTo(evento.correo());
-            mensaje.setSubject("Restablece tu contrasena - COLD DAY");
-            mensaje.setText(cuerpo(evento));
+            mensaje.setTo(correo);
+            mensaje.setSubject(asunto);
+            mensaje.setText(texto);
             sender.send(mensaje);
         } catch (MailException ex) {
-            log.error("No se pudo entregar el correo de recuperacion: usuarioId={}", evento.usuarioId(), ex);
+            log.error("No se pudo entregar el correo de cuenta: usuarioId={}", usuarioId, ex);
         }
     }
 

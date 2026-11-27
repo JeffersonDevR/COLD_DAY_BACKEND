@@ -143,6 +143,7 @@ export function rolLabel(rol: Rol): string {
     case 'TECNICO': return 'Técnico';
     case 'ADMINISTRADOR': return 'Administrador';
     case 'CONTABLE': return 'Contable';
+    case 'RECURSOS_HUMANOS': return 'Recursos Humanos';
     case 'PROVEEDOR': return 'Proveedor';
     default: return sinEtiqueta(rol);
   }

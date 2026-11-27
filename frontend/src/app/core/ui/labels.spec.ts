@@ -138,6 +138,7 @@ describe('labels', () => {
       ['PROVEEDOR', 'Proveedor'],
     ];
     casos.forEach(([rol, etiqueta]) => expect(rolLabel(rol)).toBe(etiqueta));
+    expect(rolLabel('RECURSOS_HUMANOS')).toBe('Recursos Humanos');
   });
 
   it('no rompe si el backend estrena un estado', () => {

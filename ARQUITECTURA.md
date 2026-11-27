@@ -6,6 +6,8 @@
 
 Este repositorio contiene el **backend** (`backend/`) y ya existe también una carpeta **`frontend/`** (proyecto Angular, committeada) — a diferencia de lo que decía una versión anterior de este documento, el frontend ya no está vacío ni vive en una carpeta hermana `cold_day_forntend` fuera del repo. La Especificación de Requisitos IEEE 830 v3.4 (agosto 2026) documenta un pivote de arquitectura del 28 de agosto de 2026: frontend unificado en Angular (Angular Universal/SSR para SEO) con empaquetado nativo condicional vía Ionic/Capacitor, reemplazando una decisión anterior de Astro + Flutter. Esta revisión no cubrió el contenido de `frontend/` en detalle (quedó fuera del alcance de la revisión de base de datos) — pendiente que el equipo actualice esta sección con el detalle real (base URL consumida, autenticación, CORS, etc.).
 
+**Desde 2026-11-26** la web (`frontend/src`) es solo la consola interna (administrador, contable y Recursos Humanos), con login y recuperación de contraseña. Cliente, técnico y proveedor usan la app móvil.
+
 ## 1. Stack tecnológico
 
 - **Spring Boot 4.1.1**, Java 25 (toolchain de Gradle), Gradle Wrapper.
@@ -87,7 +89,7 @@ Cada módulo replica el mismo patrón interno:
 ## 4. Módulo `usuarios`
 
 - **Agregado `Usuario`**: nombre, correo, passwordHash, teléfono, foto, rol, `habeasDataAceptado`, `activo`, **`tokenVersion`** (contador para revocar JWT emitidos al cambiar contraseña).
-- **Rol** (`Rol` enum): `CLIENTE, TECNICO, ADMINISTRADOR, CONTABLE, PROVEEDOR`. El rol `PROVEEDOR` es aditivo: `SecurityConfig`, `JwtTokenIssuer` y `JwtAuthenticationFilter` son genéricos sobre el enum y no requirieron cambios.
+- **Rol** (`Rol` enum): `CLIENTE, TECNICO, ADMINISTRADOR, CONTABLE, PROVEEDOR, RECURSOS_HUMANOS`. Las rutas compartidas del panel piden un `Permiso`, no un rol: el mapa vive en `PermisosPorRol` (backend) y `core/permisos.ts` (web), que deben coincidir. El rol `PROVEEDOR` es aditivo: `SecurityConfig`, `JwtTokenIssuer` y `JwtAuthenticationFilter` son genéricos sobre el enum y no requirieron cambios.
 - **Casos de uso**: `RegistrarUsuarioUseCase`, `AutenticarUsuarioUseCase` (login → JWT), `RecuperarContrasenaUseCase` (no enumera existencia de correos), `RestablecerContrasenaUseCase` (consume token, incrementa `tokenVersion`).
 - **Recuperación de contraseña**: token de 32 bytes aleatorios (Base64URL), se persiste solo el hash SHA-256 — nunca el token en claro (`SecureRandomTokenGenerator`, `infrastructure/security/`).
 - **Endpoints** (`/api/usuarios`): `POST /` (registro, público), `POST /login` (público), `POST /recuperar-contrasena` (público), `POST /reset-contrasena` (público).

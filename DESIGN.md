@@ -42,7 +42,7 @@ Los exports crudos de Stitch traen defectos de generación (voseo, `.com.ar`, `t
 - Mercado: Colombia (Cúcuta y área metropolitana). Voz: **tuteo**, directa, cálida, operativa. Ver `PRODUCT.md`.
 - Dos superficies con el **mismo mundo visual** y dos perfiles de medidas (§2.4):
   - **Móvil** (`frontend/projects/mobile`, Ionic 9 + Angular 21 + Capacitor 8): cliente, técnico, proveedor. Referencia 390 px.
-  - **Web consola** (`frontend/src`, Angular 21 + Tailwind v4 + PrimeNG): administrador/contable, y flujos pesados.
+  - **Web consola** (`frontend/src`, Angular 21 + Tailwind v4 + PrimeNG): solo roles internos (administrador, contable, Recursos Humanos). Cliente, técnico y proveedor usan la app móvil.
 - Fuera del sistema: `landing/` (mundo claro, tienda).
 - Plataforma de verdad: tema oscuro **único**. No existe modo claro.
 
@@ -264,7 +264,7 @@ Reglas del verificador: `frontend/scripts/check-ui-rules.mjs` (IDs `UI-T1…UI-L
 
 **Wiring que no se puede saltar:** `premobile:build` y `premobile:test` ejecutan `ui:check`; el CI (`.github/workflows/frontend-ci.yml`) lo ejecuta en `build-and-test` y `mobile-build`; el hook `.githooks/pre-commit` lo ejecuta antes de cada commit (activar: `git config core.hooksPath .githooks`).
 
-Para ver pantallas con sesión en local: backend en `http://localhost:8090`, `MOBILE_API_ORIGIN=http://localhost:8090` y servir la app en el puerto **4200** (el único permitido por CORS en dev). **Restaura `MOBILE_API_ORIGIN` de producción antes de compilar un APK.** Usuarios sembrados: `cliente1…5`, `tecnico1…5`, `proveedor1`, `admin`, `contable` en `@coldday.com.co`; contraseña en `app.seed.demo-password` (ver `DevDataSeeder`). El login tiene rate limit (10/min por IP): reutiliza sesión, no inicies sesión en bucle.
+Para ver pantallas con sesión en local: backend en `http://localhost:8090`, `MOBILE_API_ORIGIN=http://localhost:8090` y servir la app en el puerto **4200** (el único permitido por CORS en dev). **Restaura `MOBILE_API_ORIGIN` de producción antes de compilar un APK.** Usuarios sembrados: `cliente1…5`, `tecnico1…5`, `proveedor1`, `admin`, `contable`, `rrhh` en `@coldday.com.co`; contraseña en `app.seed.demo-password` (ver `DevDataSeeder`). El login tiene rate limit (10/min por IP): reutiliza sesión, no inicies sesión en bucle.
 
 ---
 
