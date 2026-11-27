@@ -32,6 +32,9 @@
                         <app-carga-error mensaje="No pudimos cargar los documentos." (reintentar)="expedientes.cargar(prov.id)" />
                       }
                       @case ('listo') {
+                        @if (expediente.desactualizado) {
+                          <app-carga-error mensaje="No pudimos actualizar los documentos; estos pueden estar desactualizados." (reintentar)="expedientes.cargar(prov.id)" />
+                        }
                         <ul class="mt-1 text-xs text-slate-700">
                           @for (doc of expediente.documentos; track doc.id) {
                             <li>{{ doc.tipo.replaceAll('_', ' ') }} · Vence: {{ doc.fechaVencimiento || '—' }}</li>

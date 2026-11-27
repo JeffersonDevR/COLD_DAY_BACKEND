@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 export type Expediente<T> =
   | { estado: 'cargando' }
   | { estado: 'error' }
-  | { estado: 'listo'; documentos: readonly T[] };
+  | { estado: 'listo'; documentos: readonly T[]; desactualizado?: boolean };
 
 export interface Expedientes<T> {
   readonly porId: Signal<Readonly<Record<string, Expediente<T>>>>;
@@ -29,7 +29,10 @@ export function crearExpedientes<T>(pedir: (id: string) => Observable<readonly T
       }
       pedir(id).subscribe({
         next: (documentos) => poner(id, { estado: 'listo', documentos }),
-        error: () => poner(id, { estado: 'error' }),
+        error: () => {
+          const previo = porId()[id];
+          poner(id, previo?.estado === 'listo' ? { ...previo, desactualizado: true } : { estado: 'error' });
+        },
       });
     },
   };

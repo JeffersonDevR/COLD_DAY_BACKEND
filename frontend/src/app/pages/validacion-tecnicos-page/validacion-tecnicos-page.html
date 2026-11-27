@@ -74,6 +74,9 @@
                     <app-carga-error mensaje="No pudimos cargar los documentos." (reintentar)="expedientes.cargar(tec.id)" />
                   }
                   @case ('listo') {
+                    @if (expediente.desactualizado) {
+                      <app-carga-error mensaje="No pudimos actualizar los documentos; estos pueden estar desactualizados." (reintentar)="expedientes.cargar(tec.id)" />
+                    }
                     @for (doc of expediente.documentos; track doc.id) {
                       <div class="flex flex-wrap items-center justify-between gap-1 py-1 border-b border-slate-200/50 last:border-0">
                         <div class="flex items-center gap-2">
