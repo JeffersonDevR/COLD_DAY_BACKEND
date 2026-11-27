@@ -14,7 +14,6 @@
             {{ etiquetaEstado(orden.estado) }}
           </span>
         </div>
-        <p class="cd-hero__nota">{{ orden.direccion }}</p>
       } @else {
         <h1 class="cd-headline">Ejecución de la OT</h1>
       }
@@ -46,6 +45,11 @@
   }
 
   @if (ot(); as orden) {
+    <section class="cd-dato" data-testid="dato-dominante" aria-live="polite">
+      <p class="cd-dato__grande">{{ paso() }}</p>
+      <p class="cd-dato__detalle">{{ orden.direccion }}</p>
+    </section>
+
     <!-- Desplazamiento: la visita debe estar paga. -->
     @if (orden.estado === 'ASIGNADA') {
       @if (desplazamientoBloqueadoPorPago()) {
@@ -56,23 +60,6 @@
           </p>
         </section>
       }
-      <ion-button
-        expand="block"
-        class="cd-cta"
-        [disabled]="desplazamientoBloqueadoPorPago()"
-        (click)="iniciarDesplazamiento()"
-        data-testid="iniciar-desplazamiento"
-      >
-        <ion-icon slot="start" name="navigate-outline" aria-hidden="true"></ion-icon>
-        Iniciar desplazamiento
-      </ion-button>
-    }
-
-    @if (orden.estado === 'EN_CAMINO' && !enSitio()) {
-      <ion-button expand="block" class="cd-cta" (click)="llegarADomicilio()" data-testid="llegar">
-        <ion-icon slot="start" name="location-outline" aria-hidden="true"></ion-icon>
-        Llegué al domicilio
-      </ion-button>
     }
 
     <!-- Diagnóstico + presupuesto + insumos -->
@@ -183,19 +170,6 @@
               </p>
             }
 
-            <ion-button
-              expand="block"
-              class="cd-cta"
-              type="submit"
-              [disabled]="enviandoDiagnostico()"
-              data-testid="enviar-diagnostico"
-            >
-              @if (enviandoDiagnostico()) {
-                <ion-spinner name="dots"></ion-spinner>
-              } @else {
-                Enviar diagnóstico al cliente
-              }
-            </ion-button>
           </form>
         </ion-card-content>
       </ion-card>
@@ -224,6 +198,11 @@
       <ion-card class="cd-card">
         <ion-card-content>
           <h2 class="cd-card__titulo">Finalizar servicio</h2>
+          @if (valorACobrar(); as valor) {
+            <p class="cd-desglose__total tnum" data-testid="valor-a-cobrar">
+              Valor a cobrar: $ {{ valor.toLocaleString('es-CO') }} COP
+            </p>
+          }
           <ion-segment
             [value]="medioPagoCierre()"
             (ionChange)="medioPagoCierre.set($any($event).detail.value)"
@@ -241,7 +220,6 @@
         <h2 class="cd-alerta__titulo">Servicio finalizado</h2>
         <p class="cd-alerta__texto">Acta enviada al cliente.</p>
       </section>
-      <ion-button expand="block" class="cd-cta" (click)="irAlPanel()">Volver a Mis OTs</ion-button>
     }
 
     <!-- Insumos ya solicitados -->
@@ -280,7 +258,7 @@
                 <p class="cd-alerta__texto">Si nadie más acepta, el pedido queda sin proveedor.</p>
                 <div class="cd-ot__acciones">
                   <ion-button
-                    class="cd-cta"
+                    class="cd-cta cd-cta--secundaria"
                     [attr.aria-busy]="cambiandoProveedor() === solicitud.id"
                     [disabled]="cambiandoProveedor() === solicitud.id"
                     (click)="cambiarProveedor(solicitud)"
@@ -309,7 +287,7 @@
                     </ion-button>
                   }
                   <ion-button
-                    class="cd-cta"
+                    class="cd-cta cd-cta--secundaria"
                     (click)="confirmandoCambio.set(solicitud.id)"
                     [attr.data-testid]="'eta-buscar-' + solicitud.id"
                   >
@@ -326,23 +304,63 @@
 </ion-content>
 
 @if (ot(); as orden) {
-  @if (orden.estado === 'EN_REPARACION') {
+  @if (accionPie(); as accion) {
     <ion-footer class="cd-footer">
-      <ion-button
-        expand="block"
-        class="cd-cta"
-        [attr.aria-busy]="finalizando()"
-        [disabled]="finalizando()"
-        (click)="finalizarServicio()"
-        data-testid="finalizar-servicio"
-      >
-        @if (finalizando()) {
-          <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
-          <span class="cd-cta__loading">Procesando…</span>
-        } @else {
-          Finalizar y notificar al cliente
+      @switch (accion) {
+        @case ('salir') {
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            [disabled]="desplazamientoBloqueadoPorPago()"
+            (click)="iniciarDesplazamiento()"
+            data-testid="iniciar-desplazamiento"
+          >
+            <ion-icon slot="start" name="navigate-outline" aria-hidden="true"></ion-icon>
+            Iniciar desplazamiento
+          </ion-button>
         }
-      </ion-button>
+        @case ('llegar') {
+          <ion-button expand="block" class="cd-cta" (click)="llegarADomicilio()" data-testid="llegar">
+            <ion-icon slot="start" name="location-outline" aria-hidden="true"></ion-icon>
+            Llegué al domicilio
+          </ion-button>
+        }
+        @case ('diagnostico') {
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            [disabled]="enviandoDiagnostico()"
+            (click)="enviarDiagnostico()"
+            data-testid="enviar-diagnostico"
+          >
+            @if (enviandoDiagnostico()) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              Enviar diagnóstico al cliente
+            }
+          </ion-button>
+        }
+        @case ('finalizar') {
+          <ion-button
+            expand="block"
+            class="cd-cta"
+            [attr.aria-busy]="finalizando()"
+            [disabled]="finalizando()"
+            (click)="finalizarServicio()"
+            data-testid="finalizar-servicio"
+          >
+            @if (finalizando()) {
+              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
+              <span class="cd-cta__loading">Procesando…</span>
+            } @else {
+              Finalizar y notificar al cliente
+            }
+          </ion-button>
+        }
+        @case ('volver') {
+          <ion-button expand="block" class="cd-cta" (click)="irAlPanel()">Volver a Mis OTs</ion-button>
+        }
+      }
     </ion-footer>
   }
 }

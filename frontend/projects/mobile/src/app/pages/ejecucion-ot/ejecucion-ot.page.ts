@@ -140,6 +140,44 @@ export class EjecucionOtPage implements OnInit {
     const orden = this.ot();
     return orden?.estado === 'EN_DIAGNOSTICO' && !!orden.presupuesto;
   });
+  /** El paso en el que va la orden: lo primero que se lee. */
+  readonly paso = computed(() => {
+    const orden = this.ot();
+    switch (orden?.estado) {
+      case 'ASIGNADA':
+        return this.desplazamientoBloqueadoPorPago() ? 'Visita pendiente de pago' : 'Lista para salir';
+      case 'EN_CAMINO':
+        return this.enSitio() ? 'Diagnóstico' : 'En camino';
+      case 'EN_DIAGNOSTICO':
+        return this.presupuestoEnviado() ? 'Esperando al cliente' : 'Diagnóstico';
+      case 'FINALIZADA':
+        return 'Servicio finalizado';
+      case undefined:
+        return '';
+      default:
+        return ETIQUETA_ESTADO_OT[orden!.estado];
+    }
+  });
+
+  /** Una sola acción en el pie, la del paso. */
+  readonly accionPie = computed<'salir' | 'llegar' | 'diagnostico' | 'finalizar' | 'volver' | null>(
+    () => {
+      const estado = this.ot()?.estado;
+      if (estado === 'ASIGNADA') return 'salir';
+      if (estado === 'EN_CAMINO' && !this.enSitio()) return 'llegar';
+      if (this.mostrarDiagnostico()) return 'diagnostico';
+      if (estado === 'EN_REPARACION') return 'finalizar';
+      return estado === 'FINALIZADA' ? 'volver' : null;
+    },
+  );
+
+  /** Presupuesto más visita; sin presupuesto no se afirma un valor. */
+  readonly valorACobrar = computed<number | null>(() => {
+    const orden = this.ot();
+    if (!orden?.presupuesto) return null;
+    return orden.presupuesto.total + (orden.tarifaVisita ?? 0);
+  });
+
   readonly mostrarDiagnostico = computed(() => {
     const estado = this.ot()?.estado;
     if (this.presupuestoEnviado()) return false;
