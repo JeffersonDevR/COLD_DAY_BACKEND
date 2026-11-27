@@ -1838,62 +1838,7 @@ app-seguimiento-ot .cd-map__chip {
   font-variant-numeric: tabular-nums;
 }
 
-/* B0 — Orden de trabajo activa: la primera de la cola destacada con borde de acción.
-   El CTA es un asiento visual dentro del botón-tarjeta (no anidado).
-   La especificidad button.cd-ot es necesaria: `button.cd-ot` (0,1,1) pinta
-   fondo transparente y borde 0; con solo `.cd-ot--activa` (0,1,0) la tarjeta
-   destacada quedaba plana. */
-button.cd-ot.cd-ot--activa {
-  padding: 1rem;
-  background: var(--cd-surface);
-  border: 1px solid var(--cd-action);
-  border-radius: var(--cd-radius-card);
-}
 
-/* Fila de specs hundida (Stitch B0 "Key Specs Grid"): cliente y barrio con
-   icono, solo datos reales del DTO. Distancia y hora no se pintan: el backend
-   no las expone para la OT asignada (no inventar). */
-.cd-activa__contexto {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  margin-top: 0.6rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--cd-well);
-  border: 1px solid var(--cd-line);
-  border-radius: var(--cd-radius-control);
-  font-size: 0.8rem;
-  color: var(--cd-text-2);
-}
-
-.cd-activa__spec {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.cd-activa__spec ion-icon {
-  flex: 0 0 auto;
-  font-size: 1rem;
-  color: var(--cd-text-3);
-}
-
-.cd-activa__cta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  margin-top: 0.7rem;
-  padding: 0.5rem 1rem;
-  font-family: var(--cd-font-headline);
-  font-weight: 700;
-  color: var(--cd-action-deep);
-  background: var(--cd-action);
-  border-radius: var(--cd-radius-control);
-}
 
 /* B0 — Nota de presencia con icono sync y divisor (Stitch): solo cuando el
    switch está bloqueado por una OT en curso; antes se afirmaría algo falso. */

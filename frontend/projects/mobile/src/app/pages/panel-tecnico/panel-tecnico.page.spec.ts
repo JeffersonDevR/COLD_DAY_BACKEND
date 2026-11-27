@@ -125,18 +125,18 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     expect(texto(fixture)).toContain('Asignada');
   });
 
-  it('destaca la primera orden como activa y abre la ejecución', () => {
+  it('destaca la primera orden como activa y su botón abre la ejecución', () => {
     const { fixture, navigate } = setup();
-    const destacada = fixture.nativeElement.querySelector(
-      '[data-testid="ot-ot1"]',
-    ) as HTMLButtonElement;
 
     expect(texto(fixture)).toContain('Orden de trabajo activa');
     expect(texto(fixture)).not.toContain('Toca para abrir la ejecución');
     expect(texto(fixture)).not.toContain('Próxima');
-    expect(destacada.className).toContain('cd-ot--activa');
+    const boton = fixture.nativeElement.querySelector(
+      '[data-testid="orden-activa-accion"]',
+    ) as HTMLElement;
+    expect(boton.textContent?.trim()).toBe('Abrir ejecución');
 
-    destacada.click();
+    boton.click();
     expect(navigate).toHaveBeenCalledWith(['/tecnico/ejecucion', 'ot1']);
   });
 
@@ -174,12 +174,14 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     expect(texto(fixture)).toContain('No tienes órdenes en curso');
   });
 
-  it('cada OT es un botón real que abre la ejecución', () => {
-    const { fixture, navigate } = setup();
-    const ot = fixture.nativeElement.querySelector('[data-testid="ot-ot1"]') as HTMLButtonElement;
-    expect(ot.tagName).toBe('BUTTON');
-    ot.click();
-    expect(navigate).toHaveBeenCalledWith(['/tecnico/ejecucion', 'ot1']);
+  it('cada una de las otras OTs es un botón real que abre la ejecución', () => {
+    const { fixture, navigate } = setup({
+      otsApi: { getMisOts: vi.fn(() => of([ot(), ot({ id: 'ot2' })])) },
+    });
+    const otra = fixture.nativeElement.querySelector('[data-testid="ot-ot2"]') as HTMLButtonElement;
+    expect(otra.tagName).toBe('BUTTON');
+    otra.click();
+    expect(navigate).toHaveBeenCalledWith(['/tecnico/ejecucion', 'ot2']);
   });
 
   it('cambia la disponibilidad contra el API', () => {
@@ -344,5 +346,104 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     expect(texto(fixture)).toContain('Tu panel de técnico');
     expect(texto(fixture)).not.toContain('undefined');
     expect(texto(fixture)).not.toContain('para recibir órdenes');
+  });
+
+  describe('orden de la pantalla', () => {
+    const nodo = (fixture: ComponentFixture<PanelTecnicoPageMobile>, selector: string) =>
+      fixture.nativeElement.querySelector(selector) as HTMLElement | null;
+    const id = (valor: string) => `[data-testid="${valor}"]`;
+    const precede = (
+      fixture: ComponentFixture<PanelTecnicoPageMobile>,
+      primero: string,
+      segundo: string,
+    ) =>
+      !!(
+        nodo(fixture, primero)!.compareDocumentPosition(nodo(fixture, segundo)!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+      );
+    const sinOts = { getMisOts: vi.fn(() => of([] as OtResponse[])) };
+
+    it('con orden activa, la tarjeta va antes de Tu estado', () => {
+      const { fixture } = setup();
+      expect(precede(fixture, id('orden-activa'), '.cd-estado')).toBe(true);
+    });
+
+    it('sin orden activa, Tu estado va primero', () => {
+      const { fixture } = setup({ otsApi: sinOts });
+      expect(nodo(fixture, id('orden-activa'))).toBeNull();
+      expect(precede(fixture, '.cd-estado', id('ots-vacio'))).toBe(true);
+    });
+
+    it('el bloqueo por liquidación queda arriba y sin chips de disponibilidad', () => {
+      const { fixture } = setup({
+        tecnicoApi: {
+          getMiPerfil: vi.fn(() =>
+            of(tecnico({ estadoOperativo: 'BLOQUEADO_POR_LIQUIDACION' })),
+          ),
+        },
+      });
+      expect(precede(fixture, id('bloqueado-liquidacion'), id('orden-activa'))).toBe(true);
+      expect(nodo(fixture, id('disp-disponible'))).toBeNull();
+    });
+
+    it('el error de ubicación queda arriba y su reintento no compite', () => {
+      const { fixture } = setup({
+        presencia: presenciaStub({ motivo: signal('Sin permiso de ubicación') }),
+      });
+      expect(precede(fixture, id('ubicacion-motivo'), id('orden-activa'))).toBe(true);
+      expect(
+        (nodo(fixture, id('ubicacion-reintentar')) as HTMLElement & { fill?: string }).fill,
+      ).toBe('outline');
+    });
+
+    it('avisa la ubicación apagada solo con orden activa', () => {
+      const aviso = id('aviso-ubicacion-apagada');
+      const conOrden = setup();
+      expect(nodo(conOrden.fixture, aviso)?.textContent).toContain('Apagada: no recibes ofertas.');
+      expect(precede(conOrden.fixture, aviso, id('orden-activa'))).toBe(true);
+
+      TestBed.resetTestingModule();
+      expect(nodo(setup({ otsApi: sinOts }).fixture, aviso)).toBeNull();
+
+      TestBed.resetTestingModule();
+      const compartiendo = setup({
+        presencia: presenciaStub({ modo: signal('compartiendo') }),
+      });
+      expect(nodo(compartiendo.fixture, aviso)).toBeNull();
+    });
+
+    it('las otras órdenes van después de las ofertas', () => {
+      const { fixture } = setup({
+        otsApi: { getMisOts: vi.fn(() => of([ot(), ot({ id: 'ot2' })])) },
+        ofertasApi: { getOfertasParaTecnico: vi.fn(() => of([oferta()])) },
+      });
+      expect(precede(fixture, id('ofertas-activas'), id('ot-ot2'))).toBe(true);
+    });
+
+    it('deslizar actualiza órdenes y ofertas y cierra el indicador', () => {
+      const { fixture, api } = setup();
+      const complete = vi.fn();
+
+      fixture.componentInstance.refrescar({ target: { complete } } as never);
+
+      expect(api.getMisOts).toHaveBeenCalledTimes(2);
+      expect(api.getOfertasParaTecnico).toHaveBeenCalledTimes(2);
+      expect(complete).toHaveBeenCalled();
+    });
+
+    it('si el refresco falla, cierra el indicador y conserva la lista', () => {
+      const getMisOts = vi
+        .fn()
+        .mockReturnValueOnce(of([ot()]))
+        .mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+      const { fixture } = setup({ otsApi: { getMisOts } });
+      const complete = vi.fn();
+
+      fixture.componentInstance.refrescar({ target: { complete } } as never);
+      fixture.detectChanges();
+
+      expect(complete).toHaveBeenCalled();
+      expect(nodo(fixture, id('orden-activa'))).not.toBeNull();
+    });
   });
 });
