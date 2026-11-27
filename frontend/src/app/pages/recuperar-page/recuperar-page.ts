@@ -40,7 +40,7 @@ export class RecuperarPage {
 
   readonly resetForm = new FormGroup({
     token: new FormControl(this.tokenEnlace, { nonNullable: true, validators: [Validators.required] }),
-    nuevaPassword: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(6)] })
+    nuevaPassword: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8), Validators.maxLength(72)] })
   });
 
   onSolicitarToken(): void {

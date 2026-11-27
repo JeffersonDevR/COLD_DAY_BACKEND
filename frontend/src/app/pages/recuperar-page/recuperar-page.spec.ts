@@ -127,6 +127,23 @@ describe('RecuperarPage', () => {
     expect(auth.logout).toHaveBeenCalledTimes(1);
   });
 
+  it('exige la misma longitud de contraseña que el backend (8 a 72)', () => {
+    const reset = vi.fn(() => of({ mensaje: 'ok' }));
+    const { fixture } = setup(vi.fn(), reset, { token: 'abc-123' });
+    const clave = fixture.componentInstance.resetForm.controls.nuevaPassword;
+
+    for (const invalida of ['a'.repeat(7), 'a'.repeat(73)]) {
+      clave.setValue(invalida);
+      fixture.componentInstance.onResetPassword();
+    }
+    expect(reset).not.toHaveBeenCalled();
+
+    clave.setValue('a'.repeat(8));
+    expect(clave.valid).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#nuevaPass')?.placeholder)
+      .toBe('Mínimo 8 caracteres');
+  });
+
   it('no envía si el correo es inválido', () => {
     const solicitar = vi.fn(() => of({ mensaje: 'ok' }));
     const { fixture } = setup(solicitar, vi.fn());
