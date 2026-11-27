@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class MapsConfigPropertiesTest {
 
     private MapsConfigProperties conDefaults() {
-        return new MapsConfigProperties(null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        return new MapsConfigProperties(null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null);
     }
 
     @Test
@@ -38,8 +38,22 @@ class MapsConfigPropertiesTest {
 
     @Test
     void unaBrowserKeyVaciaNoSeExpone() {
-        MapsConfigProperties properties = new MapsConfigProperties("  ", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        MapsConfigProperties properties = new MapsConfigProperties("  ", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, null);
 
         assertThat(properties.browserApiKey()).isNull();
+    }
+
+    @Test
+    void sinProveedorConfiguradoElMapaEsGoogle() {
+        assertThat(conDefaults().proveedor()).isEqualTo("google");
+        assertThat(new MapsConfigProperties(null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "  ").proveedor())
+                .isEqualTo("google");
+    }
+
+    @Test
+    void elProveedorSeNormalizaAMinusculasSinEspacios() {
+        MapsConfigProperties properties = new MapsConfigProperties(null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, " Mapbox ");
+
+        assertThat(properties.proveedor()).isEqualTo("mapbox");
     }
 }

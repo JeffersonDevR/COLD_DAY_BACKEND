@@ -1,5 +1,7 @@
 package com.sena.cold_day.core.modules.maps.infrastructure.config;
 
+import java.util.Locale;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -11,11 +13,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * {@code GET /api/config/maps} instead of duplicating the literals. The server
  * key is never part of that response; {@code browserApiKey} is the only
  * credential the frontend may read (it is restricted by HTTP referrer).
+ *
+ * <p>{@code proveedor} tells the frontend which map engine to load
+ * ({@code google} by default). It is normalized to lower case; the frontend
+ * falls back to Google for any value it does not know, so an unknown name never
+ * leaves the app without a map.
  */
 @ConfigurationProperties(prefix = "app.maps")
 public record MapsConfigProperties(String browserApiKey, double centroLat, double centroLng, double boundsNorth,
         double boundsSouth, double boundsWest, double boundsEast, double zoom, double radioInicialKm,
-        double radioMaxKm, double radioPasoKm) {
+        double radioMaxKm, double radioPasoKm, String proveedor) {
+
+    /** Map engine used when {@code app.maps.proveedor} is missing or blank. */
+    public static final String PROVEEDOR_POR_DEFECTO = "google";
 
     public MapsConfigProperties {
         if (browserApiKey != null && browserApiKey.isBlank()) {
@@ -51,5 +61,8 @@ public record MapsConfigProperties(String browserApiKey, double centroLat, doubl
         if (radioPasoKm <= 0) {
             radioPasoKm = 5;
         }
+        proveedor = proveedor == null || proveedor.isBlank()
+                ? PROVEEDOR_POR_DEFECTO
+                : proveedor.trim().toLowerCase(Locale.ROOT);
     }
 }
