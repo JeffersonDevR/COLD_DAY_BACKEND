@@ -56,6 +56,7 @@ function setup({
   const api = {
     getOtById: getOtById ?? vi.fn(() => of(orden)),
     getInsumosOt: vi.fn(() => of([])),
+    estimarTarifa: vi.fn(() => of({ tarifa: 30000, fueraDeRango: false })),
     iniciarDesplazamiento: vi.fn(() => of(undefined)),
     llegarADomicilio: vi.fn(() => of(undefined)),
     registrarDiagnostico: vi.fn(() => of(undefined)),
@@ -73,7 +74,7 @@ function setup({
       provideHttpClient(),
       provideRouter([]),
       { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'ot1' })) } },
-      { provide: OtApi, useValue: { getOtById: api.getOtById } },
+      { provide: OtApi, useValue: { getOtById: api.getOtById, estimarTarifa: api.estimarTarifa } },
       { provide: TecnicosApi, useValue: api },
       { provide: TecnicoPresenciaService, useValue: presencia },
       { provide: SseService, useValue: sse },
@@ -567,5 +568,37 @@ describe('doble toque en los pasos', () => {
     fixture.componentInstance[metodo]();
 
     expect(api).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('cierre con cobro', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const orden = () =>
+    ot({
+      estado: 'EN_REPARACION',
+      punto: { latitud: 7.89, longitud: -72.5 },
+      presupuesto: { aprobado: true, total: 200000, manoObra: 200000, repuestos: 0 },
+    });
+
+  it('estima la visita, muestra la comisión y avisa del bloqueo', () => {
+    const { fixture } = setup({ orden: orden() });
+
+    expect(nodo(fixture, 'valor-a-cobrar')!.textContent).toContain('230.000');
+    expect(nodo(fixture, 'comision-a-consignar')!.textContent).toContain('34.500');
+    expect(nodo(fixture, 'comision-a-consignar')!.textContent).toContain('hasta consignar');
+    expect(nodo(fixture, 'finalizar-servicio')!.textContent).toContain('Finalizar y cobrar');
+  });
+
+  it('sin estimación no inventa el total', () => {
+    const { fixture } = setup({
+      orden: orden(),
+      tecnicos: { estimarTarifa: vi.fn(() => throwError(() => new ApiHttpError('boom', 500))) },
+    });
+
+    expect(nodo(fixture, 'valor-a-cobrar')!.textContent).toContain('más la visita');
+    expect(nodo(fixture, 'comision-a-consignar')!.textContent).not.toContain('30.000');
   });
 });

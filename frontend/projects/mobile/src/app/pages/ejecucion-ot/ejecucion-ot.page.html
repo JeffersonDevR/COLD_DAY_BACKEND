@@ -201,6 +201,17 @@
           @if (valorACobrar(); as valor) {
             <p class="cd-desglose__total tnum" data-testid="valor-a-cobrar">
               Valor a cobrar: $ {{ valor.toLocaleString('es-CO') }} COP
+              @if (!incluyeVisita()) {
+                más la visita
+              }
+            </p>
+            <p class="cd-ayuda tnum" data-testid="comision-a-consignar">
+              @if (incluyeVisita()) {
+                Comisión de la plataforma (15 %): $ {{ comision().toLocaleString('es-CO') }} COP.
+              } @else {
+                La plataforma cobra el 15 % del total.
+              }
+              Al finalizar no podrás tomar órdenes hasta consignar y que se apruebe.
             </p>
           }
           <ion-segment
@@ -359,7 +370,7 @@
               <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
               <span class="cd-cta__loading">Procesando…</span>
             } @else {
-              Finalizar y notificar al cliente
+              Finalizar y cobrar
             }
           </ion-button>
         }

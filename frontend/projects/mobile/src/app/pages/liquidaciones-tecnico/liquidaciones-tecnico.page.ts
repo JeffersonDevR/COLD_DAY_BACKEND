@@ -8,6 +8,7 @@ import {
   IonRefresher,
   IonRefresherContent,
   IonToolbar,
+  IonInput,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { DocumentoTecnico, LiquidacionResponse, TipoDocumentoTecnico } from '@core/models/common.models';
@@ -35,7 +36,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
  *
  * Lee `GET /api/tecnicos/me/liquidaciones` (el backend resuelve el técnico del
  * JWT, así que no se envía ningún id). Es de solo lectura a propósito: el
- * comprobante de consignación se registra desde la web, donde existe el flujo de
+ * número de referencia de la consignación se envía desde aquí; la foto llegará con
  * carga; la app sirve para que el técnico sepa cuánto debe y en qué estado está
  * cada servicio.
  *
@@ -55,6 +56,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     IonButton,
+    IonInput,
     IonCard,
     IonCardContent,
     IonHeader,
@@ -94,6 +96,9 @@ export class LiquidacionesTecnicoPage implements OnInit {
   readonly mostrarFormulario = signal(false);
   readonly guardandoDocumento = signal(false);
   readonly liquidacionesAbiertas = signal(false);
+  /** Referencia escrita por liquidación, y la que se está enviando. */
+  private readonly referencias = signal<Record<string, string>>({});
+  readonly enviando = signal<string | null>(null);
 
   readonly liquidaciones = signal<LiquidacionResponse[]>([]);
   readonly cargando = signal(true);
@@ -198,6 +203,37 @@ export class LiquidacionesTecnicoPage implements OnInit {
           void avisarErrorAccion(this.toast, 'No se pudo declarar el documento', err);
         },
       });
+  }
+
+  referenciaDe(id: string): string {
+    return this.referencias()[id] ?? '';
+  }
+
+  escribirReferencia(id: string, valor: string): void {
+    this.referencias.update((actuales) => ({ ...actuales, [id]: valor }));
+  }
+
+  /** Pendiente o rechazada: son las que esperan que el técnico mande la referencia. */
+  pideReferencia(liq: LiquidacionResponse): boolean {
+    return liq.estado === 'PENDIENTE_CONSIGNACION' || liq.estado === 'RECHAZADA';
+  }
+
+  enviarReferencia(liq: LiquidacionResponse): void {
+    const referencia = this.referenciaDe(liq.id).trim();
+    if (!referencia || this.enviando()) return;
+    this.enviando.set(liq.id);
+    this.liquidacionApi.subirComprobante(liq.id, referencia, referencia).subscribe({
+      next: () => {
+        this.enviando.set(null);
+        this.escribirReferencia(liq.id, '');
+        this.cargar();
+        void this.toast.success('Referencia enviada', 'Un administrador la va a verificar.');
+      },
+      error: (err: Error) => {
+        this.enviando.set(null);
+        void avisarErrorAccion(this.toast, 'No pudimos enviar la referencia', err);
+      },
+    });
   }
 
   /**

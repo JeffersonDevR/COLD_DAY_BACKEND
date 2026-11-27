@@ -42,6 +42,7 @@ function setup({
     getLiquidacionesPorTecnico: vi.fn(() =>
       falla ? throwError(() => new Error('sin red')) : of(lista),
     ),
+    subirComprobante: vi.fn(() => of(undefined)),
   };
 
   TestBed.configureTestingModule({
@@ -371,5 +372,66 @@ describe('LiquidacionesTecnicoPage (B5)', () => {
 
       expect(tecnicosApi.subirDocumento).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('enviar la referencia de la consignación', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+
+  it('solo las pendientes y las rechazadas piden referencia', () => {
+    const { fixture } = setup({
+      lista: [
+        liquidacion({ id: 'p' }),
+        liquidacion({ id: 'r', estado: 'RECHAZADA' }),
+        liquidacion({ id: 'v', estado: 'EN_VERIFICACION' }),
+        liquidacion({ id: 'a', estado: 'APROBADA' }),
+      ],
+    });
+
+    expect(nodo(fixture, 'referencia-p')).not.toBeNull();
+    expect(nodo(fixture, 'referencia-r')).not.toBeNull();
+    expect(nodo(fixture, 'referencia-v')).toBeNull();
+    expect(nodo(fixture, 'referencia-a')).toBeNull();
+  });
+
+  it('sin referencia no se envía', () => {
+    const { fixture, liquidacionApi } = setup({ lista: [liquidacion()] });
+    fixture.componentInstance.escribirReferencia('L-1', '   ');
+
+    fixture.componentInstance.enviarReferencia(liquidacion());
+
+    expect(liquidacionApi.subirComprobante).not.toHaveBeenCalled();
+  });
+
+  it('la envía, recarga y lo confirma', () => {
+    const { fixture, liquidacionApi, toast } = setup({ lista: [liquidacion()] });
+    fixture.componentInstance.escribirReferencia('L-1', ' TRX-123 ');
+
+    fixture.componentInstance.enviarReferencia(liquidacion());
+
+    expect(liquidacionApi.subirComprobante).toHaveBeenCalledWith('L-1', 'TRX-123', 'TRX-123');
+    expect(liquidacionApi.getLiquidacionesPorTecnico).toHaveBeenCalledTimes(2);
+    expect(toast.success).toHaveBeenCalled();
+  });
+
+  it('si falla conserva lo escrito y avisa', () => {
+    const { fixture, liquidacionApi, toast } = setup({ lista: [liquidacion()] });
+    liquidacionApi.subirComprobante.mockReturnValue(throwError(() => new Error('sin red')));
+    fixture.componentInstance.escribirReferencia('L-1', 'TRX-9');
+
+    fixture.componentInstance.enviarReferencia(liquidacion());
+
+    expect(fixture.componentInstance.referenciaDe('L-1')).toBe('TRX-9');
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it('el aviso ya no manda a la web', () => {
+    const { fixture } = setup({ lista: [liquidacion()] });
+
+    expect(texto(fixture)).toContain('Envía el número de referencia');
+    expect(texto(fixture)).not.toContain('en la web');
   });
 });

@@ -50,7 +50,7 @@ import { PageComponent } from '../../shared/ui/page/page';
  * order (RF-F1-05): retrying cannot work until it is finished or cancelled.
  */
 const MENSAJES_ESTADO_OPERATIVO: Record<number, string> = {
-  409: 'Tienes una orden en curso. No puedes cambiar tu disponibilidad hasta finalizarla o cancelarla.',
+  409: 'No puedes cambiar tu disponibilidad: tienes una orden en curso o una comisión por consignar.',
 };
 
 /** B2 — Technician panel: availability, presence and active orders. */

@@ -7,6 +7,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -173,12 +174,34 @@ export class EjecucionOtPage implements OnInit {
     },
   );
 
+  /** Visita estimada mientras la orden no la tenga registrada (se fija al cerrar). */
+  private readonly visitaEstimada = signal<number | null>(null);
+  private readonly visita = computed(() => this.ot()?.tarifaVisita ?? this.visitaEstimada());
+
+  /** `true` cuando el total mostrado ya incluye la visita. */
+  readonly incluyeVisita = computed(() => this.visita() !== null);
+
   /** Presupuesto más visita; sin presupuesto no se afirma un valor. */
   readonly valorACobrar = computed<number | null>(() => {
     const orden = this.ot();
     if (!orden?.presupuesto) return null;
-    return orden.presupuesto.total + (orden.tarifaVisita ?? 0);
+    return orden.presupuesto.total + (this.visita() ?? 0);
   });
+
+  /** Comisión de la plataforma: 15 % de lo cobrado (la calcula y registra el servidor). */
+  readonly comision = computed(() => Math.round((this.valorACobrar() ?? 0) * 0.15));
+
+  /** La misma tarifa que usa el servidor al cerrar, pedida al llegar al cierre. */
+  private estimarVisita(): void {
+    const orden = this.ot();
+    const punto = orden?.punto;
+    if (orden?.estado !== 'EN_REPARACION' || orden.tarifaVisita != null || !punto) return;
+    this.otApi.estimarTarifa(punto).subscribe({
+      next: (estimacion) =>
+        this.visitaEstimada.set(estimacion.fueraDeRango ? null : estimacion.tarifa),
+      error: () => this.visitaEstimada.set(null),
+    });
+  }
 
   readonly mostrarDiagnostico = computed(() => {
     const estado = this.ot()?.estado;
@@ -233,6 +256,14 @@ export class EjecucionOtPage implements OnInit {
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.valorDiagnostico.set(this.diagnosticoForm.getRawValue()));
     effect(() => this.presencia.sincronizarOt(this.ot()));
+    // Solo cuando cambia la orden o su estado: no en cada recarga del mismo punto.
+    const claveCierre = computed(() => {
+      const orden = this.ot();
+      return orden?.estado === 'EN_REPARACION' ? orden.id : null;
+    });
+    effect(() => {
+      if (claveCierre()) untracked(() => this.estimarVisita());
+    });
   }
 
   /** Deslizar: orden e insumos; el formulario no se toca. */
@@ -511,7 +542,7 @@ export class EjecucionOtPage implements OnInit {
         this.finalizando.set(false);
         this.presencia.liberarContexto();
         this.recargarOt();
-        void this.toast.success('Servicio finalizado', 'El cliente ya puede ver el acta y calificar.');
+        void this.toast.success('Servicio finalizado', 'Consigna la comisión en Gestión para volver a recibir órdenes.');
       },
       error: (err: Error) => {
         this.finalizando.set(false);
