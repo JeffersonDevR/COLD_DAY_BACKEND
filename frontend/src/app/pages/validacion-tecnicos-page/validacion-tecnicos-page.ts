@@ -8,7 +8,8 @@ import { refrescarConActividadAdmin } from '../../core/service/admin-actividad-r
 import { SseService, TipoActividadAdmin } from '../../core/service/sse.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { avisarErrorAccion } from '../../core/alertas/mensaje-error';
-import { TecnicoResponse } from '../../core/models/common.models';
+import { DocumentoTecnico, TecnicoResponse } from '../../core/models/common.models';
+import { crearExpedientes } from '../../core/service/expedientes';
 import { CargaError } from '../../shared/carga-error/carga-error';
 
 /** Actividad administrativa que cambia esta bandeja. */
@@ -39,6 +40,7 @@ export class ValidacionTecnicosPage {
   private readonly destruir = inject(DestroyRef);
 
   readonly tecnicos = signal<TecnicoResponse[]>([]);
+  readonly expedientes = crearExpedientes<DocumentoTecnico>((id) => this.tecnicosApi.getDocumentos(id));
   /** Bandeja de trabajo: un técnico ya aprobado no tiene nada por decidir, así que sale de la lista. */
   readonly pendientes = computed(() => this.tecnicos().filter((t) => t.estadoValidacion !== 'APROBADO'));
   readonly tecnicoARechazar = signal<TecnicoResponse | null>(null);
@@ -68,7 +70,10 @@ export class ValidacionTecnicosPage {
     this.cargando.set(true);
     this.errorCarga.set(false);
     return this.tecnicosApi.getTecnicos().pipe(
-      tap((tecnicos) => this.tecnicos.set(tecnicos)),
+      tap((tecnicos) => {
+        this.tecnicos.set(tecnicos);
+        this.pendientes().forEach((t) => this.expedientes.cargar(t.id));
+      }),
       catchError(() => {
         this.tecnicos.set([]);
         this.errorCarga.set(true);

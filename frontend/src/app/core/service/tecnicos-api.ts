@@ -132,6 +132,16 @@ export class TecnicosApi {
       .pipe(map(list => list.map(aDocumentoTecnico)));
   }
 
+  /** GET /api/tecnicos/{id}/documentos → lo que declaró un técnico, para validarlo. */
+  getDocumentos(tecnicoId: string): Observable<DocumentoTecnicoResponse[]> {
+    if (this.apiConfig.useMocks()) {
+      return of(this.mockDb.tecnicos().find((t) => t.id === tecnicoId)?.documentos ?? []).pipe(delay(200));
+    }
+    return this.http
+      .get<DocumentoTecnicoApiResponse[]>(this.apiConfig.url(`/tecnicos/${tecnicoId}/documentos`))
+      .pipe(map((list) => list.map(aDocumentoTecnico)));
+  }
+
   /**
    * GET /api/tecnicos/cercanos?lat&lng&radioKm&categoria → técnicos disponibles
    * dentro del radio, listos para pintar el radar del cliente.
