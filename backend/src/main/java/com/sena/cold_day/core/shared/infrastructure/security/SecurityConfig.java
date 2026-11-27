@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Permiso;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -87,7 +88,7 @@ public class SecurityConfig {
                                 "/api/usuarios/recuperar-contrasena", "/api/usuarios/reset-contrasena",
                                 "/api/tecnicos", "/api/clientes", "/api/proveedores").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/tecnicos/*/validacion")
-                        .hasRole("ADMINISTRADOR")
+                        .hasAuthority(Permiso.VALIDAR_DOCUMENTACION.name())
                         // Admin activity stream: same ticket-based contract as
                         // the other EventSource channels. The ticket proves
                         // identity AND carries the roles, so the ADMINISTRADOR
@@ -97,6 +98,16 @@ public class SecurityConfig {
                         // the stream; every other /api/admin path stays
                         // admin-only.
                         .requestMatchers(HttpMethod.GET, "/api/admin/stream").permitAll()
+                        // Rutas del panel compartidas con otros roles internos: van
+                        // antes de la regla general, que sigue siendo solo administrador.
+                        .requestMatchers(HttpMethod.GET, "/api/admin/metricas", "/api/admin/ot")
+                        .hasAuthority(Permiso.VER_OPERACION.name())
+                        .requestMatchers("/api/admin/liquidaciones", "/api/admin/liquidaciones/**")
+                        .hasAuthority(Permiso.GESTIONAR_CONSIGNACIONES.name())
+                        .requestMatchers("/api/admin/disputas", "/api/admin/disputas/**")
+                        .hasAuthority(Permiso.GESTIONAR_DISPUTAS.name())
+                        .requestMatchers("/api/admin/cuentas", "/api/admin/cuentas/**")
+                        .hasAuthority(Permiso.GESTIONAR_CUENTAS.name())
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                         // SSE stream: EventSource cannot send the Authorization
                         // header, so this single path is opened and authenticated

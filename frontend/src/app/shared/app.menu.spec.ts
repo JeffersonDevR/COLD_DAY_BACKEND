@@ -16,8 +16,12 @@ describe('buildMenu — accesos internos por rol', () => {
   it('el administrador ve todos los accesos administrativos', () => {
     expect(rutasDe(['ADMINISTRADOR'])).toEqual([
       '/admin/dashboard', '/admin/consignaciones', '/admin/validacion-tecnicos',
-      '/admin/disputas', '/admin/monitoreo', '/admin/proveedores',
+      '/admin/disputas', '/admin/monitoreo', '/admin/proveedores', '/admin/cuentas',
     ]);
+  });
+
+  it('Recursos Humanos solo ve las dos validaciones', () => {
+    expect(rutasDe(['RECURSOS_HUMANOS'])).toEqual(['/admin/validacion-tecnicos', '/admin/proveedores']);
   });
 
   it('el contable solo ve sus pantallas permitidas', () => {

@@ -1,5 +1,5 @@
 /** Roles soportados por el backend (Rol.java). */
-export type Rol = 'CLIENTE' | 'TECNICO' | 'ADMINISTRADOR' | 'CONTABLE' | 'PROVEEDOR';
+export type Rol = 'CLIENTE' | 'TECNICO' | 'ADMINISTRADOR' | 'CONTABLE' | 'PROVEEDOR' | 'RECURSOS_HUMANOS';
 
 export type CategoriaServicio =
   | 'CAMARAS_VIGILANCIA'

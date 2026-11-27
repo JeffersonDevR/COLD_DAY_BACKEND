@@ -1,3 +1,5 @@
+import { PERMISOS_POR_ROL } from '../permisos';
+import { RUTA_SIN_PANEL, rutaDePanel } from '../navihationError/panel-resolver';
 import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
@@ -219,22 +221,12 @@ export class AuthService {
   }
 
   /**
-   * Landing tras el login, por rol. NO es el resolutor de paneles: `/panel`,
-   * "Mi Panel" y la preferencia del último panel visitado viven en
-   * `core/navihationError/panel-resolver` (un solo mapa de rutas de panel). No
-   * agregar aquí un cuarto mapa: si cambia una ruta de panel, cambia allá.
+   * Landing tras el login, por rol. El mapa de paneles vive en
+   * `core/navihationError/panel-resolver`; aquí solo se resuelven los casos sin
+   * panel. No agregar aquí otro mapa de rutas.
    */
   getDashboardRouteForRole(rol: Rol): string {
-    switch (rol) {
-      case 'ADMINISTRADOR':
-      case 'CONTABLE':
-        return '/admin/dashboard';
-      case 'CLIENTE':
-      case 'TECNICO':
-      case 'PROVEEDOR':
-        return '/usa-la-app';
-      default:
-        return '/login';
-    }
+    if (!(rol in PERMISOS_POR_ROL)) return '/login';
+    return rutaDePanel(rol) ?? RUTA_SIN_PANEL;
   }
 }

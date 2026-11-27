@@ -141,12 +141,13 @@ export class ProveedoresApi {
   /**
    * GET /api/proveedores/{id}/documentos: expediente de un proveedor puntual para
    * que un administrador lo revise antes de aprobar o rechazar su validacion.
-   * El mock no tiene expedientes por proveedor arbitrario, asi que responde un
-   * arreglo vacio; el alta y la consulta propia usan getMisDocumentos.
+   * El mock responde lo que tenga guardado para ese id.
    */
   getDocumentos(proveedorId: string): Observable<DocumentoProveedorApiResponse[]> {
     if (this.apiConfig.useMocks()) {
-      return of([]).pipe(delay(250));
+      const documentos = this.mockDb.documentosDe(proveedorId)
+        .map((d) => ({ ...d, fechaVencimiento: d.fechaVencimiento ?? null }));
+      return of(documentos as DocumentoProveedorApiResponse[]).pipe(delay(250));
     }
     return this.http.get<DocumentoProveedorApiResponse[]>(
       this.apiConfig.url(`/proveedores/${proveedorId}/documentos`));

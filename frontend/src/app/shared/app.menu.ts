@@ -1,4 +1,5 @@
 import { Rol } from '../core/models/common.models';
+import { rolesCon } from '../core/permisos';
 
 export interface MenuEntry {
   label: string;
@@ -16,12 +17,13 @@ const SECTIONS: MenuSection[] = [
   {
     label: 'Administración',
     items: [
-      { label: 'Torre de Control', icon: 'pi pi-chart-bar', routerLink: '/admin/dashboard', roles: ['ADMINISTRADOR', 'CONTABLE'] },
-      { label: 'Conciliación', icon: 'pi pi-money-bill', routerLink: '/admin/consignaciones', roles: ['ADMINISTRADOR', 'CONTABLE'] },
-      { label: 'Auditoría Técnicos', icon: 'pi pi-verified', routerLink: '/admin/validacion-tecnicos', roles: ['ADMINISTRADOR'] },
-      { label: 'Disputas', icon: 'pi pi-shield', routerLink: '/admin/disputas', roles: ['ADMINISTRADOR'] },
-      { label: 'Monitoreo OTs', icon: 'pi pi-desktop', routerLink: '/admin/monitoreo', roles: ['ADMINISTRADOR', 'CONTABLE'] },
-      { label: 'Proveedores', icon: 'pi pi-truck', routerLink: '/admin/proveedores', roles: ['ADMINISTRADOR'] },
+      { label: 'Torre de Control', icon: 'pi pi-chart-bar', routerLink: '/admin/dashboard', roles: rolesCon('VER_OPERACION') },
+      { label: 'Conciliación', icon: 'pi pi-money-bill', routerLink: '/admin/consignaciones', roles: rolesCon('GESTIONAR_CONSIGNACIONES') },
+      { label: 'Auditoría Técnicos', icon: 'pi pi-verified', routerLink: '/admin/validacion-tecnicos', roles: rolesCon('VALIDAR_DOCUMENTACION') },
+      { label: 'Disputas', icon: 'pi pi-shield', routerLink: '/admin/disputas', roles: rolesCon('GESTIONAR_DISPUTAS') },
+      { label: 'Monitoreo OTs', icon: 'pi pi-desktop', routerLink: '/admin/monitoreo', roles: rolesCon('VER_OPERACION') },
+      { label: 'Proveedores', icon: 'pi pi-truck', routerLink: '/admin/proveedores', roles: rolesCon('VALIDAR_DOCUMENTACION') },
+      { label: 'Cuentas', icon: 'pi pi-users', routerLink: '/admin/cuentas', roles: rolesCon('GESTIONAR_CUENTAS') },
     ],
   },
 ];

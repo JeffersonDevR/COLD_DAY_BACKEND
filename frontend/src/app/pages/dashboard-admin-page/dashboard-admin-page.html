@@ -20,20 +20,24 @@
             <i class="pi pi-receipt text-sm"></i>
             Conciliar Consignaciones
           </a>
-          <a
-            routerLink="/admin/validacion-tecnicos"
-            class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
-          >
-            <i class="pi pi-shield text-sm"></i>
-            Auditoría de Técnicos
-          </a>
-          <a
-            routerLink="/admin/disputas"
-            class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
-          >
-            <i class="pi pi-shield text-sm"></i>
-            Bandeja Disputas
-          </a>
+          @if (puedeValidar) {
+            <a
+              routerLink="/admin/validacion-tecnicos"
+              class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
+            >
+              <i class="pi pi-shield text-sm"></i>
+              Auditoría de Técnicos
+            </a>
+          }
+          @if (puedeMediar) {
+            <a
+              routerLink="/admin/disputas"
+              class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
+            >
+              <i class="pi pi-shield text-sm"></i>
+              Bandeja Disputas
+            </a>
+          }
         </div>
       </div>
 

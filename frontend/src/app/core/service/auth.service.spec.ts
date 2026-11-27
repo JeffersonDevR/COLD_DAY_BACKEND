@@ -255,6 +255,7 @@ describe('AuthService', () => {
     expect(service.getDashboardRouteForRole('PROVEEDOR')).toBe('/usa-la-app');
     expect(service.getDashboardRouteForRole('ADMINISTRADOR')).toBe('/admin/dashboard');
     expect(service.getDashboardRouteForRole('CONTABLE')).toBe('/admin/dashboard');
+    expect(service.getDashboardRouteForRole('RECURSOS_HUMANOS')).toBe('/admin/validacion-tecnicos');
     expect(service.getDashboardRouteForRole('OTRO' as unknown as Rol)).toBe('/login');
   });
 

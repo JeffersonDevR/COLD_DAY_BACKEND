@@ -3,6 +3,7 @@ package com.sena.cold_day.core.modules.administracion.infrastructure.listeners;
 import java.time.Clock;
 import java.util.UUID;
 
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaDesactivada;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -106,6 +107,15 @@ public class AdminActividadSseListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void alRechazarValidacionTecnico(TecnicoValidacionRechazada evento) {
         publicar(TECNICO_VALIDACION_RECHAZADA, evento.tecnicoId().valor());
+    }
+
+    /**
+     * Los streams comparten una sola clave, así que se cierran todos: las demás
+     * pantallas reconectan solas y la cuenta desactivada ya no consigue ticket.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void alDesactivarCuenta(CuentaInternaDesactivada evento) {
+        registry.cerrar(CLAVE_ADMIN);
     }
 
     private void publicar(String tipo, UUID id) {

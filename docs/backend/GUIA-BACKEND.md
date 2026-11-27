@@ -47,7 +47,7 @@ Módulos: `ot`, `proveedores`, `usuarios`, `tecnicos`, `administracion`, `maps`,
 - **BE-P1** *(automática)* Prohibido listar tablas completas desde un caso de uso (`findAll()`, `listarTodas()`, `findByActivoTrue()` sin límite). Toda lista de admin/métricas pagina o limita. Hoy hay 13 usos: es la deuda de mayor impacto (TB-01).
 - `@Transactional` en el caso de uso; `readOnly = true` en consultas.
 - Escrituras concurrentes (p. ej. "el primer técnico que acepta toma la OT"): **UPDATE condicional que devuelve filas afectadas**; 0 filas ⇒ excepción de dominio. No uses leer-modificar-guardar sin bloqueo.
-- **Flyway:** `V{n}__descripcion.sql`, **append-only** (el CI lo comprueba), `IF NOT EXISTS`/`DO $$` para idempotencia. Última: V16; la siguiente V17. `ddl-auto=validate` siempre. **BE-D1** *(automática)*.
+- **Flyway:** `V{n}__descripcion.sql`, **append-only** (el CI lo comprueba), `IF NOT EXISTS`/`DO $$` para idempotencia. Última: V23; la siguiente V24. `ddl-auto=validate` siempre. **BE-D1** *(automática)*.
 - Índices para toda consulta nueva por columna no PK (GiST para geografía). Sin N+1: usa carga en lote (`NombresOtResolver`).
 - **BE-J1** *(automática)* Cada `@Scheduled` debe ser seguro con 2 instancias (`@SchedulerLock` con ShedLock) o estar documentado "1 instancia" en `render.yaml`. Hoy hay 7 sin bloqueo (TB-03).
 
@@ -75,7 +75,7 @@ Wiring que no se puede saltar: CI (`backend-ci.yml`: `build-and-test`, `migratio
 - [ ] `node scripts/check-backend-rules.mjs` OK y ninguna regla sube (pega la salida).
 - [ ] `./gradlew build` en verde (con Docker) — pega el resumen de tests.
 - [ ] Test nuevo que cubre el cambio (y el 401/403 si es un endpoint).
-- [ ] Migración nueva solo si hace falta, `V17+`, append-only, probada contra PostGIS.
+- [ ] Migración nueva solo si hace falta, `V24+`, append-only, probada contra PostGIS.
 - [ ] Sin secretos, sin `getMessage()` de infraestructura hacia el cliente, sin lectura sin paginar.
 - [ ] Formato de error consistente con §3.
 - [ ] Nada fuera del alcance de la tarea (no tocar `frontend/`).

@@ -34,7 +34,7 @@ npm start                      # puerto 4200; proxy /api -> localhost:8090
 ```
 
 - Copia `backend/.env.example` a `backend/.env` solo si necesitas Maps/SMTP; en dev el resto tiene valores por defecto (y Spring carga ese `.env` si existe).
-- **Auth apagada en local:** `DevAuthBypassFilter` ejecuta sin JWT como un usuario sembrado. Cambia de usuario con el header `X-Dev-Usuario: cliente1@coldday.com.co` (`tecnico1…`, `proveedor1…`, `admin…`, `contable…`). Password demo: `demo1234` (`APP_SEED_DEMO_PASSWORD`). Para probar la seguridad real: `DEV_AUTH_BYPASS=false` en `backend/.env`.
+- **Auth apagada en local:** `DevAuthBypassFilter` ejecuta sin JWT como un usuario sembrado. Cambia de usuario con el header `X-Dev-Usuario: cliente1@coldday.com.co` (`tecnico1…`, `proveedor1…`, `admin…`, `contable…`, `rrhh…`). Password demo: `demo1234` (`APP_SEED_DEMO_PASSWORD`). Para probar la seguridad real: `DEV_AUTH_BYPASS=false` en `backend/.env`.
 - El login tiene rate limit (10/min por IP): en pruebas reutiliza sesión, no inicies sesión en bucle.
 - En el emulador/navegador móvil contra un backend local, sirve la app en **4200**: es el único origen web permitido por `CORS_ALLOWED_ORIGINS` en dev. La web no tiene problema porque en `ng serve` va por proxy.
 

@@ -58,6 +58,16 @@ export class MockDbService {
       fechaRegistro: '2025-02-01',
     },
     {
+      id: 900,
+      nombre: 'Laura Rojas',
+      correo: 'rrhh@coldday.com.co',
+      telefono: '3167890123',
+      rol: 'RECURSOS_HUMANOS',
+      habeasDataAceptado: false,
+      activo: true,
+      fechaRegistro: '2025-02-15',
+    },
+    {
       id: 3,
       nombre: 'María Gómez',
       correo: 'maria.gomez@gmail.com',

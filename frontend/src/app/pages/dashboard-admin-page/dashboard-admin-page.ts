@@ -4,6 +4,8 @@ import { catchError, finalize, Observable, of, tap } from 'rxjs';
 import { AdminApi } from '../../core/service/admin-api';
 import { refrescarConActividadAdmin } from '../../core/service/admin-actividad-refresco';
 import { SseService } from '../../core/service/sse.service';
+import { AuthService } from '../../core/service/auth.service';
+import { tienePermiso } from '../../core/permisos';
 import { recordarPanel } from '../../core/navihationError/panel-resolver';
 import { CategoriaServicio, MetricasAdminResponse } from '../../core/models/common.models';
 import { environment } from '../../core/environment/environment';
@@ -20,6 +22,11 @@ export class DashboardAdminPage implements OnInit {
   /** Canal admin: sin backend real el stream se completa vacío (mock/SSR). */
   private readonly sse = inject(SseService);
   private readonly destruir = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
+
+  /** Los accesos directos que el rol no puede abrir no se muestran. */
+  readonly puedeValidar = tienePermiso(this.auth.userRoles(), 'VALIDAR_DOCUMENTACION');
+  readonly puedeMediar = tienePermiso(this.auth.userRoles(), 'GESTIONAR_DISPUTAS');
 
   /** Comisión de la plataforma (15%), alineada al backend. */
   readonly comisionPorcentaje = Math.round(environment.commissionRate * 100);

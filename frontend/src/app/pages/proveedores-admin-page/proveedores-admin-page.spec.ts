@@ -5,7 +5,8 @@ import { AdminApi } from '../../core/service/admin-api';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { IncumplimientoInsumo, ProveedorResponse } from '../../core/models/common.models';
+import { IncumplimientoInsumo, ProveedorResponse, Rol } from '../../core/models/common.models';
+import { AuthService } from '../../core/service/auth.service';
 
 const proveedor: ProveedorResponse = {
   id: 'PROV-1',
@@ -27,11 +28,12 @@ const proveedorAprobado: ProveedorResponse = {
 const MENSAJE_409 =
   'El expediente del proveedor no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.';
 
-function setup(opciones: { validarError?: unknown; proveedores?: ProveedorResponse[]; getProveedores?: ReturnType<typeof vi.fn>; getIncumplimientos?: ReturnType<typeof vi.fn> } = {}) {
+function setup(opciones: { validarError?: unknown; proveedores?: ProveedorResponse[]; getProveedores?: ReturnType<typeof vi.fn>; getIncumplimientos?: ReturnType<typeof vi.fn>; getDocumentos?: ReturnType<typeof vi.fn>; rol?: Rol } = {}) {
   const adminApi = {
     getProveedores: opciones.getProveedores ?? vi.fn(() => of(opciones.proveedores ?? [proveedor])),
   };
   const proveedoresApi = {
+    getDocumentos: opciones.getDocumentos ?? vi.fn(() => of([])),
     getIncumplimientos: opciones.getIncumplimientos ?? vi.fn(() => of([])),
     validarDocumentacion: vi.fn(() =>
       opciones.validarError ? throwError(() => opciones.validarError) : of(undefined)
@@ -42,6 +44,7 @@ function setup(opciones: { validarError?: unknown; proveedores?: ProveedorRespon
     imports: [ProveedoresAdminPage],
     providers: [
       { provide: AdminApi, useValue: adminApi },
+      { provide: AuthService, useValue: { userRoles: () => new Set<Rol>([opciones.rol ?? 'ADMINISTRADOR']) } },
       { provide: ProveedoresApi, useValue: proveedoresApi },
       { provide: ToastService, useValue: toast },
     ],
@@ -62,6 +65,32 @@ describe('ProveedoresAdminPage', () => {
     expect(fixture.nativeElement.querySelector('form')).toBeNull();
     expect(fixture.nativeElement.querySelector('button[type="submit"]')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toContain('Nuevo proveedor');
+  });
+
+  it('muestra los documentos que declaró cada proveedor pendiente', () => {
+    const getDocumentos = vi.fn(() => of([{ id: 3, tipo: 'CAMARA_COMERCIO', fechaVencimiento: '2027-03-01' }]));
+    const { fixture } = setup({ getDocumentos });
+
+    const texto = fixture.nativeElement.textContent;
+    expect(getDocumentos).toHaveBeenCalledWith('PROV-1');
+    expect(texto).toContain('CAMARA COMERCIO');
+    expect(texto).toContain('Vence: 2027-03-01');
+  });
+
+  it('distingue sin documentos de un fallo al cargarlos', () => {
+    expect(setup().fixture.nativeElement.textContent).toContain('No ha declarado documentos.');
+    TestBed.resetTestingModule();
+
+    const fallo = setup({ getDocumentos: vi.fn(() => throwError(() => new Error('sin red'))) });
+    expect(fallo.fixture.nativeElement.textContent).toContain('No pudimos cargar los documentos.');
+    expect(fallo.fixture.nativeElement.textContent).not.toContain('No ha declarado documentos.');
+  });
+
+  it('Recursos Humanos no ve ni pide los incumplimientos', () => {
+    const { fixture, proveedoresApi } = setup({ rol: 'RECURSOS_HUMANOS' });
+
+    expect(proveedoresApi.getIncumplimientos).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).not.toContain('Incumplimientos de ETA');
   });
 
   it('lista los proveedores con su estado de validación', () => {

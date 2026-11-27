@@ -8,7 +8,7 @@ web
 
 ## Users
 
-- **Administrador / Contable** — the internal control tower. They arrive mid-shift, with several work orders in flight at once, and need to answer "what is stuck and who unblocks it" without hunting. Their job: monitor orders, validate technicians, reconcile deposits, mediate disputes.
+- **Administrador / Contable / Recursos Humanos** — the internal control tower. They arrive mid-shift, with several work orders in flight at once, and need to answer "what is stuck and who unblocks it" without hunting. Their job: monitor orders, validate technicians, reconcile deposits, mediate disputes. Accounting reconciles deposits and watches operations; Human Resources validates technician and supplier documentation; only the administrator mediates disputes and creates internal accounts.
 - **Técnico** — a certified independent technician in Cúcuta. Reaches the product on a phone, often standing on a roof or inside a fridge unit, sometimes with gloves on. Their job: catch work, execute it, get paid.
 - **Cliente** — a household or business in Cúcuta or the metro area. Their job: get the right technician, approve a price they trust, and know the service is warranted.
 - **Proveedor** — an auxiliary supplier. Narrow job: receive and fulfil part dispatches.
@@ -44,7 +44,7 @@ The mechanism a generic marketplace listing cannot copy: **the work order is the
 | Marketing landing | `landing` | Static HTML/CSS |
 | API | `backend` | Spring Boot 4.1.1, Java 25, JPA, Security, SMTP, springdoc |
 
-**Role model** — `CLIENTE`, `TECNICO`, `ADMINISTRADOR`, `CONTABLE`, `PROVEEDOR`.
+**Role model** — `CLIENTE`, `TECNICO`, `ADMINISTRADOR`, `CONTABLE`, `PROVEEDOR`, `RECURSOS_HUMANOS`.
 
 **Order lifecycle** — `SOLICITADA` → `BUSCANDO_TECNICO` → `ASIGNADA` → `EN_CAMINO` → `EN_DIAGNOSTICO` → `EN_REPARACION` → `FINALIZADA`, with `CANCELADA`, `DISPUTADA`, and `SIN_TECNICOS_DISPONIBLES` as exits.
 

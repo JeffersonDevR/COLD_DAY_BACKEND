@@ -73,7 +73,7 @@ class DevDataSeederTest {
 
         seeder.run(null);
 
-        verify(usuarioRepository, times(13)).save(any(Usuario.class));
+        verify(usuarioRepository, times(14)).save(any(Usuario.class));
         verify(clienteRepository, times(5)).save(any(Cliente.class));
         verify(tecnicoRepository, times(5)).save(any(Tecnico.class));
         verify(proveedorRepository).save(any(Proveedor.class));

@@ -1,7 +1,15 @@
 package com.sena.cold_day.core.shared.infrastructure.security;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Permiso;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.PermisosPorRol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
@@ -33,6 +41,24 @@ public record AuthenticatedUser(UsuarioId usuarioId, Rol rol, Set<Rol> roles, St
 
     public boolean tieneRol(Rol candidato) {
         return roles.contains(candidato);
+    }
+
+    /** Los permisos salen de los roles en cada petición; no viajan en el token. */
+    public boolean tienePermiso(Permiso permiso) {
+        return roles.stream().anyMatch(r -> PermisosPorRol.de(r).contains(permiso));
+    }
+
+    public boolean tieneAlgunPermiso() {
+        return roles.stream().anyMatch(r -> !PermisosPorRol.de(r).isEmpty());
+    }
+
+    /** {@code ROLE_x} por cada rol, más el nombre de cada permiso. */
+    public Collection<GrantedAuthority> authorities() {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        roles.forEach(r -> authorities.add(new SimpleGrantedAuthority("ROLE_" + r.name())));
+        roles.stream().flatMap(r -> PermisosPorRol.de(r).stream()).distinct()
+                .forEach(p -> authorities.add(new SimpleGrantedAuthority(p.name())));
+        return authorities;
     }
 
     /** Convenience for callers that only know the primary role. */

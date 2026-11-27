@@ -5,7 +5,8 @@ import { DashboardAdminPage } from './dashboard-admin-page';
 import { AdminApi } from '../../core/service/admin-api';
 import { ESPERA_RECARGA_ADMIN_MS } from '../../core/service/admin-actividad-refresco';
 import { AdminActividad, SseService } from '../../core/service/sse.service';
-import { MetricasAdminResponse } from '../../core/models/common.models';
+import { MetricasAdminResponse, Rol } from '../../core/models/common.models';
+import { AuthService } from '../../core/service/auth.service';
 
 const metricas: MetricasAdminResponse = {
   serviciosEnEjecucion: 4,
@@ -35,12 +36,14 @@ function canalAdmin() {
 function setup(
   getMetricas: ReturnType<typeof vi.fn> = vi.fn(() => of(metricas)),
   sse?: { abrirAdminStream: ReturnType<typeof vi.fn> },
+  rol: Rol = 'ADMINISTRADOR',
 ) {
   TestBed.configureTestingModule({
     imports: [DashboardAdminPage],
     providers: [
       provideRouter([]),
       { provide: AdminApi, useValue: { getMetricas } },
+      { provide: AuthService, useValue: { userRoles: () => new Set<Rol>([rol]) } },
       // Sin canal explícito, el stream se completa vacío: la degradación real.
       { provide: SseService, useValue: sse ?? { abrirAdminStream: () => EMPTY } },
     ],
@@ -57,6 +60,14 @@ describe('DashboardAdminPage', () => {
     const fixture = setup();
     expect(fixture.componentInstance.metricas()?.serviciosEnEjecucion).toBe(4);
     expect(fixture.nativeElement.textContent).toContain('Torre de Control Administrativa');
+  });
+
+  it('al contable no le ofrece accesos que no puede abrir', () => {
+    const texto = setup(undefined, undefined, 'CONTABLE').nativeElement.textContent;
+
+    expect(texto).toContain('Conciliar Consignaciones');
+    expect(texto).not.toContain('Auditoría de Técnicos');
+    expect(texto).not.toContain('Bandeja Disputas');
   });
 
   it('calcula la distribución de la dona', () => {
