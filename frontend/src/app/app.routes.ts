@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
-import { guestGuard } from './core/guest.guard';
+import { guestGuard, recuperarGuard } from './core/guest.guard';
 import { roleGuard } from './core/role.guard';
 import { PanelRedirectComponent } from './core/navihationError/panel-redirect';
 
@@ -15,7 +15,7 @@ export const routes: Routes = [
   },
   {
     path: 'recuperar',
-    canActivate: [guestGuard],
+    canActivate: [recuperarGuard],
     loadComponent: () => import('./pages/recuperar-page/recuperar-page').then(m => m.RecuperarPage),
     title: 'Recuperar Contraseña - COLD DAY'
   },
