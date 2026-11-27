@@ -54,28 +54,16 @@
   }
 
   @if (ot(); as orden) {
-    <!-- Dictamen técnico oficial -->
-    <ion-card class="cd-dictamen">
-      <ion-card-content>
-        <div class="cd-dictamen__encabezado">
-          <span class="cd-dictamen__icono" aria-hidden="true">
-            <ion-icon aria-hidden="true" name="construct-outline"></ion-icon>
-          </span>
-          <div>
-            <h2 class="cd-dictamen__titulo">Dictamen técnico oficial</h2>
-            <p class="cd-dictamen__sub">Lo que el técnico encontró en la visita</p>
-          </div>
-        </div>
-
-        <div class="cd-dictamen__cuerpo" data-testid="dictamen-texto">
-          @if (dictamen(); as texto) {
-            {{ texto }}
-          } @else {
-            <span class="cd-muted">Sin dictamen del técnico aún.</span>
-          }
-        </div>
-      </ion-card-content>
-    </ion-card>
+    <!-- El dinero que se autoriza, primero. -->
+    <section class="cd-dato" data-testid="dato-dominante" aria-live="polite">
+      @if (orden.presupuesto) {
+        <p class="cd-dato__grande tnum">{{ formatoTotal(totalServicio()) }}</p>
+        <p class="cd-dato__detalle">Total a autorizar</p>
+      } @else {
+        <p class="cd-dato__grande">Presupuesto pendiente</p>
+        <p class="cd-dato__detalle">El técnico todavía no lo envía.</p>
+      }
+    </section>
 
     <!-- A7 — el presupuesto es su propio bloque (jerarquía): el cliente decide
          sobre el dinero, no sobre el documento. -->
@@ -149,6 +137,29 @@
       </ion-card-content>
     </ion-card>
 
+    <!-- Dictamen técnico oficial -->
+    <ion-card class="cd-dictamen">
+      <ion-card-content>
+        <div class="cd-dictamen__encabezado">
+          <span class="cd-dictamen__icono" aria-hidden="true">
+            <ion-icon aria-hidden="true" name="construct-outline"></ion-icon>
+          </span>
+          <div>
+            <h2 class="cd-dictamen__titulo">Dictamen técnico oficial</h2>
+            <p class="cd-dictamen__sub">Lo que el técnico encontró en la visita</p>
+          </div>
+        </div>
+
+        <div class="cd-dictamen__cuerpo" data-testid="dictamen-texto">
+          @if (dictamen(); as texto) {
+            {{ texto }}
+          } @else {
+            <span class="cd-muted">Sin dictamen del técnico aún.</span>
+          }
+        </div>
+      </ion-card-content>
+    </ion-card>
+
     <!-- Decision: only while the OT waits for the client's answer -->
     @if (orden.estado === 'EN_DIAGNOSTICO') {
       @if (mostrarRechazo()) {
@@ -173,7 +184,7 @@
             [formControl]="motivoRechazo"
             [attr.aria-invalid]="ayudaMotivo() ? 'true' : null"
             aria-describedby="motivo-rechazo-ayuda motivo-rechazo-error"
-            placeholder="Explicá la discrepancia en repuestos, costo o tiempo estimado…"
+            placeholder="Explica la discrepancia en repuestos, costo o tiempo estimado…"
           ></textarea>
           <p class="cd-field-hint" id="motivo-rechazo-ayuda">Mínimo 5 caracteres.</p>
           @if (ayudaMotivo(); as ayuda) {

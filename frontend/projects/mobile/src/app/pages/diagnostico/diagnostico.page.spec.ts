@@ -498,3 +498,32 @@ describe('deslizar tras fallar la carga inicial', () => {
     expect(fixture.nativeElement.textContent).toContain('OT-RECUPERADA');
   });
 });
+
+describe('diagnóstico: el dinero primero', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const precede = (a: HTMLElement, b: HTMLElement) =>
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('el total a autorizar va antes del desglose y del dictamen', () => {
+    const { fixture } = setup();
+    const dato = nodo(fixture, 'dato-dominante')!;
+
+    expect(dato.textContent).toContain('Total a autorizar');
+    expect(dato.textContent).toContain('350.000');
+    expect(precede(dato, nodo(fixture, 'costo-total')!)).toBe(true);
+    expect(precede(nodo(fixture, 'costo-total')!, nodo(fixture, 'dictamen-texto')!)).toBe(true);
+  });
+
+  it('sin presupuesto no muestra un total engañoso', () => {
+    const { fixture } = setup({
+      otApi: { getOtById: vi.fn(() => of(ot({ presupuesto: undefined, tarifaVisita: 30000 }))) },
+    });
+    const dato = nodo(fixture, 'dato-dominante')!;
+
+    expect(dato.textContent).toContain('Presupuesto pendiente');
+    expect(dato.textContent).not.toContain('30.000');
+  });
+});
