@@ -1065,6 +1065,43 @@ app-seguimiento-ot .cd-map__chip {
   color: var(--cd-muted);
 }
 
+/* Orden activa de un panel (DESIGN §5): el estado en grande y un solo botón. */
+.cd-orden-activa {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-action);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-orden-activa__identidad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.cd-orden-activa__categoria {
+  margin: 0;
+  font-family: var(--cd-font-head);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.cd-orden-activa__contexto,
+.cd-orden-activa__direccion {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+  overflow-wrap: anywhere;
+}
+
+.cd-orden-activa .cd-cta {
+  margin-top: 0.75rem;
+}
+
 /* Tarjeta del técnico asignado. */
 .cd-tecnico {
   margin-bottom: 0.75rem;

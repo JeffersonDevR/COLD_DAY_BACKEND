@@ -45,6 +45,7 @@ import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { SseService } from '@core/service/sse.service';
 import { EstadoOt, MedioPago, OtResponse, Point } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
+import { AccionOt, accionOtCliente, puedePagarVisita } from '../../shared/orden-reglas';
 import { MapaSeguimientoComponent } from './mapa-seguimiento.component';
 import { OtTimelineComponent } from './ot-timeline.component';
 
@@ -164,9 +165,7 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
    */
   readonly puedePagarVisita = computed<boolean>(() => {
     const orden = this.ot();
-    if (!orden) return false;
-    if (orden.estado === 'CANCELADA' || orden.estado === 'DISPUTADA') return true;
-    return orden.estado === 'ASIGNADA' && orden.visitaPagada === false;
+    return !!orden && puedePagarVisita(orden);
   });
 
   /**
@@ -179,11 +178,9 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
   });
 
   /** La única acción rellena de la pantalla, en el pie; `null` = no hay pie. */
-  readonly accionPrincipal = computed<'pagar-visita' | 'presupuesto' | 'acta' | null>(() => {
-    if (this.puedePagarVisita()) return 'pagar-visita';
+  readonly accionPrincipal = computed<AccionOt>(() => {
     const orden = this.ot();
-    if (orden?.estado === 'EN_DIAGNOSTICO' && orden.diagnostico) return 'presupuesto';
-    return orden?.estado === 'FINALIZADA' ? 'acta' : null;
+    return orden ? accionOtCliente(orden) : null;
   });
 
   /**
