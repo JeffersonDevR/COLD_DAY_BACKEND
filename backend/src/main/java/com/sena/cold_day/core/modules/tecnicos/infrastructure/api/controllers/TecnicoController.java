@@ -139,9 +139,9 @@ public class TecnicoController {
                 .body(TecnicoApiResponse.conToken(created, token));
     }
 
-    /** The full roster exposes every technician's contact data: administrators only. */
+    /** The full roster exposes every technician's contact data: internal roles only. */
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('VER_TECNICOS')")
     public List<TecnicoApiResponse> listar() {
         return buscar.listar().stream().map(TecnicoApiResponse::from).toList();
     }
@@ -266,7 +266,7 @@ public class TecnicoController {
      * (business rule) can still raise a second, distinct 403.
      */
     @PatchMapping("/{id}/validacion")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMINISTRADOR')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('VALIDAR_DOCUMENTACION')")
     public ResponseEntity<Void> validar(@PathVariable TecnicoId id,
             @Valid @RequestBody ValidacionTecnicoApiRequest request,
             @org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -277,6 +277,14 @@ public class TecnicoController {
             validarDocumentacion.rechazar(id, request.motivo());
         }
         return ResponseEntity.noContent().build();
+    }
+
+    /** Documentos declarados de un técnico, para validarlos. */
+    @GetMapping("/{id}/documentos")
+    @PreAuthorize("hasAuthority('VALIDAR_DOCUMENTACION')")
+    public List<DocumentoTecnicoApiResponse> documentos(@PathVariable TecnicoId id) {
+        return listarDocumentos.listarDeTecnico(id).stream()
+                .map(DocumentoTecnicoApiResponse::from).toList();
     }
 
     @PostMapping("/{id}/documentos")

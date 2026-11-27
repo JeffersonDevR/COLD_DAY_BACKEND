@@ -29,7 +29,8 @@ import jakarta.validation.Valid;
 /**
  * Modulo de administracion (CU-13, CU-15 / RF-F1-22/24/25): tablero de
  * monitoreo, conciliacion de consignaciones en efectivo y bandeja de disputas.
- * Este controller exige rol {@code ADMINISTRADOR} en todos sus endpoints.
+ * Cada endpoint pide su permiso; uno sin anotación propia queda solo para
+ * {@code ADMINISTRADOR} por la anotación de clase.
  */
 @RestController
 @RequestMapping("/api/admin")
@@ -52,12 +53,14 @@ public class AdminController {
 
     /** CU-15 / RF-F1-22: tablero con servicios, tecnicos, tiempos e incidencias. */
     @GetMapping("/metricas")
+    @PreAuthorize("hasAuthority('VER_OPERACION')")
     public MetricasAdminApiResponse metricas() {
         return MetricasAdminApiResponse.from(metricas.consultar());
     }
 
     /** RF-F1-25: listado global de OTs para el monitoreo administrativo. */
     @GetMapping("/ot")
+    @PreAuthorize("hasAuthority('VER_OPERACION')")
     public List<OtApiResponse> ots() {
         return listarOts.listarTodas().stream()
                 .map(resumen -> OtApiResponse.from(resumen.ot(), resumen.clienteNombre(), resumen.tecnicoNombre()))
@@ -66,24 +69,28 @@ public class AdminController {
 
     /** CU-13: bandeja de comprobantes pendientes de verificacion. */
     @GetMapping("/liquidaciones/pendientes")
+    @PreAuthorize("hasAuthority('GESTIONAR_CONSIGNACIONES')")
     public List<LiquidacionApiResponse> liquidacionesPendientes() {
         return comprobantes.listarPendientes().stream().map(LiquidacionApiResponse::from).toList();
     }
 
     /** Historial completo de liquidaciones para conciliacion de comisiones. */
     @GetMapping("/liquidaciones")
+    @PreAuthorize("hasAuthority('GESTIONAR_CONSIGNACIONES')")
     public List<LiquidacionApiResponse> liquidaciones() {
         return comprobantes.listarTodas().stream().map(LiquidacionApiResponse::from).toList();
     }
 
     /** CU-13: aprueba el comprobante y desbloquea al tecnico de inmediato. */
     @PostMapping("/liquidaciones/{id}/aprobar")
+    @PreAuthorize("hasAuthority('GESTIONAR_CONSIGNACIONES')")
     public LiquidacionApiResponse aprobar(@PathVariable LiquidacionId id) {
         return LiquidacionApiResponse.from(comprobantes.aprobar(id));
     }
 
     /** CU-13 (2a): rechaza el soporte con motivo; el tecnico sigue bloqueado. */
     @PostMapping("/liquidaciones/{id}/rechazar")
+    @PreAuthorize("hasAuthority('GESTIONAR_CONSIGNACIONES')")
     public LiquidacionApiResponse rechazar(@PathVariable LiquidacionId id,
             @Valid @RequestBody RechazoLiquidacionApiRequest request) {
         return LiquidacionApiResponse.from(comprobantes.rechazar(id, request.motivo()));
@@ -91,12 +98,14 @@ public class AdminController {
 
     /** RF-F1-25: bandeja de disputas abiertas para mediacion. */
     @GetMapping("/disputas/abiertas")
+    @PreAuthorize("hasAuthority('GESTIONAR_DISPUTAS')")
     public List<DisputaApiResponse> disputasAbiertas() {
         return disputas.listarAbiertas().stream().map(DisputaApiResponse::from).toList();
     }
 
     /** RF-F1-25: historial completo de disputas para auditoria. */
     @GetMapping("/disputas")
+    @PreAuthorize("hasAuthority('GESTIONAR_DISPUTAS')")
     public List<DisputaApiResponse> disputas() {
         return disputas.listarTodas().stream().map(DisputaApiResponse::from).toList();
     }
@@ -106,6 +115,7 @@ public class AdminController {
      * cobro, motivo auditado).
      */
     @PostMapping("/disputas/{id}/resolver")
+    @PreAuthorize("hasAuthority('GESTIONAR_DISPUTAS')")
     public ResponseEntity<DisputaApiResponse> resolver(@PathVariable DisputaId id,
             @Valid @RequestBody ResolverDisputaApiRequest request) {
         return ResponseEntity.ok(DisputaApiResponse.from(

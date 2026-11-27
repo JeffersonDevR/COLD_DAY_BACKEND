@@ -130,6 +130,7 @@ public class DevDataSeeder implements ApplicationRunner {
         // Roles administrativos para poder observar los paneles de gestión.
         ensureUsuario("Carlos Méndez", "admin@coldday.com.co", "3104567890", Rol.ADMINISTRADOR);
         ensureUsuario("Ana Martínez", "contable@coldday.com.co", "3156789012", Rol.CONTABLE);
+        ensureUsuario("Laura Rojas", "rrhh@coldday.com.co", "3167890123", Rol.RECURSOS_HUMANOS);
 
         log.info("Seed verificado: {} clientes, {} técnicos y {} proveedores creados (perfiles faltantes reparados). Password demo configurable en app.seed.demo-password.",
                 clientesCreados, tecnicosCreados, proveedoresCreados);

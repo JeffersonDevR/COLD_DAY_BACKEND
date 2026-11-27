@@ -2,6 +2,8 @@ package com.sena.cold_day.core.modules.tecnicos.application.usecases;
 
 import java.util.List;
 
+import com.sena.cold_day.core.modules.tecnicos.domain.exception.TecnicoNoEncontradoException;
+import com.sena.cold_day.core.modules.tecnicos.domain.valueobjects.TecnicoId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,5 +32,12 @@ public class ListarDocumentosTecnicoUseCase {
         Tecnico tecnico = tecnicoRepository.findByUsuarioIdAndActivoTrue(usuarioId.valor())
                 .orElseThrow(() -> new PerfilTecnicoNoEncontradoException(usuarioId.valor()));
         return documentoRepository.buscarPorTecnico(tecnico.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentoTecnico> listarDeTecnico(TecnicoId tecnicoId) {
+        tecnicoRepository.findByIdAndActivoTrue(tecnicoId)
+                .orElseThrow(() -> new TecnicoNoEncontradoException(tecnicoId));
+        return documentoRepository.buscarPorTecnico(tecnicoId);
     }
 }

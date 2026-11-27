@@ -133,11 +133,11 @@ public class OtController {
                 .body(conNombres(created));
     }
 
-    /** Readable only by the owning client, the assigned technician, or an administrator. */
+    /** Readable by the owning client, the assigned technician, or whoever audits operations. */
     @GetMapping("/{id}")
     public OtApiResponse consultar(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable OtId id) {
         OtResponse ot = consultar.consultar(id);
-        autorizacion.exigirParticipanteOAdmin(principal, ot);
+        autorizacion.exigirLectorDeOt(principal, ot);
         return conNombres(ot);
     }
 
@@ -145,7 +145,7 @@ public class OtController {
     public List<HistorialEstadoApiResponse> historial(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable OtId id) {
         OtResponse ot = consultar.consultar(id);
-        autorizacion.exigirParticipanteOAdmin(principal, ot);
+        autorizacion.exigirLectorDeOt(principal, ot);
         return consultar.historial(id).stream().map(HistorialEstadoApiResponse::from).toList();
     }
 

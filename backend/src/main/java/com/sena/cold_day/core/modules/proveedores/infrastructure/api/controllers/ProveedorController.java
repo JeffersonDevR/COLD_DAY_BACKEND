@@ -133,7 +133,7 @@ public class ProveedorController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('VALIDAR_DOCUMENTACION')")
     public List<ProveedorApiResponse> listar() {
         return listarProveedores.listar().stream().map(ProveedorApiResponse::from).toList();
     }
@@ -168,11 +168,11 @@ public class ProveedorController {
 
     /** One supplier's documents: read by an administrator to decide, or by the owner. */
     @GetMapping("/{id}/documentos")
-    @PreAuthorize("hasAnyRole('PROVEEDOR','ADMINISTRADOR')")
+    @PreAuthorize("hasRole('PROVEEDOR') or hasAuthority('VALIDAR_DOCUMENTACION')")
     public List<DocumentoProveedorApiResponse> documentos(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable UUID id) {
         ProveedorId proveedorId = ProveedorId.desde(id);
-        autorizacion.exigirProveedorOAdmin(principal, proveedorId);
+        autorizacion.exigirProveedorOAuditorDocumental(principal, proveedorId);
         return documentacion.listarDocumentos(proveedorId).stream().map(DocumentoProveedorApiResponse::from).toList();
     }
 
@@ -182,7 +182,7 @@ public class ProveedorController {
      * supplier can decide about itself.
      */
     @PatchMapping("/{id}/validacion")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('VALIDAR_DOCUMENTACION')")
     public ResponseEntity<Void> validar(@PathVariable UUID id,
             @Valid @RequestBody ValidacionProveedorApiRequest request) {
         ProveedorId proveedorId = ProveedorId.desde(id);

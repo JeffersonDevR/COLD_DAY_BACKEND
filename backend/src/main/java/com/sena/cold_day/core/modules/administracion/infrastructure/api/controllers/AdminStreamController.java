@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.sena.cold_day.core.modules.administracion.infrastructure.listeners.AdminActividadSseListener;
-import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 import com.sena.cold_day.core.shared.infrastructure.sse.SseEmitterRegistry;
 import com.sena.cold_day.core.shared.infrastructure.sse.SseTicketService;
@@ -55,8 +54,8 @@ public class AdminStreamController {
     public SseEmitter stream(@RequestParam(value = "ticket", required = false) String ticket) {
         TicketConsumido consumido = tickets.consumir(ticket).orElseThrow(TicketSseInvalidoException::new);
         AuthenticatedUser principal = new AuthenticatedUser(consumido.usuarioId(), consumido.rol(), consumido.roles());
-        if (!principal.tieneRol(Rol.ADMINISTRADOR)) {
-            throw new AccessDeniedException("The authenticated user is not an administrator");
+        if (!principal.tieneAlgunPermiso()) {
+            throw new AccessDeniedException("The authenticated user has no panel access");
         }
         return registry.crear(AdminActividadSseListener.claveAdmin());
     }
