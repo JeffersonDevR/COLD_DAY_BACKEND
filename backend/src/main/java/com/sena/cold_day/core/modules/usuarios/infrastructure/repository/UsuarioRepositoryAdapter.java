@@ -68,6 +68,12 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Usuario> listarPorRoles(java.util.Collection<com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol> roles) {
+        return repository.findByRolInOrderById(roles).stream().map(UsuarioJpaEntity::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Usuario> listarTodos() {
         return repository.findAll(Sort.by("id")).stream().map(UsuarioJpaEntity::toDomain).toList();
     }

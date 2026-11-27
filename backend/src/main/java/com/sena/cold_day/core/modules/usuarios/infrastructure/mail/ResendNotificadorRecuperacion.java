@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaInvitada;
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
 import com.sena.cold_day.core.modules.usuarios.domain.services.NotificadorRecuperacion;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.config.MailProperties;
@@ -62,6 +63,16 @@ public class ResendNotificadorRecuperacion implements NotificadorRecuperacion {
 
     @Override
     public void notificar(RecuperacionSolicitada evento) {
+        enviar(evento.usuarioId(), evento.correo(), "Restablece tu contrasena - COLD DAY", cuerpo(evento));
+    }
+
+    @Override
+    public void invitar(CuentaInternaInvitada evento) {
+        enviar(evento.usuarioId(), evento.correo(), CorreoDeInvitacion.ASUNTO,
+                CorreoDeInvitacion.cuerpo(propiedades.enlaceDeRecuperacion(evento.token())));
+    }
+
+    private void enviar(Long usuarioId, String correo, String asunto, String texto) {
         if (!StringUtils.hasText(apiKey)) {
             log.warn("Resend provider activo pero sin API key ({}): no se entrega correo de recuperacion", API_KEY_ENV);
             return;
@@ -72,8 +83,7 @@ public class ResendNotificadorRecuperacion implements NotificadorRecuperacion {
         }
         String body = """
                 {"from":%s,"to":[%s],"subject":%s,"text":%s}
-                """.formatted(json(propiedades.from()), json(evento.correo()),
-                json("Restablece tu contrasena - COLD DAY"), json(cuerpo(evento)));
+                """.formatted(json(propiedades.from()), json(correo), json(asunto), json(texto));
         try {
             HttpRequest request = HttpRequest.newBuilder(ENDPOINT)
                     .timeout(Duration.ofSeconds(10))
@@ -83,11 +93,11 @@ public class ResendNotificadorRecuperacion implements NotificadorRecuperacion {
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.error("No se pudo entregar el correo de recuperacion via Resend: status={} body={}",
+                log.error("No se pudo entregar el correo de cuenta via Resend: status={} body={}",
                         response.statusCode(), truncate(response.body()));
             }
         } catch (Exception ex) {
-            log.error("No se pudo entregar el correo de recuperacion via Resend: usuarioId={}", evento.usuarioId(), ex);
+            log.error("No se pudo entregar el correo de cuenta via Resend: usuarioId={}", usuarioId, ex);
         }
     }
 

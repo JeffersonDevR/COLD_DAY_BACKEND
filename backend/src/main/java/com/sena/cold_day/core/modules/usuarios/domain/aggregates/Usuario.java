@@ -6,6 +6,8 @@ import java.util.Objects;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.RolNoGestionableException;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.PermisosPorRol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
@@ -65,6 +67,31 @@ public class Usuario {
         usuario.habeasDataAceptado = true;
         usuario.activo = true;
         usuario.tokenVersion = 0;
+        return usuario;
+    }
+
+    /**
+     * Cuenta del panel creada por un administrador. El consentimiento de datos
+     * queda en {@code false}: nadie puede aceptarlo por otra persona.
+     */
+    public static Usuario crearCuentaInterna(String nombre, String correo, Rol rol, String passwordPlano,
+            PasswordEncoderPort encoder) {
+        if (!PermisosPorRol.rolesGestionables().contains(rol)) {
+            throw new RolNoGestionableException();
+        }
+        if (nombre == null || nombre.isBlank()) {
+            throw new IllegalArgumentException("nombre requerido");
+        }
+        if (correo == null || !correo.contains("@")) {
+            throw new IllegalArgumentException("correo invalido");
+        }
+        Usuario usuario = new Usuario();
+        usuario.nombre = nombre;
+        usuario.correo = correo;
+        usuario.passwordHash = encoder.encode(passwordPlano);
+        usuario.rol = rol;
+        usuario.fechaRegistro = Instant.now();
+        usuario.activo = true;
         return usuario;
     }
 
@@ -142,6 +169,10 @@ public class Usuario {
     public boolean isActivo() { return activo; }
     public String getPasswordHash() { return passwordHash; }
     public int getTokenVersion() { return tokenVersion; }
+
+    public void reactivar() {
+        this.activo = true;
+    }
 
     public void desactivar() { this.activo = false; }
 }

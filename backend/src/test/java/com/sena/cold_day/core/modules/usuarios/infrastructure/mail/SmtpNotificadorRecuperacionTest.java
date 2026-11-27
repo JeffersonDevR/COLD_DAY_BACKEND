@@ -13,6 +13,7 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaInvitada;
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.config.MailProperties;
 
@@ -47,6 +48,21 @@ class SmtpNotificadorRecuperacionTest {
 
         assertThatCode(() -> new SmtpNotificadorRecuperacion(sender, props()).notificar(EVENTO))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void laInvitacionExplicaLaCuentaNuevaYLlevaElEnlace() {
+        JavaMailSender sender = mock(JavaMailSender.class);
+
+        new SmtpNotificadorRecuperacion(sender, props())
+                .invitar(new CuentaInternaInvitada(7L, "ana@example.com", "TOK-INV"));
+
+        ArgumentCaptor<SimpleMailMessage> capturado = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(sender).send(capturado.capture());
+        assertThat(capturado.getValue().getSubject()).isEqualTo("Te crearon una cuenta en COLD DAY");
+        assertThat(capturado.getValue().getText())
+                .contains("https://app.coldday.co/recuperar?token=TOK-INV")
+                .contains("Recuperar contraseña");
     }
 
     private static MailProperties props() {

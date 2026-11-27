@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
 /** Port implemented in infrastructure (JPA adapter). */
@@ -21,4 +22,7 @@ public interface UsuarioRepository {
     boolean existeCorreo(String correo);
 
     List<Usuario> listarTodos();
+
+    /** Ordenada por id. */
+    List<Usuario> listarPorRoles(java.util.Collection<Rol> roles);
 }

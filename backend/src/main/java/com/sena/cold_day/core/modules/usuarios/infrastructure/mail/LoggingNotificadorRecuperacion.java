@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaInvitada;
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
 import com.sena.cold_day.core.modules.usuarios.domain.services.NotificadorRecuperacion;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.config.MailProperties;
@@ -30,6 +31,17 @@ public class LoggingNotificadorRecuperacion implements NotificadorRecuperacion {
 
     public LoggingNotificadorRecuperacion(MailProperties propiedades) {
         this.propiedades = propiedades;
+    }
+
+    @Override
+    public void invitar(CuentaInternaInvitada evento) {
+        if (propiedades.logToken() && log.isInfoEnabled()) {
+            log.info("Invitacion de cuenta (modo local): usuarioId={} correo={} enlace={}",
+                    evento.usuarioId(), evento.correo(), propiedades.enlaceDeRecuperacion(evento.token()));
+            return;
+        }
+        log.info("Invitacion de cuenta: usuarioId={} correo={} (token no registrado; configura SMTP para entregarlo)",
+                evento.usuarioId(), evento.correo());
     }
 
     @Override

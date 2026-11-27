@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CredencialesInvalidasException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.HabeasDataRequeridoException;
 import com.sena.cold_day.core.modules.usuarios.domain.services.PasswordEncoderPort;
+import com.sena.cold_day.core.modules.usuarios.domain.exception.RolNoGestionableException;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.Rol;
 import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 
@@ -86,6 +87,36 @@ class UsuarioTest {
         assertThat(usuario.getNombre()).isEqualTo("Ana Maria");
         assertThat(usuario.getTelefono()).isEqualTo("3100000000");
         assertThat(usuario.getFechaRegistro()).isBefore(Instant.now().plusSeconds(60));
+    }
+
+    @Test
+    void unaCuentaInternaNaceActivaYSinConsentimientoAjeno() {
+        Usuario cuenta = Usuario.crearCuentaInterna("Laura", "laura@example.com", Rol.RECURSOS_HUMANOS,
+                "aleatoria", fakeEncoder);
+
+        assertThat(cuenta.isActivo()).isTrue();
+        assertThat(cuenta.isHabeasDataAceptado()).isFalse();
+        assertThat(cuenta.getTelefono()).isNull();
+        assertThat(cuenta.getRol()).isEqualTo(Rol.RECURSOS_HUMANOS);
+    }
+
+    @Test
+    void noSePuedeCrearUnAdministradorNiUnRolDeLaAppComoCuentaInterna() {
+        for (Rol rol : new Rol[] { Rol.ADMINISTRADOR, Rol.CLIENTE, Rol.TECNICO, Rol.PROVEEDOR }) {
+            assertThatThrownBy(() -> Usuario.crearCuentaInterna("X", "x@example.com", rol, "aleatoria",
+                    fakeEncoder)).isInstanceOf(RolNoGestionableException.class);
+        }
+    }
+
+    @Test
+    void unaCuentaDesactivadaSePuedeReactivar() {
+        Usuario cuenta = Usuario.crearCuentaInterna("Ana", "ana@example.com", Rol.CONTABLE, "aleatoria",
+                fakeEncoder);
+
+        cuenta.desactivar();
+        assertThat(cuenta.isActivo()).isFalse();
+        cuenta.reactivar();
+        assertThat(cuenta.isActivo()).isTrue();
     }
 
     @Test
