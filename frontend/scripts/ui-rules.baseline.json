@@ -1,15 +1,15 @@
 {
   "UI-T1": {
     "mobile": 0,
-    "web": 122
+    "web": 44
   },
   "UI-T2": {
     "mobile": 0,
-    "web": 74
+    "web": 27
   },
   "UI-C1": {
     "mobile": 0,
-    "web": 244
+    "web": 51
   },
   "UI-A1": {
     "mobile": 0,
@@ -17,7 +17,7 @@
   },
   "UI-A2": {
     "mobile": 0,
-    "web": 28
+    "web": 10
   },
   "UI-A3": {
     "mobile": 0,
@@ -25,7 +25,7 @@
   },
   "UI-D1": {
     "mobile": 1,
-    "web": 18
+    "web": 11
   },
   "UI-D2": {
     "mobile": 4,
@@ -33,17 +33,17 @@
   },
   "UI-D3": {
     "mobile": 1,
-    "web": 6
+    "web": 4
   },
   "UI-D4": {
-    "web": 660
+    "web": 136
   },
   "UI-S1": {
     "mobile": 0
   },
   "UI-L1": {
     "mobile": 5,
-    "web": 19
+    "web": 3
   },
   "UI-L2": {
     "mobile": 0,

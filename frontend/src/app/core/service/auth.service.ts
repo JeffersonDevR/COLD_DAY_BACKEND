@@ -226,15 +226,13 @@ export class AuthService {
    */
   getDashboardRouteForRole(rol: Rol): string {
     switch (rol) {
-      case 'CLIENTE':
-        return '/panel';
-      case 'TECNICO':
-        return '/tecnico/ofertas';
       case 'ADMINISTRADOR':
       case 'CONTABLE':
         return '/admin/dashboard';
+      case 'CLIENTE':
+      case 'TECNICO':
       case 'PROVEEDOR':
-        return '/proveedor/panel';
+        return '/usa-la-app';
       default:
         return '/login';
     }

@@ -1,5 +1,7 @@
 # Paridad funcional: web (Vercel) → móvil (Ionic)
 
+> **Histórico desde 2026-11-26:** la web quedó solo como consola interna (login, recuperar contraseña y pantallas admin). Las pantallas web de cliente, técnico y proveedor que aparecen abajo ya no existen.
+
 Mapeo del frontend **web que está desplegado en Vercel** (`frontend/src/app`, 25 páginas)
 contra la app **móvil** (`frontend/projects/mobile/src/app`, 18 páginas).
 

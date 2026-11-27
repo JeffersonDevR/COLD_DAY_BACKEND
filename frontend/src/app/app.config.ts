@@ -18,7 +18,6 @@ import {errorInterceptor} from './core/interceptos/error.interceptor';
 import {ToastService} from './core/alertas/toast.service';
 import {AVISO_SESION, AvisoSesion} from './core/alertas/aviso-sesion';
 import {initializeAppearance} from './core/service/appearance';
-import {MapaConfigService} from './core/service/mapa-config.service';
 import {provideColombianLocale} from './core/i18n/locale';
 
 /**
@@ -69,13 +68,6 @@ export const appConfig: ApplicationConfig = {
     // Limpieza de una sola vez: descarta la preferencia que dejó el
     // configurador eliminado, para que la apariencia fija no dependa de ella.
     provideAppInitializer(initializeAppearance),
-    // Configuracion del mapa (centro, limites, zoom y escala de radios): la
-    // publica el backend en GET /api/config/maps y se pide una sola vez al
-    // arrancar. NO bloquea el arranque: si el backend no responde, la app sigue
-    // con los valores por defecto.
-    provideAppInitializer(() => {
-      void inject(MapaConfigService).cargar();
-    }),
     // authInterceptor adjunta el JWT del backend; errorInterceptor traduce ApiError.
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     provideAvisoSesionToast(),

@@ -4,7 +4,6 @@ import { AppTopbar } from './app-topbar';
 import { AuthService } from '../../core/service/auth.service';
 import { ToastService } from '../../core/alertas/toast.service';
 import { LayoutService } from '../../core/service/layout.service';
-import { CLAVE_PANEL_PREFERIDO } from '../../core/navihationError/panel-resolver';
 import { Rol, UsuarioResponse } from '../../core/models/common.models';
 
 const usuario: UsuarioResponse = {
@@ -116,27 +115,17 @@ describe('AppTopbar', () => {
     expect(host.querySelector('[aria-label="Modo oscuro"], [aria-label="Modo claro"]')).toBeNull();
   });
 
-  it('con rol TECNICO, "Mi Panel" lleva al panel del técnico', () => {
-    const { fixture, navigate } = setup({ ...usuario, rol: 'TECNICO' }, new Set<Rol>(['TECNICO']));
+  it('"Mi Panel" lleva a la torre de control al administrador', () => {
+    const { fixture, navigate } = setup({ ...usuario, rol: 'ADMINISTRADOR' });
     const item = fixture.componentInstance.userMenuItems().find((i) => i.label === 'Ir a Mi Panel');
     (item?.command as (() => void) | undefined)?.();
-    expect(navigate).toHaveBeenCalledWith(['/tecnico/panel']);
+    expect(navigate).toHaveBeenCalledWith(['/admin/dashboard']);
   });
 
-  it('con rol CLIENTE, "Mi Panel" lleva al panel del cliente', () => {
+  it('"Mi Panel" lleva a la pantalla de la app a un cliente', () => {
     const { fixture, navigate } = setup(usuario);
     const item = fixture.componentInstance.userMenuItems().find((i) => i.label === 'Ir a Mi Panel');
     (item?.command as (() => void) | undefined)?.();
-    expect(navigate).toHaveBeenCalledWith(['/cliente/panel']);
-  });
-
-  it('con doble rol, "Mi Panel" respeta el último panel visitado', () => {
-    window.localStorage.setItem(CLAVE_PANEL_PREFERIDO, '/tecnico/panel');
-    const { fixture, navigate } = setup(usuario, new Set<Rol>(['CLIENTE', 'TECNICO']));
-
-    const item = fixture.componentInstance.userMenuItems().find((i) => i.label === 'Ir a Mi Panel');
-    (item?.command as (() => void) | undefined)?.();
-
-    expect(navigate).toHaveBeenCalledWith(['/tecnico/panel']);
+    expect(navigate).toHaveBeenCalledWith(['/usa-la-app']);
   });
 });

@@ -6,6 +6,8 @@
 
 Este repositorio contiene el **backend** (`backend/`) y ya existe también una carpeta **`frontend/`** (proyecto Angular, committeada) — a diferencia de lo que decía una versión anterior de este documento, el frontend ya no está vacío ni vive en una carpeta hermana `cold_day_forntend` fuera del repo. La Especificación de Requisitos IEEE 830 v3.4 (agosto 2026) documenta un pivote de arquitectura del 28 de agosto de 2026: frontend unificado en Angular (Angular Universal/SSR para SEO) con empaquetado nativo condicional vía Ionic/Capacitor, reemplazando una decisión anterior de Astro + Flutter. Esta revisión no cubrió el contenido de `frontend/` en detalle (quedó fuera del alcance de la revisión de base de datos) — pendiente que el equipo actualice esta sección con el detalle real (base URL consumida, autenticación, CORS, etc.).
 
+**Desde 2026-11-26** la web (`frontend/src`) es solo la consola interna (administrador y contable), con login y recuperación de contraseña. Cliente, técnico y proveedor usan la app móvil.
+
 ## 1. Stack tecnológico
 
 - **Spring Boot 4.1.1**, Java 25 (toolchain de Gradle), Gradle Wrapper.

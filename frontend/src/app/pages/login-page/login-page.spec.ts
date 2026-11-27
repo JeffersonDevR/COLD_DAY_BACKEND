@@ -41,6 +41,14 @@ function setup(login: ReturnType<typeof vi.fn>) {
 }
 
 describe('LoginPage', () => {
+  it('no ofrece registro en la web y conserva la recuperación', () => {
+    const { fixture } = setup(vi.fn());
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('a[href="/registro"]')).toBeNull();
+    expect(el.querySelector('a[href="/recuperar"]')).not.toBeNull();
+  });
+
   it('inicia sesión con el formulario válido', () => {
     const login = vi.fn(() => of({ token: 't', expiracion: 'e', rol: 'CLIENTE', usuario }));
     const { fixture, auth, toast, navigate } = setup(login);

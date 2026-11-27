@@ -40,7 +40,7 @@ Los exports crudos de Stitch traen defectos de generación (voseo, `.com.ar`, `t
 - Mercado: Colombia (Cúcuta y área metropolitana). Voz: **tuteo**, directa, cálida, operativa. Ver `PRODUCT.md`.
 - Dos superficies con el **mismo mundo visual** y dos perfiles de medidas (§2.4):
   - **Móvil** (`frontend/projects/mobile`, Ionic 9 + Angular 21 + Capacitor 8): cliente, técnico, proveedor. Referencia 390 px.
-  - **Web consola** (`frontend/src`, Angular 21 + Tailwind v4 + PrimeNG): administrador/contable, y flujos pesados.
+  - **Web consola** (`frontend/src`, Angular 21 + Tailwind v4 + PrimeNG): solo administrador/contable. Cliente, técnico y proveedor usan la app móvil.
 - Fuera del sistema: `landing/` (mundo claro, tienda).
 - Plataforma de verdad: tema oscuro **único**. No existe modo claro.
 

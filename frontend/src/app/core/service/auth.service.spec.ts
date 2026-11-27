@@ -250,8 +250,9 @@ describe('AuthService', () => {
 
   it('getDashboardRouteForRole resuelve la ruta por rol', () => {
     const service = create();
-    expect(service.getDashboardRouteForRole('CLIENTE')).toBe('/panel');
-    expect(service.getDashboardRouteForRole('TECNICO')).toBe('/tecnico/ofertas');
+    expect(service.getDashboardRouteForRole('CLIENTE')).toBe('/usa-la-app');
+    expect(service.getDashboardRouteForRole('TECNICO')).toBe('/usa-la-app');
+    expect(service.getDashboardRouteForRole('PROVEEDOR')).toBe('/usa-la-app');
     expect(service.getDashboardRouteForRole('ADMINISTRADOR')).toBe('/admin/dashboard');
     expect(service.getDashboardRouteForRole('CONTABLE')).toBe('/admin/dashboard');
     expect(service.getDashboardRouteForRole('OTRO' as unknown as Rol)).toBe('/login');
