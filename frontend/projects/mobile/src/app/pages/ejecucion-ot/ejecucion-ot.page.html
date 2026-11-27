@@ -23,6 +23,10 @@
 </ion-header>
 
 <ion-content class="ion-padding">
+
+<ion-refresher slot="fixed" [cdRecargar]="recargar">
+  <cd-recarga-contenido />
+</ion-refresher>
   @if (cargandoInicial()) {
     <div class="cd-cargando" data-testid="ot-cargando">
       <ion-spinner name="dots"></ion-spinner>

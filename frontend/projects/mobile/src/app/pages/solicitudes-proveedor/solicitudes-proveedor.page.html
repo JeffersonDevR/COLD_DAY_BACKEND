@@ -15,6 +15,10 @@
 </ion-header>
 
 <ion-content class="ion-padding">
+
+<ion-refresher slot="fixed" [cdRecargar]="recargar">
+  <cd-recarga-contenido />
+</ion-refresher>
   @if (cargando()) {
     <cd-skeleton label="Cargando solicitudes" testId="solicitudes-cargando" />
   }

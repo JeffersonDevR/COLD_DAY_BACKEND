@@ -15,7 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
-import { catchError, of, startWith, switchMap, Subscription } from 'rxjs';
+import { catchError, of, startWith, switchMap, Subscription, Observable, tap } from 'rxjs';
 import {
   IonBackButton,
   IonButton,
@@ -28,6 +28,7 @@ import {
   IonIcon,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -48,6 +49,7 @@ import { MobileToastService } from '../../core/toast.service';
 import { AccionOt, accionOtCliente, puedePagarVisita } from '../../shared/orden-reglas';
 import { MapaSeguimientoComponent } from './mapa-seguimiento.component';
 import { OtTimelineComponent } from './ot-timeline.component';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /** Lo que la pantalla dice en grande; `estado` es la etiqueta de la orden. */
 type DatoDominante =
@@ -79,6 +81,9 @@ type DatoDominante =
   selector: 'app-seguimiento-ot',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     DatePipe,
     DecimalPipe,
     ReactiveFormsModule,
@@ -233,6 +238,22 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
       onCleanup(() => suscripcion.unsubscribe());
     });
   }
+
+  /** Deslizar: trae la orden de nuevo y reevalúa el sondeo del técnico. */
+  readonly recargar = (): Observable<unknown> => {
+    // Con la carga inicial fallida, deslizar es reintentar: así se quita el aviso.
+    if (this.otErrorCarga()) {
+      this.reintentarCargaOt();
+      return of(null);
+    }
+    return this.otApi.getOtById(this.otId()).pipe(
+      tap((orden) => {
+        this._otRemoto.set(orden);
+        this.iniciarSeguimientoTecnico(this.otId());
+        this.recalcularDistancia();
+      }),
+    );
+  };
 
   ngOnInit(): void {
     this.cargaOtEstado = cargarOtDesdeRuta(

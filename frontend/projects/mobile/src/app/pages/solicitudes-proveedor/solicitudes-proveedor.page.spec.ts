@@ -327,3 +327,32 @@ describe('SolicitudesProveedorPage (C1)', () => {
     expect(toast.error.mock.calls[0]?.[1]).toBe('Este pedido ya fue despachado.');
   });
 });
+
+describe('Insumos: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.stub['getMisSolicitudes'].mockReturnValue(of([]));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.ofertas()).toHaveLength(0);
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.stub['getMisSolicitudes'].mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.componentInstance.ofertas()).toHaveLength(1);
+  });
+});

@@ -34,8 +34,9 @@ import {
   IonSpinner,
   IonTextarea,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable, tap, forkJoin, of } from 'rxjs';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { avisarErrorAccion, mensajeErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -56,6 +57,7 @@ import {
 import { MobileToastService } from '../../core/toast.service';
 import { CatalogoInsumosService, ProductoCatalogo } from '../../core/catalogo-insumos';
 import { ActivatedRoute } from '@angular/router';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /** Only a 409 proves the client has not paid yet or the order moved elsewhere. */
 const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
@@ -70,6 +72,9 @@ const ESTADOS_PEDIDO_EN_CURSO: readonly string[] = ['SOLICITADO', 'ASIGNADO', 'D
   selector: 'app-ejecucion-ot',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     IonFooter,
     ReactiveFormsModule,
     IonBackButton,
@@ -189,6 +194,25 @@ export class EjecucionOtPage implements OnInit {
       .subscribe(() => this.valorDiagnostico.set(this.diagnosticoForm.getRawValue()));
     effect(() => this.presencia.sincronizarOt(this.ot()));
   }
+
+  /** Deslizar: orden e insumos; el formulario no se toca. */
+  readonly recargar = (): Observable<unknown> => {
+    // Con la carga inicial fallida, deslizar es reintentar: así se quita el aviso.
+    if (this.otErrorCarga()) {
+      this.reintentarCargaOt();
+      return of(null);
+    }
+    return forkJoin([
+      this.otApi.getOtById(this.otId()),
+      this.tecnicosApi.getInsumosOt(this.otId()),
+    ]).pipe(
+      tap(([orden, insumos]) => {
+        this._otRemoto.set(orden);
+        this.ahora.set(Date.now());
+        this.insumosOt.set(insumos);
+      }),
+    );
+  };
 
   ngOnInit(): void {
     // Aparte del respaldo del SSE: los cambios de un pedido no llegan por el stream de la OT.

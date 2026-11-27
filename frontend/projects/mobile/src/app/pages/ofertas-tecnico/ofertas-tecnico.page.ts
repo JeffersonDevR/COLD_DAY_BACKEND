@@ -17,6 +17,7 @@ import {
   IonSelectOption,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { ApiHttpError } from '@core/alertas/api-http.error';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
@@ -41,6 +42,8 @@ import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 import { PageComponent } from '../../shared/ui/page/page';
+import { Observable, tap } from 'rxjs';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /** Only a 409 proves another technician took the order first. */
 const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
@@ -52,6 +55,9 @@ const MENSAJES_ACEPTAR_OFERTA: Record<number, string> = {
   selector: 'app-ofertas-tecnico',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     PageComponent,
     IonButton,
     IonHeader,
@@ -127,6 +133,20 @@ export class OfertasTecnicoPage implements OnInit {
   reintentarUbicacion(): void {
     this.presencia.reintentar();
   }
+
+  /** Deslizar: sin perfil cargado lo pide primero; si falla, conserva lo visible. */
+  readonly recargar = (): Observable<unknown> => {
+    const tecnico = this.tecnico();
+    if (!tecnico) {
+      return this.tecnicosApi.getMiPerfil().pipe(tap((perfil) => this.tecnico.set(perfil)));
+    }
+    return this.tecnicosApi.getOfertasParaTecnico(tecnico.id).pipe(
+      tap((ofertas) => {
+        this.errorCarga.set(false);
+        this.ofertas.set(ofertas);
+      }),
+    );
+  };
 
   ngOnInit(): void {
     cargarTecnicoAutenticado(

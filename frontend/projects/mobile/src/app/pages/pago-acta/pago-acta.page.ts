@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize, Subscription } from 'rxjs';
+import { finalize, Subscription, Observable, tap, of } from 'rxjs';
 import {
   IonBackButton,
   IonButton,
@@ -25,6 +25,7 @@ import {
   IonIcon,
   IonSpinner,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
@@ -41,6 +42,7 @@ import {
   TarifaEstimadaResponse,
 } from '@core/models/common.models';
 import { MobileToastService } from '../../core/toast.service';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /**
  * The acta registration conflict (409) is a lifecycle clash — the OT is not
@@ -82,6 +84,9 @@ const MENSAJES_ACTA: Record<number, string> = {
   selector: 'app-pago-acta',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     IonBackButton,
     IonButton,
     IonButtons,
@@ -191,6 +196,16 @@ export class PagoActaPage implements OnInit, AfterViewInit {
   readonly categoriaLabel = computed<string>(
     () => this.ot()?.categoriaServicio.replace('_', ' ') ?? '',
   );
+
+  /** Deslizar: trae la orden de nuevo; lo escrito en pantalla se conserva. */
+  readonly recargar = (): Observable<unknown> => {
+    // Con la carga inicial fallida, deslizar es reintentar: así se quita el aviso.
+    if (this.otErrorCarga()) {
+      this.reintentarCargaOt();
+      return of(null);
+    }
+    return this.otApi.getOtById(this.otId()).pipe(tap((orden) => this._otRemoto.set(orden)));
+  };
 
   ngOnInit(): void {
     this.cargaOtEstado = cargarOtDesdeRuta(

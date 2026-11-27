@@ -15,6 +15,10 @@
 </ion-header>
 
 <ion-content class="ion-padding">
+
+<ion-refresher slot="fixed" [cdRecargar]="recargar">
+  <cd-recarga-contenido />
+</ion-refresher>
   <section class="cd-alerta cd-alerta--{{ tonoEstado() }}" role="status" data-testid="estado-validacion">
     <h2 class="cd-alerta__titulo">
       @switch (estadoValidacion()) {

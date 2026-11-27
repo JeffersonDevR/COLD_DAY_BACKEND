@@ -579,3 +579,50 @@ describe('PagoActaPage móvil (A8)', () => {
     expect(navigate).toHaveBeenCalledWith(['/cliente/ot', 'ot1']);
   });
 });
+
+describe('Pago y acta: deslizar para recargar', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('tiene el indicador en la pantalla', () => {
+    const { fixture } = setup();
+    expect(fixture.nativeElement.querySelector('ion-refresher[slot="fixed"]')).not.toBeNull();
+  });
+
+  it('trae los datos nuevos', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(of(ot({ codigo: 'OT-NUEVA' })));
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('OT-NUEVA');
+  });
+
+  it('si falla, entrega el error y conserva lo que se ve', () => {
+    const contexto = setup();
+    const { fixture } = contexto;
+    contexto.api.getOtById.mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+    const error = vi.fn();
+    fixture.componentInstance.recargar().subscribe({ error });
+    fixture.detectChanges();
+    expect(error).toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+  });
+});
+
+describe('deslizar tras fallar la carga inicial', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('recupera la orden y quita el aviso de error', () => {
+    const getOtById = vi
+      .fn()
+      .mockReturnValueOnce(throwError(() => new ApiHttpError('boom', 500)))
+      .mockReturnValue(of(ot({ codigo: 'OT-RECUPERADA' })));
+    const { fixture } = setup({ otApi: { getOtById } });
+
+    fixture.componentInstance.recargar().subscribe();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="ot-error"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('OT-RECUPERADA');
+  });
+});

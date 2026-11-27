@@ -9,6 +9,7 @@ import {
   IonHeader,
   IonIcon,
   IonToolbar,
+  IonRefresher,
 } from '@ionic/angular';
 import { esErrorPerfilClienteFaltante } from '@core/errorStatus/perfil-cliente';
 import { CategoriaServicio, EstadoOt, OtResponse } from '@core/models/common.models';
@@ -24,6 +25,8 @@ import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { PageComponent } from '../../shared/ui/page/page';
 import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
+import { Observable, tap } from 'rxjs';
+import { ContenidoRecargaComponent, RecargarDirective } from '../../shared/recargar';
 
 /**
  * Historial del cliente (antes «Mis equipos»): una tarjeta por orden, de la más
@@ -34,6 +37,9 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
   selector: 'app-mobile-equipos',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    IonRefresher,
+    RecargarDirective,
+    ContenidoRecargaComponent,
     DatePipe,
     IonButton,
     IonCard,
@@ -56,6 +62,10 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           <cd-marca pantalla="Historial" chip="Cliente" />
         </ion-toolbar>
       </ion-header>
+
+      <ion-refresher slot="fixed" [cdRecargar]="recargar">
+        <cd-recarga-contenido />
+      </ion-refresher>
 
       @if (cargando()) {
         <cd-skeleton label="Cargando tu historial" testId="equipos-cargando" />
@@ -158,6 +168,16 @@ export class MobileEquiposPage implements OnInit {
   readonly ordenes = computed(() =>
     [...this.ots()].sort((a, b) => (b.fechaCreacion ?? '').localeCompare(a.fechaCreacion ?? '')),
   );
+
+  /** Deslizar: solo cambia los datos si llega la respuesta. */
+  readonly recargar = (): Observable<unknown> =>
+    this.clientesApi.getOtsPorCliente(String(this.authService.currentUser()?.id ?? '')).pipe(
+      tap((ots) => {
+        this.ots.set(ots);
+        this.errorCarga.set(false);
+        this.sinPerfilCliente.set(false);
+      }),
+    );
 
   ngOnInit(): void {
     this.cargar();
