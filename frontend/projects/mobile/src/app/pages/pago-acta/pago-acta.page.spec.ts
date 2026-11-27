@@ -626,3 +626,34 @@ describe('deslizar tras fallar la carga inicial', () => {
     expect(fixture.nativeElement.textContent).toContain('OT-RECUPERADA');
   });
 });
+
+describe('pago y acta: el total primero', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  const nodo = (f: { nativeElement: HTMLElement }, id: string) =>
+    f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const precede = (a: HTMLElement, b: HTMLElement) =>
+    !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('el total del servicio va antes del desglose', () => {
+    const { fixture } = setup({
+      orden: ot({
+        tarifaVisita: 30000,
+        presupuesto: { aprobado: true, total: 200000, manoObra: 200000, repuestos: 0 },
+      }),
+    });
+    const dato = nodo(fixture, 'dato-dominante')!;
+
+    expect(dato.textContent).toContain('Total del servicio');
+    expect(dato.textContent).toContain('230.000');
+    expect(precede(dato, nodo(fixture, 'costo-visita')!)).toBe(true);
+  });
+
+  it('sin presupuesto dice «Por confirmar» y habla en tuteo', () => {
+    const { fixture } = setup({ orden: ot({ presupuesto: undefined, tarifaVisita: 30000 }) });
+
+    expect(nodo(fixture, 'dato-dominante')!.textContent).toContain('Por confirmar');
+    expect(fixture.nativeElement.textContent).toContain('Dibuja tu firma aquí');
+    expect(fixture.nativeElement.textContent).not.toContain('Dibujá');
+  });
+});

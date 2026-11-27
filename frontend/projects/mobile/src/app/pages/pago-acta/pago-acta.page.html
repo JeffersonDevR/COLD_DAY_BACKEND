@@ -54,6 +54,13 @@
   }
 
   @if (ot(); as orden) {
+    <section class="cd-dato" data-testid="dato-dominante" aria-live="polite">
+      <p class="cd-dato__grande tnum">
+        {{ orden.presupuesto ? formatoTotal(totalMonto()) : 'Por confirmar' }}
+      </p>
+      <p class="cd-dato__detalle">Total del servicio</p>
+    </section>
+
     <!-- A8: el pago va primero (qué pagas, con el total), el acta y la firma
          después. Antes el documento legal encabezaba la pantalla y el dinero
          quedaba al final, contra la jerarquía de la tarea. -->
@@ -199,7 +206,7 @@
             ></canvas>
             @if (!hasFirma()) {
               <div class="cd-firma__placeholder" id="firma-ayuda">
-                Dibujá tu firma acá con el dedo
+                Dibuja tu firma aquí con el dedo
               </div>
             }
           </div>
