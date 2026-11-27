@@ -189,6 +189,35 @@ describe('EjecucionOtPage (B3)', () => {
     });
   });
 
+  it('con el presupuesto ya enviado oculta el formulario y muestra la espera del cliente', () => {
+    const { fixture } = setup({
+      orden: ot({
+        estado: 'EN_DIAGNOSTICO',
+        diagnostico: { diagnostico: 'Compresor con fuga.' } as OtResponse['diagnostico'],
+        presupuesto: { aprobado: false, total: 350000, manoObra: 200000, manoDeObra: 200000, repuestos: 150000 },
+      }),
+    });
+    fixture.detectChanges();
+    const html = fixture.nativeElement as HTMLElement;
+
+    expect(html.querySelector('[data-testid="campo-diagnostico"]')).toBeNull();
+    expect(html.querySelector('[data-testid="enviar-diagnostico"]')).toBeNull();
+    const enviado = html.querySelector('[data-testid="presupuesto-enviado"]');
+    expect(enviado).not.toBeNull();
+    expect(enviado?.textContent).toContain('esperando');
+    expect(enviado?.textContent).toContain('350.000');
+    expect(enviado?.textContent).toContain('Compresor con fuga.');
+  });
+
+  it('sin presupuesto en diagnóstico el formulario sigue disponible', () => {
+    const { fixture } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
+    fixture.detectChanges();
+    const html = fixture.nativeElement as HTMLElement;
+
+    expect(html.querySelector('[data-testid="campo-diagnostico"]')).not.toBeNull();
+    expect(html.querySelector('[data-testid="presupuesto-enviado"]')).toBeNull();
+  });
+
   it('finaliza el servicio con el medio elegido', () => {
     const { fixture, api, presencia } = setup({ orden: ot({ estado: 'EN_REPARACION' }) });
     fixture.componentInstance.finalizarServicio();
@@ -248,5 +277,122 @@ describe('EjecucionOtPage (B3)', () => {
   it('la foto del equipo no vive en la ejecución del técnico (solo en la solicitud del cliente)', () => {
     const { fixture } = setup({ orden: ot({ estado: 'EN_DIAGNOSTICO' }) });
     expect(fixture.nativeElement.querySelector('app-foto-local')).toBeNull();
+  });
+
+  describe('ETA incumplido', () => {
+    const AHORA = new Date('2026-09-14T10:00:00Z');
+    const haceMinutos = (minutos: number) => new Date(AHORA.getTime() - minutos * 60_000).toISOString();
+    const asignado = (minutos: number, eta = 30) =>
+      solicitudInsumo({ estado: 'ASIGNADO', etaMinutos: eta, aceptadaEn: haceMinutos(minutos) });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(AHORA);
+    });
+    afterEach(() => vi.useRealTimers());
+
+    function montar(pedidos: SolicitudInsumoResponse[], cambiar?: Stub) {
+      const getInsumosOt = vi.fn(() => of(pedidos));
+      const cambiarProveedorInsumo = cambiar ?? vi.fn(() => of(solicitudInsumo()));
+      const montado = setup({ tecnicos: { getInsumosOt, cambiarProveedorInsumo } });
+      const q = (id: string) =>
+        montado.fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+      const tocar = (id: string) => {
+        q(id)!.click();
+        montado.fixture.detectChanges();
+      };
+      return { ...montado, getInsumosOt, cambiarProveedorInsumo, q, tocar };
+    }
+
+    it('no avisa antes de vencer', () => {
+      const { q } = montar([asignado(29)]);
+      expect(q('eta-vencido-req1')).toBeNull();
+    });
+
+    it('no avisa en un pedido despachado aunque haya pasado el tiempo', () => {
+      const { q } = montar([solicitudInsumo({ estado: 'DESPACHADO', etaMinutos: 30, aceptadaEn: haceMinutos(60) })]);
+      expect(q('eta-vencido-req1')).toBeNull();
+    });
+
+    it('con el tiempo vencido dice cuánto prometió y cuánto va', () => {
+      const { q } = montar([asignado(38)]);
+      expect(q('eta-vencido-req1')!.textContent).toContain('El proveedor no ha despachado');
+      expect(q('eta-vencido-req1')!.textContent).toContain('Prometió 30 min · van 38');
+    });
+
+    it('seguir esperando pliega el aviso sin llamar al servidor y deja buscar otro a la mano', () => {
+      const { q, tocar, cambiarProveedorInsumo } = montar([asignado(38)]);
+      tocar('eta-esperar-req1');
+
+      expect(q('eta-vencido-req1')!.textContent).not.toContain('El proveedor no ha despachado');
+      expect(q('eta-buscar-req1')).not.toBeNull();
+      expect(cambiarProveedorInsumo).not.toHaveBeenCalled();
+    });
+
+    it('buscar otro pide confirmación antes de llamar, y llama una sola vez', () => {
+      const respuesta = new Subject<SolicitudInsumoResponse>();
+      const { q, tocar, fixture, cambiarProveedorInsumo, getInsumosOt, toast } = montar(
+        [asignado(38)],
+        vi.fn(() => respuesta),
+      );
+      tocar('eta-buscar-req1');
+      expect(q('eta-vencido-req1')!.textContent).toContain('Si nadie más acepta, el pedido queda sin proveedor');
+      expect(cambiarProveedorInsumo).not.toHaveBeenCalled();
+
+      tocar('eta-confirmar-cambio-req1');
+      fixture.componentInstance.cambiarProveedor(asignado(38));
+      expect(cambiarProveedorInsumo).toHaveBeenCalledTimes(1);
+      expect(cambiarProveedorInsumo).toHaveBeenCalledWith('req1');
+
+      const cargas = getInsumosOt.mock.calls.length;
+      respuesta.next(solicitudInsumo());
+      expect(toast.success).toHaveBeenCalled();
+      expect(getInsumosOt.mock.calls.length).toBe(cargas + 1);
+    });
+
+    it('un 409 muestra el mensaje del servidor y recarga los pedidos', () => {
+      const { tocar, getInsumosOt, toast } = montar(
+        [asignado(38)],
+        vi.fn(() => throwError(() => new ApiHttpError('El proveedor ya despachó el pedido', 409))),
+      );
+      const cargas = getInsumosOt.mock.calls.length;
+      tocar('eta-buscar-req1');
+      tocar('eta-confirmar-cambio-req1');
+
+      expect(toast.error).toHaveBeenCalledWith('No se pudo cambiar de proveedor', 'El proveedor ya despachó el pedido');
+      expect(getInsumosOt.mock.calls.length).toBe(cargas + 1);
+    });
+
+    it('el aviso aparece solo al pasar el tiempo, sin salir de la pantalla', () => {
+      const { q, fixture, getInsumosOt } = montar([asignado(29)]);
+      expect(q('eta-vencido-req1')).toBeNull();
+
+      vi.advanceTimersByTime(60_000);
+      fixture.detectChanges();
+
+      expect(q('eta-vencido-req1')).not.toBeNull();
+      expect(getInsumosOt.mock.calls.length).toBeGreaterThan(1);
+    });
+
+    it('en una orden cerrada no ofrece buscar otro proveedor', () => {
+      const getInsumosOt = vi.fn(() => of([asignado(38)]));
+      const { fixture } = setup({ orden: ot({ estado: 'CANCELADA' }), tecnicos: { getInsumosOt } });
+      expect(fixture.nativeElement.querySelector('[data-testid="eta-vencido-req1"]')).toBeNull();
+    });
+
+    it('tras cambiar de proveedor, el aviso del siguiente vuelve a salir completo', () => {
+      const { q, tocar } = montar([asignado(38)]);
+      tocar('eta-esperar-req1');
+      tocar('eta-buscar-req1');
+      tocar('eta-confirmar-cambio-req1');
+
+      expect(q('eta-vencido-req1')!.textContent).toContain('El proveedor no ha despachado');
+    });
+
+    it('sin pedidos en curso no sigue consultando', () => {
+      const { getInsumosOt } = montar([solicitudInsumo({ estado: 'ENTREGADO' })]);
+      vi.advanceTimersByTime(120_000);
+      expect(getInsumosOt).toHaveBeenCalledTimes(1);
+    });
   });
 });

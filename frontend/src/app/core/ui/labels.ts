@@ -122,6 +122,9 @@ export function documentoLabel(tipo: TipoDocumentoTecnico | TipoDocumentoProveed
     case 'RUT': return 'RUT';
     case 'OTRO': return 'Otro';
     case 'CERTIFICADO': return 'Certificado';
+    case 'CAMARA_COMERCIO': return 'Cámara de Comercio';
+    case 'CEDULA_REPRESENTANTE': return 'Cédula del representante legal';
+    case 'CERTIFICACION_BANCARIA': return 'Certificación bancaria';
     default: return sinEtiqueta(tipo);
   }
 }

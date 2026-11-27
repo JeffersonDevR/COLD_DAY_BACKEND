@@ -576,61 +576,6 @@ button.cd-ot .cd-ot__direccion {
   margin-bottom: 0.75rem;
 }
 
-/* Búsqueda de técnico (sin radar): estado honesto mientras nadie acepta. */
-.cd-buscando {
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.08);
-}
-
-.cd-buscando__cuerpo {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.cd-buscando__icono ion-icon {
-  font-size: 1.35rem;
-}
-
-@keyframes cd-buscando-pulso {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
-  50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
-}
-
-.cd-buscando__icono {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 999px;
-  color: var(--cd-warn-ink);
-  background: rgba(245, 158, 11, 0.15);
-  animation: cd-buscando-pulso 1.6s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cd-buscando__icono {
-    animation: none;
-  }
-}
-
-.cd-buscando__titulo {
-  margin: 0 0 0.25rem;
-  font-size: 0.98rem;
-}
-
-.cd-buscando__texto {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: var(--cd-muted);
-}
-
-.cd-buscando__texto strong {
-  color: var(--ion-text-color);
-}
-
 /* A6 — Técnicos cercanos durante la búsqueda: mapa, lista accesible y filtros. */
 .cd-busqueda-tecnicos {
   display: grid;
@@ -915,28 +860,36 @@ button.cd-ot .cd-ot__direccion {
   margin-bottom: 0.75rem;
 }
 
-.cd-map__cabecera {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+/* Seguimiento: mapa a sangre. La franja inferior es donde se monta el dato
+   dominante, para no tapar la atribución del proveedor del mapa. */
+app-seguimiento-ot .cd-mapa-bloque {
+  margin: -1rem -1rem 0;
 }
 
-.cd-map__titulo {
-  margin: 0;
-  font-family: var(--cd-font-headline);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ion-color-primary);
+app-seguimiento-ot .cd-map__lienzo {
+  box-sizing: content-box;
+  padding-bottom: 1.5rem;
+  border-width: 0 0 1px;
+  border-radius: 0;
 }
 
-.cd-map__nota {
-  margin: 0.1rem 0 0;
-  font-size: 0.75rem;
-  color: var(--cd-muted);
+app-seguimiento-ot .cd-map__chip {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 1;
+  max-width: calc(100% - 1.2rem);
+  background: var(--cd-surface);
+}
+
+/* Solo para lector de pantalla: lo mismo ya se ve en el chip y el dato. */
+.cd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .cd-map__chip {
@@ -1082,11 +1035,34 @@ button.cd-ot .cd-ot__direccion {
   color: var(--cd-muted);
 }
 
-.cd-map__resumen {
-  margin: 0.5rem 0 0;
-  font-size: 0.75rem;
+/* Dato dominante de Seguimiento: lo primero que se lee. */
+.cd-dato {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-dato--sobre-mapa {
+  position: relative;
+  z-index: 1;
+  margin-top: -1.5rem;
+}
+
+.cd-dato__grande {
+  margin: 0;
+  font-family: var(--cd-font-head);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cd-dato__detalle {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
   line-height: 1.45;
-  color: var(--ion-text-color);
+  color: var(--cd-muted);
 }
 
 /* Tarjeta del técnico asignado. */
@@ -1122,73 +1098,15 @@ button.cd-ot .cd-ot__direccion {
   min-width: 0;
 }
 
-.cd-tecnico__nombre-fila {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
 .cd-tecnico__nombre {
   margin: 0;
   font-size: 0.98rem;
-}
-
-.cd-tecnico__rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--cd-warn-ink);
-}
-
-.cd-tecnico__rating ion-icon {
-  font-size: 0.9rem;
-}
-
-.cd-tecnico__sin-rating {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--cd-muted);
-  border: 1px dashed var(--cd-surface-border);
-  border-radius: 999px;
-  padding: 0.1rem 0.5rem;
 }
 
 .cd-tecnico__rol {
   margin: 0;
   font-size: 0.75rem;
   color: var(--cd-muted);
-}
-
-.cd-tecnico__estado {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.35rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.cd-tecnico__icono {
-  font-size: 1rem;
-}
-
-.cd-tecnico__icono--ok {
-  color: var(--cd-success-strong);
-}
-
-.cd-tecnico__icono--camino {
-  color: var(--ion-color-primary);
-}
-
-.cd-tecnico__llego {
-  color: var(--cd-success-ink);
-}
-
-.cd-tecnico__camino {
-  color: var(--ion-color-primary);
 }
 
 .cd-tecnico__acciones {
@@ -1211,6 +1129,12 @@ button.cd-ot .cd-ot__direccion {
   background: var(--cd-surface-3);
   border: 1px solid var(--cd-surface-border);
   border-radius: var(--cd-radius-control);
+}
+
+/* Áreas táctiles de Seguimiento (DESIGN §2.4). */
+.cd-tecnico__acciones .cd-boton-superficie,
+.cd-chip-pago {
+  min-height: 44px;
 }
 
 .cd-boton-superficie:active {
@@ -1315,32 +1239,37 @@ button.cd-ot .cd-ot__direccion {
   color: var(--cd-muted);
 }
 
+/* Progreso vertical: un paso por fila, con el conector entre nodos. */
 .cd-timeline__pasos {
-  display: flex;
-  gap: 0.15rem;
-  overflow-x: auto;
+  display: grid;
   margin: 0;
   padding: 0.25rem 0 0.35rem;
   list-style: none;
-  scrollbar-width: none;
-}
-
-.cd-timeline__pasos::-webkit-scrollbar {
-  display: none;
 }
 
 .cd-timeline__paso {
-  display: grid;
-  justify-items: center;
-  gap: 0.3rem;
-  min-width: 4rem;
-  padding: 0.2rem 0.1rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
   color: var(--cd-muted);
-  text-align: center;
+}
+
+.cd-timeline__paso:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  /* Centrado bajo el nodo (2.1rem de ancho) y hasta el siguiente. */
+  left: calc(1.05rem - 1px);
+  top: calc(50% + 1.05rem);
+  height: calc(100% - 2.1rem);
+  width: 2px;
+  background: var(--cd-surface-border);
 }
 
 .cd-timeline__nodo {
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
   width: 2.1rem;
   height: 2.1rem;
@@ -1355,8 +1284,16 @@ button.cd-ot .cd-ot__direccion {
 }
 
 .cd-timeline__etiqueta {
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.cd-timeline__hora {
+  margin-left: auto;
   font-size: 0.75rem;
-  line-height: 1.2;
+  color: var(--cd-muted);
+  text-align: right;
 }
 
 .cd-timeline__paso.is-completed .cd-timeline__nodo {
@@ -1388,6 +1325,8 @@ button.cd-ot .cd-ot__direccion {
 }
 
 .cd-timeline__historial-toggle {
+  min-height: 44px;
+  align-content: center;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--cd-muted);
@@ -1483,12 +1422,6 @@ button.cd-ot .cd-ot__direccion {
   border-radius: var(--cd-radius-control);
 }
 
-.cd-columnas {
-  display: grid;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
 .cd-ficha__fila {
   display: flex;
   justify-content: space-between;
@@ -1505,10 +1438,6 @@ button.cd-ot .cd-ot__direccion {
 
 .cd-ficha__derecha {
   text-align: right;
-}
-
-.cd-ficha__eta {
-  color: var(--ion-color-primary);
 }
 
 .cd-ficha__garantia {
@@ -1688,6 +1617,13 @@ button.cd-ot .cd-ot__direccion {
 
 .cd-ot__cabecera.cd-equipo__cabecera > .cd-equipo__identidad {
   flex: 1 1 100%;
+}
+
+.cd-equipo__conteo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .cd-oferta__icono,
@@ -1917,12 +1853,12 @@ button.cd-ot .cd-ot__direccion {
   font-variant-numeric: tabular-nums;
 }
 
-/* B0 — Próxima orden: la primera de la cola destacada con borde de acción.
+/* B0 — Orden de trabajo activa: la primera de la cola destacada con borde de acción.
    El CTA es un asiento visual dentro del botón-tarjeta (no anidado).
    La especificidad button.cd-ot es necesaria: `button.cd-ot` (0,1,1) pinta
-   fondo transparente y borde 0; con solo `.cd-ot--proxima` (0,1,0) la tarjeta
+   fondo transparente y borde 0; con solo `.cd-ot--activa` (0,1,0) la tarjeta
    destacada quedaba plana. */
-button.cd-ot.cd-ot--proxima {
+button.cd-ot.cd-ot--activa {
   padding: 1rem;
   background: var(--cd-surface);
   border: 1px solid var(--cd-action);
@@ -1932,7 +1868,7 @@ button.cd-ot.cd-ot--proxima {
 /* Fila de specs hundida (Stitch B0 "Key Specs Grid"): cliente y barrio con
    icono, solo datos reales del DTO. Distancia y hora no se pintan: el backend
    no las expone para la OT asignada (no inventar). */
-.cd-proxima__contexto {
+.cd-activa__contexto {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1rem;
@@ -1945,7 +1881,7 @@ button.cd-ot.cd-ot--proxima {
   color: var(--cd-text-2);
 }
 
-.cd-proxima__spec {
+.cd-activa__spec {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1953,13 +1889,13 @@ button.cd-ot.cd-ot--proxima {
   overflow-wrap: anywhere;
 }
 
-.cd-proxima__spec ion-icon {
+.cd-activa__spec ion-icon {
   flex: 0 0 auto;
   font-size: 1rem;
   color: var(--cd-text-3);
 }
 
-.cd-proxima__cta {
+.cd-activa__cta {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2475,6 +2411,54 @@ button.cd-ot.cd-oferta-panel {
 .cd-liq__cabecera > :first-child {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* Chips de un documento (vigencia y, si lo hay, estado de validación): en columna
+   para que no le quiten el ancho al título a 320 px. */
+.cd-documento__chips {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.cd-documento__chips .cd-chip {
+  white-space: nowrap;
+}
+
+/* Cabecera de bloque plegable (Gestión: Liquidaciones): una fila tocable que
+   resume el contenido para que lo escondido no se pierda. */
+.cd-desplegable__cabecera {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cd-desplegable__titulos {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cd-desplegable__resumen {
+  font-size: 0.8rem;
+  color: var(--cd-muted);
+}
+
+.cd-desplegable__contenido {
+  margin-top: 0.75rem;
 }
 
 .cd-liq__cabecera > .cd-chip {

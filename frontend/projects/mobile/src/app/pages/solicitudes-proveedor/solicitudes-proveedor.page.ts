@@ -3,7 +3,6 @@ import {
   IonButton,
   IonContent,
   IonHeader,
-  IonIcon,
   IonSpinner,
   IonToolbar,
 } from '@ionic/angular';
@@ -26,6 +25,8 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /** Tope del ETA que el proveedor puede comprometer (el backend lo valida igual). */
 const ETA_MAXIMO_MINUTOS = 240;
+/** Mensaje del servidor cuando el técnico le quitó el pedido a este proveedor. */
+const PEDIDO_REEMPLAZADO = 'Este pedido ya no es tuyo';
 
 /** C1 — Provider portal: insumos requests with accept (with ETA) / reject / dispatch / deliver. */
 @Component({
@@ -35,7 +36,6 @@ const ETA_MAXIMO_MINUTOS = 240;
     IonButton,
     IonContent,
     IonHeader,
-    IonIcon,
     IonSpinner,
     IonToolbar,
     SkeletonComponent,
@@ -65,6 +65,15 @@ export class SolicitudesProveedorPage implements OnInit {
     const perfil = this.perfil();
     return perfil !== null && (perfil.latitud == null || perfil.longitud == null);
   });
+  /** Compuerta: sin ubicación no se gestiona la bandeja, salvo que haya un pedido
+   aceptado sin entregar, que no puede quedar atrapado detrás del aviso. */
+  readonly bloqueadoPorUbicacion = computed(
+    () =>
+      this.sinUbicacion() &&
+      !this.ofertas().some(
+        (oferta) => oferta.estado === 'ACEPTADA' && oferta.requerimiento?.estado !== 'ENTREGADO',
+      ),
+  );
 
   /** Oferta que se está aceptando: el proveedor primero compromete sus minutos. */
   readonly ofertaAceptando = signal<string | null>(null);
@@ -205,6 +214,7 @@ export class SolicitudesProveedorPage implements OnInit {
       error: (err: Error) => {
         this.accionEnCurso.set(null);
         void this.toast.error('No se pudo despachar', this.mensajeError(err, 'despachar'));
+        this.cargar();
       },
     });
   }
@@ -238,7 +248,10 @@ export class SolicitudesProveedorPage implements OnInit {
             : mensajeErrorAccion(err);
         case 409:
           if (accion === 'aceptar') return 'Otra empresa tomó esta solicitud primero.';
-          if (accion === 'despachar') return 'Este pedido ya fue despachado.';
+          if (accion === 'despachar') {
+            // El técnico pudo cambiar de proveedor con la bandeja del proveedor abierta.
+            return err.message === PEDIDO_REEMPLAZADO ? err.message : 'Este pedido ya fue despachado.';
+          }
           if (accion === 'entregar') return 'Despacha el pedido antes de confirmar la entrega.';
           return 'Esta solicitud ya fue gestionada por otro proveedor.';
         case 403:
@@ -266,6 +279,8 @@ export class SolicitudesProveedorPage implements OnInit {
         return 'Expirada';
       case 'CANCELADA':
         return 'Cancelada';
+      case 'REEMPLAZADA':
+        return 'Reemplazada';
     }
   }
 

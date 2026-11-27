@@ -120,9 +120,16 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
               </div>
               <p class="cd-ot__descripcion">{{ equipo.descripcionFalla }}</p>
               <div class="cd-ot__pie">
-                <span>
-                  {{ equipo.intervenciones }}
-                  {{ equipo.intervenciones === 1 ? 'servicio' : 'servicios' }}
+                <span class="cd-equipo__conteo">
+                  <span>
+                    {{ equipo.intervenciones }}
+                    {{ equipo.intervenciones === 1 ? 'servicio' : 'servicios' }}
+                  </span>
+                  @if (equipo.activas > 0) {
+                    <span class="cd-chip cd-chip--curso" data-testid="equipo-en-curso">
+                      {{ equipo.activas }} en curso
+                    </span>
+                  }
                 </span>
                 <span class="cd-muted">{{ equipo.fecha }}</span>
               </div>

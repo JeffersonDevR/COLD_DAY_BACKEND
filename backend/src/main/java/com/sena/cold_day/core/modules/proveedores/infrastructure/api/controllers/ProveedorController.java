@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.sena.cold_day.core.modules.proveedores.application.dto.ProveedorResponse;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.GestionarDocumentacionProveedorUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.GestionarMiPerfilProveedorUseCase;
+import com.sena.cold_day.core.modules.proveedores.application.usecases.ListarIncumplimientosUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.ListarProveedoresUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.RegistrarProveedorUseCase;
 import com.sena.cold_day.core.modules.proveedores.domain.entities.DocumentoProveedor;
@@ -29,6 +30,7 @@ import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.Ub
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.ProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.requests.ValidacionProveedorApiRequest;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.DocumentoProveedorApiResponse;
+import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.IncumplimientoApiResponse;
 import com.sena.cold_day.core.modules.proveedores.infrastructure.api.responses.ProveedorApiResponse;
 import com.sena.cold_day.core.shared.infrastructure.security.AutorizacionPropietario;
 import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
@@ -72,11 +74,13 @@ public class ProveedorController {
     private final GestionarDocumentacionProveedorUseCase documentacion;
     private final AutorizacionPropietario autorizacion;
     private final GestionarMiPerfilProveedorUseCase miPerfil;
+    private final ListarIncumplimientosUseCase incumplimientos;
 
     @SuppressWarnings("java:S107") // Superficie REST cohesiva de /api/proveedores; dividir rompería la cohesión por recurso.
     public ProveedorController(RegistrarProveedorUseCase registrar, ListarProveedoresUseCase listarProveedores,
             GestionarDocumentacionProveedorUseCase documentacion, AutorizacionPropietario autorizacion,
-            GestionarMiPerfilProveedorUseCase miPerfil) {
+            GestionarMiPerfilProveedorUseCase miPerfil, ListarIncumplimientosUseCase incumplimientos) {
+        this.incumplimientos = incumplimientos;
         this.miPerfil = miPerfil;
         this.registrar = registrar;
         this.listarProveedores = listarProveedores;
@@ -188,5 +192,12 @@ public class ProveedorController {
             documentacion.rechazar(proveedorId, request.motivo());
         }
         return ResponseEntity.noContent().build();
+    }
+
+    /** Recorded ETA breaches (at most the 200 most recent). Read only: they carry no sanction. */
+    @GetMapping("/incumplimientos")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public List<IncumplimientoApiResponse> incumplimientos() {
+        return incumplimientos.listar().stream().map(IncumplimientoApiResponse::from).toList();
     }
 }

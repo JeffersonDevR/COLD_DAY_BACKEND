@@ -30,6 +30,27 @@ describe('agruparEquipos', () => {
     expect(equipos.find((e) => e.categoria === 'LAVADORAS')?.intervenciones).toBe(1);
   });
 
+  it('marca cuántas órdenes del equipo siguen activas', () => {
+    const equipos = agruparEquipos([
+      ot({ categoriaServicio: 'REFRIGERACION', id: 'a', estado: 'FINALIZADA' }),
+      ot({ categoriaServicio: 'REFRIGERACION', id: 'b', estado: 'EN_CAMINO' }),
+      ot({ categoriaServicio: 'REFRIGERACION', id: 'c', estado: 'BUSCANDO_TECNICO' }),
+      ot({ categoriaServicio: 'LAVADORAS', id: 'd', estado: 'FINALIZADA' }),
+    ]);
+
+    expect(equipos.find((e) => e.categoria === 'REFRIGERACION')?.activas).toBe(2);
+    expect(equipos.find((e) => e.categoria === 'LAVADORAS')?.activas).toBe(0);
+  });
+
+  it('una orden sin técnicos disponibles o cancelada no cuenta como activa del equipo', () => {
+    const [equipo] = agruparEquipos([
+      ot({ categoriaServicio: 'ELECTRICIDAD', id: 'a', estado: 'SIN_TECNICOS_DISPONIBLES' }),
+      ot({ categoriaServicio: 'ELECTRICIDAD', id: 'b', estado: 'CANCELADA' }),
+    ]);
+
+    expect(equipo.activas).toBe(0);
+  });
+
   it('la tarjeta muestra la OT más reciente, no la última insertada', () => {
     const equipos = agruparEquipos([
       ot({

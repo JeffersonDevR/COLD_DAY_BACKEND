@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sena.cold_day.core.modules.ot.application.usecases.CambiarProveedorInsumoOtUseCase;
+
 import com.sena.cold_day.core.modules.proveedores.application.usecases.AceptarInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.DespacharInsumoUseCase;
 import com.sena.cold_day.core.modules.proveedores.application.usecases.EntregarInsumoUseCase;
@@ -45,9 +47,12 @@ public class InsumoController {
     private final RechazarInsumoUseCase rechazar;
     private final DespacharInsumoUseCase despachar;
     private final EntregarInsumoUseCase entregar;
+    private final CambiarProveedorInsumoOtUseCase cambiarProveedor;
 
     public InsumoController(ListarSolicitudesProveedorUseCase listar, AceptarInsumoUseCase aceptar,
-            RechazarInsumoUseCase rechazar, DespacharInsumoUseCase despachar, EntregarInsumoUseCase entregar) {
+            RechazarInsumoUseCase rechazar, DespacharInsumoUseCase despachar, EntregarInsumoUseCase entregar,
+            CambiarProveedorInsumoOtUseCase cambiarProveedor) {
+        this.cambiarProveedor = cambiarProveedor;
         this.listar = listar;
         this.aceptar = aceptar;
         this.rechazar = rechazar;
@@ -87,6 +92,14 @@ public class InsumoController {
     public SolicitudInsumoApiResponse despachar(@AuthenticationPrincipal AuthenticatedUser principal,
             @PathVariable RequerimientoInsumoId id) {
         return SolicitudInsumoApiResponse.from(despachar.despachar(principal.usuarioId(), id));
+    }
+
+    /** The technician takes the request away from a supplier whose committed ETA elapsed. */
+    @PostMapping("/insumos/{id}/cambiar-proveedor")
+    @PreAuthorize("hasRole('TECNICO')")
+    public SolicitudInsumoApiResponse cambiarProveedor(@AuthenticationPrincipal AuthenticatedUser principal,
+            @PathVariable RequerimientoInsumoId id) {
+        return SolicitudInsumoApiResponse.from(cambiarProveedor.cambiar(principal.usuarioId(), id));
     }
 
     /** Delivery confirmation by the winning supplier (spec disp.R7, design AD8). */

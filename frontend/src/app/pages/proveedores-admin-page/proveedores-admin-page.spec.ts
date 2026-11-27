@@ -5,7 +5,7 @@ import { AdminApi } from '../../core/service/admin-api';
 import { ProveedoresApi } from '../../core/service/proveedores-api';
 import { ToastService } from '../../core/alertas/toast.service';
 import { ApiHttpError } from '../../core/interceptos/error.interceptor';
-import { ProveedorResponse } from '../../core/models/common.models';
+import { IncumplimientoInsumo, ProveedorResponse } from '../../core/models/common.models';
 
 const proveedor: ProveedorResponse = {
   id: 'PROV-1',
@@ -27,11 +27,12 @@ const proveedorAprobado: ProveedorResponse = {
 const MENSAJE_409 =
   'El expediente del proveedor no está completo o tiene documentos vencidos. Pídele que actualice la documentación antes de validarlo.';
 
-function setup(opciones: { validarError?: unknown; proveedores?: ProveedorResponse[]; getProveedores?: ReturnType<typeof vi.fn> } = {}) {
+function setup(opciones: { validarError?: unknown; proveedores?: ProveedorResponse[]; getProveedores?: ReturnType<typeof vi.fn>; getIncumplimientos?: ReturnType<typeof vi.fn> } = {}) {
   const adminApi = {
     getProveedores: opciones.getProveedores ?? vi.fn(() => of(opciones.proveedores ?? [proveedor])),
   };
   const proveedoresApi = {
+    getIncumplimientos: opciones.getIncumplimientos ?? vi.fn(() => of([])),
     validarDocumentacion: vi.fn(() =>
       opciones.validarError ? throwError(() => opciones.validarError) : of(undefined)
     ),
@@ -173,5 +174,54 @@ describe('ProveedoresAdminPage', () => {
     expect(texto).not.toContain('Repuestos El Frío SAS');
     expect(texto).toContain('Insumos del Norte SAS');
     expect(textosDeBotones(fixture).filter((t) => t.includes('Aprobar'))).toHaveLength(1);
+  });
+
+  describe('Incumplimientos de ETA', () => {
+    const fila = (id: string, proveedorId: string, razonSocial: string): IncumplimientoInsumo => ({
+      id,
+      proveedorId,
+      razonSocial,
+      requerimientoId: 'REQ-' + id,
+      etaMinutos: 30,
+      aceptadaEn: '2026-09-15T09:00:00Z',
+      reemplazadoEn: '2026-09-15T09:40:00Z',
+    });
+    const q = (f: ComponentFixture<ProveedoresAdminPage>, id: string) =>
+      f.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+
+    it('lista cada incumplimiento y el total por proveedor', () => {
+      const { fixture } = setup({
+        getIncumplimientos: vi.fn(() =>
+          of([fila('1', 'P1', 'Frío SAS'), fila('2', 'P2', 'Norte SAS'), fila('3', 'P1', 'Frío SAS')]),
+        ),
+      });
+
+      expect(fixture.nativeElement.textContent).toContain('Incumplimientos de ETA');
+      expect(fixture.nativeElement.querySelectorAll('[data-testid="incumplimiento"]').length).toBe(3);
+      const totales = q(fixture, 'incumplimientos-totales')!.textContent!.replace(/\s+/g, ' ');
+      expect(totales).toContain('Frío SAS: 2');
+      expect(totales).toContain('Norte SAS: 1');
+      expect(q(fixture, 'incumplimiento')!.textContent).toContain('30 min');
+      expect(q(fixture, 'incumplimientos-tope')).toBeNull();
+    });
+
+    it('sin incumplimientos lo dice', () => {
+      const { fixture } = setup();
+      expect(fixture.nativeElement.textContent).toContain('No hay incumplimientos registrados');
+    });
+
+    it('con 200 filas avisa que solo se muestran las más recientes', () => {
+      const { fixture } = setup({
+        getIncumplimientos: vi.fn(() => of(Array.from({ length: 200 }, (_, i) => fila(String(i), 'P1', 'Frío SAS')))),
+      });
+      expect(q(fixture, 'incumplimientos-tope')!.textContent).toContain('Se muestran los 200 más recientes');
+    });
+
+    it('si falla esta sección, la bandeja de validación sigue disponible', () => {
+      const { fixture } = setup({ getIncumplimientos: vi.fn(() => throwError(() => new Error('sin red'))) });
+
+      expect(fixture.nativeElement.textContent).toContain('No pudimos cargar los incumplimientos.');
+      expect(fixture.nativeElement.textContent).toContain('Insumos del Norte SAS');
+    });
   });
 });

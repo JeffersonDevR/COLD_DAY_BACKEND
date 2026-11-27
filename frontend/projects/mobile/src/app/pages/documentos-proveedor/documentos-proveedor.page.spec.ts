@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { DocumentoProveedorResponse } from '@core/models/common.models';
 import { ProveedorRegistroService } from '@core/service/proveedor-registro.service';
@@ -87,25 +87,83 @@ describe('DocumentosProveedorPage (C2)', () => {
 
   it('declara un documento con tipo y vencimiento', () => {
     const { fixture, api, toast } = setup();
-    fixture.componentInstance.docForm.setValue({ tipo: 'RUT', fechaVencimiento: '2027-12-31' });
-    fixture.componentInstance.registrar();
+    fixture.componentInstance.registrar({ tipo: 'RUT', fechaVencimiento: '2027-12-31' });
     expect(api.registrarDocumento).toHaveBeenCalledWith('RUT', '2027-12-31');
     expect(toast.success).toHaveBeenCalled();
   });
 
-  it('no declara con el formulario inválido', () => {
+  it('el vencimiento es opcional: el RUT o la certificación bancaria pueden no vencer', () => {
     const { fixture, api } = setup();
-    fixture.componentInstance.docForm.setValue({ tipo: 'RUT', fechaVencimiento: '' });
-    fixture.componentInstance.registrar();
-    expect(api.registrarDocumento).not.toHaveBeenCalled();
+    fixture.componentInstance.registrar({ tipo: 'CERTIFICACION_BANCARIA' });
+    expect(api.registrarDocumento).toHaveBeenCalledWith('CERTIFICACION_BANCARIA', undefined);
+  });
+
+  it('si falla al declarar avisa con el error y no recarga la lista', () => {
+    const { fixture, api, toast } = setup();
+    api.registrarDocumento.mockReturnValueOnce(throwError(() => new Error('sin red')));
+
+    fixture.componentInstance.registrar({ tipo: 'RUT' });
+
+    expect(toast.error).toHaveBeenCalled();
+    expect(api.getMisDocumentos).toHaveBeenCalledTimes(1);
+  });
+
+  it('ofrece los tipos de documento de una empresa', () => {
+    const { fixture } = setup();
+    const tipos = fixture.componentInstance.tiposDocumento;
+
+    expect(tipos.map((t) => t.valor)).toEqual([
+      'RUT',
+      'CAMARA_COMERCIO',
+      'CEDULA_REPRESENTANTE',
+      'CERTIFICACION_BANCARIA',
+      'OTRO',
+    ]);
+    expect(tipos.map((t) => t.etiqueta)).toContain('Cámara de Comercio');
+    expect(tipos.map((t) => t.etiqueta)).toContain('Cédula del representante legal');
   });
 
   it('lista los documentos declarados', () => {
     const { fixture } = setup({
-      documentos: [{ id: 1, tipo: 'RUT', fechaVencimiento: '2027-12-31' }],
+      documentos: [{ id: 1, tipo: 'RUT', fechaVencimiento: '2099-12-31' }],
     });
     expect(texto(fixture)).toContain('RUT');
-    expect(texto(fixture)).toContain('2027-12-31');
+    expect(texto(fixture)).toContain('2099');
+  });
+
+  it('marca la vigencia de cada documento igual que en la pantalla del técnico', () => {
+    const { fixture } = setup({
+      documentos: [
+        { id: 1, tipo: 'RUT', fechaVencimiento: '2020-01-01' },
+        { id: 2, tipo: 'CAMARA_COMERCIO', fechaVencimiento: '2099-01-01' },
+        { id: 3, tipo: 'OTRO' },
+      ],
+    });
+    const q = (id: string) =>
+      (fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null)?.textContent ?? '';
+
+    expect(q('vigencia-1')).toContain('Vencido');
+    expect(q('vigencia-2')).toContain('Vigente');
+    expect(fixture.nativeElement.querySelector('[data-testid="vigencia-3"]')).toBeNull();
+    expect(q('documento-2')).toContain('Cámara de Comercio');
+  });
+
+  it('avisa arriba cuando hay documentos vencidos', () => {
+    const { fixture } = setup({
+      documentos: [{ id: 1, tipo: 'RUT', fechaVencimiento: '2020-01-01' }],
+    });
+    const aviso = fixture.nativeElement.querySelector('[data-testid="aviso-documentos"]') as HTMLElement | null;
+
+    expect(aviso).not.toBeNull();
+    expect(aviso!.textContent).toContain('1 vencido');
+  });
+
+  it('con los documentos al día no hay aviso', () => {
+    const { fixture } = setup({
+      documentos: [{ id: 1, tipo: 'RUT', fechaVencimiento: '2099-12-31' }],
+    });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="aviso-documentos"]')).toBeNull();
   });
 
   it('el héroe cuenta los documentos declarados', () => {

@@ -25,6 +25,7 @@ import {
   Point,
   SolicitudInsumoResponse,
   OfertaInsumoResponse,
+  IncumplimientoInsumo,
   InsumoSolicitud,
   TarifaEstimadaResponse,
 } from '../models/common.models';
@@ -1484,6 +1485,45 @@ export class MockDbService {
     );
 
     return requerimiento;
+  }
+
+  /** Incumplimientos de ETA registrados en memoria al cambiar de proveedor. */
+  readonly incumplimientos = signal<IncumplimientoInsumo[]>([]);
+
+  /** El técnico quita el pedido al proveedor: vuelve a SOLICITADO y queda registrado. */
+  cambiarProveedorInsumo(requerimientoId: string): SolicitudInsumoResponse {
+    const oferta = this.solicitudesProveedor().find(
+      o => o.requerimiento?.id === requerimientoId && o.estado === 'ACEPTADA'
+    );
+    if (!oferta?.requerimiento) {
+      throw new ApiHttpError('Todavía no vence el tiempo prometido', 409);
+    }
+    const { etaMinutos, aceptadaEn, distanciaKm, ...resto } = oferta.requerimiento;
+    if (oferta.requerimiento.estado !== 'ASIGNADO') {
+      throw new ApiHttpError('El proveedor ya despachó el pedido', 409);
+    }
+    if (!etaMinutos || !aceptadaEn || Date.parse(aceptadaEn) + etaMinutos * 60_000 > Date.now()) {
+      throw new ApiHttpError('Todavía no vence el tiempo prometido', 409);
+    }
+
+    const ahora = new Date().toISOString();
+    const reabierto: SolicitudInsumoResponse = { ...resto, estado: 'SOLICITADO' };
+    this.solicitudesProveedor.update(list =>
+      list.map(o => (o.id === oferta.id ? { ...o, estado: 'REEMPLAZADA', requerimiento: reabierto } : o))
+    );
+    this.incumplimientos.update(list => [
+      {
+        id: `INC-${list.length + 1}`,
+        proveedorId: oferta.proveedorId,
+        razonSocial: '',
+        requerimientoId,
+        etaMinutos,
+        aceptadaEn,
+        reemplazadoEn: ahora,
+      },
+      ...list,
+    ]);
+    return reabierto;
   }
 
   /** Rechaza la oferta retenida: `RECHAZADO` sin vincular al proveedor. */

@@ -19,6 +19,16 @@ public interface SpringDataOfertaInsumoRepository extends JpaRepository<OfertaIn
 
     List<OfertaInsumoJpaEntity> findByRequerimientoId(UUID requerimientoId);
 
+    boolean existsByRequerimientoIdAndProveedorIdAndEstado(UUID requerimientoId, UUID proveedorId,
+            OfertaInsumoEstado estado);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE OfertaInsumoJpaEntity o SET o.estado = :destino, o.resueltaEn = :ahora "
+            + "WHERE o.requerimientoId = :requerimientoId AND o.proveedorId = :proveedorId AND o.estado = :origen")
+    int cambiarEstadoDe(@Param("requerimientoId") UUID requerimientoId, @Param("proveedorId") UUID proveedorId,
+            @Param("ahora") Instant ahora, @Param("origen") OfertaInsumoEstado origen,
+            @Param("destino") OfertaInsumoEstado destino);
+
     List<OfertaInsumoJpaEntity> findByProveedorId(UUID proveedorId);
 
     List<OfertaInsumoJpaEntity> findByProveedorIdAndEstadoIn(UUID proveedorId,

@@ -36,7 +36,8 @@ import {
   IonToolbar,
 } from '@ionic/angular';
 import { Subscription } from 'rxjs';
-import { avisarErrorAccion } from '@core/alertas/mensaje-error';
+import { ApiHttpError } from '@core/alertas/api-http.error';
+import { avisarErrorAccion, mensajeErrorAccion } from '@core/alertas/mensaje-error';
 import { ApiConfig } from '@core/service/api.config';
 import { MockDbService } from '@core/service/mock-db.service';
 import { SseService } from '@core/service/sse.service';
@@ -60,6 +61,9 @@ import { ActivatedRoute } from '@angular/router';
 const MENSAJES_DESPLAZAMIENTO: Record<number, string> = {
   409: 'No se pudo iniciar el desplazamiento: el cliente puede no haber pagado la visita todavía, o la orden cambió de estado en otro dispositivo. Actualiza e intenta de nuevo.',
 };
+
+const INTERVALO_PEDIDOS_MS = 30_000;
+const ESTADOS_PEDIDO_EN_CURSO: readonly string[] = ['SOLICITADO', 'ASIGNADO', 'DESPACHADO'];
 
 /** B3 — Technician execution: travel, arrival, diagnosis and closure. */
 @Component({
@@ -110,14 +114,30 @@ export class EjecucionOtPage implements OnInit {
   readonly enviandoDiagnostico = signal(false);
   readonly finalizando = signal(false);
   readonly insumosOt = signal<SolicitudInsumoResponse[]>([]);
+  /** Reloj de la pantalla: sin él el aviso de ETA vencido no aparecería solo. */
+  private readonly ahora = signal(Date.now());
+  /** Pedidos en los que el técnico eligió seguir esperando (solo en esta pantalla). */
+  readonly avisosPlegados = signal<ReadonlySet<string>>(new Set());
+  readonly confirmandoCambio = signal<string | null>(null);
+  readonly cambiandoProveedor = signal<string | null>(null);
   readonly medioPagoCierre = signal<MedioPago>('EFECTIVO');
 
   readonly visitaPagada = computed(() => this.ot()?.visitaPagada === true);
   readonly desplazamientoBloqueadoPorPago = computed(
     () => this.ot()?.estado === 'ASIGNADA' && this.ot()?.visitaPagada === false,
   );
+  /**
+   * El presupuesto ya se mandó y el cliente todavía no responde: la OT sigue en
+   * `EN_DIAGNOSTICO` hasta que apruebe (o cancele si lo rechaza), así que el
+   * estado solo no alcanza para saber si falta enviar algo.
+   */
+  readonly presupuestoEnviado = computed(() => {
+    const orden = this.ot();
+    return orden?.estado === 'EN_DIAGNOSTICO' && !!orden.presupuesto;
+  });
   readonly mostrarDiagnostico = computed(() => {
     const estado = this.ot()?.estado;
+    if (this.presupuestoEnviado()) return false;
     return estado === 'EN_DIAGNOSTICO' || (estado === 'EN_CAMINO' && this.enSitio());
   });
 
@@ -171,6 +191,15 @@ export class EjecucionOtPage implements OnInit {
   }
 
   ngOnInit(): void {
+    // Aparte del respaldo del SSE: los cambios de un pedido no llegan por el stream de la OT.
+    pollVisibleTab(INTERVALO_PEDIDOS_MS)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.ahora.set(Date.now());
+        if (this.insumosOt().some((pedido) => ESTADOS_PEDIDO_EN_CURSO.includes(pedido.estado))) {
+          this.cargarInsumos();
+        }
+      });
     this.cargaOtEstado = cargarOtDesdeRuta(
       this.route,
       this.otApi,
@@ -227,9 +256,63 @@ export class EjecucionOtPage implements OnInit {
 
   private cargarInsumos(): void {
     this.tecnicosApi.getInsumosOt(this.otId()).subscribe({
-      next: (insumos) => this.insumosOt.set(insumos),
+      next: (insumos) => {
+        this.ahora.set(Date.now());
+        this.insumosOt.set(insumos);
+      },
       error: () => undefined,
     });
+  }
+
+  /** Aceptado, sin despachar y con el tiempo prometido ya cumplido. El servidor lo vuelve a validar. */
+  etaVencido(pedido: SolicitudInsumoResponse): boolean {
+    const estadoOt = this.ot()?.estado;
+    return (
+      estadoOt !== 'FINALIZADA' &&
+      estadoOt !== 'CANCELADA' &&
+      pedido.estado === 'ASIGNADO' &&
+      !!pedido.etaMinutos &&
+      !!pedido.aceptadaEn &&
+      this.ahora() >= Date.parse(pedido.aceptadaEn) + pedido.etaMinutos * 60_000
+    );
+  }
+
+  minutosTranscurridos(pedido: SolicitudInsumoResponse): number {
+    return pedido.aceptadaEn ? Math.floor((this.ahora() - Date.parse(pedido.aceptadaEn)) / 60_000) : 0;
+  }
+
+  seguirEsperando(pedido: SolicitudInsumoResponse): void {
+    this.confirmandoCambio.set(null);
+    this.avisosPlegados.update((plegados) => new Set(plegados).add(pedido.id));
+  }
+
+  cambiarProveedor(pedido: SolicitudInsumoResponse): void {
+    if (this.cambiandoProveedor()) return;
+    this.cambiandoProveedor.set(pedido.id);
+    this.tecnicosApi.cambiarProveedorInsumo(pedido.id).subscribe({
+      next: () => {
+        // Es el mismo pedido con otro proveedor: su aviso empieza completo.
+        this.avisosPlegados.update((plegados) => new Set([...plegados].filter((id) => id !== pedido.id)));
+        this.terminarCambio();
+        void this.toast.success(
+          'Buscando otro proveedor',
+          'El pedido se ofreció de nuevo a los proveedores cercanos.',
+        );
+      },
+      error: (err: unknown) => {
+        this.terminarCambio();
+        // En un 409 el servidor dice por qué (ya despachó, o todavía no vence).
+        const motivo =
+          err instanceof ApiHttpError && err.status === 409 ? err.message : mensajeErrorAccion(err);
+        void this.toast.error('No se pudo cambiar de proveedor', motivo);
+      },
+    });
+  }
+
+  private terminarCambio(): void {
+    this.cambiandoProveedor.set(null);
+    this.confirmandoCambio.set(null);
+    this.cargarInsumos();
   }
 
   iniciarDesplazamiento(): void {

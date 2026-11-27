@@ -23,6 +23,7 @@ import {
   IonCard,
   IonCardContent,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonSpinner,
@@ -47,14 +48,21 @@ import { MobileToastService } from '../../core/toast.service';
 import { MapaSeguimientoComponent } from './mapa-seguimiento.component';
 import { OtTimelineComponent } from './ot-timeline.component';
 
+/** Lo que la pantalla dice en grande; `estado` es la etiqueta de la orden. */
+type DatoDominante =
+  | { tipo: 'buscando' }
+  | { tipo: 'en-camino'; etaMin: number | null; distanciaKm: number | null }
+  | { tipo: 'llegada'; llegadaEn: string }
+  | { tipo: 'estado' };
+
 /**
  * A6 — Seguimiento de la orden de trabajo (cliente).
  *
  * La web es la fuente del comportamiento; acá se porta el mismo contrato con
  * dos diferencias deliberadas:
  *
- * - Sin radar: con SOLICITADA/BUSCANDO_TECNICO se muestra una tarjeta clara de
- *   "Buscando técnico…"; no se piden técnicos cercanos ni se dibuja mapa.
+ * - Sin radar: con SOLICITADA/BUSCANDO_TECNICO el dato dominante dice
+ *   "Buscando técnico"; no se piden técnicos cercanos ni se dibuja mapa.
  * - Sin estimación de tarifa embebida en la OT: el monto de la visita se pide a
  *   POST /api/ot/tarifa/estimar (valor real, nunca un hardcode) solo cuando el
  *   panel de pago aplica. Si falla o está fuera de rango no se pinta monto.
@@ -80,6 +88,7 @@ import { OtTimelineComponent } from './ot-timeline.component';
     IonCard,
     IonCardContent,
     IonContent,
+    IonFooter,
     IonHeader,
     IonIcon,
     IonSpinner,
@@ -167,6 +176,34 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
   readonly pagoVisitaReabreDespacho = computed<boolean>(() => {
     const estado = this.ot()?.estado;
     return estado === 'CANCELADA' || estado === 'DISPUTADA';
+  });
+
+  /** La única acción rellena de la pantalla, en el pie; `null` = no hay pie. */
+  readonly accionPrincipal = computed<'pagar-visita' | 'presupuesto' | 'acta' | null>(() => {
+    if (this.puedePagarVisita()) return 'pagar-visita';
+    const orden = this.ot();
+    if (orden?.estado === 'EN_DIAGNOSTICO' && orden.diagnostico) return 'presupuesto';
+    return orden?.estado === 'FINALIZADA' ? 'acta' : null;
+  });
+
+  /**
+   * "En camino" solo con la OT en EN_CAMINO: una ASIGNADA puede estar esperando
+   * el pago de la visita y el técnico todavía no se mueve.
+   */
+  readonly datoDominante = computed<DatoDominante | null>(() => {
+    const orden = this.ot();
+    if (!orden) return null;
+    if (orden.estado === 'SOLICITADA' || orden.estado === 'BUSCANDO_TECNICO') {
+      return { tipo: 'buscando' };
+    }
+    // Desde el diagnóstico la llegada es noticia vieja: se dice el estado.
+    if (orden.llegadaEn && (orden.estado === 'ASIGNADA' || orden.estado === 'EN_CAMINO')) {
+      return { tipo: 'llegada', llegadaEn: orden.llegadaEn };
+    }
+    if (orden.estado === 'EN_CAMINO' && orden.tecnicoId) {
+      return { tipo: 'en-camino', etaMin: this.etaMin(), distanciaKm: this.distanciaKm() };
+    }
+    return { tipo: 'estado' };
   });
 
   /** Tarifa real de la visita (POST /api/ot/tarifa/estimar); `null` = no se pinta. */
@@ -405,12 +442,6 @@ export class SeguimientoOtPage implements OnInit, OnDestroy {
 
   tonoEstado(estado: EstadoOt): 'ok' | 'curso' | 'espera' | 'cerrada' {
     return tonoEstadoOt(estado);
-  }
-
-  /** Rating del técnico si el backend lo trajera; hoy no lo mapea: "Sin rating". */
-  ratingTecnico(): string | null {
-    const reputacion = this.ot()?.tecnicoReputacion;
-    return reputacion == null ? null : reputacion.toFixed(1);
   }
 
   irA(ruta: string[]): void {

@@ -351,6 +351,20 @@ export class TecnicosApi {
   }
 
   /**
+   * POST /api/insumos/{id}/cambiar-proveedor: quita el pedido al proveedor cuyo
+   * ETA venció sin despacho y lo vuelve a difundir. 409 si ya despachó o si
+   * todavía no vence.
+   */
+  cambiarProveedorInsumo(requerimientoId: string): Observable<SolicitudInsumoResponse> {
+    if (this.apiConfig.useMocks()) {
+      return defer(() => of(this.mockDb.cambiarProveedorInsumo(requerimientoId))).pipe(delay(300));
+    }
+    return this.http
+      .post<SolicitudInsumoApiResponse>(this.apiConfig.url(`/insumos/${requerimientoId}/cambiar-proveedor`), {})
+      .pipe(map(aSolicitudInsumoResponse));
+  }
+
+  /**
    * POST /api/ot/{otId}/insumos (roadmap 2.4): repuestos pedidos a posteriori
    * por el técnico asignado. El backend exige al menos una línea (400) y solo
    * acepta OT en ASIGNADA / EN_CAMINO / EN_DIAGNOSTICO / EN_REPARACION /

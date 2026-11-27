@@ -40,17 +40,7 @@ import { Point } from '@core/models/common.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DecimalPipe, IonButton, IonIcon, IonSpinner],
   template: `
-    <div class="cd-map__cabecera">
-      <div>
-        <p class="cd-map__titulo">Seguimiento en vivo</p>
-        <p class="cd-map__nota">
-          @if (llegada()) {
-            Dónde está el técnico y si ya llegó al punto de servicio
-          } @else {
-            Dónde está el técnico y hacia dónde va
-          }
-        </p>
-      </div>
+    <div class="cd-map__lienzo">
       @if (llegada()) {
         <span class="cd-map__chip cd-map__chip--llegada" data-testid="mapa-llegada">
           <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
@@ -59,12 +49,10 @@ import { Point } from '@core/models/common.models';
       } @else if (distanciaKm() !== null) {
         <span class="cd-map__chip" data-testid="mapa-distancia">
           <ion-icon name="navigate-outline" aria-hidden="true"></ion-icon>
-          En camino: {{ distanciaKm() | number: '1.1-1' }} km
+          {{ enCamino() ? 'En camino:' : 'A' }} {{ distanciaKm() | number: '1.1-1' }} km
         </span>
       }
-    </div>
 
-    <div class="cd-map__lienzo">
       @if (motor.listo()) {
         @if (mostrarMapa()) {
           <!-- El canvas lo ocupa el motor de mapa de forma imperativa. -->
@@ -100,7 +88,7 @@ import { Point } from '@core/models/common.models';
       }
     </div>
 
-    <p class="cd-map__resumen" aria-live="polite" data-testid="mapa-resumen">{{ resumen() }}</p>
+    <p class="cd-sr-only" aria-live="polite" data-testid="mapa-resumen">{{ resumen() }}</p>
   `,
 })
 export class MapaSeguimientoComponent {
@@ -114,6 +102,8 @@ export class MapaSeguimientoComponent {
   readonly destinoNombre = input('Punto de servicio');
   readonly tecnicoNombre = input('El técnico');
   readonly llegada = input(false);
+  /** Solo con la orden en EN_CAMINO; si no, el chip da la distancia sin afirmar nada. */
+  readonly enCamino = input(false);
   readonly rutaCodificada = input<string | null>(null);
 
   /** `true` mientras el botón "Reintentar mapa" espera la respuesta del loader. */

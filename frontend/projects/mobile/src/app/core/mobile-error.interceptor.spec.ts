@@ -146,6 +146,9 @@ describe('mobileErrorInterceptor', () => {
       'http://api.test/api/sse/ticket',
       // Registro del token push: segundo plano, sin acción del usuario.
       'http://api.test/api/usuarios/me/dispositivos',
+      // ETA incumplido: la pantalla muestra el mensaje del servidor.
+      'http://api.test/api/insumos/REQ-1/cambiar-proveedor',
+      'http://api.test/api/insumos/REQ-1/despachar',
     ];
 
     for (const url of urls) {

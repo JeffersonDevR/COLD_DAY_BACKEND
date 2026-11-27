@@ -580,38 +580,13 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     const { fixture } = setup({
       otApi: {
         getOtById: vi.fn(() =>
-          of(ot({ estado: 'EN_DIAGNOSTICO', llegadaEn: '2026-11-03T14:32:00Z', punto: PUNTO })),
+          of(ot({ estado: 'EN_CAMINO', llegadaEn: '2026-11-03T14:32:00Z', punto: PUNTO })),
         ),
         getTecnicoUbicacion: vi.fn(() => of(UBICACION_TECNICO)),
       },
     });
 
     expect(texto(fixture)).toContain('El técnico llegó');
-  });
-
-  it('sin técnicoReputacion muestra "Sin rating" (nunca inventa 4.9)', () => {
-    const { fixture } = setup({
-      otApi: {
-        getOtById: vi.fn(() => of(ot({ estado: 'EN_CAMINO', punto: PUNTO }))),
-        getTecnicoUbicacion: vi.fn(() => of(UBICACION_TECNICO)),
-      },
-    });
-
-    expect(texto(fixture)).toContain('Sin rating');
-    expect(texto(fixture)).not.toContain('4.9');
-  });
-
-  it('con técnicoReputacion muestra el valor recibido', () => {
-    const { fixture } = setup({
-      otApi: {
-        getOtById: vi.fn(() =>
-          of(ot({ estado: 'EN_CAMINO', punto: PUNTO, tecnicoReputacion: 4.7 })),
-        ),
-        getTecnicoUbicacion: vi.fn(() => of(UBICACION_TECNICO)),
-      },
-    });
-
-    expect(texto(fixture)).toContain('4.7');
   });
 
   it('la posición 404 = "sin posición todavía" y el sondeo sigue vivo', () => {
@@ -692,6 +667,251 @@ describe('SeguimientoOtPage móvil (A6)', () => {
     expect(loader.reintentar).toHaveBeenCalledTimes(1);
     // El resto de los bloques sigue funcionando.
     expect(fixture.nativeElement.querySelector('[data-testid="timeline-pasos"]')).not.toBeNull();
+  });
+
+  describe('acción principal en el pie', () => {
+    const nodo = (fixture: ComponentFixture<SeguimientoOtPage>, id: string) =>
+      fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+
+    function montar(overrides: Partial<OtResponse>) {
+      return setup({ otApi: { getOtById: vi.fn(() => of(ot(overrides))) } });
+    }
+
+    it('pagar la visita va en el pie', () => {
+      const { fixture } = montar({ estado: 'ASIGNADA', visitaPagada: false });
+
+      const boton = nodo(fixture, 'pagar-visita');
+      expect(nodo(fixture, 'ot-pie')?.contains(boton)).toBe(true);
+      expect(nodo(fixture, 'panel-pago-visita')?.contains(boton)).toBe(false);
+    });
+
+    it('revisar presupuesto va en el pie y no se duplica', () => {
+      const { fixture } = montar({ estado: 'EN_DIAGNOSTICO', diagnostico: {} });
+
+      expect(nodo(fixture, 'ot-pie')?.contains(nodo(fixture, 'cta-presupuesto'))).toBe(true);
+      expect(nodo(fixture, 'tecnico-diagnostico')).toBeNull();
+    });
+
+    it('ver acta va en el pie y calificar queda abajo sin relleno', () => {
+      const { fixture } = montar({ estado: 'FINALIZADA' });
+
+      expect(nodo(fixture, 'ot-pie')?.contains(nodo(fixture, 'cta-acta'))).toBe(true);
+      const calificar = nodo(fixture, 'cta-calificar') as HTMLElement & { fill?: string };
+      expect(nodo(fixture, 'ot-acciones')?.contains(calificar)).toBe(true);
+      expect(calificar.fill ?? calificar.getAttribute('fill')).toBe('outline');
+    });
+
+    it('sin acción principal no hay pie', () => {
+      const { fixture } = montar({ estado: 'EN_CAMINO' });
+
+      expect(nodo(fixture, 'ot-pie')).toBeNull();
+    });
+
+    it('con un modal abierto el pie se retira', () => {
+      const { fixture } = montar({ estado: 'EN_DIAGNOSTICO', diagnostico: {} });
+
+      click(fixture, 'cta-disputa');
+      expect(nodo(fixture, 'ot-pie')).toBeNull();
+
+      click(fixture, 'disputa-volver');
+      expect(nodo(fixture, 'ot-pie')).not.toBeNull();
+    });
+
+    it('las acciones secundarias van después de la ficha', () => {
+      const { fixture } = montar({ estado: 'EN_DIAGNOSTICO' });
+
+      const posicion = nodo(fixture, 'timeline-pasos')!.compareDocumentPosition(
+        nodo(fixture, 'ot-acciones')!,
+      );
+      expect(posicion & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  describe('dato dominante y ficha', () => {
+    const nodo = (fixture: ComponentFixture<SeguimientoOtPage>, id: string) =>
+      fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+    const limpio = (el: Element | null | undefined) => el?.textContent?.replace(/\s+/g, ' ').trim();
+    const grande = (fixture: ComponentFixture<SeguimientoOtPage>) =>
+      limpio(nodo(fixture, 'dato-dominante')?.querySelector('.cd-dato__grande'));
+    const dato = (fixture: ComponentFixture<SeguimientoOtPage>) =>
+      limpio(nodo(fixture, 'dato-dominante')) ?? '';
+
+    function montar(overrides: Partial<OtResponse>, ubicacion: Point | null = null) {
+      return setup({
+        otApi: {
+          getOtById: vi.fn(() => of(ot(overrides))),
+          getTecnicoUbicacion: vi.fn(() => of(ubicacion)),
+        },
+      }).fixture;
+    }
+
+    it('buscando', () => {
+      const fixture = montar({ estado: 'SOLICITADA', tecnicoId: null });
+
+      expect(grande(fixture)).toBe('Buscando técnico');
+      expect(nodo(fixture, 'buscando-tecnico')?.textContent).toContain('OT-2026-0001');
+    });
+
+    it('en camino con ETA', () => {
+      const fixture = montar({ estado: 'EN_CAMINO', punto: PUNTO }, UBICACION_TECNICO);
+
+      expect(grande(fixture)).toMatch(/^~\d+ min$/);
+      expect(dato(fixture)).toContain('km');
+    });
+
+    it('en camino sin ETA', () => {
+      const fixture = montar({ estado: 'EN_CAMINO', punto: PUNTO });
+
+      expect(grande(fixture)).toBe('Técnico en camino');
+      expect(dato(fixture)).not.toContain('km');
+    });
+
+    it('llegó', () => {
+      const fixture = montar({ estado: 'EN_CAMINO', llegadaEn: '2026-11-03T14:32:00Z' });
+
+      expect(grande(fixture)).toBe('El técnico llegó');
+    });
+
+    it.each([
+      ['EN_DIAGNOSTICO', 'En diagnóstico'],
+      ['EN_REPARACION', 'En reparación'],
+    ] as const)('en %s la llegada ya no es la noticia', (estado, etiqueta) => {
+      const fixture = montar({ estado, llegadaEn: '2026-11-03T14:32:00Z' });
+
+      expect(grande(fixture)).toBe(etiqueta);
+    });
+
+    it('asignada sin pagar no dice en camino', () => {
+      const fixture = montar(
+        { estado: 'ASIGNADA', visitaPagada: false, punto: PUNTO },
+        UBICACION_TECNICO,
+      );
+
+      expect(grande(fixture)).toBe('Asignada');
+      expect(dato(fixture)).not.toMatch(/min|en camino/i);
+    });
+
+    it('otro estado muestra la fecha', () => {
+      const fixture = montar({ estado: 'FINALIZADA', fechaCreacion: '2026-11-01T09:00:00Z' });
+
+      expect(grande(fixture)).toBe('Finalizada');
+      expect(dato(fixture)).toContain('Creada el');
+    });
+
+    it('ya no hay calificación del técnico', () => {
+      const fixture = montar({ estado: 'EN_CAMINO', tecnicoReputacion: 4.7 });
+
+      const tarjeta = nodo(fixture, 'tecnico-card')?.textContent;
+      expect(tarjeta).not.toContain('Sin rating');
+      expect(tarjeta).not.toContain('4.7');
+    });
+
+    it('sin barrio no inventa Centro', () => {
+      const fixture = montar({ barrio: undefined });
+
+      expect(texto(fixture)).not.toContain('Centro');
+      expect(texto(fixture)).not.toContain('Barrio');
+    });
+
+    it('técnico sin nombre ni teléfono', () => {
+      const fixture = montar({ tecnicoNombre: undefined, tecnicoTelefono: undefined });
+
+      const tarjeta = nodo(fixture, 'tecnico-card')?.textContent;
+      expect(tarjeta).toContain('Técnico asignado');
+      expect(tarjeta).not.toContain('Buscando');
+      expect(nodo(fixture, 'tecnico-llamar')).toBeNull();
+    });
+
+    it('una sola ficha con la falla', () => {
+      const fixture = montar({});
+
+      const ficha = nodo(fixture, 'ficha-servicio')?.textContent;
+      expect(ficha).toContain('No enfría y gotea agua.');
+      expect(ficha).toContain('Garantía');
+    });
+
+    it('el dato va antes del pago y del técnico', () => {
+      const fixture = montar({ estado: 'ASIGNADA', visitaPagada: false });
+
+      const orden = [
+        'dato-dominante',
+        'panel-pago-visita',
+        'tecnico-card',
+        'timeline-pasos',
+        'ficha-servicio',
+      ].map((id) => nodo(fixture, id)!);
+      for (let i = 1; i < orden.length; i++) {
+        expect(
+          orden[i - 1].compareDocumentPosition(orden[i]) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      }
+    });
+  });
+
+  describe('mapa a todo el ancho', () => {
+    const uno = (fixture: ComponentFixture<SeguimientoOtPage>, selector: string) =>
+      fixture.nativeElement.querySelector(selector) as HTMLElement | null;
+
+    function montar(overrides: Partial<OtResponse>) {
+      return setup({
+        otApi: {
+          getOtById: vi.fn(() => of(ot({ punto: PUNTO, ...overrides }))),
+          getTecnicoUbicacion: vi.fn(() => of(UBICACION_TECNICO)),
+        },
+      }).fixture;
+    }
+
+    it('el mapa no lleva título propio y su chip va dentro del lienzo', () => {
+      const fixture = montar({ estado: 'EN_CAMINO' });
+
+      expect(texto(fixture)).not.toContain('Seguimiento en vivo');
+      expect(uno(fixture, '.cd-map__lienzo [data-testid="mapa-distancia"]')).not.toBeNull();
+    });
+
+    it('ya llegó también va sobre el mapa', () => {
+      const fixture = montar({ estado: 'EN_DIAGNOSTICO', llegadaEn: '2026-11-03T14:32:00Z' });
+
+      expect(uno(fixture, '.cd-map__lienzo [data-testid="mapa-llegada"]')).not.toBeNull();
+    });
+
+    it('el mapa va primero y el dato se monta sobre él', () => {
+      const fixture = montar({ estado: 'EN_CAMINO' });
+
+      const mapa = uno(fixture, '.cd-mapa-bloque')!;
+      const dato = uno(fixture, '[data-testid="dato-dominante"]')!;
+      expect(mapa.compareDocumentPosition(dato) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(dato.classList).toContain('cd-dato--sobre-mapa');
+    });
+
+    it('esperando el pago, el chip del mapa no dice "En camino"', () => {
+      const fixture = montar({ estado: 'ASIGNADA', visitaPagada: false });
+
+      const chip = uno(fixture, '[data-testid="mapa-distancia"]')!;
+      expect(chip.textContent).toContain('km');
+      expect(chip.textContent).not.toContain('En camino');
+    });
+
+    it('con la orden en camino, el chip lo dice', () => {
+      const fixture = montar({ estado: 'EN_CAMINO' });
+
+      expect(uno(fixture, '[data-testid="mapa-distancia"]')!.textContent).toContain('En camino');
+    });
+
+    it('las tarjetas usan cd-card para compartir el mismo borde (DESIGN §8.2)', () => {
+      const fixture = montar({ estado: 'ASIGNADA', visitaPagada: false });
+
+      const tarjetas = [...fixture.nativeElement.querySelectorAll('ion-card')] as HTMLElement[];
+      expect(tarjetas).toHaveLength(3);
+      for (const tarjeta of tarjetas) expect(tarjeta.classList).toContain('cd-card');
+    });
+
+    it('sin mapa el dato no se monta sobre nada', () => {
+      const fixture = montar({ estado: 'SOLICITADA', tecnicoId: null });
+
+      expect(uno(fixture, '[data-testid="dato-dominante"]')!.classList).not.toContain(
+        'cd-dato--sobre-mapa',
+      );
+    });
   });
 
   describe('mapa con motor', () => {

@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sena.cold_day.core.modules.proveedores.domain.aggregates.RequerimientoInsumo;
+import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.ProveedorId;
 import com.sena.cold_day.core.modules.proveedores.domain.valueobjects.RequerimientoInsumoId;
 
 /**
@@ -69,4 +70,19 @@ public interface RequerimientoInsumoRepository {
      * and the OT lifecycle is never blocked (spec disp.R6, design D4).
      */
     int expirarVencidos(Instant ahora);
+
+    /**
+     * Atomically reopens an accepted request whose committed ETA elapsed without a
+     * dispatch: back to {@code SOLICITADO} with a fresh window and without the
+     * previous acceptance data. Returns 0 if it is not the technician's, is not
+     * {@code ASIGNADO} or the ETA has not elapsed yet.
+     */
+    int reabrirSiEtaVencido(RequerimientoInsumoId id, UUID tecnicoId, Instant ahora, Instant expiraEn,
+            double radioKm, Instant ventanaExpiraEn);
+
+    /**
+     * Atomic dispatch: only while the request is {@code ASIGNADO} and this supplier
+     * still holds the {@code ACEPTADA} offer. Returns 0 otherwise.
+     */
+    int despacharSiAsignado(RequerimientoInsumoId id, ProveedorId proveedorId, Instant ahora);
 }

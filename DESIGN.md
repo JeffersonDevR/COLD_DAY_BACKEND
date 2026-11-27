@@ -29,6 +29,8 @@ Decisión del dueño del producto (2026-11-23), que sustituye cualquier lectura 
 | **No negociable** (protege al usuario, ningún diseño lo anula) | **PRODUCT.md** + WCAG | es-CO y tuteo · WCAG AA (zoom, contraste, 12 px) · no inventar precios/SLA/políticas/métricas |
 | **Dato que el backend no entrega** | **No se pinta.** Lo bloqueado por datos vive en `NAVEGACION.md` §2 | monto en ofertas, rating, avatar, KPIs |
 
+Para **Seguimiento** (cliente), la referencia de estructura es `docs/superpowers/specs/2026-11-26-rediseno-seguimiento-design.md` (2026-11-26, aprobado por el dueño), no el prototipo a6.
+
 Los exports crudos de Stitch traen defectos de generación (voseo, `.com.ar`, `tel:+54`, «lavarropas», `user-scalable=no`, texto de 10–11 px): se corrigen al implementar, **no** son parte del diseño. Excepciones y renegociaciones se anotan **solo en este archivo** (en la regla afectada), nunca en un documento paralelo.
 
 ---

@@ -3,7 +3,7 @@
     <cd-marca pantalla="Portal de proveedor" chip="Proveedor" />
     <div class="cd-hero cd-hero--compacto">
       <h1 class="cd-headline">Mis documentos</h1>
-      <p class="cd-hero__nota">Declaraciones de metadata: tipo y vencimiento.</p>
+      <p class="cd-hero__nota">Los papeles de tu empresa y cuándo vencen.</p>
       @if (!cargando() && documentos().length > 0) {
         <p class="cd-hero__nota cd-bandeja__conteo" data-testid="documentos-conteo">
           {{ documentos().length }}
@@ -25,6 +25,19 @@
     </h2>
     <p class="cd-alerta__texto" data-testid="estado-explicacion">{{ explicacionEstado() }}</p>
   </section>
+
+  @if (resumenDocumentos(); as resumen) {
+    @if (resumen.vencidos > 0 || resumen.porVencer > 0) {
+      <section
+        class="cd-alerta cd-alerta--{{ resumen.vencidos > 0 ? 'error' : 'aviso' }}"
+        role="status"
+        data-testid="aviso-documentos"
+      >
+        <h2 class="cd-alerta__titulo">Revisa tus documentos</h2>
+        <p class="cd-alerta__texto">{{ textoAvisoDocumentos(resumen) }}</p>
+      </section>
+    }
+  }
 
   @if (datosCompletos() === false) {
     <ion-card class="cd-card" data-testid="datos-empresa">
@@ -72,22 +85,13 @@
   @if (!cargando() && documentos().length === 0) {
     <cd-empty-state
       titulo="Todavía no declaraste documentos"
-      texto="Declara al menos el RUT para que un administrador pueda validar tu cuenta."
+      texto="Declara al menos el RUT y la Cámara de Comercio para que un administrador pueda validar tu cuenta."
       testId="documentos-vacio"
     />
   }
 
-  @for (documento of documentos(); track documento.id) {
-    <article class="cd-ot" [attr.data-testid]="'documento-' + documento.id">
-      <div class="cd-ot__cabecera">
-        <div>
-          <p class="cd-ot__codigo">{{ etiquetaDocumento(documento.tipo) }}</p>
-          @if (documento.fechaVencimiento) {
-            <p class="cd-ot__categoria">Vence {{ documento.fechaVencimiento }}</p>
-          }
-        </div>
-      </div>
-    </article>
+  @if (documentos().length > 0) {
+    <cd-documentos-lista [documentos]="documentosVista()" />
   }
 
   <ion-button expand="block" fill="outline" (click)="alternarForm()" data-testid="alternar-form">
@@ -98,44 +102,14 @@
   @if (mostrarForm()) {
     <ion-card class="cd-card">
       <ion-card-content>
-        <form [formGroup]="docForm" class="cd-form" (ngSubmit)="registrar()">
-          <ion-select
-            formControlName="tipo"
-            label="Tipo de documento"
-            labelPlacement="stacked"
-            interface="popover"
-            data-testid="campo-tipo"
-          >
-            <ion-select-option value="RUT">RUT</ion-select-option>
-            <ion-select-option value="CEDULA">Cédula</ion-select-option>
-            <ion-select-option value="CERTIFICADO">Certificado</ion-select-option>
-            <ion-select-option value="OTRO">Otro</ion-select-option>
-          </ion-select>
-
-          <ion-input
-            type="date"
-            formControlName="fechaVencimiento"
-            label="Fecha de vencimiento"
-            labelPlacement="stacked"
-            data-testid="campo-vencimiento"
-          ></ion-input>
-
-          <ion-button
-            expand="block"
-            class="cd-cta"
-            type="submit"
-            [attr.aria-busy]="guardando()"
-            [disabled]="guardando()"
-            data-testid="guardar-documento"
-          >
-            @if (guardando()) {
-              <ion-spinner name="dots" aria-hidden="true"></ion-spinner>
-              <span class="cd-cta__loading">Guardando…</span>
-            } @else {
-              Declarar documento
-            }
-          </ion-button>
-        </form>
+        <cd-documento-form
+          [tipos]="tiposDocumento"
+          [guardando]="guardando()"
+          (declarar)="registrar($event)"
+        />
+        <p class="cd-ayuda">
+          Declaras el tipo y, si vence, la fecha. Todavía no se sube el archivo: un administrador revisa tu expediente.
+        </p>
       </ion-card-content>
     </ion-card>
   }

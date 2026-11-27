@@ -4,7 +4,7 @@
     <div class="cd-hero cd-hero--compacto">
       <h1 class="cd-headline">Solicitudes de insumos</h1>
       <p class="cd-hero__nota">Acepta con tu tiempo de llegada, despacha y confirma entregas de repuestos.</p>
-      @if (solicitudesPorGestionar() > 0) {
+      @if (solicitudesPorGestionar() > 0 && !bloqueadoPorUbicacion()) {
         <p class="cd-hero__nota cd-bandeja__conteo" data-testid="solicitudes-conteo">
           {{ solicitudesPorGestionar() }}
           {{ solicitudesPorGestionar() === 1 ? 'solicitud por gestionar' : 'solicitudes por gestionar' }}
@@ -21,8 +21,8 @@
 
   @if (sinUbicacion()) {
     <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="sin-ubicacion">
-      <h2 class="cd-alerta__titulo">Fija dónde operas</h2>
-      <p class="cd-alerta__texto">Sin tu ubicación no te llegan solicitudes cercanas.</p>
+      <h2 class="cd-alerta__titulo">Fija tu ubicación para recibir pedidos</h2>
+      <p class="cd-alerta__texto">Los pedidos de repuestos se reparten por cercanía: sin tu ubicación no te llegan.</p>
       <ion-button
         class="cd-cta"
         data-testid="fijar-ubicacion"
@@ -59,7 +59,7 @@
     />
   }
 
-  @if (!cargando() && !errorCarga() && ofertas().length === 0) {
+  @if (!cargando() && !errorCarga() && !bloqueadoPorUbicacion() && ofertas().length === 0) {
     <cd-empty-state
       titulo="No tienes solicitudes"
       texto="Cuando un técnico pida repuestos cerca de tu zona, la solicitud aparece acá."
@@ -67,7 +67,7 @@
     />
   }
 
-  @for (oferta of ofertas(); track oferta.id) {
+  @for (oferta of bloqueadoPorUbicacion() ? [] : ofertas(); track oferta.id) {
     <article class="cd-ot" [attr.data-testid]="'solicitud-' + oferta.id">
       <div class="cd-ot__cabecera">
         <div>

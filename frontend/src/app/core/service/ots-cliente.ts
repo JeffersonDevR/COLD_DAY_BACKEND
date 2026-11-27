@@ -15,8 +15,12 @@ export interface TextoFiltro {
   descripcionVacio: string;
 }
 
-/** Estados que ya no son trabajo pendiente para el cliente. */
-const ESTADOS_CERRADOS: readonly string[] = ['FINALIZADA', 'CANCELADA'];
+/**
+ * Estados que ya no son trabajo pendiente para el cliente: los terminales del
+ * backend (`EstadoOt.esTerminal`). `SIN_TECNICOS_DISPONIBLES` es terminal: nadie
+ * la va a tomar, así que no cuenta como "en proceso".
+ */
+const ESTADOS_CERRADOS: readonly string[] = ['FINALIZADA', 'CANCELADA', 'SIN_TECNICOS_DISPONIBLES'];
 
 /** Una OT sigue activa mientras el cliente todavía espera algo de ella. */
 export function esOtActiva(ot: OtResponse): boolean {

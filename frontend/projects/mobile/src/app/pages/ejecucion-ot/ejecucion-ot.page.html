@@ -197,6 +197,24 @@
       </ion-card>
     }
 
+    <!-- Presupuesto ya enviado: el técnico solo espera la respuesta del cliente. -->
+    @if (presupuestoEnviado() && orden.presupuesto; as presupuesto) {
+        <ion-card class="cd-card" data-testid="presupuesto-enviado">
+          <ion-card-content>
+            <h2 class="cd-card__titulo">Presupuesto enviado</h2>
+            <p class="cd-muted">Estamos esperando que el cliente lo apruebe. Cuando lo haga podrás empezar la reparación.</p>
+            @if (orden.diagnostico?.diagnostico; as texto) {
+              <p class="cd-ayuda">{{ texto }}</p>
+            }
+            <dl class="cd-perfil-datos">
+              <div><dt>Mano de obra</dt><dd>$ {{ (presupuesto.manoDeObra ?? presupuesto.manoObra).toLocaleString('es-CO') }} COP</dd></div>
+              <div><dt>Repuestos</dt><dd>$ {{ presupuesto.repuestos.toLocaleString('es-CO') }} COP</dd></div>
+              <div><dt>Total</dt><dd data-testid="total-presupuesto-enviado">$ {{ presupuesto.total.toLocaleString('es-CO') }} COP</dd></div>
+            </dl>
+          </ion-card-content>
+        </ion-card>
+    }
+
     <!-- Cierre del servicio -->
     @if (orden.estado === 'EN_REPARACION') {
       <ion-card class="cd-card">
@@ -241,6 +259,61 @@
                 · a {{ solicitud.distanciaKm.toFixed(1) }} km
               }
             </p>
+          }
+          @if (etaVencido(solicitud)) {
+            <section
+              class="cd-alerta cd-alerta--aviso"
+              role="status"
+              [attr.data-testid]="'eta-vencido-' + solicitud.id"
+            >
+              @if (!avisosPlegados().has(solicitud.id)) {
+                <h3 class="cd-alerta__titulo">El proveedor no ha despachado</h3>
+                <p class="cd-alerta__texto">
+                  Prometió {{ solicitud.etaMinutos }} min · van {{ minutosTranscurridos(solicitud) }}
+                </p>
+              }
+              @if (confirmandoCambio() === solicitud.id) {
+                <p class="cd-alerta__texto">Si nadie más acepta, el pedido queda sin proveedor.</p>
+                <div class="cd-ot__acciones">
+                  <ion-button
+                    class="cd-cta"
+                    [attr.aria-busy]="cambiandoProveedor() === solicitud.id"
+                    [disabled]="cambiandoProveedor() === solicitud.id"
+                    (click)="cambiarProveedor(solicitud)"
+                    [attr.data-testid]="'eta-confirmar-cambio-' + solicitud.id"
+                  >
+                    Sí, buscar otro
+                  </ion-button>
+                  <ion-button
+                    fill="clear"
+                    color="medium"
+                    [disabled]="cambiandoProveedor() === solicitud.id"
+                    (click)="confirmandoCambio.set(null)"
+                  >
+                    Cancelar
+                  </ion-button>
+                </div>
+              } @else {
+                <div class="cd-ot__acciones">
+                  @if (!avisosPlegados().has(solicitud.id)) {
+                    <ion-button
+                      fill="outline"
+                      (click)="seguirEsperando(solicitud)"
+                      [attr.data-testid]="'eta-esperar-' + solicitud.id"
+                    >
+                      Seguir esperando
+                    </ion-button>
+                  }
+                  <ion-button
+                    class="cd-cta"
+                    (click)="confirmandoCambio.set(solicitud.id)"
+                    [attr.data-testid]="'eta-buscar-' + solicitud.id"
+                  >
+                    Buscar otro proveedor
+                  </ion-button>
+                </div>
+              }
+            </section>
           }
         </article>
       }

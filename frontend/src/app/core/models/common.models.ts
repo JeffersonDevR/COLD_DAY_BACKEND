@@ -247,7 +247,19 @@ export interface ProveedorRequest {
 export type EstadoValidacionProveedor = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 
 /** Tipo de documento declarado por el proveedor (solo metadata, sin archivo). */
-export type TipoDocumentoProveedor = 'RUT' | 'CEDULA' | 'CERTIFICADO' | 'OTRO';
+/**
+ * Tipos de documento de una empresa. `CEDULA` y `CERTIFICADO` son los heredados:
+ * ya no se ofrecen al declarar, pero pueden venir de filas viejas.
+ * El backend guarda el tipo como texto libre.
+ */
+export type TipoDocumentoProveedor =
+  | 'RUT'
+  | 'CAMARA_COMERCIO'
+  | 'CEDULA_REPRESENTANTE'
+  | 'CERTIFICACION_BANCARIA'
+  | 'CEDULA'
+  | 'CERTIFICADO'
+  | 'OTRO';
 
 /** Documento del expediente: el backend es metadata-only, no hay upload. */
 export interface DocumentoProveedorResponse {
@@ -305,9 +317,21 @@ export type EstadoRequerimiento = 'SOLICITADO' | 'ASIGNADO' | 'DESPACHADO' | 'EN
 /**
  * Estados por oferta del despacho (OfertaInsumoEstado.java). El literal de
  * rechazo es `RECHAZADO` (nunca `RECHAZADA`); `CANCELADA` marca la oferta hermana
- * que perdió la aceptación atómica.
+ * que perdió la aceptación atómica; `REEMPLAZADA`, la ganadora a la que el técnico
+ * le quitó el pedido porque venció su ETA.
  */
-export type OfertaInsumoEstado = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADO' | 'EXPIRADA' | 'CANCELADA';
+export type OfertaInsumoEstado = 'PENDIENTE' | 'ACEPTADA' | 'RECHAZADO' | 'EXPIRADA' | 'CANCELADA' | 'REEMPLAZADA';
+
+/** Un ETA incumplido que registró el servidor (solo consulta, sin sanción). */
+export interface IncumplimientoInsumo {
+  id: string;
+  proveedorId: string;
+  razonSocial: string;
+  requerimientoId: string;
+  etaMinutos: number;
+  aceptadaEn: string;
+  reemplazadoEn: string;
+}
 
 /**
  * Requerimiento de insumos tal como lo ve el proveedor (SolicitudInsumoApiResponse).

@@ -21,7 +21,7 @@ const ICONO_PASO: Readonly<Record<string, string>> = {
  *
  * Misma regla que la web (`@core/service/ot-timeline`): los pasos, su orden y
  * su estado de completado/actual salen de la función compartida. Este
- * componente solo les pone piel móvil (ionicons, cinta deslizable).
+ * componente solo les pone piel móvil (ionicons, línea vertical con horas).
  */
 @Component({
   selector: 'app-ot-timeline',
@@ -52,6 +52,9 @@ const ICONO_PASO: Readonly<Record<string, string>> = {
               <ion-icon aria-hidden="true" [name]="icono(paso)"></ion-icon>
             </span>
             <span class="cd-timeline__etiqueta">{{ paso.label }}</span>
+            @if (horaDePaso(paso); as hora) {
+              <span class="cd-timeline__hora tnum">{{ hora | date: 'short' }}</span>
+            }
           </li>
         }
       </ol>
@@ -89,6 +92,20 @@ export class OtTimelineComponent {
   readonly steps = computed<TimelinePaso[]>(() => calcularPasosTimeline(this.estadoActual()));
   readonly etiquetaEstado = computed(() => ETIQUETA_ESTADO_OT[this.estadoActual()]);
   readonly tono = computed(() => tonoEstadoOt(this.estadoActual()));
+
+  /**
+   * Cuándo entró la orden a ese paso, según el historial (la vez más reciente).
+   * Un paso no alcanzado no la muestra, aunque tenga una entrada vieja.
+   */
+  protected horaDePaso(paso: TimelinePaso): string | null {
+    if (!paso.isCompleted && !paso.isCurrent) return null;
+    return this.historial()
+      .filter((item) => item.estado === paso.estado)
+      .reduce<string | null>(
+        (ultima, item) => (!ultima || Date.parse(item.fecha) > Date.parse(ultima) ? item.fecha : ultima),
+        null,
+      );
+  }
 
   protected icono(paso: TimelinePaso): string {
     if (paso.isCompleted && !paso.isCurrent) {

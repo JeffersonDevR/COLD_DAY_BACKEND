@@ -125,15 +125,16 @@ describe('PanelTecnicoPageMobile (B2)', () => {
     expect(texto(fixture)).toContain('Asignada');
   });
 
-  it('destaca la primera orden como próxima y abre la ejecución', () => {
+  it('destaca la primera orden como activa y abre la ejecución', () => {
     const { fixture, navigate } = setup();
     const destacada = fixture.nativeElement.querySelector(
       '[data-testid="ot-ot1"]',
     ) as HTMLButtonElement;
 
-    expect(texto(fixture)).toContain('Próxima orden de trabajo');
+    expect(texto(fixture)).toContain('Orden de trabajo activa');
     expect(texto(fixture)).not.toContain('Toca para abrir la ejecución');
-    expect(destacada.className).toContain('cd-ot--proxima');
+    expect(texto(fixture)).not.toContain('Próxima');
+    expect(destacada.className).toContain('cd-ot--activa');
 
     destacada.click();
     expect(navigate).toHaveBeenCalledWith(['/tecnico/ejecucion', 'ot1']);
