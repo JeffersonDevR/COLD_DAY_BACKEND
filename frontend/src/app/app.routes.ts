@@ -80,6 +80,13 @@ export const routes: Routes = [
     title: 'Proveedores Auxiliares - COLD DAY'
   },
 
+  {
+    path: 'admin/cuentas',
+    canActivate: [authGuard, roleGuard(rolesCon('GESTIONAR_CUENTAS'))],
+    loadComponent: () => import('./pages/admin-cuentas-page/admin-cuentas-page').then(m => m.AdminCuentasPage),
+    title: 'Cuentas - COLD DAY'
+  },
+
   // Fallback
   {
     path: '**',

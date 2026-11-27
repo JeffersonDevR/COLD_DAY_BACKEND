@@ -23,6 +23,7 @@ const SECTIONS: MenuSection[] = [
       { label: 'Disputas', icon: 'pi pi-shield', routerLink: '/admin/disputas', roles: rolesCon('GESTIONAR_DISPUTAS') },
       { label: 'Monitoreo OTs', icon: 'pi pi-desktop', routerLink: '/admin/monitoreo', roles: rolesCon('VER_OPERACION') },
       { label: 'Proveedores', icon: 'pi pi-truck', routerLink: '/admin/proveedores', roles: rolesCon('VALIDAR_DOCUMENTACION') },
+      { label: 'Cuentas', icon: 'pi pi-users', routerLink: '/admin/cuentas', roles: rolesCon('GESTIONAR_CUENTAS') },
     ],
   },
 ];

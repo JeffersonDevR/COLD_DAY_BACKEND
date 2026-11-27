@@ -40,7 +40,7 @@ describe('rutas de la web', () => {
     expect(routes.map((r) => r.path)).toEqual([
       '', 'login', 'recuperar', 'panel', 'usa-la-app',
       'admin/dashboard', 'admin/validacion-tecnicos', 'admin/consignaciones',
-      'admin/disputas', 'admin/monitoreo', 'admin/ot/:id', 'admin/proveedores', '**',
+      'admin/disputas', 'admin/monitoreo', 'admin/ot/:id', 'admin/proveedores', 'admin/cuentas', '**',
     ]);
   });
 
