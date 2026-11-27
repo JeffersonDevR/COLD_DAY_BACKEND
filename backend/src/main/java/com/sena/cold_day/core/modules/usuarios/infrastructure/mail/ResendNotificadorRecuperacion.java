@@ -74,11 +74,11 @@ public class ResendNotificadorRecuperacion implements NotificadorRecuperacion {
 
     private void enviar(Long usuarioId, String correo, String asunto, String texto) {
         if (!StringUtils.hasText(apiKey)) {
-            log.warn("Resend provider activo pero sin API key ({}): no se entrega correo de recuperacion", API_KEY_ENV);
+            log.warn("Resend provider activo pero sin API key ({}): no se entrega correo de cuenta", API_KEY_ENV);
             return;
         }
         if (propiedades == null || !StringUtils.hasText(propiedades.from())) {
-            log.error("Resend provider activo pero falta app.mail.from; no se entrega correo de recuperacion");
+            log.error("Resend provider activo pero falta app.mail.from; no se entrega correo de cuenta");
             return;
         }
         String body = """

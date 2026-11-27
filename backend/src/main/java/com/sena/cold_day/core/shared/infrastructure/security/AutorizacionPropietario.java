@@ -113,11 +113,6 @@ public class AutorizacionPropietario {
         }
     }
 
-    /**
-     * True only when {@code proveedorId} is the supplier profile linked to the
-     * authenticated user. As with technicians, the path id is only ever used to
-     * look the owner up, never to impersonate one.
-     */
     /** Lectura de una orden: quien participa, o quien audita la operación. No vale para escribir. */
     public void exigirLectorDeOt(AuthenticatedUser principal, OtResponse ot) {
         if (!principal.tienePermiso(Permiso.VER_OPERACION)) {
@@ -132,6 +127,11 @@ public class AutorizacionPropietario {
         }
     }
 
+    /**
+     * True only when {@code proveedorId} is the supplier profile linked to the
+     * authenticated user. As with technicians, the path id is only ever used to
+     * look the owner up, never to impersonate one.
+     */
     public boolean esProveedorDe(AuthenticatedUser principal, ProveedorId proveedorId) {
         return proveedorRepository.findByUsuarioId(principal.usuarioId().valor())
                 .filter(proveedor -> proveedor.getId().equals(proveedorId))

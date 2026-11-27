@@ -28,7 +28,11 @@ import com.sena.cold_day.core.modules.usuarios.domain.valueobjects.UsuarioId;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataTokenRecuperacionRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.SpringDataUsuarioRepository;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.persistence.UsuarioJpaEntity;
+import com.sena.cold_day.core.modules.administracion.infrastructure.listeners.AdminActividadSseListener;
+import com.sena.cold_day.core.shared.infrastructure.security.AuthenticatedUser;
 import com.sena.cold_day.core.shared.infrastructure.security.JwtTokenIssuer;
+import com.sena.cold_day.core.shared.infrastructure.sse.SseEmitterRegistry;
+import com.sena.cold_day.core.shared.infrastructure.sse.SseTicketService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -40,9 +44,12 @@ class CuentasApiIT {
     @Autowired SpringDataUsuarioRepository usuarios;
     @Autowired SpringDataTokenRecuperacionRepository tokens;
     @MockitoBean NotificadorRecuperacion notificador;
+    @Autowired SseTicketService tickets;
+    @Autowired SseEmitterRegistry emisores;
 
     @AfterEach
     void cleanup() {
+        emisores.limpiar();
         tokens.deleteAll();
         usuarios.deleteAll();
     }
@@ -92,6 +99,26 @@ class CuentasApiIT {
                         .content("{\"token\":\"" + invitacion.getValue().token()
                                 + "\",\"nuevaPassword\":\"clave-nueva-1\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void elCorreoRepetidoConOtrasMayusculasTambienDa409() throws Exception {
+        crear("Ana", "ana@example.com", "CONTABLE").andExpect(status().isCreated());
+        crear("Otra", "Ana@Example.com", "RECURSOS_HUMANOS").andExpect(status().isConflict());
+    }
+
+    @Test
+    void desactivarCierraLosStreamsAbiertosDelPanel() throws Exception {
+        crear("Ana", "ana@example.com", "CONTABLE").andExpect(status().isCreated());
+        Long id = usuarios.findByCorreo("ana@example.com").orElseThrow().getId();
+        String ticket = tickets.emitir(new AuthenticatedUser(new UsuarioId(id), Rol.CONTABLE));
+        mockMvc.perform(get("/api/admin/stream").param("ticket", ticket).accept(MediaType.TEXT_EVENT_STREAM))
+                .andExpect(status().isOk());
+        assertThat(emisores.contar(AdminActividadSseListener.claveAdmin())).isEqualTo(1);
+
+        cambiarEstado(id, false).andExpect(status().isNoContent());
+
+        assertThat(emisores.contar(AdminActividadSseListener.claveAdmin())).isZero();
     }
 
     @Test

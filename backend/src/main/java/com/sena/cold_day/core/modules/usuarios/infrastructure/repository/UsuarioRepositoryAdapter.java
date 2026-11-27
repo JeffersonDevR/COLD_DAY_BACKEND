@@ -74,6 +74,12 @@ public class UsuarioRepositoryAdapter implements UsuarioRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean existeCorreoSinImportarMayusculas(String correo) {
+        return repository.existsByCorreoIgnoreCase(correo);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Usuario> listarTodos() {
         return repository.findAll(Sort.by("id")).stream().map(UsuarioJpaEntity::toDomain).toList();
     }

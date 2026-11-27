@@ -14,5 +14,7 @@ public interface SpringDataUsuarioRepository extends JpaRepository<UsuarioJpaEnt
 
     boolean existsByCorreo(String correo);
 
+    boolean existsByCorreoIgnoreCase(String correo);
+
     List<UsuarioJpaEntity> findByRolInOrderById(Collection<Rol> roles);
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sena.cold_day.core.modules.usuarios.domain.aggregates.Usuario;
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaDesactivada;
 import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaInvitada;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.CorreoDuplicadoException;
 import com.sena.cold_day.core.modules.usuarios.domain.exception.UsuarioNoEncontradoException;
@@ -53,7 +54,7 @@ public class GestionarCuentasInternasUseCase {
     public Usuario crear(String nombre, String correo, Rol rol) {
         // La contraseña inicial es aleatoria y se descarta: nadie la conoce.
         Usuario nueva = Usuario.crearCuentaInterna(nombre, correo, rol, tokenGenerator.generar(), passwordEncoder);
-        if (usuarios.existeCorreo(correo)) {
+        if (usuarios.existeCorreoSinImportarMayusculas(correo)) {
             throw new CorreoDuplicadoException(correo);
         }
         Usuario guardada = usuarios.save(nueva);
@@ -78,6 +79,7 @@ public class GestionarCuentasInternasUseCase {
             cuenta.incrementarTokenVersion();
             // Y un enlace de invitación o recuperación pendiente deja de valer, también si se reactiva.
             tokens.invalidarTodosDe(id);
+            events.publishEvent(new CuentaInternaDesactivada(id.valor()));
         }
         usuarios.save(cuenta);
     }

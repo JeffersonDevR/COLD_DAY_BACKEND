@@ -11,6 +11,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 
+import com.sena.cold_day.core.modules.usuarios.domain.events.CuentaInternaInvitada;
 import com.sena.cold_day.core.modules.usuarios.domain.events.RecuperacionSolicitada;
 import com.sena.cold_day.core.modules.usuarios.infrastructure.config.MailProperties;
 
@@ -59,6 +60,23 @@ class LoggingNotificadorRecuperacionTest {
     @Test
     void theNonProductionLineCarriesTheResetLinkSoTheTokenIsActionable() {
         new LoggingNotificadorRecuperacion(props(true)).notificar(evento);
+
+        assertThat(traza()).contains("token=" + TOKEN_PLANO);
+    }
+
+    @Test
+    void laInvitacionQuedaRegistradaSinFiltrarElTokenEnProduccion() {
+        new LoggingNotificadorRecuperacion(props(false))
+                .invitar(new CuentaInternaInvitada(42L, "ana@example.com", TOKEN_PLANO));
+
+        assertThat(traza()).contains("Invitacion de cuenta").contains("ana@example.com")
+                .doesNotContain(TOKEN_PLANO);
+    }
+
+    @Test
+    void enLocalLaInvitacionLlevaElEnlace() {
+        new LoggingNotificadorRecuperacion(props(true))
+                .invitar(new CuentaInternaInvitada(42L, "ana@example.com", TOKEN_PLANO));
 
         assertThat(traza()).contains("token=" + TOKEN_PLANO);
     }

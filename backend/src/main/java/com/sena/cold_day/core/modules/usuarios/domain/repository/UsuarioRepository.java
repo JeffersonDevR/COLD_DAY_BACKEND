@@ -21,6 +21,8 @@ public interface UsuarioRepository {
 
     boolean existeCorreo(String correo);
 
+    boolean existeCorreoSinImportarMayusculas(String correo);
+
     List<Usuario> listarTodos();
 
     /** Ordenada por id. */
