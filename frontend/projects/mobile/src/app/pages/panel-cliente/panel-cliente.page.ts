@@ -201,6 +201,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           class="cd-cta"
           data-testid="panel-solicitar"
           [fill]="activa() ? 'outline' : 'solid'"
+          [class.cd-cta--secundaria]="!!activa()"
           (click)="pedirTecnico()"
         >
           <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>

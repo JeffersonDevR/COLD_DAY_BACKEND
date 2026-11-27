@@ -391,9 +391,7 @@ describe('PanelTecnicoPageMobile (B2)', () => {
         presencia: presenciaStub({ motivo: signal('Sin permiso de ubicación') }),
       });
       expect(precede(fixture, id('ubicacion-motivo'), id('orden-activa'))).toBe(true);
-      expect(
-        (nodo(fixture, id('ubicacion-reintentar')) as HTMLElement & { fill?: string }).fill,
-      ).toBe('outline');
+      expect(nodo(fixture, id('ubicacion-reintentar'))!.classList).toContain('cd-cta--secundaria');
     });
 
     it('avisa la ubicación apagada solo con orden activa', () => {
@@ -436,7 +434,7 @@ describe('PanelTecnicoPageMobile (B2)', () => {
         .fn()
         .mockReturnValueOnce(of([ot()]))
         .mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
-      const { fixture } = setup({ otsApi: { getMisOts } });
+      const { fixture, toast } = setup({ otsApi: { getMisOts } });
       const complete = vi.fn();
 
       fixture.componentInstance.refrescar({ target: { complete } } as never);
@@ -444,6 +442,33 @@ describe('PanelTecnicoPageMobile (B2)', () => {
 
       expect(complete).toHaveBeenCalled();
       expect(nodo(fixture, id('orden-activa'))).not.toBeNull();
+      expect(toast.error).toHaveBeenCalledWith('No pudimos actualizar', expect.any(String));
+    });
+
+    it('deslizar vuelve a leer el perfil y retira el bloqueo ya resuelto', () => {
+      const getMiPerfil = vi
+        .fn()
+        .mockReturnValueOnce(of(tecnico({ estadoOperativo: 'BLOQUEADO_POR_LIQUIDACION' })))
+        .mockReturnValue(of(tecnico()));
+      const { fixture } = setup({ tecnicoApi: { getMiPerfil } });
+
+      fixture.componentInstance.refrescar({ target: { complete: vi.fn() } } as never);
+      fixture.detectChanges();
+
+      expect(nodo(fixture, id('bloqueado-liquidacion'))).toBeNull();
+    });
+
+    it('si el perfil no responde al deslizar, conserva el que ya se ve', () => {
+      const getMiPerfil = vi
+        .fn()
+        .mockReturnValueOnce(of(tecnico()))
+        .mockReturnValue(throwError(() => new ApiHttpError('boom', 500)));
+      const { fixture } = setup({ tecnicoApi: { getMiPerfil } });
+
+      fixture.componentInstance.refrescar({ target: { complete: vi.fn() } } as never);
+      fixture.detectChanges();
+
+      expect(texto(fixture)).toContain('Lucas Vega');
     });
   });
 });

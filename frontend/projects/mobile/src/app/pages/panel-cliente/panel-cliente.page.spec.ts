@@ -250,9 +250,8 @@ describe('PanelClientePage móvil', () => {
   it('con orden activa el pie va sin relleno', () => {
     const { fixture } = setup(vi.fn(() => of([enCamino])));
 
-    expect((nodo(fixture, 'panel-solicitar') as HTMLElement & { fill?: string }).fill).toBe(
-      'outline',
-    );
+    // `fill` no basta: `.cd-cta` pinta relleno en el host y gana a Ionic.
+    expect(nodo(fixture, 'panel-solicitar')!.classList).toContain('cd-cta--secundaria');
   });
 
   it('sin orden activa el pie va relleno y lleva a la solicitud', () => {
@@ -260,6 +259,7 @@ describe('PanelClientePage móvil', () => {
     const pie = nodo(fixture, 'panel-solicitar') as HTMLElement & { fill?: string };
 
     expect(pie.fill).toBe('solid');
+    expect(pie.classList).not.toContain('cd-cta--secundaria');
     pie.click();
     expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
   });

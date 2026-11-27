@@ -199,8 +199,20 @@ export class PanelTecnicoPageMobile implements OnInit {
   }
 
   refrescar(evento: RefresherCustomEvent): void {
+    this.recargarPerfil();
     this.cargarOfertas();
-    this.cargarOts(false, () => void evento.target.complete());
+    this.cargarOts(false, {
+      alTerminar: () => void evento.target.complete(),
+      alFallar: (err) => avisarErrorAccion(this.toast, 'No pudimos actualizar', err),
+    });
+  }
+
+  /** Los avisos que bloquean salen del perfil: deslizar tiene que traerlo de nuevo. */
+  private recargarPerfil(): void {
+    cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => {
+      // Con error llega `undefined`: se conserva el perfil que ya se ve.
+      if (tecnico) this.tecnico.set(tecnico);
+    });
   }
 
   /** Cliente y barrio, solo si el backend los entrega. */
@@ -208,7 +220,10 @@ export class PanelTecnicoPageMobile implements OnInit {
     return [orden.clienteNombre, orden.barrio].filter((dato): dato is string => !!dato);
   }
 
-  private cargarOts(inicial = true, alTerminar?: () => void): void {
+  private cargarOts(
+    inicial = true,
+    manual: { alTerminar?: () => void; alFallar?: (err: unknown) => void } = {},
+  ): void {
     if (inicial) this.cargando.set(true);
     this.tecnicosApi.getMisOts().subscribe({
       next: (ots) => {
@@ -216,11 +231,13 @@ export class PanelTecnicoPageMobile implements OnInit {
         this.cargando.set(false);
         this.misOts.set(ots.filter((o) => !['FINALIZADA', 'CANCELADA'].includes(o.estado)));
         this.presencia.sincronizarOts(ots);
-        alTerminar?.();
+        manual.alTerminar?.();
       },
-      error: () => {
+      error: (err: unknown) => {
         this.cargando.set(false);
-        alTerminar?.();
+        manual.alTerminar?.();
+        // Solo avisa lo que pidió el usuario: el sondeo falla en silencio.
+        manual.alFallar?.(err);
         if (!inicial) return;
         this.misOts.set([]);
         this.otsError.set(true);
