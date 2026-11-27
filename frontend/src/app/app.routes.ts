@@ -165,6 +165,12 @@ export const routes: Routes = [
     title: 'Monitoreo Global de OTs - COLD DAY'
   },
   {
+    path: 'admin/ot/:id',
+    canActivate: [authGuard, roleGuard(['ADMINISTRADOR', 'CONTABLE'])],
+    loadComponent: () => import('./pages/admin-ot-detalle-page/admin-ot-detalle-page').then(m => m.AdminOtDetallePage),
+    title: 'Detalle de OT - COLD DAY'
+  },
+  {
     path: 'admin/proveedores',
     canActivate: [authGuard, roleGuard(['ADMINISTRADOR'])],
     loadComponent: () => import('./pages/proveedores-admin-page/proveedores-admin-page').then(m => m.ProveedoresAdminPage),

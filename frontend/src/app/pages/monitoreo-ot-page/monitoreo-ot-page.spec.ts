@@ -38,6 +38,14 @@ describe('MonitoreoOtPage', () => {
     ot({ id: 'OT-2', codigo: 'OT-2026-0002', clienteNombre: 'Luis', barrio: 'Centro', estado: 'FINALIZADA', categoriaServicio: 'ELECTRICIDAD' }),
   ];
 
+  it('el detalle abre la vista admin, no la del cliente', () => {
+    const fixture = setup(vi.fn(() => of([ot({ id: 'ot-1' })])));
+    fixture.detectChanges();
+    const enlace = (fixture.nativeElement as HTMLElement).querySelector('tbody a')!;
+
+    expect(enlace.getAttribute('href')).toBe('/admin/ot/ot-1');
+  });
+
   it('carga todas las OTs y las muestra sin filtros', () => {
     const fixture = setup(vi.fn(() => of(ots)));
     expect(fixture.componentInstance.otsFiltradas().length).toBe(2);
