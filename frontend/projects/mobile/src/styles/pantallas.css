@@ -1593,25 +1593,37 @@ app-seguimiento-ot .cd-map__chip {
   min-width: 0;
 }
 
-/* Mis equipos: el título ocupa su propia fila y las dos chips (prioridad y estado)
-   van debajo. En la misma fila le quitaban el ancho y "Acondicionado" se partía. */
-.cd-equipo__cabecera {
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.cd-ot__cabecera.cd-equipo__cabecera > .cd-equipo__identidad {
-  flex: 1 1 100%;
-}
-
-.cd-equipo__conteo {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
 
 .cd-oferta__icono,
+/* Historial: una tarjeta por orden. */
+.cd-historial__identidad {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cd-historial__titulos {
+  display: grid;
+  min-width: 0;
+}
+
+.cd-historial__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+}
+
+.cd-historial__falla {
+  display: -webkit-box;
+  margin: 0.5rem 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .cd-equipo__icono {
   display: inline-flex;
   align-items: center;

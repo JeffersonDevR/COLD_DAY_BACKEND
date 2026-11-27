@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import {
   IonButton,
@@ -48,7 +47,6 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
   selector: 'app-mobile-panel-cliente',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgTemplateOutlet,
     IonButton,
     IonFooter,
     IonHeader,
@@ -122,10 +120,14 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
             [accion]="textoAccion(orden)"
             (accionar)="atender(orden)"
           />
-        } @else if (historial().length === 0) {
+        } @else {
           <cd-empty-state
-            titulo="Aún no tienes servicios"
-            texto="Pide un técnico y aquí verás en qué va."
+            titulo="No tienes servicios en curso"
+            [texto]="
+              hayCerradas()
+                ? 'Los anteriores están en Historial.'
+                : 'Pide un técnico y aquí verás en qué va.'
+            "
             icono="file-tray-outline"
             testId="panel-vacio"
           />
@@ -134,66 +136,28 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
         @if (otras().length > 0) {
           <h2 class="cd-section__titulo cd-section__titulo--bloque">Otras órdenes</h2>
           @for (orden of otras(); track orden.id) {
-            <ng-container
-              *ngTemplateOutlet="compacta; context: { $implicit: orden, testId: 'panel-ot' }"
-            />
+            <button
+              type="button"
+              class="cd-ot cd-ot--compacta"
+              data-testid="panel-ot"
+              (click)="verSeguimiento(orden.id)"
+            >
+              <span class="cd-ot__cabecera">
+                <span>
+                  <span class="cd-ot__codigo">{{ orden.codigo || 'Sin código' }}</span>
+                  <span class="cd-ot__categoria">{{ categoria(orden) }}</span>
+                </span>
+                <app-priority-chip [prioridad]="orden.prioridad ?? 'MEDIA'" [conPalabra]="true" />
+                <span [class]="'cd-chip cd-chip--' + tono(orden.estado)">{{ etiqueta(orden.estado) }}</span>
+              </span>
+              <span class="cd-ot__direccion">
+                <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+                {{ orden.direccion || orden.barrio || 'Sin dirección' }}
+              </span>
+            </button>
           }
         }
-
-        @if (historial().length > 0) {
-          <button
-            type="button"
-            class="cd-desplegable__cabecera"
-            [attr.aria-expanded]="historialAbierto()"
-            aria-controls="panel-historial-contenido"
-            data-testid="panel-historial"
-            (click)="alternarHistorial()"
-          >
-            <span class="cd-card__titulo">Historial ({{ historial().length }})</span>
-            <ion-icon
-              [name]="historialAbierto() ? 'chevron-up-outline' : 'chevron-down-outline'"
-              aria-hidden="true"
-            ></ion-icon>
-          </button>
-          <div
-            id="panel-historial-contenido"
-            class="cd-desplegable__contenido"
-            [hidden]="!historialAbierto()"
-            data-testid="panel-historial-contenido"
-          >
-            @for (orden of historial(); track orden.id) {
-              <ng-container
-                *ngTemplateOutlet="
-                  compacta;
-                  context: { $implicit: orden, testId: 'panel-historial-ot' }
-                "
-              />
-            }
-          </div>
-        }
       }
-
-      <ng-template #compacta let-orden let-testId="testId">
-        <button
-          type="button"
-          class="cd-ot cd-ot--compacta"
-          [attr.data-testid]="testId"
-          (click)="verSeguimiento(orden.id)"
-        >
-          <span class="cd-ot__cabecera">
-            <span>
-              <span class="cd-ot__codigo">{{ orden.codigo || 'Sin código' }}</span>
-              <span class="cd-ot__categoria">{{ categoria(orden) }}</span>
-            </span>
-            <app-priority-chip [prioridad]="orden.prioridad ?? 'MEDIA'" />
-            <span [class]="'cd-chip cd-chip--' + tono(orden.estado)">{{ etiqueta(orden.estado) }}</span>
-          </span>
-          <span class="cd-ot__direccion">
-            <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
-            {{ orden.barrio || orden.direccion || 'Sin dirección' }}
-          </span>
-        </button>
-      </ng-template>
 
       <ion-footer class="cd-footer" cdFooter>
         <ion-button
@@ -245,8 +209,7 @@ export class PanelClientePage {
   });
 
   protected readonly otras = computed(() => this.activas().filter((ot) => ot !== this.activa()));
-  protected readonly historial = computed(() => this.ots().filter((ot) => !esOtActiva(ot)));
-  protected readonly historialAbierto = signal(false);
+  protected readonly hayCerradas = computed(() => this.ots().some((ot) => !esOtActiva(ot)));
 
   /** El JWT real no emite `nombre`: una sesión sin nombre se saluda por su rol. */
   protected readonly nombre = computed(() => this.auth.currentUser()?.nombre || 'Cliente');
@@ -287,10 +250,6 @@ export class PanelClientePage {
   protected atender(ot: OtResponse): void {
     const sufijo = this.accionDelPanel(ot) === 'presupuesto' ? '/diagnostico' : '';
     void this.router.navigateByUrl(`/cliente/ot/${ot.id}${sufijo}`);
-  }
-
-  protected alternarHistorial(): void {
-    this.historialAbierto.update((abierto) => !abierto);
   }
 
   /** Una disputa se sigue en Seguimiento: desde el panel no se invita a pagar. */

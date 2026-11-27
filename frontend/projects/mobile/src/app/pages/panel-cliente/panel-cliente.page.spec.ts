@@ -18,7 +18,6 @@ interface PanelInternals {
   readonly sinPerfilCliente: WritableSignal<boolean>;
   readonly activa: () => OtResponse | null;
   readonly otras: () => OtResponse[];
-  readonly historial: () => OtResponse[];
   reintentar(): void;
   pedirTecnico(): void;
 }
@@ -74,7 +73,7 @@ function cambiarPestana(estado: 'visible' | 'hidden'): void {
 }
 
 function idsVisibles(page: PanelInternals): string[] {
-  return [page.activa(), ...page.otras(), ...page.historial()].flatMap((item) =>
+  return [page.activa(), ...page.otras()].flatMap((item) =>
     item ? [item.id] : [],
   );
 }
@@ -103,7 +102,6 @@ describe('PanelClientePage móvil', () => {
     expect(page.cargando()).toBe(false);
     expect(todos(fixture, 'orden-activa')).toHaveLength(1);
     expect(todos(fixture, 'panel-ot')).toHaveLength(1);
-    expect(todos(fixture, 'panel-historial-ot')).toHaveLength(2);
   });
 
   it('saluda con el nombre de la sesión', () => {
@@ -126,8 +124,8 @@ describe('PanelClientePage móvil', () => {
     expect(texto(activa.fixture)).not.toContain('undefined');
 
     TestBed.resetTestingModule();
-    const cerrada = setup(vi.fn(() => of([ot({ codigo: undefined, estado: 'FINALIZADA' })])));
-    expect(texto(cerrada.fixture)).toContain('Sin código');
+    const compacta = setup(vi.fn(() => of([ot({}), ot({ id: 'b', codigo: undefined })])));
+    expect(texto(compacta.fixture)).toContain('Sin código');
   });
 
   it('cada tarjeta muestra el chip de prioridad real, con Media por defecto', () => {
@@ -144,7 +142,7 @@ describe('PanelClientePage móvil', () => {
       fixture.nativeElement.querySelectorAll('[data-testid="prioridad-chip"]'),
     ) as HTMLElement[];
     expect(chips).toHaveLength(2);
-    expect(chips.map((chip) => chip.textContent?.trim())).toEqual(['Alta', 'Media']);
+    expect(chips.map((chip) => chip.textContent?.trim())).toEqual(['Prioridad alta', 'Prioridad media']);
     expect(chips[0].classList).toContain('cd-chip--cerrada');
     expect(chips[1].classList).toContain('cd-chip--curso');
   });
@@ -223,28 +221,13 @@ describe('PanelClientePage móvil', () => {
     expect(tarjeta).toContain('Caobos');
   });
 
-  it('reparte otras e historial', () => {
+  it('las activas se reparten y las cerradas quedan para la pestaña Historial', () => {
     const { fixture, page } = setup(vi.fn(() => of(otsDeEjemplo())));
 
-    expect(idsVisibles(page)).toEqual(['en-camino', 'solicitada', 'finalizada', 'cancelada']);
+    expect(idsVisibles(page)).toEqual(['en-camino', 'solicitada']);
     expect(todos(fixture, 'orden-activa')).toHaveLength(1);
     expect(todos(fixture, 'panel-ot')).toHaveLength(1);
-    expect(todos(fixture, 'panel-historial-ot')).toHaveLength(2);
-  });
-
-  it('el historial empieza plegado y se abre al tocarlo', () => {
-    const { fixture } = setup(vi.fn(() => of(otsDeEjemplo())));
-    const cabecera = nodo(fixture, 'panel-historial') as HTMLElement;
-    const contenido = nodo(fixture, 'panel-historial-contenido') as HTMLElement;
-
-    expect(cabecera.textContent).toContain('Historial (2)');
-    expect(cabecera.getAttribute('aria-expanded')).toBe('false');
-    expect(contenido.hidden).toBe(true);
-
-    cabecera.click();
-    fixture.detectChanges();
-    expect(cabecera.getAttribute('aria-expanded')).toBe('true');
-    expect(contenido.hidden).toBe(false);
+    expect(nodo(fixture, 'panel-historial')).toBeNull();
   });
 
   it('con orden activa el pie va sin relleno', () => {
@@ -269,16 +252,17 @@ describe('PanelClientePage móvil', () => {
 
     expect(page.errorCarga()).toBeNull();
     expect(nodo(fixture, 'panel-error')).toBeNull();
-    expect(nodo(fixture, 'panel-vacio')?.textContent).toContain('Aún no tienes servicios');
-    expect(nodo(fixture, 'panel-historial')).toBeNull();
+    expect(nodo(fixture, 'panel-vacio')?.textContent).toContain('No tienes servicios en curso');
+    expect(nodo(fixture, 'panel-vacio')?.textContent).toContain('aquí verás en qué va');
   });
 
-  it('solo historial no muestra vacío', () => {
+  it('con solo órdenes cerradas dice dónde están', () => {
     const { fixture } = setup(vi.fn(() => of([ot({ estado: 'FINALIZADA' })])));
 
-    expect(nodo(fixture, 'panel-vacio')).toBeNull();
     expect(nodo(fixture, 'orden-activa')).toBeNull();
-    expect(nodo(fixture, 'panel-historial')).not.toBeNull();
+    expect(nodo(fixture, 'panel-vacio')?.textContent).toContain(
+      'Los anteriores están en Historial.',
+    );
   });
 
   it('las órdenes compactas abren su seguimiento', () => {
@@ -286,9 +270,6 @@ describe('PanelClientePage móvil', () => {
 
     (nodo(fixture, 'panel-ot') as HTMLElement).click();
     expect(navigate).toHaveBeenCalledWith('/cliente/ot/solicitada');
-
-    (nodo(fixture, 'panel-historial-ot') as HTMLElement).click();
-    expect(navigate).toHaveBeenCalledWith('/cliente/ot/finalizada');
   });
 
   it('sin ruido: ni filtros, ni contadores, ni Historial como botón, ni frase promocional', () => {

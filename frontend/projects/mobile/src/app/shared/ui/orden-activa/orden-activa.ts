@@ -20,7 +20,7 @@ import { PriorityChipComponent } from '../priority-chip/priority-chip.component'
           <span class="cd-ot__codigo">{{ valor }}</span>
         }
         @if (prioridad(); as valor) {
-          <app-priority-chip [prioridad]="valor" />
+          <app-priority-chip [prioridad]="valor" [conPalabra]="true" />
         }
       </div>
       @if (contexto().length > 0) {

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import {
   IonButton,
@@ -14,7 +15,8 @@ import { CategoriaServicio, EstadoOt, OtResponse } from '@core/models/common.mod
 import { AuthService } from '@core/service/auth.service';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { ClientesApi } from '@core/service/clientes-api';
-import { EquipoCliente, agruparEquipos } from '@core/service/equipos-cliente';
+import { esOtActiva } from '@core/service/ots-cliente';
+import { categoriaLabel } from '@core/ui/labels';
 import { iconoCategoria as iconoDeCategoria } from '../../core/icono-categoria';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
@@ -24,26 +26,15 @@ import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-ch
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 
 /**
- * A10 — Mis equipos (cliente).
- *
- * El agrupado vive en `@core/service/equipos-cliente` (compartido con la web);
- * acá sólo queda la presentación y lo que esta plataforma decide: la
- * iconografía.
- *
- * Se llega por el tab `equipos` del cliente y además desde el panel: el
- * historial por equipo es de las pocas cosas que el cliente busca solo.
- *
- * Se diferencia de la web en que un fallo de carga se puede reintentar en vez
- * de mostrar una lista vacía que miente sobre la causa.
- *
- * Organización: el mismo `<cd-page>` que las otras pantallas principales; el
- * título vive en la cabecera, el contenido arranca con el eyebrow de conteo y
- * termina en el CTA del pie.
+ * Historial del cliente (antes «Mis equipos»): una tarjeta por orden, de la más
+ * reciente a la más antigua. La ruta sigue siendo `/cliente/equipos`.
+ * Estructura: `docs/superpowers/specs/2026-11-27-observaciones-historial-recarga-design.md`.
  */
 @Component({
   selector: 'app-mobile-equipos',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DatePipe,
     IonButton,
     IonCard,
     IonCardContent,
@@ -62,18 +53,17 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     <cd-page>
       <ion-header class="cd-header" cdHeader>
         <ion-toolbar>
-          <cd-marca pantalla="Mis equipos" chip="Cliente" />
+          <cd-marca pantalla="Historial" chip="Cliente" />
         </ion-toolbar>
       </ion-header>
 
       @if (cargando()) {
-        <cd-skeleton label="Cargando tus equipos" testId="equipos-cargando" />
+        <cd-skeleton label="Cargando tu historial" testId="equipos-cargando" />
       } @else if (sinPerfilCliente()) {
         <section class="cd-alerta cd-alerta--aviso" role="status" data-testid="equipos-sin-perfil">
           <h2 class="cd-alerta__titulo">Todavía no tienes perfil de cliente</h2>
           <p class="cd-alerta__texto">
-            Necesitamos tus datos para asociar los equipos a tu cuenta. Los completas al pedir tu
-            primer servicio.
+            Necesitamos tus datos para guardar tus servicios. Los completas al pedir el primero.
           </p>
           <ion-button class="cd-cta" data-testid="equipos-crear-perfil" (click)="irASolicitar()">
             Pedir un servicio
@@ -81,68 +71,58 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
         </section>
       } @else if (errorCarga()) {
         <cd-error-alert
-          titulo="No pudimos cargar tus equipos"
+          titulo="No pudimos cargar tu historial"
           texto="Revisa la conexión y vuelve a intentar. Tus órdenes siguen guardadas."
           testId="equipos-error"
           accionTestId="equipos-reintentar"
           (reintentar)="cargar()"
         />
-      } @else if (!equipos().length) {
+      } @else if (!ordenes().length) {
         <cd-empty-state
-          titulo="Todavía no tienes equipos"
-          texto="Cuando pidas un servicio, el equipo queda registrado con su historial."
-          icono="cube-outline"
+          titulo="Aún no tienes servicios"
+          texto="Cuando pidas un técnico, la orden queda guardada aquí."
+          icono="file-tray-outline"
           testId="equipos-vacio"
         />
       } @else {
-        <p class="cd-eyebrow">{{ equipos().length }} equipos · historial completo</p>
-
-        @for (equipo of equipos(); track equipo.categoria) {
-          <ion-card class="cd-ot cd-ot--orden" data-testid="equipo">
+        @for (ot of ordenes(); track ot.id) {
+          <ion-card class="cd-ot cd-ot--orden" data-testid="historial-ot">
             <ion-card-content>
-              <div class="cd-ot__cabecera cd-equipo__cabecera">
-                <div class="cd-equipo__identidad">
-                  <span class="cd-equipo__icono" aria-hidden="true">
-                    <ion-icon aria-hidden="true" [name]="iconoCategoria(equipo.categoria)"></ion-icon>
-                  </span>
-                  <div class="cd-ot__titulos">
-                    <span class="cd-ot__codigo">{{ equipo.codigoOt }}</span>
-                    <h2 class="cd-ot__categoria">{{ equipo.etiqueta }}</h2>
-                  </div>
-                </div>
-                <app-priority-chip
-                  class="cd-ot__prioridad"
-                  [prioridad]="equipo.prioridad ?? 'MEDIA'"
-                />
-                <span [class]="'cd-chip cd-chip--' + tono(equipo.estado)">
-                  {{ etiqueta(equipo.estado) }}
+              <div class="cd-historial__identidad">
+                <span class="cd-equipo__icono" aria-hidden="true">
+                  <ion-icon aria-hidden="true" [name]="iconoCategoria(ot.categoriaServicio)"></ion-icon>
                 </span>
-              </div>
-              <p class="cd-ot__descripcion">{{ equipo.descripcionFalla }}</p>
-              <div class="cd-ot__pie">
-                <span class="cd-equipo__conteo">
-                  <span>
-                    {{ equipo.intervenciones }}
-                    {{ equipo.intervenciones === 1 ? 'servicio' : 'servicios' }}
-                  </span>
-                  @if (equipo.activas > 0) {
-                    <span class="cd-chip cd-chip--curso" data-testid="equipo-en-curso">
-                      {{ equipo.activas }} en curso
-                    </span>
+                <div class="cd-historial__titulos">
+                  <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
+                  @if (ot.codigo; as codigo) {
+                    <span class="cd-ot__codigo">{{ codigo }}</span>
                   }
-                </span>
-                <span class="cd-muted">{{ equipo.fecha }}</span>
+                </div>
               </div>
-              <div class="cd-ot__acciones">
-                <ion-button
-                  class="cd-cta"
-                  fill="outline"
-                  data-testid="equipo-ver"
-                  (click)="abrir(equipo)"
-                >
-                  Ver la última OT
-                </ion-button>
-              </div>
+              <p class="cd-historial__chips">
+                <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{ etiqueta(ot.estado) }}</span>
+                @if (activa(ot)) {
+                  <app-priority-chip [prioridad]="ot.prioridad ?? 'MEDIA'" [conPalabra]="true" />
+                }
+              </p>
+              <p class="cd-historial__falla">{{ ot.descripcionFalla }}</p>
+              @if (ot.fechaCreacion || ot.barrio || ot.direccion) {
+                <p class="cd-ot__pie">
+                  <span>{{ ot.barrio || ot.direccion }}</span>
+                  @if (ot.fechaCreacion; as fecha) {
+                    <span class="cd-muted">{{ fecha | date: 'mediumDate' }}</span>
+                  }
+                </p>
+              }
+              <ion-button
+                expand="block"
+                class="cd-cta cd-cta--secundaria"
+                fill="outline"
+                data-testid="historial-revisar"
+                (click)="abrir(ot)"
+              >
+                Revisar
+              </ion-button>
             </ion-card-content>
           </ion-card>
         }
@@ -156,7 +136,7 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           (click)="irASolicitar()"
         >
           <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
-          Registrar otro equipo
+          Pedir un técnico
         </ion-button>
       </ion-footer>
     </cd-page>
@@ -174,7 +154,10 @@ export class MobileEquiposPage implements OnInit {
   /** 404 de perfil de cliente faltante: se ofrece completarlo, no un error. */
   readonly sinPerfilCliente = signal<boolean>(false);
 
-  readonly equipos = computed<EquipoCliente[]>(() => agruparEquipos(this.ots()));
+  /** De la más reciente a la más antigua; sin fecha, al final. */
+  readonly ordenes = computed(() =>
+    [...this.ots()].sort((a, b) => (b.fechaCreacion ?? '').localeCompare(a.fechaCreacion ?? '')),
+  );
 
   ngOnInit(): void {
     this.cargar();
@@ -201,6 +184,14 @@ export class MobileEquiposPage implements OnInit {
     });
   }
 
+  categoria(ot: OtResponse): string {
+    return categoriaLabel(ot.categoriaServicio);
+  }
+
+  activa(ot: OtResponse): boolean {
+    return esOtActiva(ot);
+  }
+
   etiqueta(estado: EstadoOt): string {
     return ETIQUETA_ESTADO_OT[estado] ?? estado;
   }
@@ -214,8 +205,8 @@ export class MobileEquiposPage implements OnInit {
     return iconoDeCategoria(categoria);
   }
 
-  abrir(equipo: EquipoCliente): void {
-    void this.router.navigate(['/cliente/ot', equipo.ultimaOtId]);
+  abrir(ot: OtResponse): void {
+    void this.router.navigate(['/cliente/ot', ot.id]);
   }
 
   irASolicitar(): void {

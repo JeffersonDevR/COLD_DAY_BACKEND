@@ -59,7 +59,7 @@ describe('cd-orden-activa', () => {
     });
 
     expect(raiz.textContent).toContain('OT-2026-0001');
-    expect(raiz.querySelector('app-priority-chip')?.textContent?.trim()).toBe('Alta');
+    expect(raiz.querySelector('app-priority-chip')?.textContent?.trim()).toBe('Prioridad alta');
     expect(raiz.querySelector('.cd-orden-activa__contexto')?.textContent).toContain('Caobos');
     expect(raiz.querySelector('.cd-orden-activa__direccion')?.textContent).toContain('Calle 15');
   });
