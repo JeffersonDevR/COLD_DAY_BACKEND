@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideIonicAngular, SegmentCustomEvent } from '@ionic/angular';
+import { provideIonicAngular } from '@ionic/angular';
 import { provideRouter, Router } from '@angular/router';
 import { WritableSignal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -16,14 +16,11 @@ interface PanelInternals {
   readonly cargando: WritableSignal<boolean>;
   readonly errorCarga: WritableSignal<string | null>;
   readonly sinPerfilCliente: WritableSignal<boolean>;
-  readonly filtro: WritableSignal<string>;
-  readonly activas: () => number;
-  readonly finalizadas: () => number;
-  readonly serviciosFiltrados: () => OtResponse[];
-  cambiarFiltro(evento: SegmentCustomEvent): void;
+  readonly activa: () => OtResponse | null;
+  readonly otras: () => OtResponse[];
+  readonly historial: () => OtResponse[];
   reintentar(): void;
   pedirTecnico(): void;
-  verEquipos(): void;
 }
 
 function ot(overrides: Partial<OtResponse>): OtResponse {
@@ -77,11 +74,17 @@ function cambiarPestana(estado: 'visible' | 'hidden'): void {
 }
 
 function idsVisibles(page: PanelInternals): string[] {
-  return page.serviciosFiltrados().map((item) => item.id);
+  return [page.activa(), ...page.otras(), ...page.historial()].flatMap((item) =>
+    item ? [item.id] : [],
+  );
 }
 
-function filtro(valor: string): SegmentCustomEvent {
-  return { detail: { value: valor } } as SegmentCustomEvent;
+function todos(fixture: ComponentFixture<PanelClientePage>, id: string): HTMLElement[] {
+  return Array.from(fixture.nativeElement.querySelectorAll(`[data-testid="${id}"]`));
+}
+
+function nodo(fixture: ComponentFixture<PanelClientePage>, id: string): HTMLElement | null {
+  return todos(fixture, id)[0] ?? null;
 }
 
 function texto(fixture: ComponentFixture<PanelClientePage>): string {
@@ -98,7 +101,9 @@ describe('PanelClientePage móvil', () => {
 
     expect(clienteApi.getOtsPorCliente).toHaveBeenCalledWith('3');
     expect(page.cargando()).toBe(false);
-    expect(fixture.nativeElement.querySelectorAll('[data-testid="panel-ot"]')).toHaveLength(2);
+    expect(todos(fixture, 'orden-activa')).toHaveLength(1);
+    expect(todos(fixture, 'panel-ot')).toHaveLength(1);
+    expect(todos(fixture, 'panel-historial-ot')).toHaveLength(2);
   });
 
   it('saluda con el nombre de la sesión', () => {
@@ -115,10 +120,14 @@ describe('PanelClientePage móvil', () => {
     expect(texto(fixture)).not.toContain(idInterno);
   });
 
-  it('sin código del backend muestra "Sin código"', () => {
-    const { fixture } = setup(vi.fn(() => of([ot({ codigo: undefined })])));
+  it('sin código: la tarjeta grande lo omite y la compacta dice "Sin código"', () => {
+    const activa = setup(vi.fn(() => of([ot({ codigo: undefined })])));
+    expect(texto(activa.fixture)).not.toContain('Sin código');
+    expect(texto(activa.fixture)).not.toContain('undefined');
 
-    expect(texto(fixture)).toContain('Sin código');
+    TestBed.resetTestingModule();
+    const cerrada = setup(vi.fn(() => of([ot({ codigo: undefined, estado: 'FINALIZADA' })])));
+    expect(texto(cerrada.fixture)).toContain('Sin código');
   });
 
   it('cada tarjeta muestra el chip de prioridad real, con Media por defecto', () => {
@@ -140,76 +149,155 @@ describe('PanelClientePage móvil', () => {
     expect(chips[1].classList).toContain('cd-chip--curso');
   });
 
-  it('los contadores resumen toda la lista y no dependen del filtro', () => {
-    const { page } = setup(vi.fn(() => of(otsDeEjemplo())));
+  const cambiante = (id: string, datos: Partial<OtResponse>) =>
+    ot({ id, codigo: `OT-${id}`, tecnicoId: 't', ...datos });
+  const boton = (fixture: ComponentFixture<PanelClientePage>) =>
+    nodo(fixture, 'orden-activa-accion') as HTMLElement;
+  const enCamino = cambiante('camino', { estado: 'EN_CAMINO' });
+  const conPresupuesto = cambiante('presupuesto', {
+    estado: 'EN_DIAGNOSTICO',
+    diagnostico: {} as never,
+  });
+  const sinPagar = cambiante('pago', { estado: 'ASIGNADA', visitaPagada: false });
 
-    expect(page.activas()).toBe(2);
-    expect(page.finalizadas()).toBe(1);
+  it('la que pide pagar va grande', () => {
+    const { fixture, navigate } = setup(vi.fn(() => of([enCamino, conPresupuesto, sinPagar])));
 
-    for (const valor of ['TODAS', 'ACTIVAS', 'COMPLETADAS', 'SIN_TECNICO']) {
-      page.cambiarFiltro(filtro(valor));
-      expect(page.activas()).toBe(2);
-      expect(page.finalizadas()).toBe(1);
-    }
+    expect(boton(fixture).textContent?.trim()).toBe('Pagar la visita');
+    boton(fixture).click();
+    expect(navigate).toHaveBeenCalledWith('/cliente/ot/pago');
   });
 
-  it('TODAS incluye las canceladas y SIN_TECNICO solo las que esperan técnico', () => {
-    const { page } = setup(vi.fn(() => of(otsDeEjemplo())));
+  it('después, la del presupuesto', () => {
+    const { fixture, navigate } = setup(vi.fn(() => of([enCamino, conPresupuesto])));
 
-    page.cambiarFiltro(filtro('TODAS'));
-    expect(idsVisibles(page)).toEqual(['en-camino', 'finalizada', 'cancelada', 'solicitada']);
-
-    page.cambiarFiltro(filtro('SIN_TECNICO'));
-    expect(idsVisibles(page)).toEqual(['solicitada']);
+    expect(boton(fixture).textContent?.trim()).toBe('Revisar presupuesto');
+    boton(fixture).click();
+    expect(navigate).toHaveBeenCalledWith('/cliente/ot/presupuesto/diagnostico');
   });
 
-  it('el control segmentado ofrece las cuatro vistas', () => {
+  it('sin acciones, la más reciente; sin fecha al final', () => {
+    const { page } = setup(
+      vi.fn(() =>
+        of([
+          cambiante('sin-fecha', { estado: 'EN_CAMINO' }),
+          cambiante('vieja', { estado: 'EN_CAMINO', fechaCreacion: '2026-11-01T10:00:00Z' }),
+          cambiante('nueva', { estado: 'EN_CAMINO', fechaCreacion: '2026-11-20T10:00:00Z' }),
+        ]),
+      ),
+    );
+
+    expect(page.activa()?.id).toBe('nueva');
+    expect(page.otras().map((item) => item.id)).toEqual(['vieja', 'sin-fecha']);
+  });
+
+  it('disputa no invita a pagar', () => {
+    const { fixture, navigate } = setup(
+      vi.fn(() => of([cambiante('disputa', { estado: 'DISPUTADA' })])),
+    );
+
+    expect(boton(fixture).textContent?.trim()).toBe('Ver seguimiento');
+    boton(fixture).click();
+    expect(navigate).toHaveBeenCalledWith('/cliente/ot/disputa');
+  });
+
+  it('la tarjeta dice el estado, el técnico y la dirección', () => {
+    const { fixture } = setup(
+      vi.fn(() =>
+        of([
+          ot({
+            estado: 'EN_CAMINO',
+            tecnicoId: 't',
+            tecnicoNombre: 'Lucas Vega',
+            llegadaEn: '2026-11-27T10:00:00Z',
+            direccion: undefined,
+            barrio: 'Caobos',
+          }),
+        ]),
+      ),
+    );
+    const tarjeta = nodo(fixture, 'orden-activa')?.textContent ?? '';
+
+    expect(tarjeta).toContain('El técnico llegó');
+    expect(tarjeta).toContain('Lucas Vega');
+    expect(tarjeta).toContain('Caobos');
+  });
+
+  it('reparte otras e historial', () => {
+    const { fixture, page } = setup(vi.fn(() => of(otsDeEjemplo())));
+
+    expect(idsVisibles(page)).toEqual(['en-camino', 'solicitada', 'finalizada', 'cancelada']);
+    expect(todos(fixture, 'orden-activa')).toHaveLength(1);
+    expect(todos(fixture, 'panel-ot')).toHaveLength(1);
+    expect(todos(fixture, 'panel-historial-ot')).toHaveLength(2);
+  });
+
+  it('el historial empieza plegado y se abre al tocarlo', () => {
     const { fixture } = setup(vi.fn(() => of(otsDeEjemplo())));
-    const botones = Array.from(
-      fixture.nativeElement.querySelectorAll('ion-segment-button'),
-    ) as HTMLElement[];
+    const cabecera = nodo(fixture, 'panel-historial') as HTMLElement;
+    const contenido = nodo(fixture, 'panel-historial-contenido') as HTMLElement;
 
-    expect(botones.map((boton) => boton.textContent?.trim())).toEqual([
-      'Todas',
-      'Activas',
-      'Completadas',
-      'Sin técnico',
-    ]);
-  });
+    expect(cabecera.textContent).toContain('Historial (2)');
+    expect(cabecera.getAttribute('aria-expanded')).toBe('false');
+    expect(contenido.hidden).toBe(true);
 
-  it('el estado vacío explica qué falta según la vista y deja el CTA fijo como única acción', () => {
-    const { fixture, page } = setup(vi.fn(() => of([ot({ tecnicoId: 'tec-1' })])));
-
-    page.cambiarFiltro(filtro('COMPLETADAS'));
+    cabecera.click();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[data-testid="panel-vacio"]')).not.toBeNull();
-    expect(texto(fixture)).toContain('Todavía no tenés servicios completados');
-    // Una sola acción primaria por pantalla: el CTA vive en el footer fijo.
-    expect(fixture.nativeElement.querySelector('[data-testid="panel-vacio-cta"]')).toBeNull();
-    const footer = fixture.nativeElement.querySelector('ion-footer.cd-footer');
-    expect(footer).not.toBeNull();
-    expect(footer.querySelector('[data-testid="panel-solicitar"]')).not.toBeNull();
+    expect(cabecera.getAttribute('aria-expanded')).toBe('true');
+    expect(contenido.hidden).toBe(false);
   });
 
-  it('la lista vacía del filtro inicial no es un error de carga', () => {
+  it('con orden activa el pie va sin relleno', () => {
+    const { fixture } = setup(vi.fn(() => of([enCamino])));
+
+    // `fill` no basta: `.cd-cta` pinta relleno en el host y gana a Ionic.
+    expect(nodo(fixture, 'panel-solicitar')!.classList).toContain('cd-cta--secundaria');
+  });
+
+  it('sin orden activa el pie va relleno y lleva a la solicitud', () => {
+    const { fixture, navigate } = setup(vi.fn(() => of([])));
+    const pie = nodo(fixture, 'panel-solicitar') as HTMLElement & { fill?: string };
+
+    expect(pie.fill).toBe('solid');
+    expect(pie.classList).not.toContain('cd-cta--secundaria');
+    pie.click();
+    expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
+  });
+
+  it('sin ninguna orden invita a pedir', () => {
     const { fixture, page } = setup(vi.fn(() => of([])));
 
     expect(page.errorCarga()).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="panel-error"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="panel-vacio"]')).not.toBeNull();
+    expect(nodo(fixture, 'panel-error')).toBeNull();
+    expect(nodo(fixture, 'panel-vacio')?.textContent).toContain('Aún no tienes servicios');
+    expect(nodo(fixture, 'panel-historial')).toBeNull();
   });
 
-  it('cada OT ofrece el acceso al seguimiento (A6)', () => {
+  it('solo historial no muestra vacío', () => {
+    const { fixture } = setup(vi.fn(() => of([ot({ estado: 'FINALIZADA' })])));
+
+    expect(nodo(fixture, 'panel-vacio')).toBeNull();
+    expect(nodo(fixture, 'orden-activa')).toBeNull();
+    expect(nodo(fixture, 'panel-historial')).not.toBeNull();
+  });
+
+  it('las órdenes compactas abren su seguimiento', () => {
     const { fixture, navigate } = setup(vi.fn(() => of(otsDeEjemplo())));
 
-    const enlaces = Array.from(
-      fixture.nativeElement.querySelectorAll('[data-testid="panel-ot-ver"]'),
-    ) as HTMLElement[];
-    expect(enlaces).toHaveLength(2);
+    (nodo(fixture, 'panel-ot') as HTMLElement).click();
+    expect(navigate).toHaveBeenCalledWith('/cliente/ot/solicitada');
 
-    enlaces[0].click();
+    (nodo(fixture, 'panel-historial-ot') as HTMLElement).click();
+    expect(navigate).toHaveBeenCalledWith('/cliente/ot/finalizada');
+  });
 
-    expect(navigate).toHaveBeenCalledWith('/cliente/ot/en-camino');
+  it('sin ruido: ni filtros, ni contadores, ni Historial como botón, ni frase promocional', () => {
+    const { fixture } = setup(vi.fn(() => of(otsDeEjemplo())));
+
+    for (const id of ['panel-filtros', 'panel-equipos', 'panel-total-activas', 'panel-subtitulo']) {
+      expect(nodo(fixture, id)).toBeNull();
+    }
+    expect(texto(fixture)).not.toContain('Pide un servicio y sigue');
   });
 
   it('un fallo de carga inicial muestra el error con Reintentar y no una lista vacía', () => {
@@ -237,7 +325,7 @@ describe('PanelClientePage móvil', () => {
 
     expect(getOts).toHaveBeenCalledTimes(2);
     expect(page.errorCarga()).toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('[data-testid="panel-ot"]')).toHaveLength(1);
+    expect(todos(fixture, 'orden-activa')).toHaveLength(1);
   });
 
   it('sin perfil de cliente muestra la tarjeta honesta con CTA a la solicitud', () => {
@@ -263,22 +351,6 @@ describe('PanelClientePage móvil', () => {
     expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
   });
 
-  it('el CTA del panel lleva a la solicitud; Historial filtra y no duplica la ruta del tab', () => {
-    const { fixture, navigate } = setup(vi.fn(() => of([])));
-
-    (fixture.nativeElement.querySelector('[data-testid="panel-solicitar"]') as HTMLElement).click();
-    expect(navigate).toHaveBeenCalledWith('/cliente/solicitar');
-
-    // Un botón, una ruta: Historial NO navega a equipos, cambia la vista.
-    (fixture.nativeElement.querySelector('[data-testid="panel-equipos"]') as HTMLElement).click();
-    fixture.detectChanges();
-    expect(texto(fixture)).toContain('Órdenes ya finalizadas');
-    expect(navigate).not.toHaveBeenCalledWith('/cliente/equipos');
-
-    // "Mis equipos" es un tab: el panel ya no duplica esa ruta con un botón.
-    expect(fixture.nativeElement.querySelector('[data-testid="panel-mis-equipos"]')).toBeNull();
-  });
-
   describe('refresco periódico', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => {
@@ -296,7 +368,24 @@ describe('PanelClientePage móvil', () => {
       vi.advanceTimersByTime(POLL_INTERVAL_MS);
 
       expect(getOts).toHaveBeenCalledTimes(2);
-      expect(page.serviciosFiltrados().map((item) => item.id)).toEqual(['a']);
+      expect(idsVisibles(page)).toEqual(['a']);
+    });
+
+    it('un refresco cambia la orden grande', () => {
+      cambiarPestana('visible');
+      const camino = ot({ id: 'camino', estado: 'EN_CAMINO', tecnicoId: 't' });
+      const pago = ot({ id: 'pago', estado: 'ASIGNADA', tecnicoId: 't', visitaPagada: false });
+      const getOts = vi
+        .fn()
+        .mockReturnValueOnce(of([camino]))
+        .mockReturnValue(of([camino, pago]));
+      const { fixture, page } = setup(getOts);
+
+      vi.advanceTimersByTime(POLL_INTERVAL_MS);
+      fixture.detectChanges();
+
+      expect(page.activa()?.id).toBe('pago');
+      expect(nodo(fixture, 'orden-activa-accion')?.textContent?.trim()).toBe('Pagar la visita');
     });
 
     it('no consulta mientras la app está en segundo plano', () => {
@@ -320,7 +409,7 @@ describe('PanelClientePage móvil', () => {
       vi.advanceTimersByTime(POLL_INTERVAL_MS);
 
       expect(getOts).toHaveBeenCalledTimes(2);
-      expect(page.serviciosFiltrados().map((item) => item.id)).toEqual(['a']);
+      expect(idsVisibles(page)).toEqual(['a']);
       expect(page.errorCarga()).toBeNull();
       // El refresco automático no avisa: no hay acción del usuario que explicar.
       expect(toast.error).not.toHaveBeenCalled();

@@ -1,22 +1,16 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DatePipe } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import {
   IonButton,
-  IonCard,
-  IonCardContent,
   IonFooter,
   IonHeader,
   IonIcon,
-  IonLabel,
   IonRefresher,
   IonRefresherContent,
-  IonSegment,
-  IonSegmentButton,
   IonToolbar,
   RefresherCustomEvent,
-  SegmentCustomEvent,
 } from '@ionic/angular';
 import { mensajeErrorAccion, sesionYaNotificada } from '@core/alertas/mensaje-error';
 import { esErrorPerfilClienteFaltante } from '@core/errorStatus/perfil-cliente';
@@ -24,19 +18,14 @@ import { EstadoOt, OtResponse } from '@core/models/common.models';
 import { AuthService } from '@core/service/auth.service';
 import { ETIQUETA_ESTADO_OT, tonoEstadoOt } from '@core/service/estado-ot';
 import { ClientesApi } from '@core/service/clientes-api';
-import {
-  FiltroOts,
-  OPCIONES_FILTRO_OTS,
-  TEXTOS_FILTRO_OTS,
-  contarOtsActivas,
-  contarOtsFinalizadas,
-  filtrarOts,
-} from '@core/service/ots-cliente';
+import { esOtActiva } from '@core/service/ots-cliente';
 import { pollVisibleTab } from '@core/service/visible-tab-polling';
 import { MobileToastService } from '../../core/toast.service';
+import { accionOtCliente, tituloEstadoOt } from '../../shared/orden-reglas';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
+import { OrdenActivaComponent } from '../../shared/ui/orden-activa/orden-activa';
 import { PageComponent } from '../../shared/ui/page/page';
 import { PriorityChipComponent } from '../../shared/ui/priority-chip/priority-chip.component';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
@@ -44,34 +33,28 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 /**
  * A4 — Panel del cliente.
  *
- * Es la misma lista de OTs de la web, con los mismos filtros y contadores de
- * `@core/service/ots-cliente`, pero con dos correcciones deliberadas:
+ * La orden activa domina la pantalla (`cd-orden-activa`); las demás activas van
+ * compactas y las cerradas en un historial plegado. Estructura:
+ * `docs/superpowers/specs/2026-11-27-rediseno-paneles-design.md`.
+ *
+ * Dos correcciones deliberadas frente a la web:
  *
  * - Un fallo de carga inicial muestra un estado de error con "Reintentar"; la
  *   web lo escondía tras un listado vacío (mentía sobre la causa).
  * - El refresco periódico (25 s, solo con la app visible) nunca borra la lista
  *   que el cliente ya está viendo.
- *
- * Organización: `<cd-page>` único, con la cabecera de marca en `[cdHeader]`, el
- * saludo en el héroe (`titulo`/`subtitulo`), la acción "Historial" en
- * `[cdHeroAcciones]` y el CTA "Pedir un técnico" en `[cdFooter]`.
  */
 @Component({
   selector: 'app-mobile-panel-cliente',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DatePipe,
+    NgTemplateOutlet,
     IonButton,
-    IonCard,
-    IonCardContent,
     IonFooter,
     IonHeader,
     IonIcon,
-    IonLabel,
     IonRefresher,
     IonRefresherContent,
-    IonSegment,
-    IonSegmentButton,
     IonToolbar,
     PageComponent,
     SkeletonComponent,
@@ -79,12 +62,12 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
     EmptyStateComponent,
     PriorityChipComponent,
     MarcaBarraComponent,
+    OrdenActivaComponent,
   ],
   template: `
     <cd-page
       [titulo]="'Hola, ' + nombre()"
       tituloTestId="panel-saludo"
-      [subtitulo]="heroNota"
       contenidoClase="cd-panel-content"
     >
       <ion-header class="cd-header" cdHeader>
@@ -100,19 +83,6 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           refreshingText="Actualizando..."
         ></ion-refresher-content>
       </ion-refresher>
-
-      <div class="cd-hero__acciones" cdHeroAcciones>
-        <ion-button
-          fill="outline"
-          color="primary"
-          class="cd-accion"
-          data-testid="panel-equipos"
-          (click)="verHistorial()"
-        >
-          <ion-icon slot="start" name="time-outline" aria-hidden="true"></ion-icon>
-          Historial
-        </ion-button>
-      </div>
 
       @if (cargando()) {
         <cd-skeleton label="Cargando tus servicios" testId="panel-cargando" />
@@ -141,93 +111,97 @@ import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
           </ion-button>
         </section>
       } @else {
-        <p class="cd-panel__resumen" aria-label="Resumen de tus servicios">
-          <span><b data-testid="panel-total-activas">{{ activas() }}</b> en proceso</span>
-          <span><b data-testid="panel-total-finalizadas">{{ finalizadas() }}</b> {{ finalizadas() === 1 ? 'concluido' : 'concluidos' }}</span>
-          <span><b data-testid="panel-total-sin-tecnico">{{ sinTecnico() }}</b> sin técnico</span>
-        </p>
-
-        <ion-segment
-          class="cd-filtros cd-filtros--cliente"
-          [value]="filtro()"
-          aria-label="Filtrar órdenes de trabajo por estado"
-          data-testid="panel-filtros"
-          (ionChange)="cambiarFiltro($event)"
-        >
-          @for (opcion of opciones; track opcion.valor) {
-            <ion-segment-button [value]="opcion.valor" [attr.data-testid]="'panel-filtro-' + opcion.valor">
-              <ion-label>{{ opcion.etiqueta }}</ion-label>
-            </ion-segment-button>
-          }
-        </ion-segment>
-
-        <p class="cd-muted cd-panel__sub" data-testid="panel-subtitulo">{{ textos().subtitulo }}</p>
-
-        <!-- "Mis equipos" es un tab: el botón que duplicaba la ruta se retiró
-             (DESIGN §4, un botón una ruta). -->
-
-        @if (serviciosFiltrados().length === 0) {
+        @if (activa(); as orden) {
+          <cd-orden-activa
+            [estado]="titulo(orden)"
+            [categoria]="categoria(orden)"
+            [codigo]="orden.codigo"
+            [prioridad]="orden.prioridad ?? 'MEDIA'"
+            [contexto]="orden.tecnicoNombre ? [orden.tecnicoNombre] : []"
+            [direccion]="orden.direccion || orden.barrio"
+            [accion]="textoAccion(orden)"
+            (accionar)="atender(orden)"
+          />
+        } @else if (historial().length === 0) {
           <cd-empty-state
-            [titulo]="textos().tituloVacio"
-            [texto]="textos().descripcionVacio"
+            titulo="Aún no tienes servicios"
+            texto="Pide un técnico y aquí verás en qué va."
             icono="file-tray-outline"
             testId="panel-vacio"
           />
-        } @else {
-          <h2 class="cd-section__titulo cd-section__titulo--bloque">Tus servicios</h2>
-          @for (ot of serviciosFiltrados(); track ot.id) {
-            <ion-card
-              class="cd-ot cd-panel-ot cd-ot--orden"
-              [class.cd-panel-ot--destacada]="$first && tono(ot.estado) === 'curso'"
-              data-testid="panel-ot"
-            >
-              <ion-card-content>
-                <div class="cd-ot__cabecera">
-                  <div class="cd-ot__titulos">
-                    <span class="cd-ot__codigo" data-testid="panel-ot-codigo">
-                      {{ ot.codigo || 'Sin código' }}
-                    </span>
-                    <h2 class="cd-ot__categoria">{{ categoria(ot) }}</h2>
-                  </div>
-                  <app-priority-chip
-                    class="cd-ot__prioridad"
-                    [prioridad]="ot.prioridad ?? 'MEDIA'"
-                  />
-                  <span [class]="'cd-chip cd-chip--' + tono(ot.estado)">{{ etiqueta(ot.estado) }}</span>
-                </div>
-                <p class="cd-ot__descripcion">{{ ot.descripcionFalla }}</p>
-                <div class="cd-ot__pie">
-                  <span class="cd-ot__direccion">
-                    <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
-                    {{ ot.barrio || ot.direccion || 'Sin dirección' }}
-                  </span>
-                  @if (ot.fechaCreacion; as fecha) {
-                    <span class="cd-muted">{{ fecha | date: 'shortTime' }}</span>
-                  }
-                </div>
-                <div class="cd-ot__acciones">
-                  <ion-button
-                    size="small"
-                    fill="clear"
-                    class="cd-accion"
-                    data-testid="panel-ot-ver"
-                    (click)="verSeguimiento(ot.id)"
-                  >
-                    Ver seguimiento
-                    <ion-icon slot="end" name="chevron-forward-outline" aria-hidden="true"></ion-icon>
-                  </ion-button>
-                </div>
-              </ion-card-content>
-            </ion-card>
+        }
+
+        @if (otras().length > 0) {
+          <h2 class="cd-section__titulo cd-section__titulo--bloque">Otras órdenes</h2>
+          @for (orden of otras(); track orden.id) {
+            <ng-container
+              *ngTemplateOutlet="compacta; context: { $implicit: orden, testId: 'panel-ot' }"
+            />
           }
         }
+
+        @if (historial().length > 0) {
+          <button
+            type="button"
+            class="cd-desplegable__cabecera"
+            [attr.aria-expanded]="historialAbierto()"
+            aria-controls="panel-historial-contenido"
+            data-testid="panel-historial"
+            (click)="alternarHistorial()"
+          >
+            <span class="cd-card__titulo">Historial ({{ historial().length }})</span>
+            <ion-icon
+              [name]="historialAbierto() ? 'chevron-up-outline' : 'chevron-down-outline'"
+              aria-hidden="true"
+            ></ion-icon>
+          </button>
+          <div
+            id="panel-historial-contenido"
+            class="cd-desplegable__contenido"
+            [hidden]="!historialAbierto()"
+            data-testid="panel-historial-contenido"
+          >
+            @for (orden of historial(); track orden.id) {
+              <ng-container
+                *ngTemplateOutlet="
+                  compacta;
+                  context: { $implicit: orden, testId: 'panel-historial-ot' }
+                "
+              />
+            }
+          </div>
+        }
       }
+
+      <ng-template #compacta let-orden let-testId="testId">
+        <button
+          type="button"
+          class="cd-ot cd-ot--compacta"
+          [attr.data-testid]="testId"
+          (click)="verSeguimiento(orden.id)"
+        >
+          <span class="cd-ot__cabecera">
+            <span>
+              <span class="cd-ot__codigo">{{ orden.codigo || 'Sin código' }}</span>
+              <span class="cd-ot__categoria">{{ categoria(orden) }}</span>
+            </span>
+            <app-priority-chip [prioridad]="orden.prioridad ?? 'MEDIA'" />
+            <span [class]="'cd-chip cd-chip--' + tono(orden.estado)">{{ etiqueta(orden.estado) }}</span>
+          </span>
+          <span class="cd-ot__direccion">
+            <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+            {{ orden.barrio || orden.direccion || 'Sin dirección' }}
+          </span>
+        </button>
+      </ng-template>
 
       <ion-footer class="cd-footer" cdFooter>
         <ion-button
           expand="block"
           class="cd-cta"
           data-testid="panel-solicitar"
+          [fill]="activa() ? 'outline' : 'solid'"
+          [class.cd-cta--secundaria]="!!activa()"
           (click)="pedirTecnico()"
         >
           <ion-icon slot="start" name="add-circle-outline" aria-hidden="true"></ion-icon>
@@ -246,10 +220,6 @@ export class PanelClientePage {
 
   private readonly ots = signal<OtResponse[]>([]);
 
-  /** Texto del héroe: corto y operativo; el detalle vive en la solicitud. */
-  protected readonly heroNota =
-    'Pide un servicio y sigue tu OT en vivo, con acta de garantía.';
-
   protected readonly cargando = signal(true);
   protected readonly errorCarga = signal<string | null>(null);
 
@@ -260,21 +230,23 @@ export class PanelClientePage {
    */
   protected readonly sinPerfilCliente = signal(false);
 
-  protected readonly filtro = signal<FiltroOts>('ACTIVAS');
-
-  protected readonly opciones = OPCIONES_FILTRO_OTS;
-  protected readonly textos = computed(() => TEXTOS_FILTRO_OTS[this.filtro()]);
-
-  protected readonly serviciosFiltrados = computed(() => filtrarOts(this.ots(), this.filtro()));
-
-  /** Contadores de las métricas: resumen de TODA la lista, no de la vista. */
-  protected readonly activas = computed(() => contarOtsActivas(this.ots()));
-  protected readonly finalizadas = computed(() => contarOtsFinalizadas(this.ots()));
-
-  /** Órdenes abiertas sin técnico asignado (la métrica amber de Stitch). */
-  protected readonly sinTecnico = computed(
-    () => this.ots().filter((o) => !o.tecnicoId && o.estado !== 'CANCELADA').length,
+  /** Activas, de la más reciente a la más antigua; sin fecha, al final. */
+  private readonly activas = computed(() =>
+    this.ots()
+      .filter(esOtActiva)
+      .sort((a, b) => (b.fechaCreacion ?? '').localeCompare(a.fechaCreacion ?? '')),
   );
+
+  /** La grande: la que espera algo del cliente y, si ninguna, la más reciente. */
+  protected readonly activa = computed<OtResponse | null>(() => {
+    const activas = this.activas();
+    const pide = (accion: string) => activas.find((ot) => this.accionDelPanel(ot) === accion);
+    return pide('pagar-visita') ?? pide('presupuesto') ?? activas[0] ?? null;
+  });
+
+  protected readonly otras = computed(() => this.activas().filter((ot) => ot !== this.activa()));
+  protected readonly historial = computed(() => this.ots().filter((ot) => !esOtActiva(ot)));
+  protected readonly historialAbierto = signal(false);
 
   /** El JWT real no emite `nombre`: una sesión sin nombre se saluda por su rol. */
   protected readonly nombre = computed(() => this.auth.currentUser()?.nombre || 'Cliente');
@@ -301,9 +273,29 @@ export class PanelClientePage {
     return ot.categoriaServicio.replaceAll('_', ' ');
   }
 
-  protected cambiarFiltro(evento: SegmentCustomEvent): void {
-    const valor = evento.detail.value;
-    if (valor) this.filtro.set(valor as FiltroOts);
+  protected titulo(ot: OtResponse): string {
+    return tituloEstadoOt(ot);
+  }
+
+  protected textoAccion(ot: OtResponse): string {
+    const accion = this.accionDelPanel(ot);
+    if (accion === 'pagar-visita') return 'Pagar la visita';
+    return accion === 'presupuesto' ? 'Revisar presupuesto' : 'Ver seguimiento';
+  }
+
+  /** El pago vive en Seguimiento; el presupuesto, en el diagnóstico. */
+  protected atender(ot: OtResponse): void {
+    const sufijo = this.accionDelPanel(ot) === 'presupuesto' ? '/diagnostico' : '';
+    void this.router.navigateByUrl(`/cliente/ot/${ot.id}${sufijo}`);
+  }
+
+  protected alternarHistorial(): void {
+    this.historialAbierto.update((abierto) => !abierto);
+  }
+
+  /** Una disputa se sigue en Seguimiento: desde el panel no se invita a pagar. */
+  private accionDelPanel(ot: OtResponse) {
+    return ot.estado === 'DISPUTADA' ? null : accionOtCliente(ot);
   }
 
   protected reintentar(): void {
@@ -316,15 +308,6 @@ export class PanelClientePage {
 
   protected pedirTecnico(): void {
     void this.router.navigateByUrl('/cliente/solicitar');
-  }
-
-  /**
-   * "Historial" filtra las órdenes concluidas. Antes navegaba a `/cliente/equipos`,
-   * el mismo destino que "Mis equipos" en la misma pantalla (DESIGN §4: un botón,
-   * una ruta).
-   */
-  protected verHistorial(): void {
-    this.filtro.set('COMPLETADAS');
   }
 
   /** A6: cada OT del listado abre su seguimiento. */

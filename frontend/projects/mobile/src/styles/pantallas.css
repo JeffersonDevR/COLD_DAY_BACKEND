@@ -63,72 +63,8 @@
   color: var(--cd-muted);
 }
 
-.cd-panel__sub {
-  margin: 0.5rem 0 1rem;
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
 
-/* A4 — resumen compacto. DESIGN §4 prohíbe tres KPIs de colores como estructura
-   de página: el dato se conserva, sin tarjetas de métrica que compitan. */
-.cd-panel__resumen {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  margin: 0 0 0.75rem;
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  color: var(--cd-text-3);
-}
 
-.cd-panel__resumen span {
-  white-space: nowrap;
-}
-
-.cd-panel__resumen b {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--cd-text-1);
-}
-
-/* A4 — cuatro filtros en frase a 12 px. Padding real desde la escala de espacio
-   del sistema (cd-*: 8/12 px, DESIGN §2.4) para que el texto no toque el borde
-   del rectángulo; a 320 px la etiqueta se parte en vez de desbordar (TU-06). */
-.cd-filtros.cd-filtros--cliente ion-segment-button {
-  flex: 0 0 auto;
-  width: auto;
-  max-width: 100%;
-  --padding-start: 0.75rem;
-  --padding-end: 0.75rem;
-  --padding-top: 0.5rem;
-  --padding-bottom: 0.5rem;
-  min-width: 0;
-}
-
-.cd-filtros.cd-filtros--cliente ion-segment-button ion-label {
-  max-width: 100%;
-  font-size: 0.75rem;
-  line-height: 1.2;
-  letter-spacing: 0;
-  text-overflow: ellipsis;
-  text-transform: none;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.cd-ot.cd-panel-ot .cd-ot__categoria {
-  font-size: 0.8125rem;
-}
-
-.cd-ot.cd-panel-ot .cd-ot__codigo {
-  white-space: nowrap;
-}
-
-/* A4 — la primera OT en curso encabeza la cola con borde de acción (DESIGN §4:
-   una OT activa grande; el resto del listado queda en segundo plano). */
-ion-card.cd-panel-ot--destacada {
-  border-color: var(--cd-action);
-}
 
 /* El footer fijo no debe tapar la última tarjeta al llegar al final del scroll. */
 ion-content.cd-panel-content.ion-padding {
@@ -174,6 +110,18 @@ button.cd-ot .cd-ayuda {
 button.cd-ot .cd-ot__direccion {
   display: flex;
   margin-top: 0.35rem;
+}
+
+/* Orden compacta de panel: tarjeta propia (DESIGN §5), toda ella navega. */
+button.cd-ot.cd-ot--compacta {
+  padding: 0.75rem 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-surface-border);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-ot--compacta .cd-ot__cabecera {
+  flex-wrap: wrap;
 }
 
 .cd-ot__cabecera {
@@ -1065,6 +1013,43 @@ app-seguimiento-ot .cd-map__chip {
   color: var(--cd-muted);
 }
 
+/* Orden activa de un panel (DESIGN §5): el estado en grande y un solo botón. */
+.cd-orden-activa {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-action);
+  border-radius: var(--cd-radius-card);
+}
+
+.cd-orden-activa__identidad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.cd-orden-activa__categoria {
+  margin: 0;
+  font-family: var(--cd-font-head);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.cd-orden-activa__contexto,
+.cd-orden-activa__direccion {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--cd-text-3);
+  overflow-wrap: anywhere;
+}
+
+.cd-orden-activa .cd-cta {
+  margin-top: 0.75rem;
+}
+
 /* Tarjeta del técnico asignado. */
 .cd-tecnico {
   margin-bottom: 0.75rem;
@@ -1853,62 +1838,7 @@ app-seguimiento-ot .cd-map__chip {
   font-variant-numeric: tabular-nums;
 }
 
-/* B0 — Orden de trabajo activa: la primera de la cola destacada con borde de acción.
-   El CTA es un asiento visual dentro del botón-tarjeta (no anidado).
-   La especificidad button.cd-ot es necesaria: `button.cd-ot` (0,1,1) pinta
-   fondo transparente y borde 0; con solo `.cd-ot--activa` (0,1,0) la tarjeta
-   destacada quedaba plana. */
-button.cd-ot.cd-ot--activa {
-  padding: 1rem;
-  background: var(--cd-surface);
-  border: 1px solid var(--cd-action);
-  border-radius: var(--cd-radius-card);
-}
 
-/* Fila de specs hundida (Stitch B0 "Key Specs Grid"): cliente y barrio con
-   icono, solo datos reales del DTO. Distancia y hora no se pintan: el backend
-   no las expone para la OT asignada (no inventar). */
-.cd-activa__contexto {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  margin-top: 0.6rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--cd-well);
-  border: 1px solid var(--cd-line);
-  border-radius: var(--cd-radius-control);
-  font-size: 0.8rem;
-  color: var(--cd-text-2);
-}
-
-.cd-activa__spec {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.cd-activa__spec ion-icon {
-  flex: 0 0 auto;
-  font-size: 1rem;
-  color: var(--cd-text-3);
-}
-
-.cd-activa__cta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  margin-top: 0.7rem;
-  padding: 0.5rem 1rem;
-  font-family: var(--cd-font-headline);
-  font-weight: 700;
-  color: var(--cd-action-deep);
-  background: var(--cd-action);
-  border-radius: var(--cd-radius-control);
-}
 
 /* B0 — Nota de presencia con icono sync y divisor (Stitch): solo cuando el
    switch está bloqueado por una OT en curso; antes se afirmaría algo falso. */

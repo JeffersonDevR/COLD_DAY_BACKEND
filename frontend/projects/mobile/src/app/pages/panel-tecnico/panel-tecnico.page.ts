@@ -14,8 +14,11 @@ import {
   IonButton,
   IonHeader,
   IonIcon,
+  IonRefresher,
+  IonRefresherContent,
   IonToggle,
   IonToolbar,
+  RefresherCustomEvent,
 } from '@ionic/angular';
 import { avisarErrorAccion } from '@core/alertas/mensaje-error';
 import { SseService } from '@core/service/sse.service';
@@ -38,6 +41,7 @@ import { MobileToastService } from '../../core/toast.service';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state';
 import { ErrorAlertComponent } from '../../shared/ui/error-alert/error-alert';
 import { MarcaBarraComponent } from '../../shared/ui/marca-barra/marca-barra';
+import { OrdenActivaComponent } from '../../shared/ui/orden-activa/orden-activa';
 import { SkeletonComponent } from '../../shared/ui/skeleton/skeleton';
 import { PageComponent } from '../../shared/ui/page/page';
 
@@ -58,12 +62,15 @@ const MENSAJES_ESTADO_OPERATIVO: Record<number, string> = {
     IonButton,
     IonHeader,
     IonIcon,
+    IonRefresher,
+    IonRefresherContent,
     IonToggle,
     IonToolbar,
     SkeletonComponent,
     ErrorAlertComponent,
     EmptyStateComponent,
     MarcaBarraComponent,
+    OrdenActivaComponent,
   ],
   templateUrl: './panel-tecnico.page.html',
 })
@@ -191,7 +198,32 @@ export class PanelTecnicoPageMobile implements OnInit {
       });
   }
 
-  private cargarOts(inicial = true): void {
+  refrescar(evento: RefresherCustomEvent): void {
+    this.recargarPerfil();
+    this.cargarOfertas();
+    this.cargarOts(false, {
+      alTerminar: () => void evento.target.complete(),
+      alFallar: (err) => avisarErrorAccion(this.toast, 'No pudimos actualizar', err),
+    });
+  }
+
+  /** Los avisos que bloquean salen del perfil: deslizar tiene que traerlo de nuevo. */
+  private recargarPerfil(): void {
+    cargarTecnicoAutenticado(this.tecnicosApi, (tecnico) => {
+      // Con error llega `undefined`: se conserva el perfil que ya se ve.
+      if (tecnico) this.tecnico.set(tecnico);
+    });
+  }
+
+  /** Cliente y barrio, solo si el backend los entrega. */
+  contextoOt(orden: OtResponse): string[] {
+    return [orden.clienteNombre, orden.barrio].filter((dato): dato is string => !!dato);
+  }
+
+  private cargarOts(
+    inicial = true,
+    manual: { alTerminar?: () => void; alFallar?: (err: unknown) => void } = {},
+  ): void {
     if (inicial) this.cargando.set(true);
     this.tecnicosApi.getMisOts().subscribe({
       next: (ots) => {
@@ -199,9 +231,13 @@ export class PanelTecnicoPageMobile implements OnInit {
         this.cargando.set(false);
         this.misOts.set(ots.filter((o) => !['FINALIZADA', 'CANCELADA'].includes(o.estado)));
         this.presencia.sincronizarOts(ots);
+        manual.alTerminar?.();
       },
-      error: () => {
+      error: (err: unknown) => {
         this.cargando.set(false);
+        manual.alTerminar?.();
+        // Solo avisa lo que pidió el usuario: el sondeo falla en silencio.
+        manual.alFallar?.(err);
         if (!inicial) return;
         this.misOts.set([]);
         this.otsError.set(true);
