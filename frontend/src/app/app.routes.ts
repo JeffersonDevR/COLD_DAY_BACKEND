@@ -33,6 +33,14 @@ export const routes: Routes = [
     component: PanelRedirectComponent
   },
 
+  // Cuentas sin rol interno: sus funciones viven en la app móvil.
+  {
+    path: 'usa-la-app',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/usa-la-app-page/usa-la-app-page').then(m => m.UsaLaAppPage),
+    title: 'Usa la app - COLD DAY'
+  },
+
   // Adquisición del segundo perfil (Cliente/Técnico) para un usuario autenticado.
   {
     path: 'perfil/agregar',
