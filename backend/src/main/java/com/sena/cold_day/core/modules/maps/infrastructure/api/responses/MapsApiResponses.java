@@ -48,10 +48,10 @@ public final class MapsApiResponses {
      * Map view configuration served to the frontend (GET /api/config/maps).
      * Mirrors the Google Maps shapes ({@code LatLngLiteral} and
      * {@code LatLngBoundsLiteral}) so the frontend can hand them straight to the
-     * map component.
+     * map component. {@code proveedor} names the map engine the frontend loads.
      */
     public record ConfigMapaApiResponse(String apiKey, CentroApiResponse centro, BoundsApiResponse bounds, double zoom,
-            double radioInicialKm, double radioMaxKm, double radioPasoKm) {
+            double radioInicialKm, double radioMaxKm, double radioPasoKm, String proveedor) {
     }
 
     /** Center of the map view (mirrors the Google Maps {@code LatLngLiteral}). */

@@ -17,8 +17,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  *
  * <p>It is public on purpose: the map loader reads it before the user signs in
  * (the login and registration screens show a map) and it carries no personal
- * data, only the center, the metropolitan bounds, the zoom and the radius
- * ladder. The server key is never part of the payload; the browser key is
+ * data, only the center, the metropolitan bounds, the zoom, the radius
+ * ladder and the name of the map engine. The server key is never part of the payload; the browser key is
  * restricted by HTTP referrer and is the only one exposed.
  */
 @RestController
@@ -43,6 +43,7 @@ public class MapsConfigController {
                 properties.zoom(),
                 properties.radioInicialKm(),
                 properties.radioMaxKm(),
-                properties.radioPasoKm());
+                properties.radioPasoKm(),
+                properties.proveedor());
     }
 }
